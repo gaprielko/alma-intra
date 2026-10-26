@@ -1,0 +1,41 @@
+node_modules/
+dist/
+build/
+.turbo/
+coverage/
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+.idea/
+# expo
+.expo/
+ios/
+android/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+# ALMA-234: Firebase (Android push). Never committed; see docs/runbook.md "Android push (FCM)".
+google-services.json
+GoogleService-Info.plist
+*-firebase-adminsdk-*.json
+# vite
+apps/web/dist/
+# drizzle
+apps/api/drizzle/meta/_journal.json.bak
+# TanStack Router temp files
+.tanstack/
+# playwright
+apps/web/test-results/
+apps/web/playwright-report/
+# the saved login session (cookies) of the E2E setup
+apps/web/e2e/.auth/
+
+# Scratch checkouts of this repo made by agent sessions.
+.claude/worktrees
+
+# ALMA-152: intake extraction reports — CI artifacts, never committed.
+eval-output/
