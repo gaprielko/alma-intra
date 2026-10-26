@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>Detail súboru</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif;color:#152b2a;-webkit-font-smoothing:antialiased}
+a{color:#0a6466;text-decoration:none}a:hover{color:#0c3b3c;text-decoration:underline}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none;height:40px;padding:0 16px;font-size:14px}
+.btn-primary{background:linear-gradient(180deg,#139698 0%,#0b6e70 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 2px rgba(12,59,60,.06),0 4px 12px rgba(12,59,60,.07)}
+.btn-secondary{background:#e3f3f2;color:#0a6466}
+.btn-sm{height:30px;padding:0 10px;font-size:13px}
+.btn-ghost{background:transparent;color:#0a6466}
+.btn-icon{width:40px;padding:0;border:1px solid #d6e1de;background:#fff;color:#48625f}
+.skel{background:#dde6e3;border-radius:8px}
+.tab{height:36px;padding:0 4px;border:0;border-bottom:2px solid transparent;background:transparent;font:inherit;font-size:14px;font-weight:600;color:#48625f;cursor:pointer}
+.tab-on{color:#0a6466;border-bottom-color:#0f8b8d}
+.ver{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:12px 0;border-top:1px solid #dfe8e6}
+.vnum{width:34px;height:34px;border-radius:10px;background:#f7faf9;border:1px solid #dfe8e6;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#48625f;flex-shrink:0}
+.badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.b-info{background:#e9eef6;color:#334e7b}.b-success{background:#eaf5e6;color:#16a34a}.b-warning{background:#fcf0de;color:#b45309}
+dl{margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px}
+dt{font-size:12px;font-weight:500;color:#48625f}
+dd{margin:2px 0 0;font-size:14px;line-height:20px}
+.claude{display:inline-flex;align-items:center;gap:6px}
+.claude i{width:18px;height:18px;border-radius:5px;background:#fcf0de;color:#b45309;display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-size:10px;font-weight:700}
+.use{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid #dfe8e6;border-radius:12px}
+.use-icon{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 1000px; background: #eaf0ee; position: relative">
+  <div style="flex: 0 0 232px; background: #0c3b3c">
+    <dc-import name="Sidebar" active="files" hint-size="232px,900px"></dc-import>
+  </div>
+  <main aria-hidden="true" style="flex: 999 1 560px; min-width: 0; padding: 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px">
+    <div class="skel" style="width: 160px; height: 28px"></div>
+    <div style="display: flex; gap: 20px">
+      <div style="width: 260px; height: 560px; border-radius: 16px; background: #fff"></div>
+      <div style="flex: 1; height: 560px; border-radius: 16px; background: #fff"></div>
+    </div>
+  </main>
+  <div style="position: absolute; inset: 0; background: rgba(12,43,44,0.35); display: flex; justify-content: flex-end">
+    <aside role="dialog" aria-modal="true" aria-labelledby="file-title" style="width: 100%; max-width: 600px; height: 100%; box-sizing: border-box; background: #fff; box-shadow: -12px 0 40px rgba(12,43,44,0.2); display: flex; flex-direction: column; overflow: auto">
+      <header style="padding: 24px 24px 0; display: flex; gap: 14px; align-items: flex-start">
+        <span aria-hidden="true" style="width: 48px; height: 48px; border-radius: 12px; background: #e6f1fb; color: #0c447c; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0">DOCX</span>
+        <div style="flex: 1; min-width: 0">
+          <h2 id="file-title" style="margin: 0; font-size: 20px; line-height: 26px; font-weight: 700; word-break: break-word">Cenová ponuka vzor 2027.docx</h2>
+          <p style="margin: 2px 0 0; font-size: 13px; color: #48625f"><a href="#">Firemné dokumenty</a> / <a href="#">Cenníky</a> · 112 kB · verzia 5</p>
+        </div>
+        <button type="button" aria-label="Zavrieť" style="width: 36px; height: 36px; border: 0; border-radius: 10px; background: transparent; color: #48625f; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+      </header>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; padding: 16px 24px 0">
+        <button type="button" class="btn btn-primary"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5M12 15V3"></path></svg>Stiahnuť</button>
+        <button type="button" class="btn btn-secondary"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m17 8-5-5-5 5M12 3v12"></path></svg>Nahrať novú verziu</button>
+        <button type="button" class="btn btn-secondary"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.4 11.6-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"></path></svg>Priložiť k e-mailu</button>
+        <button type="button" class="btn btn-icon" aria-label="Ďalšie akcie: premenovať, presunúť, do koša"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle></svg></button>
+      </div>
+
+      <div style="margin: 20px 24px 0; padding: 16px; border-radius: 14px; background: #f7faf9; border: 1px solid #dfe8e6">
+        <dl>
+          <div><dt>Vytvoril</dt><dd>Peter Kováč · 2. 3. 2026</dd></div>
+          <div><dt>Naposledy zmenil</dt><dd><span class="claude"><i aria-hidden="true">C</i>Claude za Petra Kováča</span></dd></div>
+          <div style="grid-column: 1 / -1"><dt>Popis</dt><dd>Vzor cenovej ponuky pre ADOS. Ceny sú podľa cenníka 2027, zľavy podľa počtu sestier.</dd></div>
+        </dl>
+      </div>
+
+      <div role="tablist" style="display: flex; gap: 20px; padding: 18px 24px 0; border-bottom: 1px solid #dfe8e6">
+        <button type="button" role="tab" aria-selected="true" class="tab tab-on">Verzie · 5</button>
+        <button type="button" role="tab" aria-selected="false" class="tab">Kde je použitý · 2</button>
+        <button type="button" role="tab" aria-selected="false" class="tab">História</button>
+      </div>
+
+      <div style="padding: 4px 24px 0">
+        <div class="ver" style="border-top: 0">
+          <span class="vnum" style="background: #e3f3f2; border-color: #bfe2df; color: #0a6466">v5</span>
+          <div style="flex: 1 1 220px; min-width: 0">
+            <p style="margin: 0; font-size: 14px; font-weight: 600; display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><span class="claude"><i aria-hidden="true">C</i>Claude za Petra Kováča</span><span class="badge b-info">Aktuálna</span></p>
+            <p style="margin: 2px 0 0; font-size: 13px; color: #48625f">24. 10. 2026 14:12 · 112 kB · „Doplnená tabuľka zliav pre 15 až 25 sestier.“</p>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm">Stiahnuť</button>
+        </div>
+        <div class="ver">
+          <span class="vnum">v4</span>
+          <div style="flex: 1 1 220px; min-width: 0">
+            <p style="margin: 0; font-size: 14px; font-weight: 600; display: flex; flex-wrap: wrap; gap: 8px; align-items: center">Peter Kováč <span class="badge b-success">Odoslaná v e-maile</span></p>
+            <p style="margin: 2px 0 0; font-size: 13px; color: #48625f">20. 10. 2026 9:30 · 108 kB</p>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm">Stiahnuť</button>
+          <button type="button" class="btn btn-ghost btn-sm">Obnoviť</button>
+        </div>
+        <div class="ver">
+          <span class="vnum">v3</span>
+          <div style="flex: 1 1 220px; min-width: 0">
+            <p style="margin: 0; font-size: 14px; font-weight: 600">Jana Horváthová</p>
+            <p style="margin: 2px 0 0; font-size: 13px; color: #48625f">2. 10. 2026 16:05 · 104 kB</p>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm">Stiahnuť</button>
+          <button type="button" class="btn btn-ghost btn-sm">Obnoviť</button>
+        </div>
+        <div class="ver">
+          <span class="vnum">v2</span>
+          <div style="flex: 1 1 220px; min-width: 0">
+            <p style="margin: 0; font-size: 14px; font-weight: 600">Peter Kováč</p>
+            <p style="margin: 2px 0 0; font-size: 13px; color: #48625f">14. 4. 2026 11:20 · 98 kB</p>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm">Stiahnuť</button>
+          <button type="button" class="btn btn-ghost btn-sm">Obnoviť</button>
+        </div>
+      </div>
+
+      <div style="margin: 16px 24px 24px">
+        <p style="margin: 0 0 10px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #6f8784">Kde je použitý</p>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <div class="use">
+            <span class="use-icon" style="background: #e3f3f2; color: #0a6466" aria-hidden="true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-10 6L2 7"></path></svg></span>
+            <div style="flex: 1; min-width: 0"><p style="margin: 0; font-size: 14px; font-weight: 600">E-mail „Cenová ponuka 2027“</p><p style="margin: 0; font-size: 13px; color: #48625f">ADOS Harmónia, s.r.o. · verzia 4 · 21. 10. 2026</p></div>
+          </div>
+          <div class="use">
+            <span class="use-icon" style="background: #e6f1fb; color: #0c447c" aria-hidden="true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"></path></svg></span>
+            <div style="flex: 1; min-width: 0"><p style="margin: 0; font-size: 14px; font-weight: 600">Stretnutie „Rozšírenie licencie“</p><p style="margin: 0; font-size: 13px; color: #48625f">ADOS Harmónia, s.r.o. · verzia 3 · 14. 10. 2026</p></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

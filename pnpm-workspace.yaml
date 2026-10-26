@@ -1,0 +1,7 @@
+packages:
+  - apps/*
+  - packages/*
+# Packages whose install scripts may run: argon2's native binding and esbuild's binary check.
+onlyBuiltDependencies:
+  - argon2
+  - esbuild

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>Pozvať používateľa</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif;color:#152b2a;-webkit-font-smoothing:antialiased}
+a{color:#0a6466;text-decoration:none}a:hover{color:#0c3b3c;text-decoration:underline}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none;height:40px;padding:0 16px;font-size:14px}
+.btn-primary{background:linear-gradient(180deg,#139698 0%,#0b6e70 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 2px rgba(12,59,60,.06),0 4px 12px rgba(12,59,60,.07)}
+.btn-ghost{background:transparent;color:#0a6466}
+.field{position:relative;display:block;border:1px solid #d6e1de;border-radius:12px;background:#fff;height:56px;box-sizing:border-box;padding:8px 14px 0}
+.field span{display:block;font-size:12px;font-weight:500;color:#48625f;line-height:16px}
+.field input{display:block;width:100%;border:0;outline:0;font:inherit;font-size:15px;color:#152b2a;background:transparent;padding:2px 0 0}
+.field-focus{border:2px solid #0f8b8d;box-shadow:0 0 0 4px rgba(15,139,141,.12);padding:7px 13px 0}
+.skel{background:#dde6e3;border-radius:8px}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 900px; background: #eaf0ee; position: relative">
+  <div style="flex: 0 0 232px; background: #0c3b3c">
+    <dc-import name="Sidebar" active="settings" hint-size="232px,900px"></dc-import>
+  </div>
+  <main aria-hidden="true" style="flex: 999 1 560px; min-width: 0; padding: 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px">
+    <div class="skel" style="width: 220px; height: 28px"></div>
+    <div style="border-radius: 16px; background: #fff; height: 520px; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+      <div class="skel" style="width: 180px; height: 20px"></div>
+      <div class="skel" style="height: 44px; background: #f7faf9"></div>
+      <div class="skel" style="height: 36px; background: #f0f4f3"></div>
+      <div class="skel" style="height: 36px; background: #f0f4f3"></div>
+      <div class="skel" style="height: 36px; background: #f0f4f3"></div>
+      <div class="skel" style="height: 36px; background: #f0f4f3"></div>
+    </div>
+  </main>
+  <div style="position: absolute; inset: 0; background: rgba(12,43,44,0.45); display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box">
+    <section role="dialog" aria-modal="true" aria-labelledby="invite-title" style="width: 100%; max-width: 520px; border-radius: 20px; background: #fff; box-shadow: 0 1px 3px rgba(12,59,60,0.06), 0 24px 60px rgba(12,43,44,0.28); overflow: hidden">
+      <header style="display: flex; align-items: flex-start; gap: 12px; padding: 24px 24px 0">
+        <div style="flex: 1">
+          <h2 id="invite-title" style="margin: 0; font-size: 20px; line-height: 26px; font-weight: 700">Pozvať používateľa</h2>
+          <p style="margin: 6px 0 0; font-size: 14px; line-height: 20px; color: #48625f">Pozvaná osoba dostane e-mail s odkazom na nastavenie hesla. Odkaz platí 72 hodín a dá sa poslať znova.</p>
+        </div>
+        <button type="button" aria-label="Zavrieť" style="width: 36px; height: 36px; border: 0; border-radius: 10px; background: transparent; color: #48625f; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+      </header>
+      <form style="padding: 20px 24px 0; display: flex; flex-direction: column; gap: 12px">
+        <label class="field"><span>Meno a priezvisko</span><input value="Martin Šimko"></label>
+        <label class="field field-focus"><span>E-mail</span><input type="email" value="martin.simko@adosalma.sk"></label>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+          <label class="field"><span>Telefón (nepovinné)</span><input type="tel" value="+421 905 123 456"></label>
+          <label class="field"><span>Pozícia (nepovinné)</span><input value="Podpora zákazníkov"></label>
+        </div>
+        <p style="margin: 4px 0 0; display: flex; gap: 10px; align-items: flex-start; border-radius: 12px; background: #e9eef6; color: #334e7b; padding: 12px 14px; font-size: 13px; line-height: 19px">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"></path></svg>
+          Po nastavení hesla si nový používateľ musí nastaviť aj dvojstupňové overenie. Bude mať rovnaké oprávnenia ako vy.
+        </p>
+      </form>
+      <footer style="display: flex; justify-content: flex-end; gap: 8px; padding: 20px 24px 24px">
+        <a href="Users.dc.html" class="btn btn-ghost">Zrušiť</a>
+        <button type="submit" class="btn btn-primary">Odoslať pozvánku</button>
+      </footer>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,550 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-10-26T21:40:00Z"
+  },
+  "title": "Alma Intra – screens",
+  "launch": {
+    "view": "canvas",
+    "page": "logo"
+  },
+  "pages": [
+    {
+      "id": "logo",
+      "name": "Logo"
+    },
+    {
+      "id": "e0",
+      "name": "E0 · Sign-in, users, account"
+    },
+    {
+      "id": "e1",
+      "name": "E1 · Customers"
+    },
+    {
+      "id": "e2",
+      "name": "E2 · Files"
+    },
+    {
+      "id": "e3",
+      "name": "E3 · Activities"
+    },
+    {
+      "id": "e4",
+      "name": "E4 · E-mail templates"
+    },
+    {
+      "id": "e5",
+      "name": "E5 · Sending"
+    },
+    {
+      "id": "e6",
+      "name": "E6 · Replies"
+    },
+    {
+      "id": "e7",
+      "name": "E7 · Claude and documents"
+    },
+    {
+      "id": "e8",
+      "name": "E8 · Dashboard, scheduling, segments"
+    }
+  ],
+  "boards": {
+    "Logo.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1180,
+      "title": "Logo a značky menu",
+      "page": "logo"
+    },
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Prihlásenie",
+      "page": "e0",
+      "expand": "fill"
+    },
+    "SecondStep.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Overovací kód",
+      "page": "e0",
+      "expand": "fill"
+    },
+    "SetupTwoFactor.dc.html": {
+      "x": 3040,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Nastavenie dvojstupňového overenia (povinné po aktivácii)",
+      "page": "e0",
+      "expand": "fill"
+    },
+    "Users.dc.html": {
+      "x": 0,
+      "y": 1020,
+      "w": 1440,
+      "h": 900,
+      "title": "Používatelia",
+      "page": "e0",
+      "expand": "fill"
+    },
+    "InviteUser.dc.html": {
+      "x": 1520,
+      "y": 1020,
+      "w": 1440,
+      "h": 900,
+      "title": "Pozvať používateľa (dialóg)",
+      "page": "e0",
+      "expand": "fill"
+    },
+    "Account.dc.html": {
+      "x": 3040,
+      "y": 1020,
+      "w": 1440,
+      "h": 1180,
+      "title": "Môj účet",
+      "page": "e0",
+      "expand": "fill"
+    },
+    "Sidebar.dc.html": {
+      "x": 4560,
+      "y": 1020,
+      "w": 232,
+      "h": 900,
+      "title": "Bočný panel (komponent)",
+      "page": "e0"
+    },
+    "Customers.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1040,
+      "title": "Zákazníci",
+      "page": "e1",
+      "expand": "fill"
+    },
+    "CustomerDetail.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 1240,
+      "title": "Detail zákazníka (organizácia)",
+      "page": "e1",
+      "expand": "fill"
+    },
+    "CustomerForm.dc.html": {
+      "x": 3040,
+      "y": 0,
+      "w": 1440,
+      "h": 1240,
+      "title": "Nový zákazník",
+      "page": "e1",
+      "expand": "fill"
+    },
+    "ContactDialog.dc.html": {
+      "x": 0,
+      "y": 1360,
+      "w": 1440,
+      "h": 900,
+      "title": "Kontakt (dialóg)",
+      "page": "e1",
+      "expand": "fill"
+    },
+    "IndividualDetail.dc.html": {
+      "x": 1520,
+      "y": 1360,
+      "w": 1440,
+      "h": 1000,
+      "title": "Detail zákazníka (fyzická osoba)",
+      "page": "e1",
+      "expand": "fill"
+    },
+    "CodeLists.dc.html": {
+      "x": 3040,
+      "y": 1360,
+      "w": 1440,
+      "h": 900,
+      "title": "Nastavenia · Číselníky",
+      "page": "e1",
+      "expand": "fill"
+    },
+    "Files.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1000,
+      "title": "Súbory · firemné dokumenty",
+      "page": "e2",
+      "expand": "fill"
+    },
+    "FileDetail.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 1000,
+      "title": "Detail súboru · verzie a história",
+      "page": "e2",
+      "expand": "fill"
+    },
+    "FilePicker.dc.html": {
+      "x": 3040,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Výber súboru (dialóg pre e-mail a aktivitu)",
+      "page": "e2",
+      "expand": "fill"
+    },
+    "ActivityDialog.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1080,
+      "title": "Zapísať aktivitu (dialóg)",
+      "page": "e3",
+      "expand": "fill"
+    },
+    "ActivityDetail.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 1080,
+      "title": "Detail aktivity a ďalšie kroky",
+      "page": "e3",
+      "expand": "fill"
+    },
+    "Templates.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "E-mailové šablóny",
+      "page": "e4",
+      "expand": "fill"
+    },
+    "TemplateEditor.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 1200,
+      "title": "Úprava šablóny (WYSIWYG v skutočnom vzhľade)",
+      "page": "e4",
+      "expand": "fill"
+    },
+    "EmailLook.dc.html": {
+      "x": 3040,
+      "y": 0,
+      "w": 1440,
+      "h": 1100,
+      "title": "Nastavenia · Vzhľad e-mailov",
+      "page": "e4",
+      "expand": "fill"
+    },
+    "EmailCanvas.dc.html": {
+      "x": 4560,
+      "y": 0,
+      "w": 600,
+      "h": 1000,
+      "title": "Firemný e-mail (komponent)",
+      "page": "e4"
+    },
+    "SendRecipients.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1000,
+      "title": "Odoslanie · 1 Adresáti",
+      "page": "e5",
+      "expand": "fill"
+    },
+    "SendContent.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 1100,
+      "title": "Odoslanie · 3 Obsah a vlastné polia",
+      "page": "e5",
+      "expand": "fill"
+    },
+    "SendPreview.dc.html": {
+      "x": 3040,
+      "y": 0,
+      "w": 1440,
+      "h": 1200,
+      "title": "Odoslanie · 4 Náhľad a úprava pre adresáta",
+      "page": "e5",
+      "expand": "fill"
+    },
+    "SendReview.dc.html": {
+      "x": 0,
+      "y": 1320,
+      "w": 1440,
+      "h": 1000,
+      "title": "Odoslanie · 5 Kontrola a odoslanie",
+      "page": "e5",
+      "expand": "fill"
+    },
+    "Campaign.dc.html": {
+      "x": 1520,
+      "y": 1320,
+      "w": 1440,
+      "h": 1000,
+      "title": "Odoslaný e-mail · stav doručenia",
+      "page": "e5",
+      "expand": "fill"
+    },
+    "Unsubscribe.dc.html": {
+      "x": 3040,
+      "y": 1320,
+      "w": 1440,
+      "h": 800,
+      "title": "Odhlásenie z odberu (verejná stránka)",
+      "page": "e5",
+      "expand": "fill"
+    },
+    "Inbox.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 960,
+      "title": "E-maily · Prijaté",
+      "page": "e6",
+      "expand": "fill"
+    },
+    "Conversation.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 1240,
+      "title": "Konverzácia · odpoveď hore, najnovšie e-maily hore, zbaliteľné",
+      "page": "e6",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "AssignReply.dc.html": {
+      "x": 3040,
+      "y": 0,
+      "w": 1440,
+      "h": 960,
+      "title": "Priradiť e-mail · druh zákazníka, typ a nový typ",
+      "page": "e6",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "ClaudeAccess.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1100,
+      "title": "Môj účet · Prístup pre Claude",
+      "page": "e7",
+      "expand": "fill"
+    },
+    "TokenCreated.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Nový prístupový kľúč (zobrazí sa raz)",
+      "page": "e7",
+      "expand": "fill"
+    },
+    "OAuthConsent.dc.html": {
+      "x": 3040,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Povolenie pripojenia Claude (OAuth)",
+      "page": "e7",
+      "expand": "fill"
+    },
+    "GenerateDocument.dc.html": {
+      "x": 0,
+      "y": 1220,
+      "w": 1440,
+      "h": 1000,
+      "title": "Vytvoriť dokument zo šablóny",
+      "page": "e7",
+      "expand": "fill"
+    },
+    "ClaudeActivity.dc.html": {
+      "x": 1520,
+      "y": 1220,
+      "w": 1440,
+      "h": 900,
+      "title": "Záznam aktivít · zmeny od Claude",
+      "page": "e7",
+      "expand": "fill"
+    },
+    "Dashboard.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1160,
+      "title": "Prehľad",
+      "page": "e8",
+      "expand": "fill"
+    },
+    "Scheduled.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "E-maily · Naplánované a koncepty",
+      "page": "e8",
+      "expand": "fill"
+    },
+    "Segments.dc.html": {
+      "x": 0,
+      "y": 1280,
+      "w": 1440,
+      "h": 1000,
+      "title": "Zákazníci · uložený segment a jeho uloženie",
+      "page": "e8",
+      "expand": "fill"
+    },
+    "SegmentRecipients.dc.html": {
+      "x": 1520,
+      "y": 1280,
+      "w": 1440,
+      "h": 900,
+      "title": "Odoslanie · adresáti zo segmentu",
+      "page": "e8",
+      "expand": "fill"
+    }
+  },
+  "order": [
+    "Logo.dc.html",
+    "Main.dc.html",
+    "SecondStep.dc.html",
+    "SetupTwoFactor.dc.html",
+    "Users.dc.html",
+    "InviteUser.dc.html",
+    "Account.dc.html",
+    "Sidebar.dc.html",
+    "Customers.dc.html",
+    "CustomerDetail.dc.html",
+    "CustomerForm.dc.html",
+    "ContactDialog.dc.html",
+    "IndividualDetail.dc.html",
+    "CodeLists.dc.html",
+    "Files.dc.html",
+    "FileDetail.dc.html",
+    "FilePicker.dc.html",
+    "ActivityDialog.dc.html",
+    "ActivityDetail.dc.html",
+    "Templates.dc.html",
+    "TemplateEditor.dc.html",
+    "EmailLook.dc.html",
+    "EmailCanvas.dc.html",
+    "SendRecipients.dc.html",
+    "SendContent.dc.html",
+    "SendPreview.dc.html",
+    "SendReview.dc.html",
+    "Campaign.dc.html",
+    "Unsubscribe.dc.html",
+    "Inbox.dc.html",
+    "Conversation.dc.html",
+    "AssignReply.dc.html",
+    "ClaudeAccess.dc.html",
+    "TokenCreated.dc.html",
+    "OAuthConsent.dc.html",
+    "GenerateDocument.dc.html",
+    "ClaudeActivity.dc.html",
+    "Dashboard.dc.html",
+    "Scheduled.dc.html",
+    "Segments.dc.html",
+    "SegmentRecipients.dc.html"
+  ],
+  "notes": {
+    "logotitle": {
+      "x": 0,
+      "y": -300,
+      "text": "Logo Alma Intra",
+      "kind": "title1",
+      "maxW": 1440,
+      "page": "logo"
+    },
+    "e0title": {
+      "x": 0,
+      "y": -300,
+      "text": "E0 · Prihlásenie, používatelia, môj účet",
+      "kind": "title1",
+      "maxW": 4480,
+      "page": "e0"
+    },
+    "e1title": {
+      "x": 0,
+      "y": -300,
+      "text": "E1 · Zákazníci a kontakty",
+      "kind": "title1",
+      "maxW": 4480,
+      "page": "e1"
+    },
+    "e2title": {
+      "x": 0,
+      "y": -300,
+      "text": "E2 · Súbory",
+      "kind": "title1",
+      "maxW": 4480,
+      "page": "e2"
+    },
+    "e3title": {
+      "x": 0,
+      "y": -300,
+      "text": "E3 · Aktivity",
+      "kind": "title1",
+      "maxW": 2960,
+      "page": "e3"
+    },
+    "e4title": {
+      "x": 0,
+      "y": -300,
+      "text": "E4 · E-mailové šablóny",
+      "kind": "title1",
+      "maxW": 5160,
+      "page": "e4"
+    },
+    "e5title": {
+      "x": 0,
+      "y": -300,
+      "text": "E5 · Odoslanie e-mailov",
+      "kind": "title1",
+      "maxW": 4480,
+      "page": "e5"
+    },
+    "e6title": {
+      "x": 0,
+      "y": -300,
+      "text": "E6 · Odpovede zákazníkov v appke",
+      "kind": "title1",
+      "maxW": 4480,
+      "page": "e6"
+    },
+    "e7title": {
+      "x": 0,
+      "y": -300,
+      "text": "E7 · Prístup pre Claude a šablóny dokumentov",
+      "kind": "title1",
+      "maxW": 4480,
+      "page": "e7"
+    },
+    "e8title": {
+      "x": 0,
+      "y": -300,
+      "text": "E8 · Prehľad, plánovanie, segmenty",
+      "kind": "title1",
+      "maxW": 2960,
+      "page": "e8"
+    }
+  },
+  "designSystems": []
+}

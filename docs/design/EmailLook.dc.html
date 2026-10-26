@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>Vzhľad e-mailov</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif;color:#152b2a;-webkit-font-smoothing:antialiased}
+a{color:#0a6466;text-decoration:none}a:hover{color:#0c3b3c;text-decoration:underline}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none;height:40px;padding:0 16px;font-size:14px}
+.btn-primary{background:linear-gradient(180deg,#139698 0%,#0b6e70 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 2px rgba(12,59,60,.06),0 4px 12px rgba(12,59,60,.07)}
+.btn-secondary{background:#e3f3f2;color:#0a6466}
+.btn-sm{height:32px;padding:0 12px;font-size:13px}
+.card{border:1px solid #dfe8e6;border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(12,59,60,.08),0 8px 22px rgba(12,59,60,.08)}
+.tab{height:36px;padding:0 14px;border-radius:10px;font-size:14px;font-weight:600;color:#48625f;display:inline-flex;align-items:center}
+.tab-on{background:#e3f3f2;color:#0a6466}
+.field{position:relative;display:block;border:1px solid #d6e1de;border-radius:12px;background:#fff;min-height:56px;box-sizing:border-box;padding:8px 14px 6px}
+.field>span{display:block;font-size:12px;font-weight:500;color:#48625f;line-height:16px}
+.field input{display:block;width:100%;border:0;outline:0;font:inherit;font-size:15px;color:#152b2a;background:transparent;padding:2px 0 0}
+.ro{background:#eaf0ee}
+.lbl{margin:0 0 10px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#6f8784}
+.seg{display:inline-flex;padding:3px;border-radius:10px;background:#dde6e3;gap:2px}
+.seg button{height:30px;padding:0 14px;border:0;border-radius:8px;background:transparent;font:inherit;font-size:13px;font-weight:600;color:#48625f;cursor:pointer}
+.seg .on{background:#fff;color:#152b2a;box-shadow:0 1px 2px rgba(12,59,60,.12)}
+.sw{width:32px;height:32px;border-radius:50%;border:0;cursor:pointer;padding:0}
+.sw-on{box-shadow:0 0 0 2px #fff,0 0 0 4px #0f8b8d}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 1100px; background: #eaf0ee">
+  <div style="flex: 0 0 232px; background: #0c3b3c">
+    <dc-import name="Sidebar" active="settings" hint-size="232px,900px"></dc-import>
+  </div>
+  <main style="flex: 999 1 560px; min-width: 0">
+    <header style="min-height: 72px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 28px; box-sizing: border-box; background: rgba(255,255,255,0.8); border-bottom: 1px solid #d6e1de">
+      <div style="flex: 1 1 auto; min-width: 0">
+        <h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em">Nastavenia</h1>
+        <p style="margin: 0; font-size: 13px; line-height: 18px; color: #48625f">Firma, používatelia a číselníky</p>
+      </div>
+      <button type="button" class="btn btn-primary">Uložiť vzhľad</button>
+    </header>
+    <div style="padding: 20px 28px 40px; display: flex; flex-direction: column; gap: 20px; max-width: 1400px">
+      <nav aria-label="Sekcie nastavení" style="display: flex; flex-wrap: wrap; gap: 6px">
+        <a href="#" class="tab">Firma</a>
+        <a href="Users.dc.html" class="tab">Používatelia</a>
+        <a href="CodeLists.dc.html" class="tab">Číselníky</a>
+        <a href="EmailLook.dc.html" class="tab tab-on" aria-current="page">Vzhľad e-mailov</a>
+      </nav>
+      <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+        <form class="card" style="flex: 1 1 380px; max-width: 520px; padding: 22px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px">
+          <div>
+            <p class="lbl">Hlavička</p>
+            <div style="display: flex; align-items: center; gap: 14px">
+              <span aria-hidden="true" style="width: 56px; height: 56px; border-radius: 14px; background: #0d7f81; display: inline-flex; align-items: center; justify-content: center"><svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3"></circle><path d="M4 9v4a5 5 0 0 0 5 5"></path><path d="M20 9v4a5 5 0 0 1-5 5"></path></svg></span>
+              <div style="flex: 1"><p style="margin: 0; font-size: 14px; font-weight: 600">Logo Alma</p><p style="margin: 0; font-size: 13px; color: #48625f">PNG alebo SVG, najmenej 120 × 120 px</p></div>
+              <button type="button" class="btn btn-secondary btn-sm">Zmeniť</button>
+            </div>
+            <div style="margin-top: 14px; display: flex; align-items: center; gap: 12px">
+              <span id="hdr" style="font-size: 14px; flex: 1">Farba hlavičky</span>
+              <div class="seg" role="radiogroup" aria-labelledby="hdr"><button type="button" role="radio" aria-checked="true" class="on">Tmavá</button><button type="button" role="radio" aria-checked="false">Svetlá</button></div>
+            </div>
+            <label class="field" style="margin-top: 12px"><span>Text v hlavičke</span><input value="Domáca ošetrovateľská starostlivosť bez papierov"></label>
+          </div>
+          <div>
+            <p class="lbl">Farba tlačidiel a odkazov</p>
+            <div role="radiogroup" aria-label="Farba tlačidiel" style="display: flex; gap: 12px">
+              <button type="button" role="radio" aria-checked="true" aria-label="Tyrkysová" class="sw sw-on" style="background: #0f766e"></button>
+              <button type="button" role="radio" aria-checked="false" aria-label="Tmavá" class="sw" style="background: #0c3b3c"></button>
+              <button type="button" role="radio" aria-checked="false" aria-label="Svetlá tyrkysová" class="sw" style="background: #0d7f81"></button>
+            </div>
+          </div>
+          <div>
+            <p class="lbl">Odosielateľ</p>
+            <div style="display: flex; flex-direction: column; gap: 10px">
+              <label class="field ro"><span>Adresa odosielateľa</span><input value="info@mail.adosalma.sk" readonly></label>
+              <label class="field"><span>Meno odosielateľa</span><input value="{Meno používateľa} | Alma"></label>
+              <p style="margin: 0; font-size: 12px; line-height: 17px; color: #48625f">Zákazník uvidí „Peter Kováč | Alma“. Odpovede prídu do Alma Intra k zákazníkovi a kópia odosielateľovi.</p>
+            </div>
+          </div>
+          <div>
+            <p class="lbl">Pätička</p>
+            <div style="display: flex; flex-direction: column; gap: 10px">
+              <label class="field"><span>Obchodné meno a adresa</span><input placeholder="[Obchodné meno a adresa firmy]"></label>
+              <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+                <label class="field"><span>IČO</span><input placeholder="[IČO]"></label>
+                <label class="field"><span>Web</span><input value="adosalma.sk"></label>
+              </div>
+              <label class="field"><span>Kontaktný e-mail</span><input value="info@adosalma.sk"></label>
+            </div>
+          </div>
+        </form>
+        <section style="flex: 999 1 600px; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 12px">
+          <p style="margin: 0; align-self: stretch; font-size: 13px; color: #48625f">Náhľad e-mailu so šablónou „Cenová ponuka 2027“ pre Mgr. Evu Tóthovú</p>
+          <dc-import name="EmailCanvas" mode="filled" hint-size="600px,1000px"></dc-import>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

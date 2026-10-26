@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>Nový e-mail, adresáti</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif;color:#152b2a;-webkit-font-smoothing:antialiased}
+a{color:#0a6466;text-decoration:none}a:hover{color:#0c3b3c;text-decoration:underline}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none;height:40px;padding:0 16px;font-size:14px}
+.btn:hover{text-decoration:none}
+.btn-primary{background:linear-gradient(180deg,#139698 0%,#0b6e70 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 2px rgba(12,59,60,.06),0 4px 12px rgba(12,59,60,.07)}
+.btn-primary:hover{color:#fff}
+.btn-secondary{background:#e3f3f2;color:#0a6466}
+.btn-ghost{background:transparent;color:#0a6466}
+.card{border:1px solid #dfe8e6;border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(12,59,60,.08),0 8px 22px rgba(12,59,60,.08)}
+.steps{display:flex;flex-wrap:wrap;gap:6px 22px;margin:0;padding:0;list-style:none}
+.st{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#48625f}
+.st i{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-size:12px;font-weight:700;background:#dde6e3}
+.st-on{color:#0a6466}.st-on i{background:#0f8b8d;color:#fff}
+.st-done{color:#16a34a}.st-done i{background:#eaf5e6}
+.seg{display:inline-flex;flex-wrap:wrap;padding:3px;border-radius:10px;background:#dde6e3;gap:2px}
+.seg button{height:30px;padding:0 12px;border:0;border-radius:8px;background:transparent;font:inherit;font-size:13px;font-weight:600;color:#48625f;cursor:pointer}
+.seg .on{background:#fff;color:#152b2a;box-shadow:0 1px 2px rgba(12,59,60,.12)}
+.rcp{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;padding:16px 20px;border-top:1px solid #dfe8e6}
+.who{display:inline-flex;align-items:center;gap:8px;min-height:34px;padding:4px 12px 4px 8px;border:1px solid #d6e1de;border-radius:10px;font-size:13px;background:#fff}
+.who-on{border-color:#0f8b8d;background:#f0f8f7}
+.who-off{background:#f7faf9;color:#6f8784}
+.cb{width:16px;height:16px;accent-color:#0f8b8d;margin:0}
+.badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.b-neutral{background:#dde6e3;color:#48625f}.b-warning{background:#fcf0de;color:#b45309}.b-danger{background:#fce8e8;color:#dc2626}.b-info{background:#e9eef6;color:#334e7b}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 1000px; background: #eaf0ee">
+  <div style="flex: 0 0 232px; background: #0c3b3c">
+    <dc-import name="Sidebar" active="emails" hint-size="232px,900px"></dc-import>
+  </div>
+  <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 14px 28px; box-sizing: border-box; background: rgba(255,255,255,0.8); border-bottom: 1px solid #d6e1de">
+      <div style="flex: 0 0 auto">
+        <h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em">Nový e-mail</h1>
+        <p style="margin: 0; font-size: 13px; color: #48625f">Koncept sa ukladá priebežne · 14:02</p>
+      </div>
+      <ol class="steps" aria-label="Kroky" style="flex: 1 1 auto; justify-content: center">
+        <li class="st st-on" aria-current="step"><i>1</i>Adresáti</li>
+        <li class="st"><i>2</i>Šablóna</li>
+        <li class="st"><i>3</i>Obsah</li>
+        <li class="st"><i>4</i>Náhľad</li>
+        <li class="st"><i>5</i>Odoslanie</li>
+      </ol>
+      <button type="button" class="btn btn-ghost">Zrušiť koncept</button>
+    </header>
+
+    <div style="flex: 1; padding: 24px 28px; max-width: 1180px; box-sizing: border-box; width: 100%">
+      <section class="card" style="overflow: hidden">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 20px">
+          <div style="flex: 1 1 280px">
+            <h2 style="margin: 0; font-size: 17px; font-weight: 600">Komu e-mail pôjde</h2>
+            <p style="margin: 2px 0 0; font-size: 13px; color: #48625f">5 zákazníkov zo zoznamu Zákazníci. Každý adresát dostane vlastný e-mail.</p>
+          </div>
+          <div class="seg" role="radiogroup" aria-label="Ktoré kontakty">
+            <button type="button" role="radio" aria-checked="false">Len hlavný kontakt</button>
+            <button type="button" role="radio" aria-checked="true" class="on">Vybrané kontakty</button>
+            <button type="button" role="radio" aria-checked="false">Všetky kontakty</button>
+          </div>
+          <button type="button" class="btn btn-secondary">+ Pridať zákazníkov</button>
+        </div>
+
+        <div class="rcp">
+          <div style="flex: 0 0 260px"><p style="margin: 0; font-weight: 600">ADOS Harmónia, s.r.o.</p><p style="margin: 0; font-size: 12px; color: #48625f">Košice · Zákazník</p></div>
+          <div style="flex: 1 1 400px; display: flex; flex-wrap: wrap; gap: 8px">
+            <label class="who who-on"><input type="checkbox" class="cb" checked>Mgr. Eva Tóthová <span class="badge b-info">hlavný</span></label>
+            <label class="who who-on"><input type="checkbox" class="cb" checked>Bc. Marek Lukáč</label>
+            <label class="who who-off"><input type="checkbox" class="cb" disabled>Jana Pavlíková <span class="badge b-neutral">odhlásená</span></label>
+          </div>
+          <button type="button" aria-label="Odobrať zákazníka" style="border: 0; background: transparent; color: #48625f; cursor: pointer; padding: 6px"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+        </div>
+        <div class="rcp">
+          <div style="flex: 0 0 260px"><p style="margin: 0; font-weight: 600">Domáca ošetrovateľská starostlivosť Lipa</p><p style="margin: 0; font-size: 12px; color: #48625f">Prešov · Má záujem</p></div>
+          <div style="flex: 1 1 400px; display: flex; flex-wrap: wrap; gap: 8px">
+            <label class="who who-on"><input type="checkbox" class="cb" checked>Bc. Zuzana Mikulová <span class="badge b-info">hlavný</span></label>
+          </div>
+          <button type="button" aria-label="Odobrať zákazníka" style="border: 0; background: transparent; color: #48625f; cursor: pointer; padding: 6px"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+        </div>
+        <div class="rcp">
+          <div style="flex: 0 0 260px"><p style="margin: 0; font-weight: 600">ADOS Medicare Žilina, s.r.o.</p><p style="margin: 0; font-size: 12px; color: #48625f">Žilina · Zákazník</p></div>
+          <div style="flex: 1 1 400px; display: flex; flex-wrap: wrap; gap: 8px">
+            <label class="who who-on"><input type="checkbox" class="cb" checked>Mgr. Ivana Kubíková <span class="badge b-info">hlavný</span></label>
+            <label class="who"><input type="checkbox" class="cb">Ing. Pavol Ďurica</label>
+          </div>
+          <button type="button" aria-label="Odobrať zákazníka" style="border: 0; background: transparent; color: #48625f; cursor: pointer; padding: 6px"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+        </div>
+        <div class="rcp">
+          <div style="flex: 0 0 260px"><p style="margin: 0; font-weight: 600">Mária Kováčová</p><p style="margin: 0; font-size: 12px; color: #48625f">Trnava · Fyzická osoba</p></div>
+          <div style="flex: 1 1 400px; display: flex; flex-wrap: wrap; gap: 8px">
+            <label class="who who-on"><input type="checkbox" class="cb" checked>Mária Kováčová · maria.kovacova@gmail.com</label>
+          </div>
+          <button type="button" aria-label="Odobrať zákazníka" style="border: 0; background: transparent; color: #48625f; cursor: pointer; padding: 6px"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+        </div>
+        <div class="rcp" style="background: #fffaf2">
+          <div style="flex: 0 0 260px"><p style="margin: 0; font-weight: 600">ADOS Večernica</p><p style="margin: 0; font-size: 12px; color: #48625f">Martin · Potenciálny</p></div>
+          <div style="flex: 1 1 400px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px">
+            <span class="badge b-warning">Bez kontaktu s e-mailom</span>
+            <span style="color: #48625f">Vynechá sa.</span>
+            <a href="ContactDialog.dc.html" style="font-weight: 600">Pridať kontakt</a>
+          </div>
+          <button type="button" aria-label="Odobrať zákazníka" style="border: 0; background: transparent; color: #48625f; cursor: pointer; padding: 6px"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+        </div>
+      </section>
+    </div>
+
+    <footer style="position: sticky; bottom: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 14px 28px; background: rgba(255,255,255,0.94); border-top: 1px solid #d6e1de; box-shadow: 0 -6px 18px rgba(12,43,44,0.07)">
+      <p style="margin: 0 auto 0 0; font-size: 14px"><strong>5 adresátov</strong> <span style="color: #48625f">· 2 vynechaní (1 odhlásená, 1 bez e-mailu)</span></p>
+      <a href="Templates.dc.html" class="btn btn-ghost">Späť</a>
+      <a href="SendContent.dc.html" class="btn btn-primary">Pokračovať na šablónu</a>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

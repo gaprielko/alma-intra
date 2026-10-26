@@ -1,0 +1,809 @@
+@import 'tailwindcss';
+
+/*
+ * Figtree (ALMA-255), served with the app rather than from Google Fonts, so a page load tells no
+ * third party who opened it. One variable file per subset covers 400–700; latin-ext carries the
+ * Slovak letters (č, ď, ľ, ň, ŕ, š, ť, ž). Files from Google Fonts, SIL Open Font License 1.1
+ * (assets/fonts/OFL.txt).
+ */
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./assets/fonts/figtree-latin-ext.woff2') format('woff2');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./assets/fonts/figtree-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/*
+ * `wide:` (ALMA-285): the content area beside the sidebar is at least `WIDE_CONTENT_PX` wide.
+ * The shell measures it and sets `data-content="wide"` on its wrapper (lib/content-width.ts),
+ * so a 1600 px window with the sidebar open and a 1440 px one with it folded each get the
+ * layout their content area fits. A CSS container query would do the same, but a query
+ * container contains layout, and the planning boards' drag overlay (`position: fixed`) would
+ * then be placed against the content area instead of the window. The narrow layout is the
+ * default, also before the first measurement.
+ */
+@custom-variant wide (&:where([data-content='wide'] *));
+
+/* Tokens mirror packages/shared/src/tokens.ts (values from Figma "V2 – MVP") — keep in sync until we generate this file. */
+@theme {
+  --color-primary: #0f8b8d;
+  --color-primary-foreground: #ffffff;
+  --color-primary-soft: #e3f3f2;
+  /* Figma „accent/text": teal text on `primary-soft` and the colour of a text link. */
+  --color-primary-text: #0a6466;
+  /* ALMA-255: neutrals retinted towards the teal (Figma „Farby“, 1. 10. 2026). */
+  --color-ink: #0c3b3c;
+  /*
+   * ALMA-353: the web's canvas, borders and grey text are a step darker than the phone's
+   * (`tokens.web.colors`), so cards and meta text hold on a washed-out projector.
+   */
+  --color-surface: #eaf0ee;
+  --color-subtle: #f7faf9;
+  --color-border: #d6e1de;
+  --color-border-subtle: #dfe8e6;
+  --color-foreground: #152b2a;
+  --color-muted: #48625f;
+  /* Non-essential meta text only: it does not reach 4.5:1 on white. */
+  --color-tertiary: #6f8784;
+  /* The web's sidebar (ALMA-255): dark teal, its own text and active colours. */
+  --color-sidebar: #0c3b3c;
+  --color-sidebar-border: #1e4e4f;
+  --color-sidebar-text: #a9c9c7;
+  --color-sidebar-text-active: #ffffff;
+  --color-sidebar-icon-active: #5fd0c9;
+  --color-success: #16a34a;
+  --color-success-soft: #eaf5e6;
+  --color-warning: #b45309;
+  --color-warning-soft: #fcf0de;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fce8e8;
+  --color-info: #334e7b;
+  --color-info-soft: #e9eef6;
+  --font-sans: 'Figtree', ui-sans-serif, system-ui, sans-serif;
+  /* Web-only greys for scrollbars (ALMA-170): a thumb that is seen without being looked at. */
+  --color-scrollbar: #c5d3d1;
+  --color-scrollbar-hover: #a6b8b6;
+
+  /*
+   * ALMA-268 (Figma „Premium systém · Web"): `tokens.web` of packages/shared, mirrored. The dark
+   * backdrop, the hover tint of a row, the track of a skeleton and a segmented control.
+   */
+  --color-dark: #0c2b2c;
+  --color-hover: #f0f8f7;
+  /* ALMA-353: darker with the canvas, so a skeleton or a badge on it still shows. */
+  --color-track: #dde6e3;
+  --color-trust: #7fb3b0;
+  /* W9: Elevation/1 Rest, /2 Raised, /3 Floating, a button, and the light edge on top. */
+  --shadow-rest: 0 1px 2px rgba(12, 59, 60, 0.08), 0 8px 22px rgba(12, 59, 60, 0.08);
+  --shadow-raised: 0 2px 4px rgba(12, 59, 60, 0.08), 0 12px 28px rgba(12, 59, 60, 0.12);
+  --shadow-floating: 0 1px 3px rgba(12, 59, 60, 0.06), 0 8px 24px rgba(12, 59, 60, 0.12);
+  --shadow-button: 0 1px 2px rgba(12, 59, 60, 0.06), 0 4px 12px rgba(12, 59, 60, 0.07);
+  --shadow-header: 0 4px 14px rgba(12, 43, 44, 0.06);
+  --shadow-bar: 0 -6px 18px rgba(12, 43, 44, 0.07);
+  --shadow-edge: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  /* W18: the one easing of the web's motion, Figma's `out`. */
+  --ease-out-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* W6: the gradients of the primary and the danger button, top to bottom. */
+  --background-image-primary: linear-gradient(180deg, #139698 0%, #0b6e70 100%);
+  --background-image-danger: linear-gradient(180deg, #d33a3f 0%, #b0232a 100%);
+  /* W6, W18: a press, a chip, a menu, a fade, a slide, an entrance. */
+  --animate-fade-in: fade-in 150ms var(--ease-out-soft);
+  --animate-scale-in: scale-in 150ms var(--ease-out-soft);
+  --animate-menu-in: menu-in 120ms var(--ease-out-soft);
+  --animate-toast-in: toast-in 200ms var(--ease-out-soft);
+  --animate-toast-out: toast-out 150ms ease-in forwards;
+  --animate-shimmer: shimmer 1.4s linear infinite;
+  --animate-skeleton-in: fade-in 150ms ease-out 200ms both;
+  --animate-check-draw: check-draw 150ms var(--ease-out-soft) forwards;
+  --animate-flash-success: flash-success 300ms ease-out;
+  --animate-approved-row: approved-row 700ms ease-in forwards;
+  --animate-breathe: breathe 12s ease-in-out infinite;
+  /* ALMA-288 item 33: an empty or error state's illustration comes in once, then rests. */
+  --animate-illustration-in: illustration-in 700ms var(--ease-out-soft) both;
+  /* ALMA-354: the row a list was left from, lit once on the way back. */
+  --animate-row-return: row-return 1800ms ease-out;
+  /* ALMA-359: a nurse's pin when she just finished a visit. */
+  --animate-pin-pop: pin-pop 700ms var(--ease-out-soft);
+}
+
+:root {
+  /*
+   * ALMA-353: the sidebar's fill, lighter at the top and darker at the bottom, with a soft glow
+   * of the active colour behind the brand; and the active item, the same glow running out to the
+   * right. Plain variables, not theme ones: `bg-(image:--sidebar-fill)` keeps them apart from the
+   * `bg-sidebar` colour for tailwind-merge.
+   */
+  --sidebar-fill:
+    radial-gradient(140% 55% at 0% 0%, rgba(95, 208, 201, 0.2) 0%, rgba(95, 208, 201, 0) 60%),
+    radial-gradient(120% 40% at 100% 100%, rgba(95, 208, 201, 0.08) 0%, rgba(95, 208, 201, 0) 65%),
+    linear-gradient(180deg, #104b4c 0%, #0c3b3c 48%, #082c2d 100%);
+  --sidebar-item: linear-gradient(
+    90deg,
+    rgba(95, 208, 201, 0.22) 0%,
+    rgba(95, 208, 201, 0.06) 100%
+  );
+}
+
+body {
+  @apply bg-surface text-foreground antialiased;
+}
+
+/*
+ * W9 (ALMA-268): a card at rest and the same card raised under the pointer; a floating layer.
+ * Utilities so that a screen says `shadow-rest` the way it says `rounded-2xl`.
+ */
+@utility shadow-edge-rest {
+  box-shadow: var(--shadow-edge), var(--shadow-rest);
+}
+
+@utility shadow-edge-button {
+  box-shadow: var(--shadow-edge), var(--shadow-button);
+}
+
+/*
+ * W7 (ALMA-268): the label sits inside the field, above the value, as on the phone. Any wrapper
+ * whose first child is a `<label>` and whose next child is a field (`data-input`) draws it so:
+ * `<FormItem>` and the plain `<div><Label/><Input/></div>` of the dialogs alike, with no change
+ * to how a label names its control. Not a label laid out as a row (`flex`: it wraps a checkbox),
+ * and not a wrapper laid out as a row or a grid, where the label stands beside its field. (A
+ * `:has()` cannot nest, so the classes stand in for „contains a checkbox".) The field grows
+ * to 56 px and makes room for the label; a textarea keeps its height and takes the room on top.
+ *
+ * Outside every layer on purpose: the field's own utilities (`h-12`, `py-2.5`, `text-sm`) must
+ * lose to these, and an unlayered rule beats a layered one whatever its specificity.
+ */
+.field-inside,
+:not(.flex, .inline-flex, .grid, .contents):has(
+  > label:first-child:not(.flex, .inline-flex) + [data-input]
+) {
+  position: relative;
+}
+
+.field-inside > label,
+:not(.flex, .inline-flex, .grid, .contents):has(
+    > label:first-child:not(.flex, .inline-flex) + [data-input]
+  )
+  > label:first-child {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.8125rem;
+  z-index: 1;
+  max-width: calc(100% - 1.625rem);
+  margin: 0;
+  overflow: hidden;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 500;
+  color: var(--color-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  transition: color 150ms;
+}
+
+.field-inside > [data-input],
+:not(.flex, .inline-flex, .grid, .contents):has(
+    > label:first-child:not(.flex, .inline-flex) + [data-input]
+  )
+  > label:first-child
+  + [data-input] {
+  margin-top: 0;
+}
+
+.field-inside > input[data-input],
+.field-inside > button[data-input],
+.field-inside > [data-input] > input,
+.field-inside > [data-input] > button[data-input],
+:not(.flex, .inline-flex, .grid, .contents):has(
+    > label:first-child:not(.flex, .inline-flex) + [data-input]
+  )
+  > label:first-child
+  + :is(input[data-input], button[data-input]),
+:not(.flex, .inline-flex, .grid, .contents):has(
+    > label:first-child:not(.flex, .inline-flex) + [data-input]
+  )
+  > label:first-child
+  + [data-input]
+  > :is(input, button[data-input]) {
+  height: 3.5rem;
+  padding-top: 1.4375rem;
+  padding-bottom: 0.4375rem;
+  font-size: 0.9375rem;
+}
+
+.field-inside > textarea[data-input],
+:not(.flex, .inline-flex, .grid, .contents):has(
+    > label:first-child:not(.flex, .inline-flex) + [data-input]
+  )
+  > label:first-child
+  + textarea[data-input] {
+  /* The inputs' 23 px: the first line of text stands where an input's value does (ALMA-285). */
+  padding-top: 1.4375rem;
+}
+
+/*
+ * A number field: the box is 56 like its neighbours and its value stands under the label on the
+ * left, on the same line as any field's (36 of 56); the − / + buttons stay centred in the box.
+ * After the rule above and as specific as it, so it wins for the text field inside the box.
+ */
+.field-inside > [data-input='number'],
+:not(.flex, .inline-flex, .grid, .contents):has(
+    > label:first-child:not(.flex, .inline-flex) + [data-input]
+  )
+  > label:first-child
+  + [data-input='number'] {
+  height: 3.5rem;
+}
+
+.field-inside > [data-input='number'] > :is(input, button[data-input]),
+:not(.flex, .inline-flex, .grid, .contents):has(
+    > label:first-child:not(.flex, .inline-flex) + [data-input]
+  )
+  > label:first-child
+  + [data-input='number']
+  > :is(input, button[data-input]) {
+  height: 100%;
+  padding-top: 1.375rem;
+  padding-bottom: 0.375rem;
+}
+
+/*
+ * What stands at either end of a field (ALMA-285 item 2): the calendar and clock buttons, a unit
+ * („min“, „€/km“), the search icon, each marked `data-leading` / `data-trailing`. Centred on the
+ * field (`top-1/2`); with the label inside they follow the value 8 px down, onto its line (36 of
+ * 56), where the select's chevron already sits.
+ */
+.field-inside > [data-input] > :is([data-leading], [data-trailing]),
+:not(.flex, .inline-flex, .grid, .contents):has(
+    > label:first-child:not(.flex, .inline-flex) + [data-input]
+  )
+  > label:first-child
+  + [data-input]
+  > :is([data-leading], [data-trailing]) {
+  top: calc(50% + 0.5rem);
+}
+
+/*
+ * A field's tag follows its label (ALMA-288 #29, `FieldTagSlot`): where a leading icon moves the
+ * label, the tag moves with it.
+ */
+.field-inside:has(> [data-input] > [data-leading]) > [data-field-tag],
+:not(.flex, .inline-flex, .grid, .contents):has(
+    > label:first-child:not(.flex, .inline-flex) + [data-input] > [data-leading]
+  )
+  > [data-field-tag] {
+  left: 2.5625rem;
+  max-width: calc(100% - 3.375rem);
+}
+
+/* A field that starts with an icon (a search): its label starts where its value does. */
+.field-inside:has(> [data-input] > [data-leading]) > label,
+:not(.flex, .inline-flex, .grid, .contents):has(
+    > label:first-child:not(.flex, .inline-flex) + [data-input] > [data-leading]
+  )
+  > label:first-child {
+  left: 2.5625rem;
+  max-width: calc(100% - 3.375rem);
+}
+
+:has(> label:first-child:not(.flex, .inline-flex) + [data-input][aria-invalid='true'])
+  > label:first-child,
+:has(> label:first-child:not(.flex, .inline-flex) + [data-input] [aria-invalid='true'])
+  > label:first-child {
+  color: var(--color-danger);
+}
+
+:has(> label:first-child:not(.flex, .inline-flex) + [data-input]:disabled) > label:first-child,
+:has(> label:first-child:not(.flex, .inline-flex) + [data-input] input:disabled)
+  > label:first-child {
+  color: var(--color-tertiary);
+}
+
+/* W2: the header is sticky, so a jump to an anchor lands under it unless the page knows. */
+html {
+  scroll-padding-top: 5.5rem;
+}
+
+/*
+ * The browser's own UI does not belong in the app (ALMA-170, items 8, 23, 30). These rules sit in
+ * the base layer, so a component that says otherwise with a utility class still wins.
+ */
+@layer base {
+  /*
+   * Tailwind v4's preflight gives a button the arrow; everything that does something on a click
+   * shows the hand instead, once, here, rather than `cursor-pointer` on every component.
+   */
+  button,
+  [role='button'],
+  [role='tab'],
+  [role='option'],
+  [role='menuitem'],
+  [role='checkbox'],
+  [role='switch'],
+  select,
+  summary,
+  label:has(input[type='checkbox'], input[type='radio']),
+  input[type='checkbox'],
+  input[type='radio'],
+  input[type='file'] {
+    cursor: pointer;
+  }
+
+  /*
+   * Controls only: `cursor` is inherited, and a disabled fieldset (a read-only form) would spread
+   * the no-entry sign over its plain text. A label around a disabled checkbox is not clickable
+   * either.
+   */
+  button:disabled,
+  input:disabled,
+  select:disabled,
+  textarea:disabled,
+  [aria-disabled='true'],
+  label:has(input[type='checkbox']:disabled, input[type='radio']:disabled) {
+    cursor: not-allowed;
+  }
+
+  /*
+   * Focus is shown to the keyboard, not after a mouse click: no native blue outline on a clicked
+   * tab or link. The keyboard gets a soft ring in our primary. Inputs keep their own focus ring
+   * (`inputClass`), which is a utility and so wins over this.
+   */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  :focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--color-primary) 55%, transparent);
+    outline-offset: 2px;
+  }
+
+  /* The ring above is too faint on the dark sidebar (1.85:1): there it takes the active icon's
+     colour (6.65:1). */
+  [data-sidebar] :focus-visible {
+    outline-color: var(--color-sidebar-icon-active);
+  }
+
+  /* ALMA-255: one lighter stroke for every lucide icon, instead of a prop on each of them. Only
+     the default 2: an icon given its own width (the checkbox tick, 3) keeps it, since CSS would
+     otherwise beat the attribute. */
+  svg.lucide[stroke-width='2'] {
+    stroke-width: 1.75;
+  }
+
+  /* Numbers that stand in columns or say a time line up (ALMA-255). */
+  td,
+  th,
+  time {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /*
+   * One thin scrollbar everywhere: pages, dialogs, dropdowns, tables, the planning grid, the
+   * sidebar. `scrollbar-color` is the standard (Firefox, Chromium 121+); the `::-webkit-scrollbar`
+   * rules are for Safari, which does not read it.
+   */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-scrollbar) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--color-scrollbar);
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-scrollbar-hover);
+  }
+}
+
+/* A row that scrolls sideways (chips, tabs) without showing a bar: the content says it scrolls. */
+@utility scrollbar-none {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* A proposed visit is not saved yet, and says so by shivering (planning.proposal.tsx). */
+@keyframes card-shiver {
+  0%,
+  100% {
+    transform: rotate(-0.5deg) translateY(0);
+  }
+  50% {
+    transform: rotate(0.5deg) translateY(-1px);
+  }
+}
+
+/* The toast rises from the bottom (components/ui/toast.tsx, W14); motion-safe only. */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* The toast's 2 px line runs out with its lifetime (W14). */
+@keyframes toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* A dialog (W8) fades in and grows from 0.98; a menu or popover (W15) from 0.96 at its anchor. */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* The `scale` property, not `transform`: Tailwind's `-translate-x-1/2` is the `translate` property
+   and the two compose instead of fighting. */
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    scale: 0.98;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+/* A skeleton bar (W10): a lighter band passes over it every 1.4 s. */
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* A checkbox's tick is drawn in 150 ms (W18). */
+@keyframes check-draw {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* A row that was just approved lights up green for 300 ms, then folds away in 400 ms (W18). */
+@keyframes flash-success {
+  from {
+    background-color: var(--color-success-soft);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+@keyframes approved-row {
+  0%,
+  43% {
+    background-color: var(--color-success-soft);
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  100% {
+    background-color: var(--color-success-soft);
+    opacity: 0;
+    transform: scaleY(0);
+  }
+}
+
+/* ALMA-359: the pin grows a third and settles back, once. */
+@keyframes pin-pop {
+  40% {
+    scale: 1.35;
+  }
+}
+
+/* A nurse on a visit: the ring round her pin grows and fades every 1.6 s (W25). */
+@keyframes pin-pulse {
+  from {
+    opacity: 0.6;
+    scale: 1;
+  }
+  to {
+    opacity: 0;
+    scale: 1.8;
+  }
+}
+
+/* An empty state's illustration settles in once: it rises 6 px and grows from 92 % (ALMA-288). */
+@keyframes illustration-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ALMA-354: the row the user came back from, accent/soft fading out. */
+@keyframes row-return {
+  0%,
+  30% {
+    background-color: var(--color-primary-soft);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* The two dots beside an illustration drift 4 px up and back (W10, as on the phone). */
+@keyframes drift {
+  to {
+    transform: translateY(-4px);
+  }
+}
+
+/* The login panel's glow breathes (W30): 7 s, 35 → 90 → 35 % and 1 → 1.18 → 1. */
+/* A slow, shallow breath (ALMA-282): the glow barely moves, it only warms and cools. */
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.72;
+    transform: scale(1.06);
+  }
+}
+
+/* The KPI number counts up from 0 in 600 ms (W18): the number is a CSS counter the browser tweens. */
+@property --count {
+  syntax: '<integer>';
+  initial-value: 0;
+  inherits: false;
+}
+
+@keyframes count-up {
+  from {
+    --count: 0;
+  }
+}
+
+/*
+ * Every piece of motion stops for who asked the system for less of it. One rule for all of the
+ * animations above, next to the one that cancels Tailwind's transitions.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/*
+ * Paper (ALMA-117). An ADOS runs on paper more than we would like: a nurse without a signal, a
+ * head nurse who wants the week on the wall. Printing is the browser's own dialog on the screen
+ * that is already open — no second screen to keep in step with the first.
+ *
+ * `data-print="hide"` is everything that only makes sense with a pointer: navigation, filters,
+ * drag handles, buttons. `data-print="only"` is the sheet's own header, which is invisible on
+ * screen. `data-print="sheet"` is the block that carries the printed plan, and it may break over
+ * pages; `data-print="page"` starts a new one.
+ */
+@media print {
+  /*
+   * ALMA-288 #53: no page margin, so the browser has nowhere to print its own header and footer
+   * (the date, the address of the page, „1/7“). The margin is padding instead: on `main` for the
+   * first page, and on each block that starts a page of its own (`data-print="page"`, below).
+   */
+  @page {
+    margin: 0;
+  }
+
+  /* Ink is expensive and a grey background prints as grey. */
+  :root,
+  body {
+    background: #fff;
+  }
+
+  [data-print='hide'],
+  aside,
+  nav,
+  [role='status'],
+  [role='alert'],
+  /*
+   * A dialog renders through a portal, under `body` and outside `#root`, so no marker on a
+   * wrapper reaches it: an open visit dialog, a substitution, the ⌘K palette would print over
+   * the plan with a patient's name on them. Everything that is not the app itself goes.
+   */
+  body > *:not(#root) {
+    display: none !important;
+  }
+
+  [data-print='only'] {
+    display: block !important;
+  }
+
+  /* The shell is two columns on screen and one on paper. */
+  body > #root > div {
+    display: block !important;
+    padding: 0 !important;
+  }
+
+  main {
+    display: block !important;
+    padding: 10mm 12mm !important;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  /*
+   * A print of pages (the day's sheets) takes its margin from each page instead: Safari repeats
+   * padding over pages for inline boxes only, so a `main` that runs over pages would leave every
+   * page after the first at the paper's edge, where no printer prints (review of ALMA-288 E, #2).
+   */
+  main:has([data-print='page']) {
+    -webkit-box-decoration-break: slice;
+    box-decoration-break: slice;
+  }
+
+  /* ALMA-288 #53: the day's sheet, one nurse per page, ink only where it reads. */
+  .print-sheet {
+    color: #000;
+    font-size: 10pt;
+  }
+
+  .print-sheet th {
+    text-align: left;
+    font-weight: 600;
+  }
+
+  [data-print='sheet'] {
+    break-inside: auto;
+  }
+
+  /* On screen the week scrolls sideways; on paper there is nowhere to scroll to. */
+  .overflow-x-auto,
+  .overflow-auto,
+  .overflow-hidden {
+    overflow: visible !important;
+  }
+
+  /*
+   * The week's chips are cut to one line on screen, the rest in a tooltip; paper has no tooltip,
+   * so there every code and name wraps, and the grid takes the sheet's width (ALMA-285 review S2).
+   */
+  [data-print-wrap] {
+    min-width: 0 !important;
+  }
+
+  [data-print-wrap] col:first-child {
+    width: 7rem !important;
+  }
+
+  [data-print-wrap] .truncate {
+    white-space: normal !important;
+    overflow: visible !important;
+    overflow-wrap: anywhere;
+    text-overflow: clip !important;
+  }
+
+  [data-print='page'] {
+    break-before: page;
+    padding-block: 10mm;
+    /* A sheet that runs over a page keeps the margin there too, where the engine can. */
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  [data-print='page']:first-of-type {
+    break-before: auto;
+  }
+
+  /* A row that is cut in half is a row nobody can read. */
+  tr,
+  li {
+    break-inside: avoid;
+  }
+
+  /*
+   * The week (ALMA-286): a nurse's row is a whole week of visits, taller than a third of a page,
+   * so keeping rows whole put about one nurse on a sheet. Here a row may break between two visits
+   * (each chip stays whole, `print:break-inside-avoid` on the chip) and the header above repeats
+   * on every page.
+   */
+  [data-print-wrap] tbody tr {
+    break-inside: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10pt;
+  }
+
+  th,
+  td {
+    border: 1px solid #c5d3d1;
+    padding: 4px 6px;
+    vertical-align: top;
+  }
+
+  /*
+   * The annual report (ALMA-304) is one sheet drawn in ink: its table has rules between the rows
+   * and nothing else, not the grid the plan's tables print with.
+   */
+  .annual-sheet th,
+  .annual-sheet td {
+    border: 0;
+    border-bottom: 0.5pt solid #000;
+    padding: 0.6mm 2mm 0.6mm 0;
+  }
+
+  .annual-sheet table {
+    font-size: 9pt;
+  }
+}

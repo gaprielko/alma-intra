@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>Nový zákazník</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif;color:#152b2a;-webkit-font-smoothing:antialiased}
+a{color:#0a6466;text-decoration:none}a:hover{color:#0c3b3c;text-decoration:underline}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none;height:40px;padding:0 16px;font-size:14px}
+.btn:hover{text-decoration:none}
+.btn-primary{background:linear-gradient(180deg,#139698 0%,#0b6e70 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 2px rgba(12,59,60,.06),0 4px 12px rgba(12,59,60,.07)}
+.btn-secondary{background:#e3f3f2;color:#0a6466}
+.btn-ghost{background:transparent;color:#0a6466}
+.card{border:1px solid #dfe8e6;border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(12,59,60,.08),0 8px 22px rgba(12,59,60,.08)}
+.sec{display:flex;flex-wrap:wrap;gap:16px 32px;padding:24px;border-top:1px solid #dfe8e6}
+.sec:first-child{border-top:0}
+.sec-h{flex:1 1 220px;max-width:280px}
+.sec-h h2{margin:0;font-size:16px;line-height:22px;font-weight:600}
+.sec-h p{margin:4px 0 0;font-size:13px;line-height:19px;color:#48625f}
+.sec-b{flex:999 1 420px;min-width:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.s2{grid-column:span 2}.s3{grid-column:span 3}.s4{grid-column:span 4}.s6{grid-column:1/-1}
+.field{position:relative;display:block;border:1px solid #d6e1de;border-radius:12px;background:#fff;min-height:56px;box-sizing:border-box;padding:8px 14px 6px}
+.field span{display:block;font-size:12px;font-weight:500;color:#48625f;line-height:16px}
+.field input,.field select,.field textarea{display:block;width:100%;border:0;outline:0;font:inherit;font-size:15px;color:#152b2a;background:transparent;padding:2px 0 0;-webkit-appearance:none;appearance:none}
+.field select{padding-right:24px}
+.chev{position:absolute;right:14px;top:22px;pointer-events:none;color:#48625f}
+.req{color:#dc2626}
+.kind{display:flex;gap:12px;align-items:flex-start;padding:16px;border:1px solid #d6e1de;border-radius:14px;background:#fff;cursor:pointer;text-align:left;font:inherit;color:#152b2a}
+.kind-on{border:2px solid #0f8b8d;padding:15px;background:#f0f8f7}
+.kind-icon{width:40px;height:40px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.seg{display:inline-flex;padding:3px;border-radius:10px;background:#dde6e3;gap:2px}
+.seg button{height:30px;padding:0 14px;border:0;border-radius:8px;background:transparent;font:inherit;font-size:13px;font-weight:600;color:#48625f;cursor:pointer}
+.seg .on{background:#fff;color:#152b2a;box-shadow:0 1px 2px rgba(12,59,60,.12)}
+.tag{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 6px 0 9px;border-radius:6px;background:#e3f3f2;font-size:12px;font-weight:600;color:#0a6466;white-space:nowrap}
+.hint{margin:6px 2px 0;font-size:12px;line-height:17px;color:#48625f}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 1240px; background: #eaf0ee">
+  <div style="flex: 0 0 232px; background: #0c3b3c">
+    <dc-import name="Sidebar" active="customers" hint-size="232px,900px"></dc-import>
+  </div>
+  <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <header style="min-height: 72px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 28px; box-sizing: border-box; background: rgba(255,255,255,0.8); border-bottom: 1px solid #d6e1de">
+      <div style="flex: 1 1 auto; min-width: 0">
+        <a href="Customers.dc.html" style="display: inline-flex; align-items: center; gap: 2px; font-size: 13px; font-weight: 500"><svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"></path></svg>Zákazníci</a>
+        <h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em">Nový zákazník</h1>
+      </div>
+    </header>
+
+    <form style="padding: 24px 28px 24px; max-width: 1120px; box-sizing: border-box; flex: 1">
+      <div class="card">
+        <section class="sec">
+          <div class="sec-h"><h2>Druh zákazníka</h2><p>Určuje, aké údaje sa vypĺňajú. Neskôr sa nedá zmeniť.</p></div>
+          <div class="sec-b" role="radiogroup" aria-label="Druh zákazníka">
+            <button type="button" role="radio" aria-checked="true" class="kind kind-on s3">
+              <span class="kind-icon" style="background: #e3f3f2; color: #0a6466" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V7l9-4 9 4v14"></path><path d="M9 21v-6h6v6"></path><path d="M8 10h.01M12 10h.01M16 10h.01"></path></svg></span>
+              <span><span style="display: block; font-weight: 600; font-size: 15px">Organizácia</span><span style="display: block; margin-top: 2px; font-size: 13px; line-height: 18px; color: #48625f">Firma s IČO a kontaktnými osobami, napríklad ADOS.</span></span>
+            </button>
+            <button type="button" role="radio" aria-checked="false" class="kind s3">
+              <span class="kind-icon" style="background: #fbeaf0; color: #993556" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></span>
+              <span><span style="display: block; font-weight: 600; font-size: 15px">Fyzická osoba</span><span style="display: block; margin-top: 2px; font-size: 13px; line-height: 18px; color: #48625f">Súkromná osoba. Je zároveň svojím kontaktom.</span></span>
+            </button>
+          </div>
+        </section>
+
+        <section class="sec">
+          <div class="sec-h"><h2>Základné údaje</h2><p>IČO stačí zadať a ostatné údaje sa doplnia z registra.</p></div>
+          <div class="sec-b">
+            <label class="field s4"><span>Názov <span class="req">*</span></span><input value="ADOS Harmónia, s.r.o."></label>
+            <label class="field s2"><span>Typ</span><select><option>ADOS</option><option>Bez typu</option></select><svg class="chev" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></label>
+            <div class="s2">
+              <label class="field"><span>IČO</span><input value="51234567" inputmode="numeric"></label>
+              <button type="button" class="btn btn-ghost" style="height: 30px; padding: 0 6px; margin-top: 4px; font-size: 13px"><svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Dohľadať v registri</button>
+            </div>
+            <label class="field s2"><span>DIČ</span><input value="2120654321"></label>
+            <label class="field s2"><span>IČ DPH</span><input value="SK2120654321"></label>
+            <label class="field s2"><span>Web</span><input value="adosharmonia.sk"></label>
+            <label class="field s2"><span>Všeobecný e-mail</span><input type="email" value="info@adosharmonia.sk"></label>
+            <label class="field s2"><span>Telefón</span><input type="tel" value="+421 55 622 1100"></label>
+          </div>
+        </section>
+
+        <section class="sec">
+          <div class="sec-h"><h2>Adresa</h2><p>Sídlo alebo adresa prevádzky. Kraj slúži na filtrovanie.</p></div>
+          <div class="sec-b">
+            <label class="field s4"><span>Ulica a číslo</span><input value="Hlavná 112"></label>
+            <label class="field s2"><span>PSČ</span><input value="040 01"></label>
+            <label class="field s3"><span>Mesto</span><input value="Košice"></label>
+            <label class="field s3"><span>Kraj</span><select><option>Košický</option><option>Prešovský</option><option>Bratislavský</option></select><svg class="chev" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></label>
+          </div>
+        </section>
+
+        <section class="sec">
+          <div class="sec-h"><h2>Zaradenie</h2><p>Stav obchodného vzťahu, kto má zákazníka na starosti a podľa čoho ho nájdete.</p></div>
+          <div class="sec-b">
+            <label class="field s2"><span>Stav</span><select><option>Potenciálny</option><option>Oslovený</option><option>Má záujem</option><option>Zákazník</option></select><svg class="chev" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></label>
+            <label class="field s2"><span>Zodpovedá</span><select><option>Peter Kováč</option><option>Jana Horváthová</option></select><svg class="chev" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></label>
+            <label class="field s2"><span>Zdroj</span><select><option>Odporúčanie</option><option>Konferencia</option><option>Web</option></select><svg class="chev" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></label>
+            <label class="field s4"><span>Štítky</span>
+              <span style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; font-size: 15px; color: #152b2a">
+                <span class="tag">pilot 2026<svg aria-hidden="true" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></span>
+                <input placeholder="Pridať štítok" style="flex: 1; min-width: 120px; width: auto; display: inline-block">
+              </span>
+            </label>
+            <label class="field s2"><span>ID v Alma ADOS</span><input placeholder="Nepovinné"></label>
+            <label class="field s6" style="min-height: 96px"><span>Poznámka</span><textarea rows="2">Odporučila nás ADOS Medicare Žilina.</textarea></label>
+          </div>
+        </section>
+
+        <section class="sec">
+          <div class="sec-h"><h2>Prvý kontakt</h2><p>Nepovinné. Ďalšie kontakty pridáte v detaile zákazníka. Prvý kontakt bude hlavný.</p></div>
+          <div class="sec-b">
+            <label class="field s1" style="grid-column: span 1"><span>Titul</span><input value="Mgr."></label>
+            <label class="field s2"><span>Meno</span><input value="Eva"></label>
+            <label class="field s2"><span>Priezvisko</span><input value="Tóthová"></label>
+            <label class="field" style="grid-column: span 1"><span>Titul za</span><input value=""></label>
+            <label class="field s3"><span>Pozícia</span><input value="Riaditeľka"></label>
+            <div class="s3" style="display: flex; align-items: center; gap: 12px">
+              <span id="form-label" style="font-size: 13px; font-weight: 500; color: #48625f">Oslovovať</span>
+              <div class="seg" role="radiogroup" aria-labelledby="form-label"><button type="button" role="radio" aria-checked="false">pán</button><button type="button" role="radio" aria-checked="true" class="on">pani</button></div>
+            </div>
+            <label class="field s3"><span>E-mail</span><input type="email" value="eva.tothova@adosharmonia.sk"></label>
+            <label class="field s3"><span>Telefón</span><input type="tel" value="+421 905 222 314"></label>
+            <div class="s6">
+              <label class="field"><span>Oslovenie v e-mailoch</span><input value="Vážená pani riaditeľka"></label>
+              <p class="hint">Predvyplnené z pozície. Upravte ho tak, ako by ste zákazníka oslovili v liste, napríklad „Vážená pani magisterka“ alebo „Milá Eva“.</p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </form>
+
+    <footer style="position: sticky; bottom: 0; display: flex; justify-content: flex-end; gap: 8px; padding: 14px 28px; background: rgba(255,255,255,0.92); border-top: 1px solid #d6e1de; box-shadow: 0 -6px 18px rgba(12,43,44,0.07)">
+      <a href="Customers.dc.html" class="btn btn-ghost">Zrušiť</a>
+      <a href="CustomerDetail.dc.html" class="btn btn-primary">Uložiť zákazníka</a>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>Nový e-mail, obsah</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif;color:#152b2a;-webkit-font-smoothing:antialiased}
+a{color:#0a6466;text-decoration:none}a:hover{color:#0c3b3c;text-decoration:underline}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none;height:40px;padding:0 16px;font-size:14px}
+.btn:hover{text-decoration:none}
+.btn-primary{background:linear-gradient(180deg,#139698 0%,#0b6e70 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 2px rgba(12,59,60,.06),0 4px 12px rgba(12,59,60,.07)}
+.btn-primary:hover{color:#fff}
+.btn-secondary{background:#e3f3f2;color:#0a6466}
+.btn-ghost{background:transparent;color:#0a6466}
+.btn-sm{height:32px;padding:0 10px;font-size:13px}
+.card{border:1px solid #dfe8e6;border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(12,59,60,.08),0 8px 22px rgba(12,59,60,.08)}
+.steps{display:flex;flex-wrap:wrap;gap:6px 22px;margin:0;padding:0;list-style:none}
+.st{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#48625f}
+.st i{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-size:12px;font-weight:700;background:#dde6e3}
+.st-on{color:#0a6466}.st-on i{background:#0f8b8d;color:#fff}
+.st-done{color:#16a34a}.st-done i{background:#eaf5e6}
+.field{position:relative;display:block;border:1px solid #d6e1de;border-radius:12px;background:#fff;min-height:56px;box-sizing:border-box;padding:8px 14px 6px}
+.field>span{display:block;font-size:12px;font-weight:500;color:#48625f;line-height:16px}
+.field input{display:block;width:100%;border:0;outline:0;font:inherit;font-size:15px;color:#152b2a;background:transparent;padding:2px 0 0}
+.var{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;background:#e3f3f2;color:#0a6466;font-size:13px;font-weight:600;box-shadow:inset 0 0 0 1px #bfe2df;white-space:nowrap}
+.lbl{margin:0 0 10px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#6f8784}
+table{width:100%;border-collapse:collapse;font-size:14px;text-align:left}
+th{height:44px;padding:0 12px;background:#f7faf9;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#6f8784;white-space:nowrap}
+td{padding:8px 12px;border-top:1px solid #dfe8e6;vertical-align:middle}
+th:first-child,td:first-child{padding-left:20px}
+.cell{width:100%;box-sizing:border-box;height:36px;padding:0 10px;border:1px solid #d6e1de;border-radius:8px;font:inherit;font-size:14px;color:#152b2a;background:#fff}
+.cell-miss{border-color:#dc2626;background:#fffafa}
+.att{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid #dfe8e6;border-radius:10px}
+.ft{width:28px;height:28px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 1100px; background: #eaf0ee">
+  <div style="flex: 0 0 232px; background: #0c3b3c">
+    <dc-import name="Sidebar" active="emails" hint-size="232px,900px"></dc-import>
+  </div>
+  <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 14px 28px; box-sizing: border-box; background: rgba(255,255,255,0.8); border-bottom: 1px solid #d6e1de">
+      <div style="flex: 0 0 auto">
+        <h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em">Nový e-mail</h1>
+        <p style="margin: 0; font-size: 13px; color: #48625f">Šablóna Cenová ponuka 2027 · 5 adresátov</p>
+      </div>
+      <ol class="steps" aria-label="Kroky" style="flex: 1 1 auto; justify-content: center">
+        <li class="st st-done"><i>✓</i>Adresáti</li>
+        <li class="st st-done"><i>✓</i>Šablóna</li>
+        <li class="st st-on" aria-current="step"><i>3</i>Obsah</li>
+        <li class="st"><i>4</i>Náhľad</li>
+        <li class="st"><i>5</i>Odoslanie</li>
+      </ol>
+      <button type="button" class="btn btn-ghost">Zrušiť koncept</button>
+    </header>
+
+    <div style="flex: 1; padding: 24px 28px; display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; max-width: 1400px; box-sizing: border-box; width: 100%">
+      <section class="card" style="flex: 1 1 320px; max-width: 380px; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px">
+        <div>
+          <p class="lbl">Spoločné pre všetkých</p>
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <div class="field" style="min-height: 72px"><span>Predmet</span><p style="margin: 4px 0 0; font-size: 15px; line-height: 24px">Cenová ponuka Alma na rok 2027 pre <span class="var">Názov zákazníka</span></p></div>
+            <label class="field"><span>Platnosť ponuky</span><input value="30. 11. 2026"></label>
+          </div>
+        </div>
+        <div>
+          <p class="lbl">Text e-mailu</p>
+          <p style="margin: 0; font-size: 14px; line-height: 20px; color: #48625f">Text je zo šablóny. Zmena tu platí len pre tento e-mail, šablóna ostane rovnaká.</p>
+          <button type="button" class="btn btn-secondary btn-sm" style="margin-top: 10px">Upraviť text pre všetkých</button>
+        </div>
+        <div>
+          <p class="lbl">Prílohy pre všetkých</p>
+          <div class="att"><span class="ft" style="background: #fce8e8; color: #b0232a" aria-hidden="true">PDF</span><span style="flex: 1; min-width: 0; font-size: 13px; font-weight: 600">Licenčné podmienky.pdf <span style="font-weight: 500; color: #48625f">· 1,2 MB</span></span></div>
+          <a href="FilePicker.dc.html" class="btn btn-ghost btn-sm" style="margin-top: 6px; padding: 0 4px">+ Priložiť</a>
+        </div>
+      </section>
+
+      <section class="card" style="flex: 999 1 620px; min-width: 0; overflow: hidden">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 20px">
+          <div style="flex: 1 1 280px">
+            <h2 style="margin: 0; font-size: 17px; font-weight: 600">Pre každého adresáta</h2>
+            <p style="margin: 2px 0 0; font-size: 13px; color: #48625f">Oslovenie je z karty kontaktu. Polia šablóny vyplňte pre každého zvlášť.</p>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm">Vyplniť stĺpec rovnako</button>
+        </div>
+        <div style="overflow-x: auto">
+          <table>
+            <thead><tr><th>Adresát</th><th>Oslovenie</th><th style="width: 110px">Počet sestier</th><th style="width: 130px">Cena mesačne</th><th>Vlastná príloha</th></tr></thead>
+            <tbody>
+              <sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+                <tr>
+                  <td><p style="margin: 0; font-weight: 600; white-space: nowrap">{{r.name}}</p><p style="margin: 0; font-size: 12px; color: #48625f; white-space: nowrap">{{r.customer}}</p></td>
+                  <td><input class="cell" value="{{r.salutation}}" aria-label="Oslovenie pre {{r.name}}"></td>
+                  <td><input class="cell" value="{{r.nurses}}" aria-label="Počet sestier pre {{r.name}}"></td>
+                  <td><input class="{{r.priceCls}}" value="{{r.price}}" placeholder="Doplňte" aria-label="Cena mesačne pre {{r.name}}"></td>
+                  <td>
+                    <sc-if value="{{r.hasFile}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; white-space: nowrap"><span class="ft" style="background: #e6f1fb; color: #0c447c; width: 24px; height: 24px; font-size: 8px" aria-hidden="true">DOCX</span>{{r.file}}</span></sc-if>
+                    <sc-if value="{{r.noFile}}" hint-placeholder-val="{{ true }}"><a href="FilePicker.dc.html" style="font-size: 13px; font-weight: 600">+ Z priečinka zákazníka</a></sc-if>
+                  </td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin: 0; padding: 14px 20px; border-top: 1px solid #dfe8e6; font-size: 13px; color: #b0232a; display: flex; align-items: center; gap: 8px; background: #fffafa">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4M12 16h.01"></path></svg>
+          U jedného adresáta chýba cena mesačne. Bez nej sa e-mail nedá odoslať.
+        </p>
+      </section>
+    </div>
+
+    <footer style="position: sticky; bottom: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 14px 28px; background: rgba(255,255,255,0.94); border-top: 1px solid #d6e1de; box-shadow: 0 -6px 18px rgba(12,43,44,0.07)">
+      <p style="margin: 0 auto 0 0; font-size: 14px; color: #48625f">Môžete pokračovať na náhľad, chýbajúce hodnoty doplníte aj tam.</p>
+      <a href="SendRecipients.dc.html" class="btn btn-ghost">Späť</a>
+      <a href="SendPreview.dc.html" class="btn btn-primary">Pokračovať na náhľad</a>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const rows = [
+      ['Mgr. Eva Tóthová', 'ADOS Harmónia, s.r.o.', 'Vážená pani riaditeľka', '18', '1 260 €', 'Cenová ponuka Harmónia 2027.docx'],
+      ['Bc. Marek Lukáč', 'ADOS Harmónia, s.r.o.', 'Vážený pán Lukáč', '18', '1 260 €', 'Cenová ponuka Harmónia 2027.docx'],
+      ['Bc. Zuzana Mikulová', 'Domáca ošetrovateľská starostlivosť Lipa', 'Vážená pani Mikulová', '8', '', ''],
+      ['Mgr. Ivana Kubíková', 'ADOS Medicare Žilina, s.r.o.', 'Milá Ivana', '24', '1 610 €', ''],
+      ['Mária Kováčová', 'Fyzická osoba', 'Vážená pani Kováčová', '3', '290 €', '']
+    ].map((r) => ({
+      name: r[0], customer: r[1], salutation: r[2], nurses: r[3], price: r[4],
+      priceCls: r[4] === '' ? 'cell cell-miss' : 'cell',
+      file: r[5], hasFile: r[5] !== '', noFile: r[5] === ''
+    }));
+    return { rows };
+  }
+}
+</script>
+</body>
+</html>

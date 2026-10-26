@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>Nastavenie dvojstupňového overenia</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif;color:#152b2a;-webkit-font-smoothing:antialiased}
+a{color:#0a6466;text-decoration:none}a:hover{color:#0c3b3c;text-decoration:underline}
+.digit{width:48px;height:56px;box-sizing:border-box;border:1px solid #d6e1de;border-radius:12px;background:#fff;text-align:center;font:inherit;font-size:22px;font-weight:600;color:#152b2a}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;font:inherit;font-weight:600;cursor:pointer}
+.btn-primary{background:linear-gradient(180deg,#139698 0%,#0b6e70 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 2px rgba(12,59,60,.06),0 4px 12px rgba(12,59,60,.07)}
+.step{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+.step-dot{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+</style>
+</helmet>
+<div style="min-height: 900px; background: #eaf0ee; position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; padding: 40px 24px; box-sizing: border-box">
+  <div aria-hidden="true" style="position: absolute; left: 50%; top: 45%; width: 760px; height: 760px; margin: -380px 0 0 -380px; border-radius: 50%; background: radial-gradient(circle, rgba(15,139,141,0.12) 0%, rgba(15,139,141,0) 70%)"></div>
+  <div style="position: relative; display: flex; align-items: center; gap: 12px; font-size: 18px; font-weight: 600">
+    <span aria-hidden="true" style="width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(160deg, #135a5b 0%, #0a3233 100%); display: inline-flex; align-items: center; justify-content: center">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#5fd0c9" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h16A1.5 1.5 0 0 1 21.5 6v10a1.5 1.5 0 0 1-1.5 1.5h-7.5L8 21v-3.5H4A1.5 1.5 0 0 1 2.5 16V6A1.5 1.5 0 0 1 4 4.5z"></path><path d="M7.5 9.5v.6a3.4 3.4 0 0 0 3.4 3.4"></path><path d="M16.5 9.5v.6a3.4 3.4 0 0 1-3.4 3.4"></path><circle cx="12" cy="8.8" r="1.9"></circle></svg>
+    </span>
+    Alma Intra
+  </div>
+  <ol style="position: relative; margin: 32px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 28px">
+    <li class="step" style="color: #16a34a"><span class="step-dot" style="background: #eaf5e6"><svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>Heslo</li>
+    <li class="step" style="color: #0a6466"><span class="step-dot" style="background: #0f8b8d; color: #fff">2</span>Overenie v telefóne</li>
+    <li class="step" style="color: #48625f"><span class="step-dot" style="background: #dde6e3">3</span>Záložné kódy</li>
+  </ol>
+  <form style="position: relative; margin-top: 24px; width: 100%; max-width: 560px; box-sizing: border-box; border-radius: 20px; background: #fff; padding: 32px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 1px 3px rgba(12,59,60,0.06), 0 8px 24px rgba(12,59,60,0.12)">
+    <h1 style="margin: 0; font-size: 24px; line-height: 30px; font-weight: 700; letter-spacing: -0.01em">Nastavte si overenie v telefóne</h1>
+    <p style="margin: 6px 0 0; font-size: 14px; line-height: 20px; color: #48625f">Dvojstupňové overenie je v Alma Intra povinné. Pri každom prihlásení na novom zariadení zadáte okrem hesla aj kód z telefónu.</p>
+    <div style="margin-top: 24px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+      <div role="img" aria-label="QR kód na pridanie účtu do aplikácie" style="flex: 0 0 168px; height: 168px; border: 1px solid #dfe8e6; border-radius: 14px; padding: 12px; box-sizing: border-box; background: #fff">
+        <svg viewBox="0 0 21 21" width="142" height="142" shape-rendering="crispEdges" aria-hidden="true"><path fill="#152b2a" d="M0 0h7v7H0zM1 1v5h5V1zM2 2h3v3H2zM14 0h7v7h-7zM15 1v5h5V1zM16 2h3v3h-3zM0 14h7v7H0zM1 15v5h5v-5zM2 16h3v3H2zM8 0h1v1H8zM10 0h2v1h-2zM9 2h2v1H9zM8 4h1v2H8zM11 4h2v1h-2zM10 6h1v1h-1zM12 6h1v2h-1zM0 8h2v1H0zM3 8h1v1H3zM5 8h3v1H5zM9 8h2v2H9zM14 8h1v1h-1zM16 8h3v1h-3zM20 8h1v2h-1zM1 10h2v1H1zM4 10h1v2H4zM6 10h2v1H6zM12 10h3v1h-3zM17 10h2v2h-2zM0 12h1v1H0zM2 12h1v1H2zM7 12h2v1H7zM10 12h1v2h-1zM13 12h2v1h-2zM19 12h2v1h-2zM8 14h2v1H8zM12 14h1v2h-1zM14 14h3v1h-3zM18 14h1v1h-1zM9 16h2v1H9zM14 16h1v2h-1zM16 16h2v1h-2zM20 16h1v2h-1zM8 18h1v3H8zM10 18h3v1h-3zM16 18h3v1h-3zM11 20h2v1h-2zM14 20h2v1h-2zM18 20h3v1h-3z"></path></svg>
+      </div>
+      <ol style="flex: 1 1 260px; margin: 0; padding: 0 0 0 18px; font-size: 14px; line-height: 21px; display: flex; flex-direction: column; gap: 10px">
+        <li>Otvorte aplikáciu na overovanie (Google Authenticator, Microsoft Authenticator alebo 1Password).</li>
+        <li>Naskenujte QR kód. Ak sa nedá naskenovať, zadajte kľúč ručne:
+          <code style="display: inline-block; margin-top: 6px; padding: 4px 8px; border-radius: 8px; background: #f7faf9; border: 1px solid #dfe8e6; font-size: 13px; letter-spacing: 0.06em">JBSW Y3DP EHPK 3PXP</code>
+        </li>
+        <li>Zadajte 6-miestny kód, ktorý aplikácia zobrazí.</li>
+      </ol>
+    </div>
+    <fieldset style="margin: 24px 0 0; padding: 0; border: 0">
+      <legend style="font-size: 13px; font-weight: 600; color: #48625f; margin-bottom: 8px">Kód z aplikácie</legend>
+      <div style="display: flex; gap: 8px">
+        <input class="digit" aria-label="Číslica 1" value="" maxlength="1">
+        <input class="digit" aria-label="Číslica 2" value="" maxlength="1">
+        <input class="digit" aria-label="Číslica 3" value="" maxlength="1">
+        <input class="digit" aria-label="Číslica 4" value="" maxlength="1">
+        <input class="digit" aria-label="Číslica 5" value="" maxlength="1">
+        <input class="digit" aria-label="Číslica 6" value="" maxlength="1">
+      </div>
+    </fieldset>
+    <div style="margin-top: 28px; display: flex; justify-content: flex-end">
+      <button type="submit" class="btn btn-primary" style="height: 44px; padding: 0 22px; font-size: 15px">Pokračovať</button>
+    </div>
+  </form>
+  <p style="position: relative; margin: 20px 0 0; max-width: 520px; text-align: center; font-size: 13px; line-height: 19px; color: #48625f">Prišli ste o telefón? Požiadajte kolegu, aby vám v Nastaveniach obnovil dvojstupňové overenie.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>Priradiť e-mail zákazníkovi</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif;color:#152b2a;-webkit-font-smoothing:antialiased}
+a{color:#0a6466;text-decoration:none}a:hover{color:#0c3b3c;text-decoration:underline}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none;height:40px;padding:0 16px;font-size:14px}
+.btn-primary{background:linear-gradient(180deg,#139698 0%,#0b6e70 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 2px rgba(12,59,60,.06),0 4px 12px rgba(12,59,60,.07)}
+.btn-secondary{background:#e3f3f2;color:#0a6466}
+.btn-ghost{background:transparent;color:#0a6466}
+.btn-sm{height:36px;padding:0 12px;font-size:13px}
+.skel{background:#dde6e3;border-radius:8px}
+.opt{display:flex;gap:12px;align-items:flex-start;padding:14px;border:1px solid #d6e1de;border-radius:12px;cursor:pointer}
+.opt-on{border:2px solid #0f8b8d;padding:13px;background:#f0f8f7}
+.field{position:relative;display:block;border:1px solid #d6e1de;border-radius:10px;background:#fff;box-sizing:border-box;padding:6px 12px 4px;min-height:48px}
+.field>span{display:block;font-size:11px;font-weight:500;color:#48625f}
+.field input{display:block;width:100%;border:0;outline:0;font:inherit;font-size:14px;color:#152b2a;background:transparent;padding:0}
+.seg{display:inline-flex;padding:3px;border-radius:10px;background:#dde6e3;gap:2px}
+.seg button{height:30px;padding:0 12px;border:0;border-radius:8px;background:transparent;font:inherit;font-size:13px;font-weight:600;color:#48625f;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.seg .on{background:#fff;color:#152b2a;box-shadow:0 1px 2px rgba(12,59,60,.12)}
+.select{display:flex;align-items:center;justify-content:space-between;width:100%;border:1px solid #d6e1de;border-radius:10px;background:#fff;box-sizing:border-box;padding:6px 12px 4px;min-height:48px;font:inherit;text-align:left;cursor:pointer;color:#152b2a}
+.select-on{border:2px solid #0f8b8d;padding:5px 11px 3px}
+.menu{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:5;padding:6px;border:1px solid #dfe8e6;border-radius:12px;background:#fff;box-shadow:0 1px 3px rgba(12,59,60,.06),0 12px 32px rgba(12,59,60,.16)}
+.menu button{display:flex;width:100%;align-items:center;gap:8px;height:36px;padding:0 10px;border:0;border-radius:8px;background:transparent;font:inherit;font-size:14px;color:#152b2a;cursor:pointer;text-align:left}
+.menu button:hover{background:#f0f8f7}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 960px; background: #eaf0ee; position: relative">
+  <div style="flex: 0 0 232px; background: #0c3b3c">
+    <dc-import name="Sidebar" active="emails" hint-size="232px,900px"></dc-import>
+  </div>
+  <main aria-hidden="true" style="flex: 999 1 560px; min-width: 0; padding: 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px">
+    <div class="skel" style="width: 160px; height: 28px"></div>
+    <div style="height: 600px; border-radius: 16px; background: #fff"></div>
+  </main>
+  <div style="position: absolute; inset: 0; background: rgba(12,43,44,0.45); display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box">
+    <section role="dialog" aria-modal="true" aria-labelledby="as-title" style="width: 100%; max-width: 620px; border-radius: 20px; background: #fff; box-shadow: 0 1px 3px rgba(12,59,60,0.06), 0 24px 60px rgba(12,43,44,0.28)">
+      <header style="display: flex; align-items: flex-start; gap: 12px; padding: 24px 24px 0">
+        <div style="flex: 1">
+          <h2 id="as-title" style="margin: 0; font-size: 20px; line-height: 26px; font-weight: 700">Priradiť e-mail zákazníkovi</h2>
+          <p style="margin: 4px 0 0; font-size: 14px; color: #48625f">Odosielateľa nepoznáme. Po priradení sa e-mail zobrazí na časovej osi zákazníka.</p>
+        </div>
+        <button type="button" aria-label="Zavrieť" style="width: 36px; height: 36px; border: 0; border-radius: 10px; background: transparent; color: #48625f; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+      </header>
+      <div style="margin: 18px 24px 0; padding: 12px 14px; border-radius: 12px; background: #f7faf9; border: 1px solid #dfe8e6; font-size: 13px; line-height: 19px">
+        <p style="margin: 0"><strong>jan.novak@ados-zdravie.sk</strong> · Dnes 9:14</p>
+        <p style="margin: 2px 0 0; font-weight: 600">Dotaz na cenu pre malú agentúru</p>
+        <p style="margin: 2px 0 0; color: #48625f">Dobrý deň, kolegyňa z Harmónie mi preposlala vašu ponuku. Máme 5 sestier v Michalovciach…</p>
+      </div>
+      <form style="padding: 18px 24px 0; display: flex; flex-direction: column; gap: 10px">
+        <label class="opt"><input type="radio" name="t" style="accent-color: #0f8b8d; margin: 2px 0 0"><span style="flex: 1"><span style="display: block; font-size: 14px; font-weight: 600">Existujúci zákazník</span><span style="display: block; font-size: 13px; color: #48625f">Vyhľadajte podľa názvu, IČO alebo mena.</span></span></label>
+        <div class="opt opt-on">
+          <input type="radio" name="t" checked aria-label="Nový zákazník" style="accent-color: #0f8b8d; margin: 2px 0 0">
+          <div style="flex: 1; min-width: 0">
+            <p style="margin: 0; font-size: 14px; font-weight: 600">Nový zákazník</p>
+            <p style="margin: 0; font-size: 13px; color: #48625f">Založí sa ako potenciálny, odosielateľ bude jeho kontakt.</p>
+
+            <div style="margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+              <span id="kind-lbl" style="font-size: 13px; font-weight: 500; color: #48625f">Druh</span>
+              <div class="seg" role="radiogroup" aria-labelledby="kind-lbl">
+                <button type="button" role="radio" aria-checked="{{orgChecked}}" class="{{orgCls}}" onClick="{{pickOrg}}">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V7l9-4 9 4v14"></path><path d="M9 21v-6h6v6"></path></svg>Organizácia</button>
+                <button type="button" role="radio" aria-checked="{{personChecked}}" class="{{personCls}}" onClick="{{pickPerson}}">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Fyzická osoba</button>
+              </div>
+            </div>
+
+            <sc-if value="{{isOrg}}" hint-placeholder-val="{{ true }}">
+              <div style="margin-top: 10px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+                <label class="field" style="grid-column: 1 / -1"><span>Názov organizácie</span><input value="ADOS Zdravie Michalovce"></label>
+                <div style="grid-column: 1 / -1; position: relative">
+                  <sc-if value="{{showSelect}}" hint-placeholder-val="{{ true }}">
+                    <button type="button" class="{{selectCls}}" aria-haspopup="listbox" aria-expanded="{{menuAttr}}" onClick="{{toggleMenu}}">
+                      <span><span style="display: block; font-size: 11px; font-weight: 500; color: #48625f">Typ organizácie</span><span style="display: block; font-size: 14px">{{typeLabel}}</span></span>
+                      <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#48625f" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg>
+                    </button>
+                    <sc-if value="{{menuOpen}}" hint-placeholder-val="{{ true }}">
+                      <div class="menu" role="listbox" aria-label="Typ organizácie">
+                        <sc-for list="{{types}}" as="ty" hint-placeholder-count="2">
+                          <button type="button" role="option" aria-selected="{{ty.selectedAttr}}" onClick="{{ty.pick}}">
+                            <span style="width: 16px; display: inline-flex; color: #0f8b8d">
+                              <sc-if value="{{ty.selected}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></sc-if>
+                            </span>{{ty.label}}
+                          </button>
+                        </sc-for>
+                        <div style="height: 1px; background: #dfe8e6; margin: 6px 4px"></div>
+                        <button type="button" onClick="{{startNewType}}" style="color: #0a6466; font-weight: 600">
+                          <span style="width: 16px; display: inline-flex"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></span>Nový typ organizácie
+                        </button>
+                      </div>
+                    </sc-if>
+                  </sc-if>
+                  <sc-if value="{{creatingType}}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; gap: 8px; align-items: stretch">
+                      <label class="field" style="flex: 1; border: 2px solid #0f8b8d; padding: 5px 11px 3px"><span>Nový typ organizácie</span><input value="Sociálne zariadenie"></label>
+                      <button type="button" class="btn btn-secondary btn-sm" style="height: auto" onClick="{{saveNewType}}">Pridať typ</button>
+                      <button type="button" class="btn btn-ghost btn-sm" style="height: auto" onClick="{{cancelNewType}}">Zrušiť</button>
+                    </div>
+                    <p style="margin: 6px 2px 0; font-size: 12px; color: #48625f">Typ sa pridá do číselníka v Nastaveniach a ponúkne sa aj pri ďalších zákazníkoch.</p>
+                  </sc-if>
+                </div>
+                <label class="field"><span>Meno kontaktu</span><input value="Ján Novák"></label>
+                <label class="field"><span>Oslovenie</span><input value="Vážený pán Novák"></label>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{isPerson}}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top: 10px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+                <label class="field"><span>Meno</span><input value="Ján"></label>
+                <label class="field"><span>Priezvisko</span><input value="Novák"></label>
+                <label class="field" style="grid-column: 1 / -1"><span>Oslovenie</span><input value="Vážený pán Novák"></label>
+              </div>
+              <p style="margin: 6px 2px 0; font-size: 12px; color: #48625f">Fyzická osoba nemá typ ani ďalšie kontakty, e-mail sa uloží priamo k nej.</p>
+            </sc-if>
+          </div>
+        </div>
+      </form>
+      <footer style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 20px 24px 24px">
+        <button type="button" class="btn btn-ghost" style="color: #dc2626; margin-right: auto; padding: 0 10px">Zahodiť ako nevyžiadaný</button>
+        <button type="button" class="btn btn-ghost">Zrušiť</button>
+        <a href="Conversation.dc.html" class="btn btn-primary">Založiť a priradiť</a>
+      </footer>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":960}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    // Opens with the type list unfolded, so the canvas shows the choices and „Nový typ“.
+    this.state = { kind: 'org', menuOpen: true, creatingType: false, type: 'ADOS', types: ['ADOS', 'Bez typu'] };
+  }
+  renderVals() {
+    const s = this.state;
+    const isOrg = s.kind === 'org';
+    const types = s.types.map((t) => ({
+      label: t, selected: t === s.type, selectedAttr: t === s.type ? 'true' : 'false',
+      pick: () => this.setState({ type: t, menuOpen: false })
+    }));
+    return {
+      isOrg, isPerson: !isOrg,
+      orgCls: isOrg ? 'on' : '', personCls: isOrg ? '' : 'on',
+      orgChecked: isOrg ? 'true' : 'false', personChecked: isOrg ? 'false' : 'true',
+      pickOrg: () => this.setState({ kind: 'org' }),
+      pickPerson: () => this.setState({ kind: 'person', menuOpen: false, creatingType: false }),
+      showSelect: !s.creatingType, creatingType: s.creatingType,
+      menuOpen: s.menuOpen, menuAttr: s.menuOpen ? 'true' : 'false',
+      selectCls: s.menuOpen ? 'select select-on' : 'select',
+      typeLabel: s.type,
+      toggleMenu: () => this.setState({ menuOpen: !s.menuOpen }),
+      types,
+      startNewType: () => this.setState({ creatingType: true, menuOpen: false }),
+      saveNewType: () => this.setState({
+        creatingType: false,
+        types: s.types.indexOf('Sociálne zariadenie') >= 0 ? s.types : s.types.slice(0, 1).concat(['Sociálne zariadenie'], s.types.slice(1)),
+        type: 'Sociálne zariadenie'
+      }),
+      cancelNewType: () => this.setState({ creatingType: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

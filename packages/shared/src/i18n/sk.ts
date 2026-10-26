@@ -1,0 +1,443 @@
+/**
+ * Every UI string of Alma Intra. Slovak appears here and nowhere else in the code. Copy rules
+ * (checked by `sk.test.ts`): no two thoughts joined with a dash, ranges without spaces
+ * („8:00–9:30“), a dash alone only as the mark of an empty value, no screen or ticket codes and no
+ * notes about the project.
+ */
+
+/** Slovak plural: 1 kód, 2–4 kódy, 5 a viac kódov. */
+export const plural = (n: number, one: string, few: string, many: string) =>
+  `${n} ${n === 1 ? one : n >= 2 && n <= 4 ? few : many}`;
+
+export const sk = {
+  common: {
+    save: 'Uložiť',
+    saveChanges: 'Uložiť zmeny',
+    saving: 'Ukladám…',
+    cancel: 'Zrušiť',
+    close: 'Zavrieť',
+    back: 'Späť',
+    continue: 'Pokračovať',
+    search: 'Hľadať',
+    loading: 'Načítavam…',
+    none: '—',
+    optional: 'nepovinné',
+    copy: 'Kopírovať',
+    copied: 'Skopírované',
+    range: (from: number, to: number, total: number) => `${from}–${to} z ${total}`,
+    previousPage: 'Predchádzajúca strana',
+    nextPage: 'Ďalšia strana',
+    actions: 'Akcie',
+    today: 'Dnes',
+    yesterday: 'Včera',
+    discardChanges: {
+      title: 'Zahodiť neuložené zmeny?',
+      text: 'Zmeny na tejto stránke sa neuložia.',
+      confirm: 'Zahodiť zmeny',
+      stay: 'Zostať',
+    },
+  },
+  /** tRPC error codes → text, for errors no screen has a wording of its own for. */
+  errors: {
+    generic: 'Niečo sa pokazilo. Skúste to znova.',
+    BAD_REQUEST: 'Skontrolujte zadané údaje.',
+    FORBIDDEN: 'Na túto akciu nemáte oprávnenie.',
+    NOT_FOUND: 'Záznam sa nenašiel.',
+    TOO_MANY_REQUESTS: 'Príliš veľa pokusov. Skúste to znova neskôr.',
+    pageTitle: 'Stránku sa nepodarilo zobraziť',
+    retry: 'Skúsiť znova',
+    notFound: {
+      title: 'Stránka sa nenašla',
+      text: 'Adresa je nesprávna alebo stránka už neexistuje.',
+      home: 'Prejsť na úvod',
+    },
+  },
+  validation: {
+    required: 'Povinné pole',
+    invalid: 'Neplatná hodnota',
+    invalid_email: 'Neplatný e-mail',
+    invalid_phone: 'Neplatné telefónne číslo',
+    invalid_totp_code: 'Zadajte 6 číslic z aplikácie',
+    too_short: 'Príliš krátke',
+    too_long: 'Príliš dlhé',
+    weak_password: 'Heslo musí mať aspoň 10 znakov a jednu číslicu.',
+    password_needs_digit: 'Heslo musí obsahovať aspoň jednu číslicu.',
+    password_breached:
+      'Toto heslo sa objavilo v uniknutých databázach hesiel. Zvoľte si iné, ktoré nepoužívate nikde inde.',
+    password_mismatch: 'Heslá sa nezhodujú.',
+    email_taken: 'Používateľ s týmto e-mailom už existuje.',
+  },
+  brand: {
+    name: 'Alma Intra',
+    subtitle: 'Interný systém',
+    tagline: 'Zákazníci, komunikácia a dokumenty na jednom mieste.',
+    description:
+      'Interný systém spoločnosti Alma. Evidencia zákazníkov, e-maily zákazníkom a firemné dokumenty.',
+    badges: ['Len pre zamestnancov spoločnosti', 'Prihlásenie s dvojstupňovým overením'],
+  },
+  auth: {
+    title: 'Prihlásenie',
+    subtitle: 'Prihláste sa svojím pracovným e-mailom.',
+    email: 'E-mail',
+    password: 'Heslo',
+    login: 'Prihlásiť sa',
+    loggingIn: 'Prihlasujem…',
+    logout: 'Odhlásiť sa',
+    logoutConfirm: {
+      title: 'Odhlásiť sa?',
+      text: 'Neuložené zmeny sa stratia.',
+      confirm: 'Odhlásiť sa',
+    },
+    forgotPassword: 'Zabudli ste heslo?',
+    invalidCredentials: 'Nesprávny e-mail alebo heslo.',
+    deactivated: 'Váš prístup bol zrušený. Ak ide o omyl, obráťte sa na kolegov.',
+    genericError: 'Prihlásenie sa nepodarilo. Skúste to znova.',
+    tooManyAttempts:
+      'Príliš veľa neúspešných pokusov. Skúste to znova neskôr alebo si nastavte nové heslo cez „Zabudli ste heslo?“.',
+    loggedOutInactive: 'Boli ste odhlásení po 1 hodine nečinnosti.',
+    idleWarning: {
+      title: 'Ste stále tu?',
+      text: 'Pre nečinnosť vás o 2 minúty odhlásime. Neuložené zmeny by sa stratili.',
+      stay: 'Pokračovať v práci',
+    },
+    /** The step after a right password: a code of her authenticator. */
+    secondStep: {
+      title: 'Overenie prihlásenia',
+      subtitle: 'Zadajte 6-miestny kód z aplikácie na overovanie v telefóne.',
+      code: 'Overovací kód',
+      digit: (n: number) => `Číslica ${n}`,
+      recoverySubtitle:
+        'Zadajte jeden zo záložných kódov, ktoré ste si uložili pri nastavení. Každý platí iba raz.',
+      recoveryCode: 'Záložný kód',
+      useRecovery: 'Použiť záložný kód',
+      useApp: 'Späť na kód z aplikácie',
+      remember: 'Zapamätať toto zariadenie na 30 dní',
+      verify: 'Overiť',
+      verifying: 'Overujem…',
+      back: 'Späť na prihlásenie',
+      wrongCode: 'Kód nie je správny. Zadajte najnovší kód z aplikácie.',
+      wrongRecoveryCode: 'Záložný kód nie je správny alebo už bol použitý.',
+      expired: 'Overenie trvalo príliš dlho. Prihláste sa znova.',
+      recoveryLeft: (n: number) =>
+        `Prihlásenie záložným kódom. Zostáva ${plural(n, 'kód', 'kódy', 'kódov')}. Nový telefón si nastavte v časti Môj účet.`,
+    },
+    /** A new user right after her password, or anybody whose factor a colleague reset. */
+    enrol: {
+      title: 'Nastavte si overenie v telefóne',
+      intro:
+        'Dvojstupňové overenie je v Alma Intra povinné. Pri každom prihlásení na novom zariadení zadáte okrem hesla aj kód z telefónu.',
+      steps: ['Heslo', 'Overenie v telefóne', 'Záložné kódy'],
+      lostPhone:
+        'Prišli ste o telefón? Požiadajte kolegu, aby vám v Nastaveniach obnovil dvojstupňové overenie.',
+    },
+  },
+  secondFactor: {
+    preparing: 'Pripravujem QR kód…',
+    instructions: [
+      'Otvorte aplikáciu na overovanie (Google Authenticator, Microsoft Authenticator alebo 1Password).',
+      'Naskenujte QR kód. Ak sa nedá naskenovať, zadajte kľúč ručne:',
+      'Zadajte 6-miestny kód, ktorý aplikácia zobrazí.',
+    ],
+    qrAlt: 'QR kód na pridanie účtu do aplikácie',
+    code: 'Kód z aplikácie',
+    confirm: 'Pokračovať',
+    confirming: 'Overujem…',
+    recovery: {
+      title: 'Uložte si záložné kódy',
+      intro:
+        'Ak stratíte telefón, prihlásite sa jedným z týchto kódov. Každý platí iba raz. Uložte si ich na bezpečné miesto, napríklad do správcu hesiel. Znova ich neukážeme.',
+      copy: 'Kopírovať kódy',
+      copied: 'Kódy sú skopírované.',
+      done: 'Kódy mám uložené',
+    },
+    errors: {
+      WRONG_CODE: 'Kód nie je správny. Zadajte najnovší kód z aplikácie.',
+      WRONG_PASSWORD: 'Heslo nie je správne.',
+      TOO_MANY_REQUESTS: 'Príliš veľa pokusov. Skúste to znova neskôr.',
+      CHALLENGE_EXPIRED: 'Overenie trvalo príliš dlho. Prihláste sa znova.',
+      generic: 'Nepodarilo sa to. Skúste to znova.',
+    },
+  },
+  forgotPassword: {
+    title: 'Zabudnuté heslo',
+    intro: 'Zadajte e-mail svojho účtu. Pošleme vám odkaz na nastavenie nového hesla.',
+    email: 'E-mail',
+    submit: 'Poslať odkaz',
+    submitting: 'Odosielam…',
+    sent: {
+      title: 'Skontrolujte si e-mail',
+      body: 'Ak k tomuto e-mailu existuje účet, poslali sme naň odkaz na nastavenie nového hesla. Odkaz platí 60 minút.',
+    },
+    toLogin: 'Späť na prihlásenie',
+    error: 'Žiadosť sa nepodarilo odoslať. Skúste to znova.',
+  },
+  resetPassword: {
+    title: 'Nové heslo',
+    intro: 'Nastavte si nové heslo. Na ostatných zariadeniach vás odhlásime.',
+    password: 'Nové heslo',
+    passwordAgain: 'Heslo znova',
+    rules: 'Aspoň 10 znakov a jedna číslica.',
+    submit: 'Nastaviť heslo',
+    submitting: 'Ukladám…',
+    invalid: {
+      title: 'Odkaz už neplatí',
+      body: 'Odkaz bol už použitý, vypršal alebo ho nahradil novší. Požiadajte o nový.',
+      action: 'Požiadať o nový odkaz',
+    },
+    error: 'Heslo sa nepodarilo nastaviť. Skúste to znova.',
+    changed: {
+      title: 'Heslo je zmenené',
+      body: 'Nové heslo je nastavené. Prihláste sa ním.',
+      toLogin: 'Prejsť na prihlásenie',
+    },
+  },
+  activate: {
+    title: 'Vitajte v Alma Intra',
+    intro: (email: string) => `Nastavte si heslo pre účet ${email}.`,
+    password: 'Nové heslo',
+    passwordAgain: 'Heslo znova',
+    rules: 'Aspoň 10 znakov a jedna číslica.',
+    submit: 'Nastaviť heslo',
+    submitting: 'Ukladám…',
+    note: 'Po nastavení hesla si nastavíte overenie v telefóne.',
+    checking: 'Overujem pozvánku…',
+    invalid: {
+      title: 'Pozvánka už neplatí',
+      body: 'Odkaz bol už použitý, vypršal alebo ho nahradila novšia pozvánka. O novú pozvánku požiadajte kolegov.',
+    },
+    error: 'Heslo sa nepodarilo nastaviť. Skúste to znova.',
+  },
+  shell: {
+    nav: {
+      label: 'Hlavná navigácia',
+      overview: 'Prehľad',
+      customers: 'Zákazníci',
+      emails: 'E-maily',
+      files: 'Súbory',
+      settings: 'Nastavenia',
+      account: 'Môj účet',
+    },
+    menu: 'Menu',
+    collapseMenu: 'Zbaliť menu',
+    expandMenu: 'Rozbaliť menu',
+    search: 'Hľadať',
+    notifications: 'Upozornenia',
+    comingSoon: {
+      title: 'Pripravujeme',
+      text: 'Táto časť Alma Intra sa pripravuje.',
+    },
+  },
+  settings: {
+    title: 'Nastavenia',
+    subtitle: 'Firma, používatelia a číselníky',
+    tabs: {
+      label: 'Sekcie nastavení',
+      users: 'Používatelia',
+    },
+  },
+  users: {
+    title: 'Používatelia',
+    subtitle: 'Každý používateľ má rovnaké oprávnenia. Dvojstupňové overenie je povinné.',
+    invite: 'Pozvať používateľa',
+    chips: {
+      all: 'Všetci',
+      active: 'Aktívni',
+      invited: 'Pozvaní',
+      deactivated: 'Deaktivovaní',
+    },
+    columns: {
+      name: 'Meno',
+      email: 'E-mail',
+      status: 'Stav',
+      secondFactor: 'Dvojstupňové overenie',
+      lastLogin: 'Posledné prihlásenie',
+    },
+    status: {
+      invited: 'Pozvaný',
+      active: 'Aktívny',
+      deactivated: 'Deaktivovaný',
+    },
+    you: '(vy)',
+    secondFactorOn: 'Zapnuté',
+    secondFactorPending: 'Po aktivácii',
+    secondFactorMissing: 'Nenastavené',
+    invitedOn: (date: string) => `Pozvánka ${date}`,
+    count: (n: number) => plural(n, 'používateľ', 'používatelia', 'používateľov'),
+    empty: 'V tomto stave nie je nikto.',
+    invitationDelivery: {
+      pending: 'pozvánka sa odosiela',
+      retrying: 'pozvánka sa zatiaľ nepodarila odoslať, skúšame znova',
+      failed: 'pozvánka nedoručená',
+    },
+    actions: {
+      menu: (name: string) => `Akcie pre ${name}`,
+      edit: 'Upraviť údaje',
+      resetSecondFactor: 'Obnoviť dvojstupňové overenie',
+      deactivate: 'Deaktivovať',
+      reactivate: 'Znovu aktivovať',
+      resend: 'Poslať znova',
+      withdraw: 'Zrušiť pozvánku',
+    },
+    inviteDialog: {
+      title: 'Pozvať používateľa',
+      description:
+        'Pozvaná osoba dostane e-mail s odkazom na nastavenie hesla. Odkaz platí 72 hodín a dá sa poslať znova.',
+      name: 'Meno a priezvisko',
+      email: 'E-mail',
+      phone: 'Telefón (nepovinné)',
+      position: 'Pozícia (nepovinné)',
+      note: 'Po nastavení hesla si nový používateľ musí nastaviť aj dvojstupňové overenie. Bude mať rovnaké oprávnenia ako vy.',
+      submit: 'Odoslať pozvánku',
+      submitting: 'Odosielam…',
+      sent: (email: string) => `Pozvánka odoslaná na ${email}.`,
+    },
+    editDialog: {
+      title: 'Upraviť údaje',
+      description: 'E-mail je prihlasovacie meno a nedá sa tu zmeniť.',
+      name: 'Meno a priezvisko',
+      phone: 'Telefón (nepovinné)',
+      position: 'Pozícia (nepovinné)',
+      saved: 'Údaje sú uložené.',
+    },
+    confirm: {
+      deactivate: {
+        title: (name: string) => `Deaktivovať používateľa ${name}?`,
+        text: 'Okamžite ho odhlásime a do Alma Intra sa už neprihlási. Jeho záznamy zostanú. Prístup sa dá neskôr obnoviť.',
+        confirm: 'Deaktivovať',
+        done: 'Používateľ je deaktivovaný.',
+      },
+      reactivate: {
+        title: (name: string) => `Znovu aktivovať používateľa ${name}?`,
+        text: 'Bude sa môcť prihlásiť svojím heslom a kódom z telefónu.',
+        textInvite: 'Účet ešte nemá nastavené heslo, preto pošleme novú pozvánku.',
+        confirm: 'Aktivovať',
+        done: 'Používateľ je znovu aktívny.',
+        doneInvite: 'Pozvánka je odoslaná znova.',
+      },
+      withdraw: {
+        title: 'Zrušiť pozvánku?',
+        text: 'Odkaz v e-maile prestane platiť. Osobu môžete pozvať znova neskôr.',
+        confirm: 'Zrušiť pozvánku',
+        done: 'Pozvánka je zrušená.',
+      },
+      resetSecondFactor: {
+        title: (name: string) => `Obnoviť dvojstupňové overenie pre ${name}?`,
+        text: 'Pôvodný telefón a záložné kódy prestanú platiť a používateľa odhlásime. Pri ďalšom prihlásení si overenie nastaví na novom telefóne.',
+        confirm: 'Obnoviť overenie',
+        done: 'Overenie je obnovené. Používateľ si ho nastaví pri ďalšom prihlásení.',
+      },
+    },
+    resent: 'Pozvánka je odoslaná znova.',
+    alreadySending: 'Predchádzajúca pozvánka sa ešte odosiela, preto sa nová neposlala.',
+    errors: {
+      EMAIL_TAKEN: 'Používateľ s týmto e-mailom už existuje.',
+      SELF: 'Toto nemôžete urobiť sami sebe.',
+      LAST_ACTIVE_USER: 'Posledného aktívneho používateľa nemožno deaktivovať.',
+      NOT_INVITED: 'Používateľ už pozvánku prijal.',
+    },
+  },
+  account: {
+    title: 'Môj účet',
+    profile: {
+      title: 'Profil',
+      lead: 'Meno a kontakt sa zobrazujú kolegom a v e-mailoch zákazníkom.',
+      name: 'Meno a priezvisko',
+      email: 'E-mail na prihlásenie',
+      phone: 'Telefón',
+      position: 'Pozícia',
+      saved: 'Profil je uložený.',
+    },
+    signature: {
+      title: 'E-mailový podpis',
+      lead: 'Pripojí sa na koniec každého e-mailu, ktorý odošlete zákazníkovi.',
+      edit: 'Upraviť podpis',
+      field: 'Podpis',
+      empty: 'Podpis zatiaľ nemáte. Použije sa vaše meno a pozícia.',
+      saved: 'Podpis je uložený.',
+    },
+    security: {
+      title: 'Prihlásenie a bezpečnosť',
+      lead: 'Heslo a dvojstupňové overenie patria len vám.',
+      password: 'Heslo',
+      passwordNever: 'Heslo je nastavené',
+      changePassword: 'Zmeniť heslo',
+      secondFactor: 'Dvojstupňové overenie',
+      secondFactorOn: 'Zapnuté',
+      secondFactorDetail: (left: number) =>
+        `Aplikácia v telefóne · ${plural(left, 'záložný kód', 'záložné kódy', 'záložných kódov')} nepoužitých`,
+      newPhone: 'Nový telefón',
+      newRecoveryCodes: 'Nové záložné kódy',
+    },
+    changePasswordDialog: {
+      title: 'Zmeniť heslo',
+      description: 'Na ostatných zariadeniach vás odhlásime.',
+      current: 'Súčasné heslo',
+      new: 'Nové heslo',
+      repeat: 'Nové heslo znova',
+      rules: 'Aspoň 10 znakov a jedna číslica.',
+      submit: 'Zmeniť heslo',
+      done: 'Heslo je zmenené. Ostatné zariadenia sme odhlásili.',
+    },
+    newPhoneDialog: {
+      title: 'Nastaviť overenie na novom telefóne',
+      intro:
+        'Zadajte svoje heslo a kód z telefónu, ktorý overenie teraz používa, alebo jeden zo záložných kódov.',
+      password: 'Heslo',
+      currentCode: 'Kód z aplikácie alebo záložný kód',
+      note: 'Pôvodný telefón platí, kým nový kód nepotvrdíte.',
+      done: 'Overenie je nastavené na novom telefóne. Ostatné zariadenia sme odhlásili.',
+    },
+    recoveryDialog: {
+      title: 'Nové záložné kódy',
+      intro: 'Zadajte svoje heslo. Staré záložné kódy prestanú platiť.',
+      password: 'Heslo',
+      submit: 'Vytvoriť nové kódy',
+    },
+    sessions: {
+      title: 'Aktívne prihlásenia',
+      lead: 'Zariadenia, na ktorých ste prihlásení.',
+      thisDevice: 'toto zariadenie',
+      activeNow: 'Aktívne teraz',
+      lastActive: (when: string) => `Naposledy ${when}`,
+      endOthers: 'Odhlásiť ostatné',
+      end: 'Odhlásiť',
+      endedOthers: 'Ostatné zariadenia sme odhlásili.',
+      ended: 'Zariadenie sme odhlásili.',
+      unknownBrowser: 'Neznámy prehliadač',
+    },
+  },
+  /** The system e-mails. A name and a link, nothing else. */
+  email: {
+    greeting: 'Dobrý deň,',
+    signature: 'Alma Intra',
+    ignore: 'Ak ste o to nežiadali, tento e-mail ignorujte. Váš účet zostáva bez zmeny.',
+    linkFallback: 'Ak tlačidlo nefunguje, skopírujte tento odkaz do prehliadača:',
+    passwordReset: {
+      subject: 'Alma Intra: nastavenie nového hesla',
+      body: 'dostali sme žiadosť o nastavenie nového hesla k vášmu účtu v Alma Intra. Odkaz platí 60 minút a dá sa použiť iba raz.',
+      action: 'Nastaviť nové heslo',
+    },
+    invitation: {
+      subject: 'Pozvánka do Alma Intra',
+      body: 'boli ste pozvaní do Alma Intra, interného systému spoločnosti Alma.',
+      bodyBy: (name: string) =>
+        `${name} vám posiela pozvánku do Alma Intra, interného systému spoločnosti Alma.`,
+      secondFactor:
+        'Po nastavení hesla si nastavíte aj overenie v telefóne. Pripravte si aplikáciu na overovanie, napríklad Google Authenticator alebo Microsoft Authenticator.',
+      valid: 'Odkaz platí 72 hodín.',
+      action: 'Nastaviť heslo',
+    },
+    secondFactorChanged: {
+      subject: 'Alma Intra: zmena overenia v telefóne',
+      enabled: 'na vašom účte je odteraz nastavené overenie v telefóne.',
+      replaced:
+        'overenie na vašom účte je odteraz nastavené na novom telefóne. Pôvodný telefón a staré záložné kódy už neplatia.',
+      reset:
+        'kolega vám obnovil overenie v telefóne. Pri ďalšom prihlásení si ho nastavíte znova.',
+      action: 'Prihlásiť sa',
+      notYou: 'Ak ste túto zmenu nerobili vy, ihneď si zmeňte heslo a dajte vedieť kolegom.',
+    },
+  },
+} as const;
+
+export type Messages = typeof sk;

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>Priložiť súbory</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif;color:#152b2a;-webkit-font-smoothing:antialiased}
+a{color:#0a6466;text-decoration:none}a:hover{color:#0c3b3c;text-decoration:underline}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none;height:40px;padding:0 16px;font-size:14px}
+.btn-primary{background:linear-gradient(180deg,#139698 0%,#0b6e70 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 2px rgba(12,59,60,.06),0 4px 12px rgba(12,59,60,.07)}
+.btn-ghost{background:transparent;color:#0a6466}
+.skel{background:#dde6e3;border-radius:8px}
+.seg{display:flex;flex-wrap:wrap;padding:3px;border-radius:10px;background:#dde6e3;gap:2px}
+.seg button{height:32px;padding:0 14px;border:0;border-radius:8px;background:transparent;font:inherit;font-size:13px;font-weight:600;color:#48625f;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.seg .on{background:#fff;color:#152b2a;box-shadow:0 1px 2px rgba(12,59,60,.12)}
+.row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;cursor:pointer}
+.row:hover{background:#f0f8f7}
+.row-on{background:#f0f8f7;box-shadow:inset 0 0 0 1px #bfe2df}
+.ft{width:34px;height:34px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.cb{width:18px;height:18px;accent-color:#0f8b8d;margin:0}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 900px; background: #eaf0ee; position: relative">
+  <div style="flex: 0 0 232px; background: #0c3b3c">
+    <dc-import name="Sidebar" active="customers" hint-size="232px,900px"></dc-import>
+  </div>
+  <main aria-hidden="true" style="flex: 999 1 560px; min-width: 0; padding: 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px">
+    <div class="skel" style="width: 260px; height: 28px"></div>
+    <div style="height: 700px; border-radius: 16px; background: #fff"></div>
+  </main>
+  <div style="position: absolute; inset: 0; background: rgba(12,43,44,0.45); display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box">
+    <section role="dialog" aria-modal="true" aria-labelledby="pick-title" style="width: 100%; max-width: 640px; border-radius: 20px; background: #fff; box-shadow: 0 1px 3px rgba(12,59,60,0.06), 0 24px 60px rgba(12,43,44,0.28)">
+      <header style="display: flex; align-items: flex-start; gap: 12px; padding: 24px 24px 0">
+        <div style="flex: 1">
+          <h2 id="pick-title" style="margin: 0; font-size: 20px; line-height: 26px; font-weight: 700">Priložiť súbory</h2>
+          <p style="margin: 4px 0 0; font-size: 14px; color: #48625f">K e-mailu pre ADOS Harmónia, s.r.o.</p>
+        </div>
+        <button type="button" aria-label="Zavrieť" style="width: 36px; height: 36px; border: 0; border-radius: 10px; background: transparent; color: #48625f; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+      </header>
+      <div style="padding: 16px 24px 0; display: flex; flex-direction: column; gap: 12px">
+        <div class="seg" role="tablist" aria-label="Odkiaľ">
+          <button type="button" role="tab" aria-selected="true" class="on">Priečinok zákazníka</button>
+          <button type="button" role="tab" aria-selected="false">Firemné dokumenty</button>
+          <button type="button" role="tab" aria-selected="false"><svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m17 8-5-5-5 5M12 3v12"></path></svg>Z počítača</button>
+        </div>
+        <label style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border: 1px solid #d6e1de; border-radius: 10px">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#6f8784" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+          <span style="position: absolute; width: 1px; height: 1px; overflow: hidden">Hľadať súbor</span>
+          <input placeholder="Hľadať v priečinku zákazníka" style="flex: 1; min-width: 0; border: 0; outline: 0; font: inherit; font-size: 14px; background: transparent; color: #152b2a">
+        </label>
+      </div>
+      <div style="padding: 10px 16px 0; max-height: 380px; overflow: auto; display: flex; flex-direction: column; gap: 2px">
+        <sc-for list="{{files}}" as="f" hint-placeholder-count="6">
+          <label class="{{f.cls}}">
+            <input type="checkbox" class="cb" checked="{{f.checked}}">
+            <span class="ft" style="{{f.ftStyle}}" aria-hidden="true">{{f.ext}}</span>
+            <span style="flex: 1; min-width: 0">
+              <span style="display: block; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{f.name}}</span>
+              <span style="display: block; font-size: 12px; color: #48625f">{{f.meta}}</span>
+            </span>
+            <span style="font-size: 13px; color: #48625f; white-space: nowrap">{{f.size}}</span>
+          </label>
+        </sc-for>
+      </div>
+      <p style="margin: 12px 24px 0; font-size: 12px; line-height: 17px; color: #48625f">E-mail si zapamätá presnú verziu súboru. Keď súbor neskôr zmeníte, zákazník bude mať stále to, čo dostal. Súbory z počítača sa uložia do priečinka zákazníka.</p>
+      <footer style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 18px 24px 24px">
+        <p style="margin: 0 auto 0 0; font-size: 14px; font-weight: 600">2 vybrané · 1,3 MB z 40 MB</p>
+        <button type="button" class="btn btn-ghost">Zrušiť</button>
+        <button type="button" class="btn btn-primary">Priložiť</button>
+      </footer>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const types = { XLSX: 'background:#eaf3de;color:#3b6d11', DOCX: 'background:#e6f1fb;color:#0c447c', PDF: 'background:#fce8e8;color:#b0232a', PPTX: 'background:#faece7;color:#993c1d' };
+    const files = [
+      ['Cenová ponuka ADOS Harmónia 2027.docx', 'DOCX', 'Zmenené 26. 10. 2026 · Peter Kováč · v2', '118 kB', true],
+      ['Cenová ponuka ADOS Harmónia 2027.pdf', 'PDF', 'Zmenené 26. 10. 2026 · Peter Kováč', '242 kB', false],
+      ['Licenčná zmluva podpísaná.pdf', 'PDF', 'Zmenené 4. 4. 2026 · Jana Horváthová', '1,1 MB', false],
+      ['Prezentácia pre vedenie ADOS.pptx', 'PPTX', 'Zmenené 14. 10. 2026 · Peter Kováč · v3', '2,4 MB', false],
+      ['Zoznam sestier na školenie.xlsx', 'XLSX', 'Zmenené 2. 10. 2026 · Lucia Bartošová', '22 kB', false],
+      ['Harmonogram zaškolenia.pdf', 'PDF', 'Zmenené 20. 3. 2026 · Jana Horváthová', '1,2 MB', true]
+    ].map((f) => ({ name: f[0], ext: f[1], ftStyle: types[f[1]], meta: f[2], size: f[3], checked: f[4], cls: f[4] ? 'row row-on' : 'row' }));
+    return { files };
+  }
+}
+</script>
+</body>
+</html>

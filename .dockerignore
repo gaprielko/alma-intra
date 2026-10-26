@@ -1,0 +1,12 @@
+**/node_modules
+**/dist
+**/.turbo
+**/.tanstack
+.git
+.env
+.env.*
+!.env.example
+docs
+apps/web/e2e/.auth
+apps/web/test-results
+apps/web/playwright-report

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>Odoslaný e-mail</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif;color:#152b2a;-webkit-font-smoothing:antialiased}
+a{color:#0a6466;text-decoration:none}a:hover{color:#0c3b3c;text-decoration:underline}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none;height:40px;padding:0 16px;font-size:14px}
+.btn-secondary{background:#e3f3f2;color:#0a6466}
+.btn-ghost{background:transparent;color:#0a6466}
+.btn-sm{height:32px;padding:0 10px;font-size:13px}
+.card{border:1px solid #dfe8e6;border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(12,59,60,.08),0 8px 22px rgba(12,59,60,.08)}
+.kpi{padding:18px 20px}
+.kpi p{margin:0}
+.badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.badge i{width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block}
+.b-success{background:#eaf5e6;color:#16a34a}.b-danger{background:#fce8e8;color:#dc2626}.b-info{background:#e9eef6;color:#334e7b}.b-neutral{background:#dde6e3;color:#48625f}
+table{width:100%;border-collapse:collapse;font-size:14px;text-align:left}
+th{height:44px;padding:0 16px;background:#f7faf9;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#6f8784;white-space:nowrap}
+td{height:56px;padding:10px 16px;border-top:1px solid #dfe8e6;vertical-align:middle}
+th:first-child,td:first-child{padding-left:20px}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 1000px; background: #eaf0ee">
+  <div style="flex: 0 0 232px; background: #0c3b3c">
+    <dc-import name="Sidebar" active="emails" hint-size="232px,900px"></dc-import>
+  </div>
+  <main style="flex: 999 1 560px; min-width: 0">
+    <header style="min-height: 72px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 28px; box-sizing: border-box; background: rgba(255,255,255,0.8); border-bottom: 1px solid #d6e1de">
+      <div style="flex: 1 1 auto; min-width: 0">
+        <a href="Templates.dc.html" style="display: inline-flex; align-items: center; gap: 2px; font-size: 13px; font-weight: 500"><svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"></path></svg>Odoslané</a>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+          <h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em">Cenová ponuka Alma na rok 2027</h1>
+          <span class="badge b-success"><i></i>Odoslané</span>
+        </div>
+        <p style="margin: 0; font-size: 13px; color: #48625f">Peter Kováč · 27. 10. 2026 8:30 · šablóna Cenová ponuka 2027</p>
+      </div>
+      <button type="button" class="btn btn-secondary">Použiť znova</button>
+    </header>
+
+    <div style="padding: 24px 28px 40px; display: flex; flex-direction: column; gap: 20px; max-width: 1240px">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px">
+        <section class="card kpi"><p style="font-size: 13px; color: #48625f">Odoslané</p><p style="font-size: 30px; font-weight: 700; margin-top: 4px">5</p><p style="font-size: 12px; color: #48625f">2 vynechaní pred odoslaním</p></section>
+        <section class="card kpi"><p style="font-size: 13px; color: #48625f">Doručené</p><p style="font-size: 30px; font-weight: 700; margin-top: 4px; color: #16a34a">4</p><p style="font-size: 12px; color: #48625f">do schránky adresáta</p></section>
+        <section class="card kpi"><p style="font-size: 13px; color: #48625f">Nedoručené</p><p style="font-size: 30px; font-weight: 700; margin-top: 4px; color: #dc2626">1</p><p style="font-size: 12px; color: #48625f">adresa neexistuje</p></section>
+        <section class="card kpi"><p style="font-size: 13px; color: #48625f">Odpovede</p><p style="font-size: 30px; font-weight: 700; margin-top: 4px; color: #334e7b">1</p><p style="font-size: 12px; color: #48625f">v Alma Intra</p></section>
+      </div>
+
+      <section class="card" style="overflow: hidden">
+        <div style="padding: 18px 20px 14px"><h2 style="margin: 0; font-size: 17px; font-weight: 600">Adresáti</h2></div>
+        <div style="overflow-x: auto">
+          <table>
+            <thead><tr><th>Adresát</th><th>E-mail</th><th>Doručenie</th><th>Odpoveď</th><th><span style="position: absolute; width: 1px; height: 1px; overflow: hidden">Akcie</span></th></tr></thead>
+            <tbody>
+              <sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+                <tr>
+                  <td><p style="margin: 0; font-weight: 600; white-space: nowrap">{{r.name}}</p><p style="margin: 0; font-size: 12px; color: #48625f; white-space: nowrap">{{r.customer}}</p></td>
+                  <td style="color: #48625f">{{r.email}}</td>
+                  <td><span class="badge {{r.cls}}"><i></i>{{r.status}}</span><p style="margin: 3px 0 0; font-size: 12px; color: #48625f">{{r.when}}</p></td>
+                  <td style="font-size: 13px">
+                    <sc-if value="{{r.replied}}" hint-placeholder-val="{{ false }}"><a href="#" style="font-weight: 600">{{r.reply}}</a></sc-if>
+                    <sc-if value="{{r.noReply}}" hint-placeholder-val="{{ true }}"><span style="color: #6f8784">—</span></sc-if>
+                  </td>
+                  <td style="text-align: right"><button type="button" class="btn btn-ghost btn-sm">Zobraziť e-mail</button></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin: 0; padding: 14px 20px; border-top: 1px solid #dfe8e6; font-size: 13px; line-height: 19px; color: #48625f">Adresa ivana.kubikova@medicare-za.sk sa označila ako neplatná a ďalšie e-maily na ňu nepôjdu. Opravte ju na karte kontaktu.</p>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const rows = [
+      ['Mgr. Eva Tóthová', 'ADOS Harmónia, s.r.o.', 'eva.tothova@adosharmonia.sk', 'Doručený', 'b-success', '27. 10. 8:31', 'Odpovedala 27. 10. 11:42'],
+      ['Bc. Marek Lukáč', 'ADOS Harmónia, s.r.o.', 'ekonom@adosharmonia.sk', 'Doručený', 'b-success', '27. 10. 8:31', ''],
+      ['Bc. Zuzana Mikulová', 'Domáca ošetrovateľská starostlivosť Lipa', 'mikulova@adoslipa.sk', 'Doručený', 'b-success', '27. 10. 8:32', ''],
+      ['Mgr. Ivana Kubíková', 'ADOS Medicare Žilina, s.r.o.', 'ivana.kubikova@medicare-za.sk', 'Nedoručený', 'b-danger', 'adresa neexistuje', ''],
+      ['Mária Kováčová', 'Fyzická osoba', 'maria.kovacova@gmail.com', 'Doručený', 'b-success', '27. 10. 8:32', '']
+    ].map((r) => ({ name: r[0], customer: r[1], email: r[2], status: r[3], cls: r[4], when: r[5], reply: r[6], replied: r[6] !== '', noReply: r[6] === '' }));
+    return { rows };
+  }
+}
+</script>
+</body>
+</html>

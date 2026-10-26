@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>Nový e-mail, náhľad</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif;color:#152b2a;-webkit-font-smoothing:antialiased}
+a{color:#0a6466;text-decoration:none}a:hover{color:#0c3b3c;text-decoration:underline}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none;height:40px;padding:0 16px;font-size:14px}
+.btn:hover{text-decoration:none}
+.btn-primary{background:linear-gradient(180deg,#139698 0%,#0b6e70 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 2px rgba(12,59,60,.06),0 4px 12px rgba(12,59,60,.07)}
+.btn-primary:hover{color:#fff}
+.btn-secondary{background:#e3f3f2;color:#0a6466}
+.btn-ghost{background:transparent;color:#0a6466}
+.btn-sm{height:32px;padding:0 10px;font-size:13px}
+.btn-icon{width:32px;height:32px;padding:0;border:1px solid #d6e1de;background:#fff;color:#48625f}
+.card{border:1px solid #dfe8e6;border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(12,59,60,.08),0 8px 22px rgba(12,59,60,.08)}
+.steps{display:flex;flex-wrap:wrap;gap:6px 22px;margin:0;padding:0;list-style:none}
+.st{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#48625f}
+.st i{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-size:12px;font-weight:700;background:#dde6e3}
+.st-on{color:#0a6466}.st-on i{background:#0f8b8d;color:#fff}
+.st-done{color:#16a34a}.st-done i{background:#eaf5e6}
+.r{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;text-decoration:none;color:#152b2a}
+.r:hover{background:#f0f8f7;text-decoration:none}
+.r-on{background:#e3f3f2;box-shadow:inset 0 0 0 1px #bfe2df}
+.dot{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.att{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid #dfe8e6;border-radius:10px;font-size:13px;font-weight:600;background:#fff}
+.ft{width:24px;height:24px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;flex-shrink:0}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 1200px; background: #eaf0ee">
+  <div style="flex: 0 0 232px; background: #0c3b3c">
+    <dc-import name="Sidebar" active="emails" hint-size="232px,900px"></dc-import>
+  </div>
+  <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 14px 28px; box-sizing: border-box; background: rgba(255,255,255,0.8); border-bottom: 1px solid #d6e1de">
+      <div style="flex: 0 0 auto">
+        <h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em">Nový e-mail</h1>
+        <p style="margin: 0; font-size: 13px; color: #48625f">Šablóna Cenová ponuka 2027 · 5 adresátov</p>
+      </div>
+      <ol class="steps" aria-label="Kroky" style="flex: 1 1 auto; justify-content: center">
+        <li class="st st-done"><i>✓</i>Adresáti</li>
+        <li class="st st-done"><i>✓</i>Šablóna</li>
+        <li class="st st-done"><i>✓</i>Obsah</li>
+        <li class="st st-on" aria-current="step"><i>4</i>Náhľad</li>
+        <li class="st"><i>5</i>Odoslanie</li>
+      </ol>
+      <button type="button" class="btn btn-ghost">Zrušiť koncept</button>
+    </header>
+
+    <div style="flex: 1; padding: 24px 28px; display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; max-width: 1400px; box-sizing: border-box; width: 100%">
+      <nav aria-label="Adresáti" class="card" style="flex: 1 1 280px; max-width: 320px; padding: 10px; box-sizing: border-box">
+        <p style="margin: 8px 8px 10px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #6f8784">Adresáti · 5</p>
+        <sc-for list="{{recipients}}" as="r" hint-placeholder-count="5">
+          <a href="#" class="{{r.cls}}">
+            <span class="dot" style="{{r.dotStyle}}" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="{{r.icon}}"></path></svg>
+            </span>
+            <span style="flex: 1; min-width: 0">
+              <span style="display: block; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.name}}</span>
+              <span style="display: block; font-size: 12px; color: #48625f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.note}}</span>
+            </span>
+          </a>
+        </sc-for>
+      </nav>
+
+      <section style="flex: 999 1 640px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+        <div class="card" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 10px">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+            <div style="flex: 1 1 300px; min-width: 0">
+              <p style="margin: 0; font-size: 13px; color: #48625f">Komu: <strong style="color: #152b2a">Mgr. Eva Tóthová</strong> &lt;eva.tothova@adosharmonia.sk&gt; · Od: Peter Kováč | Alma</p>
+              <p style="margin: 2px 0 0; font-size: 16px; font-weight: 700">Cenová ponuka Alma na rok 2027 pre ADOS Harmónia, s.r.o.</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px">
+              <button type="button" class="btn btn-icon" aria-label="Predchádzajúci adresát"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"></path></svg></button>
+              <span style="font-size: 13px; color: #48625f">1 z 5</span>
+              <button type="button" class="btn btn-icon" aria-label="Ďalší adresát"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"></path></svg></button>
+            </div>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+            <span class="att"><span class="ft" style="background: #fce8e8; color: #b0232a" aria-hidden="true">PDF</span>Licenčné podmienky.pdf</span>
+            <span class="att"><span class="ft" style="background: #e6f1fb; color: #0c447c" aria-hidden="true">DOCX</span>Cenová ponuka Harmónia 2027.docx</span>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: #fffaf2; border: 1px solid #f1d9b5">
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+            <span style="flex: 1 1 260px; font-size: 13px; color: #854f0b">Text tohto e-mailu je upravený len pre Evu Tóthovú. Pribudol jeden odsek.</span>
+            <button type="button" class="btn btn-ghost btn-sm">Vrátiť na spoločnú verziu</button>
+            <button type="button" class="btn btn-secondary btn-sm">Upraviť pre tohto adresáta</button>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: center; padding: 8px 0">
+          <dc-import name="EmailCanvas" mode="filled" extra="Ako sme sa dohodli na stretnutí 24. 10., v ponuke je zahrnuté aj zaškolenie šiestich nových sestier v januári priamo u vás v Košiciach." hint-size="600px,1080px"></dc-import>
+        </div>
+      </section>
+    </div>
+
+    <footer style="position: sticky; bottom: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 14px 28px; background: rgba(255,255,255,0.94); border-top: 1px solid #d6e1de; box-shadow: 0 -6px 18px rgba(12,43,44,0.07)">
+      <p style="margin: 0 auto 0 0; font-size: 14px"><strong>4 pripravené</strong> <span style="color: #48625f">· 1 upravený · </span><span style="color: #b0232a; font-weight: 600">1 s chýbajúcou hodnotou</span></p>
+      <a href="SendContent.dc.html" class="btn btn-ghost">Späť</a>
+      <a href="SendReview.dc.html" class="btn btn-primary">Pokračovať na kontrolu</a>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ok = 'M20 6 9 17l-5-5';
+    const pen = 'M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z';
+    const warn = 'M12 8v4M12 16h.01';
+    const recipients = [
+      ['Mgr. Eva Tóthová', 'ADOS Harmónia · upravený text', pen, 'background:#fcf0de;color:#b45309', true],
+      ['Bc. Marek Lukáč', 'ADOS Harmónia', ok, 'background:#eaf5e6;color:#16a34a', false],
+      ['Bc. Zuzana Mikulová', 'Lipa · chýba cena mesačne', warn, 'background:#fce8e8;color:#dc2626', false],
+      ['Mgr. Ivana Kubíková', 'Medicare Žilina', ok, 'background:#eaf5e6;color:#16a34a', false],
+      ['Mária Kováčová', 'Fyzická osoba', ok, 'background:#eaf5e6;color:#16a34a', false]
+    ].map((r) => ({ name: r[0], note: r[1], icon: r[2], dotStyle: r[3], cls: r[4] ? 'r r-on' : 'r' }));
+    return { recipients };
+  }
+}
+</script>
+</body>
+</html>

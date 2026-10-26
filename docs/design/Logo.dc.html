@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>Logo Alma Intra</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif;color:#152b2a;-webkit-font-smoothing:antialiased}
+a{color:#0a6466}a:hover{color:#0c3b3c}
+.lbl{margin:0;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#6f8784}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1180px; box-sizing: border-box; padding: 56px 64px; background: #eaf0ee; display: flex; flex-direction: column; gap: 32px">
+  <div style="display: flex; align-items: flex-end; gap: 32px">
+    <div style="flex: 1">
+      <p class="lbl">Rodina značky Alma</p>
+      <h1 style="margin: 6px 0 0; font-size: 36px; line-height: 42px; font-weight: 700; letter-spacing: -0.02em">Logo pre Alma Intra</h1>
+      <p style="margin: 8px 0 0; max-width: 760px; font-size: 16px; line-height: 24px; color: #48625f">Rovnaká dlaždica, zaoblenie a hrúbka čiary ako Alma ADOS, iný znak. Interná appka sa tak na prvý pohľad odlíši v karte prehliadača aj v bočnom paneli.</p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: 14px; background: #fff; border: 1px solid #dfe8e6">
+      <span aria-hidden="true" style="width: 40px; height: 40px; border-radius: 11px; background: #0d7f81; display: inline-flex; align-items: center; justify-content: center"><svg viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3"></circle><path d="M4 9v4a5 5 0 0 0 5 5"></path><path d="M20 9v4a5 5 0 0 1-5 5"></path></svg></span>
+      <div><p style="margin: 0; font-size: 15px; font-weight: 600">Alma ADOS</p><p style="margin: 0; font-size: 12px; color: #48625f">súčasné logo, pre porovnanie</p></div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; flex: 1">
+    <sc-for list="{{options}}" as="o" hint-placeholder-count="3">
+      <section style="{{o.cardStyle}}">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+          <p class="lbl">{{o.letter}}</p>
+          <sc-if value="{{o.recommended}}" hint-placeholder-val="{{ false }}">
+            <span style="display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 600; background: #e3f3f2; color: #0a6466">Hlavné logo</span>
+          </sc-if>
+        </div>
+        <div style="height: 240px; border-radius: 16px; background: #f7faf9; display: flex; align-items: center; justify-content: center">
+          <span role="img" aria-label="Logo {{o.name}}" style="width: 144px; height: 144px; border-radius: 40px; display: inline-flex; align-items: center; justify-content: center; background: {{o.tile}}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 12px 32px rgba(12,59,60,0.22)">
+            <svg viewBox="0 0 24 24" width="90" height="90" fill="none" stroke="{{o.glyph}}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <sc-for list="{{o.paths}}" as="d" hint-placeholder-count="3"><path d="{{d}}"></path></sc-for>
+              <sc-for list="{{o.circles}}" as="c" hint-placeholder-count="1"><circle cx="{{c.x}}" cy="{{c.y}}" r="{{c.r}}"></circle></sc-for>
+            </svg>
+          </span>
+        </div>
+        <div>
+          <h2 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 700">{{o.name}}</h2>
+          <p style="margin: 4px 0 0; font-size: 14px; line-height: 21px; color: #48625f">{{o.idea}}</p>
+        </div>
+
+        <div style="border-radius: 14px; padding: 16px 14px; background: linear-gradient(180deg, #104b4c 0%, #0c3b3c 100%); display: flex; align-items: center; gap: 12px">
+          <span aria-hidden="true" style="width: 32px; height: 32px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; background: {{o.tile}}; box-shadow: inset 0 0 0 1px rgba(95,208,201,0.25)">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="{{o.glyph}}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <sc-for list="{{o.paths}}" as="d" hint-placeholder-count="3"><path d="{{d}}"></path></sc-for>
+              <sc-for list="{{o.circles}}" as="c" hint-placeholder-count="1"><circle cx="{{c.x}}" cy="{{c.y}}" r="{{c.r}}"></circle></sc-for>
+            </svg>
+          </span>
+          <div><p style="margin: 0; font-size: 14px; font-weight: 600; color: #fff">Alma Intra</p><p style="margin: 0; font-size: 12px; color: #a9c9c7">Interný systém</p></div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 16px">
+          <div style="flex: 1; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 10px 10px 0 0; background: #fff; border: 1px solid #dfe8e6; border-bottom: 0; font-size: 13px">
+            <span aria-hidden="true" style="width: 16px; height: 16px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; background: {{o.tile}}">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="{{o.glyph}}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <sc-for list="{{o.paths}}" as="d" hint-placeholder-count="3"><path d="{{d}}"></path></sc-for>
+                <sc-for list="{{o.circles}}" as="c" hint-placeholder-count="1"><circle cx="{{c.x}}" cy="{{c.y}}" r="{{c.r}}"></circle></sc-for>
+              </svg>
+            </span>
+            Zákazníci · Alma Intra
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px">
+            <span aria-hidden="true" style="width: 48px; height: 48px; border-radius: 13px; display: inline-flex; align-items: center; justify-content: center; background: {{o.tile}}">
+              <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="{{o.glyph}}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <sc-for list="{{o.paths}}" as="d" hint-placeholder-count="3"><path d="{{d}}"></path></sc-for>
+                <sc-for list="{{o.circles}}" as="c" hint-placeholder-count="1"><circle cx="{{c.x}}" cy="{{c.y}}" r="{{c.r}}"></circle></sc-for>
+              </svg>
+            </span>
+            <span style="font-size: 20px; font-weight: 700; letter-spacing: -0.01em">Alma <span style="font-weight: 500; color: #0a6466">Intra</span></span>
+          </div>
+        </div>
+      </section>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const card = 'background:#fff;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:20px;box-shadow:0 1px 2px rgba(12,59,60,.08),0 8px 22px rgba(12,59,60,.08);';
+    const options = [
+      {
+        letter: 'Logo appky', name: 'Rozhovor', recommended: true,
+        idea: 'Postava Almy v bubline rozhovoru. Appka je o vzťahu so zákazníkom: kontakty, e-maily, telefonáty. Tmavá dlaždica so svetlým znakom je obrátená verzia loga Alma ADOS.',
+        tile: 'linear-gradient(160deg, #135a5b 0%, #0a3233 100%)', glyph: '#5fd0c9',
+        paths: ['M4 4.5h16A1.5 1.5 0 0 1 21.5 6v10a1.5 1.5 0 0 1-1.5 1.5h-7.5L8 21v-3.5H4A1.5 1.5 0 0 1 2.5 16V6A1.5 1.5 0 0 1 4 4.5z', 'M7.5 9.5v.6a3.4 3.4 0 0 0 3.4 3.4', 'M16.5 9.5v.6a3.4 3.4 0 0 1-3.4 3.4'],
+        circles: [{ x: 12, y: 8.8, r: 1.9 }],
+        cardStyle: card + 'outline:2px solid #0f8b8d;outline-offset:-2px'
+      },
+      {
+        letter: 'Značka v menu · Zákazníci', name: 'Sieť kontaktov', recommended: false,
+        idea: 'Postava Almy v strede, prepojená so štyrmi bodmi. Zákazníci a ich kontakty na jednom mieste. Farby ostávajú ako pri Alma ADOS.',
+        tile: 'linear-gradient(160deg, #18a5a7 0%, #0b7375 100%)', glyph: '#ffffff',
+        paths: ['M8.6 14.2a3.4 3.4 0 0 0 6.8 0', 'M6.3 6.3l2.4 2.4', 'M17.7 6.3l-2.4 2.4', 'M6.3 17.7l1.9-1.9', 'M17.7 17.7l-1.9-1.9'],
+        circles: [{ x: 12, y: 10.6, r: 2 }, { x: 5, y: 5, r: 1.6 }, { x: 19, y: 5, r: 1.6 }, { x: 5, y: 19, r: 1.6 }, { x: 19, y: 19, r: 1.6 }],
+        cardStyle: card
+      },
+      {
+        letter: 'Značka v menu · Súbory', name: 'Kartotéka', recommended: false,
+        idea: 'Postava Almy v priečinku. Evidencia zákazníkov a firemné dokumenty. Najbližšie k súborom, najmenej ku komunikácii.',
+        tile: 'linear-gradient(160deg, #18a5a7 0%, #0b7375 100%)', glyph: '#ffffff',
+        paths: ['M3 7.5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', 'M8.6 15.4a3.4 3.4 0 0 0 6.8 0'],
+        circles: [{ x: 12, y: 12.2, r: 1.8 }],
+        cardStyle: card
+      }
+    ];
+    return { options };
+  }
+}
+</script>
+</body>
+</html>

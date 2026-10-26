@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>Konverzácia</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif;color:#152b2a;-webkit-font-smoothing:antialiased}
+a{color:#0a6466;text-decoration:none}a:hover{color:#0c3b3c;text-decoration:underline}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none;height:40px;padding:0 16px;font-size:14px}
+.btn:hover{text-decoration:none}
+.btn-primary{background:linear-gradient(180deg,#139698 0%,#0b6e70 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 2px rgba(12,59,60,.06),0 4px 12px rgba(12,59,60,.07)}
+.btn-secondary{background:#e3f3f2;color:#0a6466}
+.btn-ghost{background:transparent;color:#0a6466}
+.btn-sm{height:32px;padding:0 12px;font-size:13px}
+.btn-icon{width:36px;height:36px;padding:0;border:1px solid #d6e1de;background:#fff;color:#48625f}
+.card{border:1px solid #dfe8e6;border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(12,59,60,.08),0 8px 22px rgba(12,59,60,.08)}
+.avatar{width:36px;height:36px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.badge i{width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block}
+.b-success{background:#eaf5e6;color:#16a34a}.b-info{background:#e9eef6;color:#334e7b}
+.att{display:inline-flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid #dfe8e6;border-radius:10px;font-size:13px;background:#fff;color:#152b2a}
+.ft{width:28px;height:28px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
+.tb{width:30px;height:30px;border:0;border-radius:7px;background:transparent;color:#48625f;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font:inherit;font-weight:700;font-size:14px}
+.msg-head{display:flex;align-items:center;gap:12px;width:100%;padding:14px 20px;border:0;background:transparent;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.msg-head:hover{background:#f7faf9}
+.chev{width:30px;height:30px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:#48625f;flex-shrink:0}
+dl{margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px}
+dt{font-size:12px;font-weight:500;color:#48625f}
+dd{margin:2px 0 0;font-size:14px}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 1240px; background: #eaf0ee">
+  <div style="flex: 0 0 232px; background: #0c3b3c">
+    <dc-import name="Sidebar" active="emails" hint-size="232px,900px"></dc-import>
+  </div>
+  <main style="flex: 999 1 560px; min-width: 0">
+    <header style="min-height: 72px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 28px; box-sizing: border-box; background: rgba(255,255,255,0.8); border-bottom: 1px solid #d6e1de">
+      <div style="flex: 1 1 auto; min-width: 0">
+        <a href="Inbox.dc.html" style="display: inline-flex; align-items: center; gap: 2px; font-size: 13px; font-weight: 500"><svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"></path></svg>Prijaté</a>
+        <h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em">Cenová ponuka Alma na rok 2027</h1>
+        <p style="margin: 0; font-size: 13px; color: #48625f"><a href="CustomerDetail.dc.html">ADOS Harmónia, s.r.o.</a> · 3 správy</p>
+      </div>
+      <div style="display: flex; gap: 8px">
+        <button type="button" class="btn btn-icon" aria-label="Označiť ako neprečítané"><svg aria-hidden="true" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-10 6L2 7"></path></svg></button>
+        <button type="button" class="btn btn-secondary">Zapísať ďalší krok</button>
+      </div>
+    </header>
+
+    <div style="padding: 24px 28px 40px; display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; max-width: 1400px">
+      <div style="flex: 999 1 620px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+
+        <section class="card" style="overflow: hidden; box-shadow: 0 0 0 2px rgba(15,139,141,0.18), 0 8px 22px rgba(12,59,60,0.08)">
+          <div style="padding: 14px 20px; border-bottom: 1px solid #dfe8e6; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px">
+            <span style="font-weight: 700">Vaša odpoveď</span>
+            <span style="color: #48625f">pre Mgr. Eva Tóthová · Re: Cenová ponuka Alma na rok 2027</span>
+            <span style="margin-left: auto; font-size: 12px; color: #48625f">Pošle sa vo vlákne ako odpoveď na najnovší e-mail</span>
+          </div>
+          <div role="toolbar" aria-label="Formátovanie" style="display: flex; gap: 2px; padding: 6px 14px; background: #f7faf9; border-bottom: 1px solid #dfe8e6">
+            <button type="button" class="tb" aria-label="Tučné">B</button>
+            <button type="button" class="tb" aria-label="Kurzíva" style="font-style: italic; font-weight: 600">I</button>
+            <button type="button" class="tb" aria-label="Odrážky"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"></path></svg></button>
+            <button type="button" class="tb" aria-label="Odkaz"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg></button>
+            <button type="button" class="tb" style="width: auto; padding: 0 10px; font-size: 13px; font-weight: 600; margin-left: auto">Vložiť zo šablóny</button>
+          </div>
+          <div style="padding: 16px 20px; font-size: 15px; line-height: 24px; min-height: 110px">
+            <p style="margin: 0">Vážená pani riaditeľka,</p>
+            <p style="margin: 12px 0 0">ďakujem za harmonogram. Rozpis zaškolenia po týždňoch vám pošlem do piatku 31. 10., aby ste ho mali pred schvaľovaním rozpočtu.<span style="display: inline-block; width: 2px; height: 18px; background: #0f8b8d; vertical-align: -3px; margin-left: 1px"></span></p>
+            <p style="margin: 16px 0 0; color: #6f8784; font-size: 14px">S pozdravom · Peter Kováč · Obchodný manažér · Alma</p>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 20px; border-top: 1px solid #dfe8e6">
+            <a href="FilePicker.dc.html" class="btn btn-ghost btn-sm"><svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.4 11.6-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"></path></svg>Priložiť</a>
+            <span style="margin-left: auto; font-size: 12px; color: #48625f">Koncept uložený</span>
+            <button type="button" class="btn btn-primary"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg>Odoslať odpoveď</button>
+          </div>
+        </section>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 4px 0">
+          <p style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #6f8784">História · najnovšie hore</p>
+          <div style="display: flex; gap: 4px">
+            <button type="button" class="btn btn-ghost btn-sm" onClick="{{expandAll}}">Rozbaliť všetko</button>
+            <button type="button" class="btn btn-ghost btn-sm" onClick="{{collapseAll}}">Zbaliť všetko</button>
+          </div>
+        </div>
+
+        <sc-for list="{{messages}}" as="m" hint-placeholder-count="3">
+          <article class="card" style="overflow: hidden">
+            <button type="button" class="msg-head" aria-expanded="{{m.expandedAttr}}" onClick="{{m.toggle}}">
+              <span class="avatar" style="{{m.avatarStyle}}" aria-hidden="true">{{m.initials}}</span>
+              <span style="flex: 1; min-width: 0">
+                <span style="display: block; font-size: 14px"><strong>{{m.from}}</strong> <span style="color: #48625f">→ {{m.to}}</span></span>
+                <sc-if value="{{m.collapsed}}" hint-placeholder-val="{{ true }}">
+                  <span style="display: block; font-size: 13px; color: #48625f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{m.snippet}}</span>
+                </sc-if>
+                <sc-if value="{{m.expanded}}" hint-placeholder-val="{{ false }}">
+                  <span style="display: block; font-size: 13px; color: #48625f">{{m.meta}}</span>
+                </sc-if>
+              </span>
+              <span class="badge {{m.badgeCls}}"><i></i>{{m.badge}}</span>
+              <span style="font-size: 12px; color: #48625f; white-space: nowrap">{{m.when}}</span>
+              <span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="{{m.chevron}}"></path></svg></span>
+            </button>
+            <sc-if value="{{m.expanded}}" hint-placeholder-val="{{ false }}">
+              <div style="padding: 4px 20px 20px 68px; font-size: 15px; line-height: 24px; border-top: 1px solid #edf2f1">
+                <sc-for list="{{m.body}}" as="p" hint-placeholder-count="3"><p style="margin: 12px 0 0">{{p}}</p></sc-for>
+                <sc-if value="{{m.isInbound}}" hint-placeholder-val="{{ false }}">
+                  <p style="margin: 14px 0 0; padding: 8px 12px; border-radius: 10px; background: #f7faf9; font-size: 13px; color: #48625f">Obrázky z iných adries sú skryté. <a href="#" style="font-weight: 600">Zobraziť obrázky</a></p>
+                </sc-if>
+                <sc-if value="{{m.isOutbound}}" hint-placeholder-val="{{ false }}">
+                  <p style="margin: 14px 0 0; font-size: 13px"><a href="Campaign.dc.html" style="font-weight: 600">Zobraziť presne tak, ako ho zákazník dostal</a></p>
+                </sc-if>
+                <div style="margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px">
+                  <sc-for list="{{m.attachments}}" as="a" hint-placeholder-count="1">
+                    <a href="FileDetail.dc.html" class="att"><span class="ft" style="{{a.style}}" aria-hidden="true">{{a.ext}}</span><span><span style="display: block; font-weight: 600">{{a.name}}</span><span style="display: block; font-size: 12px; color: #48625f">{{a.note}}</span></span></a>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+          </article>
+        </sc-for>
+      </div>
+
+      <aside style="flex: 1 1 300px; max-width: 360px; display: flex; flex-direction: column; gap: 16px">
+        <section class="card" style="padding: 18px 20px">
+          <p style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #6f8784">Zákazník</p>
+          <a href="CustomerDetail.dc.html" style="display: block; margin-top: 6px; font-size: 16px; font-weight: 700; color: #152b2a">ADOS Harmónia, s.r.o.</a>
+          <div style="margin-top: 12px">
+            <dl>
+              <div><dt>Stav</dt><dd><span class="badge b-success"><i></i>Zákazník</span></dd></div>
+              <div><dt>Zodpovedá</dt><dd>Peter Kováč</dd></div>
+              <div style="grid-column: 1 / -1"><dt>Kontakt</dt><dd>Mgr. Eva Tóthová, riaditeľka<br><span style="color: #48625f">+421 905 222 314</span></dd></div>
+            </dl>
+          </div>
+        </section>
+        <section class="card" style="padding: 18px 20px">
+          <p style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #6f8784">Otvorený ďalší krok</p>
+          <p style="margin: 8px 0 0; font-size: 14px; font-weight: 600">Poslať cenovú ponuku na 18 sestier s rozpisom po mesiacoch</p>
+          <p style="margin: 2px 0 0; font-size: 13px; color: #b45309; font-weight: 600">Do 31. 10. 2026 · Peter Kováč</p>
+          <button type="button" class="btn btn-secondary btn-sm" style="margin-top: 12px">Hotovo</button>
+        </section>
+      </aside>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    // The newest message starts open, the older ones folded to their status line.
+    this.state = { open: { reply: true, offer: false, thanks: false } };
+  }
+  renderVals() {
+    const open = this.state.open;
+    const pdf = 'background:#fce8e8;color:#b0232a';
+    const docx = 'background:#e6f1fb;color:#0c447c';
+    const data = [
+      {
+        id: 'reply', from: 'Mgr. Eva Tóthová', to: 'Peter Kováč', initials: 'ET', avatarStyle: 'background:#e3f3f2;color:#0a6466',
+        when: 'Dnes 11:42', badge: 'Prijatý', badgeCls: 'b-info', inbound: true,
+        meta: 'eva.tothova@adosharmonia.sk · kópia preposlaná na peter.kovac@adosalma.sk',
+        snippet: 'Dobrý deň, pán Kováč, ďakujem za ponuku, s rozsahom súhlasíme. Ekonóm by ešte potreboval rozpis zaškolenia…',
+        body: [
+          'Dobrý deň, pán Kováč,',
+          'ďakujem za ponuku, s rozsahom súhlasíme. Ekonóm by ešte potreboval rozpis zaškolenia po týždňoch, aby ho vedel zahrnúť do rozpočtu. Posielam náš harmonogram nástupu nových sestier.',
+          'Rozpočet schvaľujeme 15. 11., do toho termínu by sme radi mali finálnu verziu.',
+          'S pozdravom, Eva Tóthová'
+        ],
+        attachments: [{ ext: 'PDF', style: pdf, name: 'Harmonogram nástupu 2027.pdf', note: '186 kB · uložené do priečinka zákazníka' }]
+      },
+      {
+        id: 'offer', from: 'Peter Kováč', to: 'Mgr. Eva Tóthová', initials: 'PK', avatarStyle: 'background:#e6f1fb;color:#0c447c',
+        when: '27. 10. 8:30', badge: 'Doručený', badgeCls: 'b-success', inbound: false,
+        meta: 'Šablóna Cenová ponuka 2027 · doručený 27. 10. 8:31',
+        snippet: 'Vážená pani riaditeľka, ďakujeme za stretnutie a za záujem rozšíriť Almu vo vašej agentúre…',
+        body: [
+          'Vážená pani riaditeľka,',
+          'ďakujeme za stretnutie a za záujem rozšíriť Almu vo vašej agentúre. Na základe nášho rozhovoru posielame cenovú ponuku pre ADOS Harmónia, s.r.o. na rok 2027.',
+          'Počet sestier 18 · cena mesačne 1 260 € · ponuka platí do 30. 11. 2026.'
+        ],
+        attachments: [
+          { ext: 'PDF', style: pdf, name: 'Licenčné podmienky.pdf', note: 'verzia 1 · 1,2 MB' },
+          { ext: 'DOCX', style: docx, name: 'Cenová ponuka Harmónia 2027.docx', note: 'verzia 2 · 118 kB' }
+        ]
+      },
+      {
+        id: 'thanks', from: 'Peter Kováč', to: 'Mgr. Eva Tóthová', initials: 'PK', avatarStyle: 'background:#e6f1fb;color:#0c447c',
+        when: '24. 10. 15:05', badge: 'Doručený', badgeCls: 'b-success', inbound: false,
+        meta: 'Šablóna Poďakovanie po stretnutí · doručený 24. 10. 15:06',
+        snippet: 'Vážená pani riaditeľka, ďakujeme za dnešné stretnutie. Ponuku na 18 sestier vám pošleme do konca týždňa…',
+        body: [
+          'Vážená pani riaditeľka,',
+          'ďakujeme za dnešné stretnutie. Ponuku na 18 sestier vám pošleme do konca týždňa, spolu s návrhom termínov zaškolenia.'
+        ],
+        attachments: []
+      }
+    ];
+    const messages = data.map((m) => {
+      const isOpen = Boolean(open[m.id]);
+      return Object.assign({}, m, {
+        expanded: isOpen, collapsed: !isOpen, expandedAttr: isOpen ? 'true' : 'false',
+        isInbound: m.inbound, isOutbound: !m.inbound,
+        chevron: isOpen ? 'm18 15-6-6-6 6' : 'm6 9 6 6 6-6',
+        toggle: () => this.setState({ open: Object.assign({}, this.state.open, { [m.id]: !this.state.open[m.id] }) })
+      });
+    });
+    const all = (v) => () => this.setState({ open: { reply: v, offer: v, thanks: v } });
+    return { messages, expandAll: all(true), collapseAll: all(false) };
+  }
+}
+</script>
+</body>
+</html>

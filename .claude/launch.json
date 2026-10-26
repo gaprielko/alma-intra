@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "intra-api",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@intra/api", "dev"],
+      "port": 3100
+    },
+    {
+      "name": "intra-web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@intra/web", "dev"],
+      "port": 5180
+    }
+  ]
+}
