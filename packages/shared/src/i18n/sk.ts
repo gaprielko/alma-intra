@@ -1201,6 +1201,15 @@ export const sk = {
       templates: 'Šablóny',
     },
   },
+  notifications: {
+    title: 'Upozornenia',
+    empty: 'Žiadne upozornenia.',
+    markAll: 'Označiť všetko ako prečítané',
+    reply: (customer: string | null) => (customer ? `Odpoveď od ${customer}` : 'Nová odpoveď'),
+    bounce: (customer: string | null) =>
+      customer ? `E-mail pre ${customer} sa nedoručil` : 'E-mail sa nedoručil',
+    unread: 'Neprečítané',
+  },
   inbound: {
     views: {
       label: 'Ktoré prijaté e-maily',

@@ -24,3 +24,13 @@ export const assignInboundSchema = z.object({
   customerId: idSchema,
   contactId: idSchema.nullable().default(null),
 });
+
+/**
+ * What a colleague is told about in the app: a reply to their e-mail, or an e-mail of theirs that
+ * bounced.
+ */
+export const NOTIFICATION_KINDS = ['reply', 'bounce'] as const;
+export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
+
+/** Marks notifications read: the listed ones, or all of them. */
+export const markNotificationsSchema = z.object({ ids: z.array(idSchema).max(100).optional() });

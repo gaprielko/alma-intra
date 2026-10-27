@@ -5,6 +5,7 @@ import { codeListRouter } from './code-list.router.js';
 import { customerRouter } from './customer.router.js';
 import { fileRouter } from './file.router.js';
 import { inboundRouter } from './inbound.router.js';
+import { notificationRouter } from './notification.router.js';
 import { campaignRouter, unsubscribeRouter } from './campaign.router.js';
 import { templateRouter } from './template.router.js';
 import { router } from './trpc.js';
@@ -21,6 +22,7 @@ export const appRouter = router({
   template: templateRouter,
   campaign: campaignRouter,
   inbound: inboundRouter,
+  notification: notificationRouter,
   unsubscribe: unsubscribeRouter,
 });
 

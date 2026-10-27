@@ -17,6 +17,7 @@ import {
 import { getLook } from '../email/templates.service.js';
 import { replyAddress, replyToken } from '../inbound/inbound.js';
 import { describeError } from '../logging/describe-error.js';
+import { notify } from '../notifications/notifications.service.js';
 import { MailProviderError, type MailTransport } from '../mail/transport.js';
 import type { Storage } from '../storage/storage.js';
 import { settleCampaigns, tokenHash, unsubscribeToken } from './campaigns.service.js';
@@ -223,8 +224,12 @@ export async function handleResendEvent(db: Db, eventId: string, event: ResendEv
       status: campaignMessages.status,
       contactId: campaignMessages.contactId,
       customerId: campaignMessages.customerId,
+      campaignId: campaignMessages.campaignId,
+      subject: campaignMessages.subject,
+      senderUserId: campaigns.senderUserId,
     })
     .from(campaignMessages)
+    .innerJoin(campaigns, eq(campaigns.id, campaignMessages.campaignId))
     .where(eq(campaignMessages.providerMessageId, providerId));
   const at = event.created_at ? new Date(event.created_at) : new Date();
   const kind = event.type.replace(/^email\./, '');
@@ -261,6 +266,16 @@ export async function handleResendEvent(db: Db, eventId: string, event: ResendEv
         ...(next === 'complained' ? { complainedAt: at } : {}),
       })
       .where(eq(campaignMessages.id, message.id));
+    // The sender hears of an e-mail that did not arrive, once: when it first turns „bounced“.
+    if (next === 'bounced') {
+      await notify(db, {
+        userId: message.senderUserId,
+        kind: 'bounce',
+        refId: message.campaignId,
+        customerId: message.customerId,
+        subject: message.subject?.slice(0, 200) ?? null,
+      });
+    }
   }
   if (next === 'bounced' || next === 'complained') {
     const emailStatus = next === 'bounced' ? 'bounced' : 'complained';

@@ -254,6 +254,10 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     test: flag,
     fields: subsetOf(['content']),
   },
+  /** Notifications marked read: how many. */
+  notification: {
+    count: number,
+  },
   /** Received e-mail: whom it was filed under, and its state. Never its sender or content. */
   inbound: {
     customerId: uuid,

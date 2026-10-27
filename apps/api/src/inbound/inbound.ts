@@ -3,6 +3,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 import { Resend } from 'resend';
 import type { Env } from '../config/env.js';
 import type { Db } from '../db/db.module.js';
+import { notify } from '../notifications/notifications.service.js';
 import {
   campaignMessages,
   campaigns,
@@ -46,6 +47,8 @@ export interface InboundAttachmentLink {
 export interface InboundSource {
   get(providerEmailId: string): Promise<InboundEmail | null>;
   attachmentLinks(providerEmailId: string): Promise<InboundAttachmentLink[]>;
+  /** The received e-mail as it came, to another address (once per key). */
+  forward(providerEmailId: string, mail: { to: string; from: string }, key: string): Promise<void>;
 }
 
 /** The provider did not give the e-mail: the webhook answers 5xx and Resend tries again. */
@@ -57,7 +60,10 @@ export class InboundFetchError extends Error {
 }
 
 /** The part of the Resend SDK we use, so a test can stand in for it. */
-export type ResendReceiving = Pick<Resend['emails']['receiving'], 'get' | 'attachments'>;
+export type ResendReceiving = Pick<
+  Resend['emails']['receiving'],
+  'get' | 'attachments' | 'forward'
+>;
 
 const header = (headers: Record<string, string> | null, name: string) => {
   if (!headers) return null;
@@ -102,6 +108,13 @@ export function resendInboundSource(
       const { data, error } = await receiving.attachments.list({ emailId: id });
       if (error) throw new InboundFetchError(error.name);
       return data.data.map((a) => ({ id: a.id, downloadUrl: a.download_url }));
+    },
+    async forward(id, mail, key) {
+      const { error } = await receiving.forward(
+        { emailId: id, to: mail.to, from: mail.from },
+        { idempotencyKey: key },
+      );
+      if (error) throw new InboundFetchError(error.name);
     },
   };
 }
@@ -194,7 +207,7 @@ export async function receiveInbound(
     .select({ id: inboundMessages.id, status: inboundMessages.status })
     .from(inboundMessages)
     .where(eq(inboundMessages.providerEmailId, email.providerEmailId));
-  if (known) return { id: known.id, matched: null, repeated: true };
+  if (known) return { id: known.id, matched: null, repeated: true, userId: null };
 
   const sender = parseAddress(email.from);
   const token = tokenIn([...email.to, ...email.cc, ...email.receivedFor], env.INBOUND_REPLY_DOMAIN);
@@ -240,6 +253,24 @@ export async function receiveInbound(
     })
     .onConflictDoNothing()
     .returning({ id: inboundMessages.id });
-  if (!row) return { id: null, matched: null, repeated: true };
-  return { id: row.id, matched: match?.by ?? null, repeated: false };
+  if (!row) return { id: null, matched: null, repeated: true, userId: null };
+  // Told: the colleague who sent the e-mail it answers, else whoever has the customer in hand.
+  const userId =
+    match?.userId ??
+    (match
+      ? ((
+          await db
+            .select({ ownerUserId: customers.ownerUserId })
+            .from(customers)
+            .where(eq(customers.id, match.customerId))
+        )[0]?.ownerUserId ?? null)
+      : null);
+  await notify(db, {
+    userId,
+    kind: 'reply',
+    refId: row.id,
+    customerId: match?.customerId ?? null,
+    subject: email.subject.slice(0, 200),
+  });
+  return { id: row.id, matched: match?.by ?? null, repeated: false, userId };
 }
