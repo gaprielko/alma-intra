@@ -89,7 +89,8 @@ export const personFields = {
 const classificationFields = {
   /** Zákazník, Partner, Dodávateľ, …: every record has one. */
   contactTypeId: idSchema,
-  typeId: idSchema.optional().nullable(),
+  /** ADOS, DOS, Stacionár, …: none, one or several. */
+  productIds: z.array(idSchema).max(20).default([]),
   /** Only a „Zákazník“ keeps it (the server drops it for other types); empty until set. */
   status: z.enum(CUSTOMER_STATUSES).optional().nullable(),
   street: optionalText(160),
@@ -161,8 +162,8 @@ export const customerFilterSchema = z.object({
   status: z.enum(CUSTOMER_STATUSES).or(z.literal('none')).optional(),
   kind: z.enum(CUSTOMER_KINDS).optional(),
   contactTypeId: idSchema.optional(),
-  /** A type, or `none` for the customers without one. */
-  typeId: idSchema.or(z.literal('none')).optional(),
+  /** A product, or `none` for the records without any. */
+  productId: idSchema.or(z.literal('none')).optional(),
   region: z.enum(REGIONS).optional(),
   tagId: idSchema.optional(),
   ownerUserId: idSchema.optional(),
@@ -197,8 +198,8 @@ export const updateContactSchema = z.object({
 });
 export const contactIdSchema = z.object({ id: idSchema });
 
-/** Contact types, customer types and sources: a name each, offered in the forms while active. */
-export const CODE_LISTS = ['contact_type', 'customer_type', 'source', 'template_category'] as const;
+/** Contact types, products and sources: a name each, offered in the forms while active. */
+export const CODE_LISTS = ['contact_type', 'product', 'source', 'template_category'] as const;
 export type CodeList = (typeof CODE_LISTS)[number];
 
 export const codeListSchema = z.object({ list: z.enum(CODE_LISTS) });

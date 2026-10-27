@@ -174,3 +174,12 @@ function MenuItems<T extends string>({
     </DropdownMenuContent>
   );
 }
+
+/** A product of a record (ADOS, DOS, …), in the accent so it stands apart from the grey tags. */
+export function ProductChip({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex h-[22px] items-center rounded-md bg-primary-soft px-2 text-xs font-semibold whitespace-nowrap text-primary-text">
+      {children}
+    </span>
+  );
+}

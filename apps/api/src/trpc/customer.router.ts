@@ -81,6 +81,7 @@ export const customerRouter = router({
         contactTypeId: input.customer.contactTypeId,
         firstContact: input.firstContact !== undefined,
         ...(created.tagsAdded.length > 0 ? { tagsAdded: created.tagsAdded } : {}),
+        ...(created.productsAdded.length > 0 ? { productsAdded: created.productsAdded } : {}),
       });
       return created;
     }),
@@ -100,10 +101,11 @@ export const customerRouter = router({
         ...(change.contactTypeId.before !== change.contactTypeId.after
           ? { contactTypeId: change.contactTypeId }
           : {}),
-        ...(change.typeId.before !== change.typeId.after ? { typeId: change.typeId } : {}),
         ...(change.sourceId.before !== change.sourceId.after ? { sourceId: change.sourceId } : {}),
         ...(change.tagsAdded.length > 0 ? { tagsAdded: change.tagsAdded } : {}),
         ...(change.tagsRemoved.length > 0 ? { tagsRemoved: change.tagsRemoved } : {}),
+        ...(change.productsAdded.length > 0 ? { productsAdded: change.productsAdded } : {}),
+        ...(change.productsRemoved.length > 0 ? { productsRemoved: change.productsRemoved } : {}),
       });
       return { ok: true as const };
     }),

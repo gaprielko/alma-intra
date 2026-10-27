@@ -55,9 +55,9 @@ export const contactTypes = pgTable(
   ],
 );
 
-/** ADOS, a social care home, …: optional, independent of the kind. */
-export const customerTypes = pgTable('customer_types', codeListColumns(), (t) => [
-  uniqueIndex('customer_types_name_unique').on(sql`lower(${t.name})`),
+/** What Alma offers a record (ADOS, DOS, Stacionár, …): none, one or several. */
+export const products = pgTable('products', codeListColumns(), (t) => [
+  uniqueIndex('products_name_unique').on(sql`lower(${t.name})`),
 ]);
 
 /** Where a customer came from: a referral, a conference, the web. */
@@ -90,7 +90,6 @@ export const customers = pgTable(
     contactTypeId: uuid('contact_type_id')
       .notNull()
       .references(() => contactTypes.id),
-    typeId: uuid('type_id').references(() => customerTypes.id),
     name: text('name').notNull(),
     ico: text('ico'),
     dic: text('dic'),
@@ -129,7 +128,6 @@ export const customers = pgTable(
       .on(t.ico)
       .where(sql`${t.deletedAt} is null`),
     index('customers_status_idx').on(t.status),
-    index('customers_type_idx').on(t.typeId),
     index('customers_contact_type_idx').on(t.contactTypeId),
     index('customers_owner_idx').on(t.ownerUserId),
     check('customers_name_length', sql`char_length(${t.name}) between 1 and 200`),
@@ -153,6 +151,22 @@ export const customerTags = pgTable(
   (t) => [
     primaryKey({ columns: [t.customerId, t.tagId] }),
     index('customer_tags_tag_idx').on(t.tagId),
+  ],
+);
+
+export const customerProducts = pgTable(
+  'customer_products',
+  {
+    customerId: uuid('customer_id')
+      .notNull()
+      .references(() => customers.id),
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => products.id),
+  },
+  (t) => [
+    primaryKey({ columns: [t.customerId, t.productId] }),
+    index('customer_products_product_idx').on(t.productId),
   ],
 );
 

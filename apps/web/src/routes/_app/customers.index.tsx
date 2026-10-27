@@ -16,6 +16,7 @@ import { z } from 'zod';
 import {
   CustomerAvatar,
   CustomerStatusBadge,
+  ProductChip,
   FilterMenu,
   TagChip,
 } from '@/components/customers/customer-bits';
@@ -54,7 +55,7 @@ const search = z.object({
   status: z.enum([...CUSTOMER_STATUSES, 'none']).optional(),
   kind: z.enum(CUSTOMER_KINDS).optional(),
   contactType: z.string().optional(),
-  type: z.string().optional(),
+  product: z.string().optional(),
   region: z.enum(REGIONS).optional(),
   tag: z.string().optional(),
   owner: z.string().optional(),
@@ -112,7 +113,7 @@ function CustomersPage() {
     status: params.status,
     kind: params.kind,
     contactTypeId: params.contactType,
-    typeId: params.type,
+    productId: params.product,
     region: params.region,
     tagId: params.tag,
     ownerUserId: params.owner,
@@ -174,10 +175,13 @@ function CustomersPage() {
 
   const filtered = Object.values(filter).some((v) => v !== undefined && v !== params.status);
   const counts = list.data?.counts;
-  const typeOptions = useMemo(
+  const productOptions = useMemo(
     () => [
-      ...(options.data?.types ?? []).map((type) => ({ value: type.id, label: type.name })),
-      { value: 'none', label: t.filters.noType },
+      ...(options.data?.products ?? []).map((product) => ({
+        value: product.id,
+        label: product.name,
+      })),
+      { value: 'none', label: t.filters.noProduct },
     ],
     [options.data],
   );
@@ -265,10 +269,10 @@ function CustomersPage() {
                     onChange={(kind) => setSearch({ kind })}
                   />
                   <FilterMenu
-                    label={t.filters.type}
-                    value={params.type}
-                    options={typeOptions}
-                    onChange={(type) => setSearch({ type })}
+                    label={t.filters.product}
+                    value={params.product}
+                    options={productOptions}
+                    onChange={(product) => setSearch({ product })}
                   />
                   <FilterMenu
                     label={t.filters.region}
@@ -355,6 +359,7 @@ function CustomersPage() {
               onChange={toggleAll}
             />,
             sortHeader('name', t.columns.customer),
+            t.columns.products,
             t.columns.primaryContact,
             t.columns.owner,
             t.columns.tags,
@@ -363,6 +368,7 @@ function CustomersPage() {
           columnClassNames={[
             'w-10',
             undefined,
+            'hidden md:table-cell',
             'hidden lg:table-cell',
             'hidden xl:table-cell',
             'hidden 2xl:table-cell',
@@ -371,6 +377,7 @@ function CustomersPage() {
           columnSort={[
             undefined,
             sortState('name'),
+            undefined,
             undefined,
             undefined,
             undefined,
@@ -458,11 +465,7 @@ function CustomerRow({
   onToggle: () => void;
 }) {
   const href = `/customers/${row.id}`;
-  const meta = [
-    row.contactTypeName,
-    row.city,
-    row.kind === 'individual' ? t.kind.individual : (row.typeName ?? t.filters.noType),
-  ]
+  const meta = [row.contactTypeName, row.city, row.kind === 'individual' ? t.kind.individual : null]
     .filter(Boolean)
     .join(' · ');
   return (
@@ -486,6 +489,13 @@ function CustomerRow({
               <p className="truncate text-xs text-muted">{meta}</p>
             </div>
           </div>
+        </div>
+      </TableCell>
+      <TableCell className="hidden md:table-cell">
+        <div className="flex flex-wrap gap-1">
+          {row.products.map((product) => (
+            <ProductChip key={product.id}>{product.name}</ProductChip>
+          ))}
         </div>
       </TableCell>
       <TableCell className="hidden lg:table-cell">

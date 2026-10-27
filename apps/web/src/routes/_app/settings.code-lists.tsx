@@ -31,7 +31,7 @@ const t = sk.codeLists;
 type Section = CodeList | 'tags';
 const SECTIONS: readonly Section[] = [
   'contact_type',
-  'customer_type',
+  'product',
   'source',
   'template_category',
   'tags',
@@ -39,9 +39,7 @@ const SECTIONS: readonly Section[] = [
 
 export const Route = createFileRoute('/_app/settings/code-lists')({
   validateSearch: z.object({
-    list: z
-      .enum(['contact_type', 'customer_type', 'source', 'template_category', 'tags'])
-      .optional(),
+    list: z.enum(['contact_type', 'product', 'source', 'template_category', 'tags']).optional(),
   }),
   component: CodeListsPage,
 });
@@ -51,13 +49,13 @@ function CodeListsPage() {
   const { list = 'contact_type' } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const contactTypes = useQuery(trpc.codeList.list.queryOptions({ list: 'contact_type' }));
-  const types = useQuery(trpc.codeList.list.queryOptions({ list: 'customer_type' }));
+  const products = useQuery(trpc.codeList.list.queryOptions({ list: 'product' }));
   const sources = useQuery(trpc.codeList.list.queryOptions({ list: 'source' }));
   const categories = useQuery(trpc.codeList.list.queryOptions({ list: 'template_category' }));
   const tags = useQuery(trpc.codeList.tags.queryOptions());
   const count = {
     contact_type: contactTypes.data?.items.length,
-    customer_type: types.data?.items.length,
+    product: products.data?.items.length,
     source: sources.data?.items.length,
     template_category: categories.data?.items.length,
     tags: tags.data?.length,
@@ -258,11 +256,11 @@ function ItemsTable({ list }: { list: CodeList }) {
             </TableCell>
           </TableRow>
         ))}
-        {list === 'customer_type' && items.data ? (
+        {list === 'product' && items.data ? (
           <TableRow>
             <TableCell />
             <TableCell colSpan={4} className="text-sm text-muted italic">
-              {t.noType(items.data.withoutCount)}
+              {t.noProduct(items.data.withoutCount)}
             </TableCell>
           </TableRow>
         ) : null}

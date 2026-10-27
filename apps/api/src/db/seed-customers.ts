@@ -6,13 +6,14 @@ import {
   contactTypes,
   customers,
   customerSources,
+  customerProducts,
   customerTags,
   folders,
   tags,
 } from './schema/index.js';
 
-/** The type `0003_customer_type_ados` installs. */
-export const ADOS_TYPE_ID = '00000000-0000-4000-8000-0000000000a1';
+/** The product ADOS: installed as a type by `0003_customer_type_ados`, a product since `0013`. */
+export const ADOS_PRODUCT_ID = '00000000-0000-4000-8000-0000000000a1';
 
 const id = (prefix: string, n: number) =>
   `00000000-0000-4000-8000-${prefix}${String(n).padStart(12 - prefix.length, '0')}`;
@@ -307,7 +308,6 @@ export async function seedCustomers(
       id: customerId,
       kind: c.kind,
       contactTypeId: customerType!.id,
-      typeId: c.ados ? ADOS_TYPE_ID : null,
       name: c.name,
       ico: c.ico ?? null,
       status: c.status,
@@ -336,6 +336,10 @@ export async function seedCustomers(
     await tx.delete(customerTags).where(sql`${customerTags.customerId} = ${customerId}`);
     for (const tag of c.tags ?? []) {
       await tx.insert(customerTags).values({ customerId, tagId: id('c', tag + 1) });
+    }
+    await tx.delete(customerProducts).where(sql`${customerProducts.customerId} = ${customerId}`);
+    if (c.ados) {
+      await tx.insert(customerProducts).values({ customerId, productId: ADOS_PRODUCT_ID });
     }
     if (c.kind !== 'organization') continue;
     for (const [j, p] of c.people.entries()) {

@@ -38,7 +38,7 @@ function valuesOf(c: Customer): CustomerFormValues {
       web: c.web ?? '',
       email: c.email ?? '',
       phone: c.phone ?? '',
-      typeId: c.typeId ?? '',
+      productIds: c.products.map((product) => product.id),
       status: c.status ?? '',
       street: c.street ?? '',
       postalCode: c.postalCode ?? '',

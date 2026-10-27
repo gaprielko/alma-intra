@@ -16,7 +16,12 @@ import { ActivityDialog } from '@/components/activities/activity-dialog';
 import { ActivitySheet } from '@/components/activities/activity-sheet';
 import { Avatar } from '@/components/avatar';
 import { ContactDialog, type Contact } from '@/components/customers/contact-dialog';
-import { CustomerAvatar, CustomerStatusBadge, TagChip } from '@/components/customers/customer-bits';
+import {
+  CustomerAvatar,
+  CustomerStatusBadge,
+  ProductChip,
+  TagChip,
+} from '@/components/customers/customer-bits';
 import { ErrorState } from '@/components/empty-state';
 import { CustomerFilesCard } from '@/components/files/customer-files-card';
 import { PageHeader } from '@/components/page-header';
@@ -93,9 +98,7 @@ function CustomerDetailPage() {
   const c = customer.data;
   const meta = [
     c.contactTypeName,
-    c.kind === 'individual'
-      ? sk.customers.kind.individual
-      : (c.typeName ?? sk.customers.filters.noType),
+    c.kind === 'individual' ? sk.customers.kind.individual : null,
     c.city,
     c.ico ? t.ico(c.ico.replace(/^(\d{2})(\d{3})(\d{3})$/, '$1 $2 $3')) : null,
   ]
@@ -199,7 +202,6 @@ function OrganizationCard({ customer: c }: { customer: Customer }) {
       <CardHeader title={t.basics} />
       <Rows>
         <Row label={f.kind}>{sk.customers.kind[c.kind]}</Row>
-        <Row label={f.type}>{c.typeName ?? sk.customers.filters.noType}</Row>
         <Row label={f.ico}>{c.ico}</Row>
         <Row label={f.dic}>{c.dic}</Row>
         <Row label={f.icDph}>{c.icDph}</Row>
@@ -267,9 +269,15 @@ function ClassificationCard({ customer: c }: { customer: Customer }) {
     <Card>
       <CardHeader title={t.classification} />
       <Rows>
-        {c.kind === 'individual' ? (
-          <Row label={f.type}>{c.typeName ?? sk.customers.filters.noType}</Row>
-        ) : null}
+        <Row label={f.products}>
+          {c.products.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {c.products.map((product) => (
+                <ProductChip key={product.id}>{product.name}</ProductChip>
+              ))}
+            </div>
+          ) : null}
+        </Row>
         <Row label={f.owner}>{c.owner?.name}</Row>
         <Row label={f.source}>{c.sourceName}</Row>
         <Row label={f.tags}>
@@ -521,6 +529,11 @@ function describe(event: HistoryEvent): ReactNode {
   const added = namesOf(diff.tagsAdded);
   const removed = namesOf(diff.tagsRemoved);
   const tagDetail = [...added.map((n) => `+ ${n}`), ...removed.map((n) => `− ${n}`)].join(', ');
+  const productsAdded = namesOf(diff.productsAdded);
+  const productDetail = [
+    ...productsAdded.map((n) => `+ ${n}`),
+    ...namesOf(diff.productsRemoved).map((n) => `− ${n}`),
+  ].join(', ');
   const status = diff.status as { before?: unknown; after?: unknown } | undefined;
   // Set, changed or cleared (the type is no longer „Zákazník“, or „Bez zaradenia“ was picked).
   const statusChange =
@@ -547,9 +560,13 @@ function describe(event: HistoryEvent): ReactNode {
     : '';
   switch (event.action) {
     case 'customer.create':
-      return added.length > 0
-        ? `${h.created} · ${h.fieldNames.tags}: ${added.join(', ')}`
-        : h.created;
+      return [
+        h.created,
+        productsAdded.length > 0 ? `${h.fieldNames.products}: ${productsAdded.join(', ')}` : null,
+        added.length > 0 ? `${h.fieldNames.tags}: ${added.join(', ')}` : null,
+      ]
+        .filter(Boolean)
+        .join(' · ');
     case 'customer.delete':
       return h.deleted;
     case 'customer.bulkAddTag':
@@ -576,7 +593,7 @@ function describe(event: HistoryEvent): ReactNode {
       }
       const details = [
         diff.contactTypeId ? `${h.fieldNames.contactTypeId}: ${change('contactTypeId')}` : null,
-        diff.typeId ? `${h.fieldNames.typeId}: ${change('typeId')}` : null,
+        productDetail ? `${h.fieldNames.products}: ${productDetail}` : null,
         diff.sourceId ? `${h.fieldNames.sourceId}: ${change('sourceId')}` : null,
         tagDetail ? `${h.fieldNames.tags}: ${tagDetail}` : null,
       ].filter(Boolean);

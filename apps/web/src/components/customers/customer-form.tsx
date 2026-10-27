@@ -60,7 +60,7 @@ export interface CustomerFormValues {
     dic: string;
     icDph: string;
     web: string;
-    typeId: string;
+    productIds: string[];
     /** Empty: „Bez zaradenia“. */
     status: (typeof CUSTOMER_STATUSES)[number] | '';
     street: string;
@@ -90,7 +90,7 @@ export function emptyCustomer(ownerUserId: string): CustomerFormValues {
       dic: '',
       icDph: '',
       web: '',
-      typeId: '',
+      productIds: [],
       status: '',
       street: '',
       postalCode: '',
@@ -114,7 +114,6 @@ function toInput(values: CustomerFormValues) {
   return {
     customer: {
       ...c,
-      typeId: c.typeId || null,
       status: c.status || null,
       region: c.region || null,
       ownerUserId: c.ownerUserId || null,
@@ -380,8 +379,12 @@ function OrganizationBasics() {
   return (
     <Section title={t.basics.title}>
       <div className="grid gap-4 @md:grid-cols-2">
-        <TextField name="customer.name" label={t.basics.name} autoComplete="organization" />
-        <TypeField />
+        <TextField
+          name="customer.name"
+          label={t.basics.name}
+          autoComplete="organization"
+          className="@md:col-span-2"
+        />
         <IcoField />
         <TextField name="customer.dic" label={t.basics.dic} />
         <TextField name="customer.icDph" label={t.basics.icDph} />
@@ -518,8 +521,8 @@ function CodeListField({
   placeholder,
   items,
 }: {
-  list: 'contact_type' | 'customer_type' | 'source';
-  name: 'customer.contactTypeId' | 'customer.typeId' | 'customer.sourceId';
+  list: 'contact_type' | 'source';
+  name: 'customer.contactTypeId' | 'customer.sourceId';
   label: string;
   /** The option for none; a field without one must have a value. */
   emptyLabel?: string;
@@ -576,7 +579,7 @@ function CodeListField({
             disabled={!text.trim() || create.isPending}
             onClick={add}
           >
-            {t.basics.addType}
+            {t.basics.addItem}
           </Button>
           <Button type="button" variant="ghost" onClick={() => setAdding(false)}>
             {sk.common.cancel}
@@ -607,21 +610,6 @@ function CodeListField({
 }
 
 /** The type, with „Nový typ organizácie“ adding one to the code list on the spot. */
-function TypeField() {
-  const options = useQuery(trpc.customer.options.queryOptions());
-  return (
-    <CodeListField
-      list="customer_type"
-      name="customer.typeId"
-      label={t.basics.type}
-      emptyLabel={t.basics.noType}
-      newLabel={t.basics.newType}
-      placeholder={t.basics.newTypePlaceholder}
-      items={options.data?.types}
-    />
-  );
-}
-
 /** Zákazník, Partner, …: a new record starts as „Zákazník“. */
 function ContactTypeField() {
   const options = useQuery(trpc.customer.options.queryOptions());
@@ -649,7 +637,6 @@ function ContactTypeField() {
 function Classification() {
   const { control } = useFormContext<CustomerFormValues>();
   const options = useQuery(trpc.customer.options.queryOptions());
-  const kind = useWatch({ control, name: 'customer.kind' });
   const contactTypeId = useWatch({ control, name: 'customer.contactTypeId' });
   // The sales status belongs to a „Zákazník“ only; another type has none.
   const salesStatus =
@@ -686,11 +673,9 @@ function Classification() {
           placeholder={c.newSourcePlaceholder}
           items={options.data?.sources}
         />
-        {kind === 'individual' ? (
-          <div className="@md:col-span-3">
-            <TypeOfIndividual />
-          </div>
-        ) : null}
+        <div className="@md:col-span-3">
+          <ProductsField items={options.data?.products} />
+        </div>
         <div className="@md:col-span-2">
           <TagsField suggestions={(options.data?.tags ?? []).map((tag) => tag.name)} />
         </div>
@@ -713,22 +698,112 @@ function Classification() {
   );
 }
 
-/** A private person may have a type too, though usually none. */
-function TypeOfIndividual() {
-  const options = useQuery(trpc.customer.options.queryOptions());
-  const typeId = useWatch({
-    control: useFormContext<CustomerFormValues>().control,
-    name: 'customer.typeId',
-  });
+/**
+ * The products as chips to switch on and off (ADOS, DOS, …), and „Nový produkt“ to add one to the
+ * code list on the spot, switched on.
+ */
+function ProductsField({
+  items,
+}: {
+  items: { id: string; name: string; active: boolean }[] | undefined;
+}) {
+  const { control, getValues, setValue } = useFormContext<CustomerFormValues>();
+  const picked = useWatch({ control, name: 'customer.productIds' });
+  const c = t.classification;
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const [adding, setAdding] = useState(false);
+  const [text, setText] = useState('');
+  const toggle = (id: string) => {
+    const current = getValues('customer.productIds');
+    setValue(
+      'customer.productIds',
+      current.includes(id) ? current.filter((p) => p !== id) : [...current, id],
+      { shouldDirty: true },
+    );
+  };
+  const create = useMutation(
+    trpc.codeList.create.mutationOptions({
+      onSuccess: async (created) => {
+        await queryClient.invalidateQueries(trpc.customer.options.pathFilter());
+        setValue('customer.productIds', [...getValues('customer.productIds'), created.id], {
+          shouldDirty: true,
+        });
+        setAdding(false);
+        setText('');
+      },
+      onError: (error) => toast('error', errorMessage(error, sk.codeLists.errors)),
+    }),
+  );
+  const add = () => {
+    if (text.trim()) create.mutate({ list: 'product', name: text.trim() });
+  };
+  // The switched-on products, and any switched off since that the record still has.
+  const shown = (items ?? []).filter((item) => item.active || picked.includes(item.id));
   return (
-    <SelectField name="customer.typeId" label={t.basics.type}>
-      <SelectItem value="">{t.basics.noType}</SelectItem>
-      {offered(options.data?.types, typeId).map((type) => (
-        <SelectItem key={type.id} value={type.id}>
-          {type.name}
-        </SelectItem>
-      ))}
-    </SelectField>
+    <fieldset className="space-y-2">
+      <legend className="mb-2 text-sm font-medium">{c.products}</legend>
+      <div className="flex flex-wrap items-center gap-2">
+        {shown.length === 0 && !adding ? (
+          <span className="text-sm text-muted">{c.noProducts}</span>
+        ) : null}
+        {shown.map((item) => {
+          const on = picked.includes(item.id);
+          return (
+            <button
+              key={item.id}
+              type="button"
+              aria-pressed={on}
+              onClick={() => toggle(item.id)}
+              className={cn(
+                'inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium whitespace-nowrap transition-colors',
+                on
+                  ? 'border-primary bg-primary-soft font-semibold text-primary-text'
+                  : 'border-border bg-white hover:bg-hover',
+              )}
+            >
+              {item.name}
+            </button>
+          );
+        })}
+        {adding ? null : (
+          <Button type="button" variant="ghost" size="sm" onClick={() => setAdding(true)}>
+            <Plus className="size-3.5" aria-hidden />
+            {c.newProduct}
+          </Button>
+        )}
+      </div>
+      {adding ? (
+        <div className="flex gap-2">
+          <Input
+            aria-label={c.newProduct}
+            autoFocus
+            maxLength={80}
+            placeholder={c.newProductPlaceholder}
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                add();
+              }
+              if (event.key === 'Escape') setAdding(false);
+            }}
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={!text.trim() || create.isPending}
+            onClick={add}
+          >
+            {t.basics.addItem}
+          </Button>
+          <Button type="button" variant="ghost" onClick={() => setAdding(false)}>
+            {sk.common.cancel}
+          </Button>
+        </div>
+      ) : null}
+    </fieldset>
   );
 }
 

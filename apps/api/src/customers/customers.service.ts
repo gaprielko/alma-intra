@@ -28,7 +28,8 @@ import {
   customerSources,
   customers,
   customerTags,
-  customerTypes,
+  customerProducts,
+  products,
   tags,
   users,
 } from '../db/schema/index.js';
@@ -79,8 +80,15 @@ function filterWhere(filter: CustomerFilter): SQL[] {
   const where: SQL[] = [alive];
   if (filter.kind) where.push(eq(customers.kind, filter.kind));
   if (filter.contactTypeId) where.push(eq(customers.contactTypeId, filter.contactTypeId));
-  if (filter.typeId === 'none') where.push(isNull(customers.typeId));
-  else if (filter.typeId) where.push(eq(customers.typeId, filter.typeId));
+  if (filter.productId === 'none') {
+    where.push(
+      sql`not exists (select 1 from customer_products cp where cp.customer_id = ${CUSTOMER_ID})`,
+    );
+  } else if (filter.productId) {
+    where.push(
+      sql`exists (select 1 from customer_products cp where cp.customer_id = ${CUSTOMER_ID} and cp.product_id = ${filter.productId})`,
+    );
+  }
   if (filter.region) where.push(eq(customers.region, filter.region));
   if (filter.ownerUserId) where.push(eq(customers.ownerUserId, filter.ownerUserId));
   if (filter.tagId) {
@@ -110,6 +118,13 @@ const tagsJson = sql<{ id: string; name: string }[]>`coalesce((
   select json_agg(json_build_object('id', t.id, 'name', t.name) order by t.name collate "sk-x-icu")
   from customer_tags ct join tags t on t.id = ct.tag_id
   where ct.customer_id = ${CUSTOMER_ID}), '[]'::json)`;
+
+/** The record's products, in the order of the code list, as JSON. */
+const productsJson = sql<{ id: string; name: string }[]>`coalesce((
+  select json_agg(json_build_object('id', p.id, 'name', p.name)
+    order by p.position, p.name collate "sk-x-icu")
+  from customer_products cp join products p on p.id = cp.product_id
+  where cp.customer_id = ${CUSTOMER_ID}), '[]'::json)`;
 
 /** The primary contact, or for a private person the person. */
 const primaryContactJson = sql<{
@@ -161,7 +176,7 @@ export async function listCustomers(db: Db | Tx, raw: CustomerListInput) {
         name: customers.name,
         city: customers.city,
         contactTypeName: contactTypes.name,
-        typeName: customerTypes.name,
+        products: productsJson,
         status: customers.status,
         owner: sql<{ id: string; name: string } | null>`case when ${users.id} is null then null
           else json_build_object('id', ${users.id}, 'name', ${users.name}) end`,
@@ -172,7 +187,6 @@ export async function listCustomers(db: Db | Tx, raw: CustomerListInput) {
       })
       .from(customers)
       .innerJoin(contactTypes, eq(contactTypes.id, customers.contactTypeId))
-      .leftJoin(customerTypes, eq(customerTypes.id, customers.typeId))
       .leftJoin(users, eq(users.id, customers.ownerUserId))
       .where(and(...where))
       .orderBy(order, asc(customers.id))
@@ -223,7 +237,7 @@ export async function getCustomer(db: Db | Tx, id: string) {
     .select({
       customer: customers,
       contactTypeName: contactTypes.name,
-      typeName: customerTypes.name,
+      products: productsJson,
       sourceName: customerSources.name,
       owner,
       createdBy,
@@ -231,7 +245,6 @@ export async function getCustomer(db: Db | Tx, id: string) {
     })
     .from(customers)
     .innerJoin(contactTypes, eq(contactTypes.id, customers.contactTypeId))
-    .leftJoin(customerTypes, eq(customerTypes.id, customers.typeId))
     .leftJoin(customerSources, eq(customerSources.id, customers.sourceId))
     .where(and(eq(customers.id, id), alive));
   if (!row) throw new CustomerError('NOT_FOUND');
@@ -287,6 +300,36 @@ async function setTags(tx: Tx, customerId: string, names: readonly string[]) {
   };
 }
 
+/**
+ * The record's products as picked (an id that is not a product is left out); answers which were
+ * added and which removed.
+ */
+async function setProducts(tx: Tx, customerId: string, picked: readonly string[]) {
+  const before = (
+    await tx
+      .select({ id: customerProducts.productId })
+      .from(customerProducts)
+      .where(eq(customerProducts.customerId, customerId))
+  ).map((row) => row.id);
+  const ids =
+    picked.length === 0
+      ? []
+      : (
+          await tx
+            .select({ id: products.id })
+            .from(products)
+            .where(inArray(products.id, [...new Set(picked)]))
+        ).map((row) => row.id);
+  await tx.delete(customerProducts).where(eq(customerProducts.customerId, customerId));
+  if (ids.length > 0) {
+    await tx.insert(customerProducts).values(ids.map((productId) => ({ customerId, productId })));
+  }
+  return {
+    added: ids.filter((id) => !before.includes(id)),
+    removed: before.filter((id) => !ids.includes(id)),
+  };
+}
+
 async function assertIcoFree(tx: Tx, ico: string | undefined, except?: string) {
   if (!ico) return;
   const [taken] = await tx
@@ -310,7 +353,6 @@ async function hasSalesStatus(tx: Tx, contactTypeId: string) {
 function columnsOf(input: CustomerInput, salesStatus: boolean) {
   const common = {
     contactTypeId: input.contactTypeId,
-    typeId: input.typeId ?? null,
     status: salesStatus ? (input.status ?? null) : null,
     street: input.street ?? null,
     postalCode: input.postalCode ?? null,
@@ -405,6 +447,7 @@ export async function createCustomer(db: Db, userId: string, input: CreateCustom
         .values({ ...values, ...unsubscribed, createdByUserId: userId })
         .returning({ id: customers.id });
       const { added } = await setTags(tx, created!.id, input.customer.tags);
+      const productChange = await setProducts(tx, created!.id, input.customer.productIds);
       await createCustomerFolder(tx, created!.id);
       if (input.firstContact && input.customer.kind === 'organization') {
         await tx.insert(contacts).values({
@@ -413,7 +456,12 @@ export async function createCustomer(db: Db, userId: string, input: CreateCustom
           isPrimary: true,
         });
       }
-      return { id: created!.id, status: values.status, tagsAdded: added };
+      return {
+        id: created!.id,
+        status: values.status,
+        tagsAdded: added,
+        productsAdded: productChange.added,
+      };
     }),
   );
 }
@@ -458,15 +506,18 @@ export async function updateCustomer(db: Db, id: string, input: CustomerInput) {
         .where(eq(customers.id, id));
       const tagChange = await setTags(tx, id, input.tags);
       if (tagChange.added.length + tagChange.removed.length > 0) fields.push('tags');
+      const productChange = await setProducts(tx, id, input.productIds);
+      if (productChange.added.length + productChange.removed.length > 0) fields.push('products');
       return {
         fields: fields.sort(),
         status: { before: current.status, after: values.status },
         ownerUserId: { before: current.ownerUserId, after: values.ownerUserId },
         contactTypeId: { before: current.contactTypeId, after: values.contactTypeId },
-        typeId: { before: current.typeId, after: values.typeId },
         sourceId: { before: current.sourceId, after: values.sourceId },
         tagsAdded: tagChange.added,
         tagsRemoved: tagChange.removed,
+        productsAdded: productChange.added,
+        productsRemoved: productChange.removed,
       };
     }),
   );
@@ -541,7 +592,7 @@ export async function exportRows(
       name: customers.name,
       kind: customers.kind,
       contactType: contactTypes.name,
-      type: customerTypes.name,
+      products: productsJson,
       status: customers.status,
       ico: customers.ico,
       dic: customers.dic,
@@ -561,7 +612,6 @@ export async function exportRows(
     })
     .from(customers)
     .innerJoin(contactTypes, eq(contactTypes.id, customers.contactTypeId))
-    .leftJoin(customerTypes, eq(customerTypes.id, customers.typeId))
     .leftJoin(customerSources, eq(customerSources.id, customers.sourceId))
     .leftJoin(users, eq(users.id, customers.ownerUserId))
     .where(and(...where))
@@ -621,7 +671,7 @@ function idsIn(value: unknown, into: Set<string>) {
 }
 
 /**
- * The names behind the ids of a history (tags, contacts, colleagues, types, sources), resolved
+ * The names behind the ids of a history (tags, contacts, colleagues, products, sources), resolved
  * when it is read: the append-only trail keeps ids only, never a name somebody typed. A deleted
  * contact keeps its name here; a tag deleted since is simply not named.
  */
@@ -630,8 +680,8 @@ async function namesOf(db: Db | Tx, diffs: (Record<string, unknown> | null)[]) {
   for (const diff of diffs) idsIn(diff, ids);
   const list = [...ids];
   if (list.length === 0) return {} as Record<string, string>;
-  const [tagRows, contactRows, userRows, typeRows, sourceRows, contactTypeRows] = await Promise.all(
-    [
+  const [tagRows, contactRows, userRows, productRows, sourceRows, contactTypeRows] =
+    await Promise.all([
       db.select({ id: tags.id, name: tags.name }).from(tags).where(inArray(tags.id, list)),
       db
         .select({
@@ -645,9 +695,9 @@ async function namesOf(db: Db | Tx, diffs: (Record<string, unknown> | null)[]) {
         .where(inArray(contacts.id, list)),
       db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, list)),
       db
-        .select({ id: customerTypes.id, name: customerTypes.name })
-        .from(customerTypes)
-        .where(inArray(customerTypes.id, list)),
+        .select({ id: products.id, name: products.name })
+        .from(products)
+        .where(inArray(products.id, list)),
       db
         .select({ id: customerSources.id, name: customerSources.name })
         .from(customerSources)
@@ -656,13 +706,12 @@ async function namesOf(db: Db | Tx, diffs: (Record<string, unknown> | null)[]) {
         .select({ id: contactTypes.id, name: contactTypes.name })
         .from(contactTypes)
         .where(inArray(contactTypes.id, list)),
-    ],
-  );
+    ]);
   return Object.fromEntries([
     ...tagRows.map((row) => [row.id, row.name]),
     ...contactRows.map((row) => [row.id, personName(row)]),
     ...userRows.map((row) => [row.id, row.name]),
-    ...typeRows.map((row) => [row.id, row.name]),
+    ...productRows.map((row) => [row.id, row.name]),
     ...sourceRows.map((row) => [row.id, row.name]),
     ...contactTypeRows.map((row) => [row.id, row.name]),
   ]) as Record<string, string>;
@@ -778,9 +827,9 @@ export async function deleteContact(db: Db, id: string) {
   });
 }
 
-/** What the customer forms and filters offer: types, sources, tags and the active users. */
+/** What the forms and filters offer: contact types, products, sources, tags and the active users. */
 export async function formOptions(db: Db | Tx) {
-  const [contactTypeRows, types, sources, tagRows, people] = await Promise.all([
+  const [contactTypeRows, productRows, sources, tagRows, people] = await Promise.all([
     db
       .select({
         id: contactTypes.id,
@@ -791,9 +840,9 @@ export async function formOptions(db: Db | Tx) {
       .from(contactTypes)
       .orderBy(asc(contactTypes.position), collated(contactTypes.name)),
     db
-      .select({ id: customerTypes.id, name: customerTypes.name, active: customerTypes.active })
-      .from(customerTypes)
-      .orderBy(asc(customerTypes.position), collated(customerTypes.name)),
+      .select({ id: products.id, name: products.name, active: products.active })
+      .from(products)
+      .orderBy(asc(products.position), collated(products.name)),
     db
       .select({
         id: customerSources.id,
@@ -809,5 +858,11 @@ export async function formOptions(db: Db | Tx) {
       .where(and(eq(users.status, 'active'), isNull(users.deletedAt)))
       .orderBy(collated(users.name)),
   ]);
-  return { contactTypes: contactTypeRows, types, sources, tags: tagRows, users: people };
+  return {
+    contactTypes: contactTypeRows,
+    products: productRows,
+    sources,
+    tags: tagRows,
+    users: people,
+  };
 }
