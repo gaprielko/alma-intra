@@ -17,7 +17,7 @@ const tabClass =
 const activeTabClass =
   'text-foreground after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-full after:bg-primary';
 
-/** Nastavenia: the header and the tabs of its sections; for now Používatelia only. */
+/** Nastavenia: the header and the tabs of its sections. */
 function SettingsLayout() {
   const t = sk.settings;
   return (
@@ -26,6 +26,13 @@ function SettingsLayout() {
       <nav aria-label={t.tabs.label} className="flex gap-6 border-b border-border px-7">
         <Link to="/settings/users" className={tabClass} activeProps={{ className: activeTabClass }}>
           {t.tabs.users}
+        </Link>
+        <Link
+          to="/settings/code-lists"
+          className={tabClass}
+          activeProps={{ className: activeTabClass }}
+        >
+          {t.tabs.codeLists}
         </Link>
       </nav>
       <Outlet />

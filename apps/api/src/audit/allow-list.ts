@@ -1,4 +1,10 @@
-import { SECOND_STEPS, USER_STATUSES } from '@intra/shared/schemas';
+import {
+  CODE_LISTS,
+  CUSTOMER_KINDS,
+  CUSTOMER_STATUSES,
+  SECOND_STEPS,
+  USER_STATUSES,
+} from '@intra/shared/schemas';
 
 /**
  * What an audit event may contain. `audit_events` is append-only: a value written there
@@ -57,6 +63,37 @@ const USER_REASON_CODES = [...AUTH_REASON_CODES, 'self', 'last_active_user', 'al
 /** The fields of a user's profile that may be named in an event, never their values. */
 const PROFILE_FIELDS = ['name', 'phone', 'position', 'emailSignature'];
 
+/** The fields of a customer or a contact that may be named in an event, never their values. */
+const CUSTOMER_FIELDS = [
+  'name',
+  'titleBefore',
+  'firstName',
+  'lastName',
+  'titleAfter',
+  'gender',
+  'salutation',
+  'position',
+  'ico',
+  'dic',
+  'icDph',
+  'web',
+  'email',
+  'phone',
+  'typeId',
+  'street',
+  'postalCode',
+  'city',
+  'region',
+  'sourceId',
+  'tags',
+  'note',
+  'almaOrganizationId',
+  'receivesBulk',
+];
+
+/** Up to a page of customers a bulk action named; ids only. */
+const uuidList: Rule = (v) => Array.isArray(v) && v.length <= 100 && v.every((id) => uuid(id));
+
 const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
   /**
    * Auth events about nobody in particular (a failed login for an unknown e-mail), and for how
@@ -85,6 +122,33 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     filters: subsetOf(LIST_FILTERS),
     resultCount: number,
   },
+  /**
+   * A customer and its contacts: which fields changed (names), the status, the owner and the type
+   * by id, what happened to a contact. Never a name, an e-mail, a phone, an address or a note.
+   */
+  customer: {
+    kind: oneOf(CUSTOMER_KINDS),
+    status: oneOf(CUSTOMER_STATUSES),
+    ownerUserId: uuid,
+    firstContact: flag,
+    fields: subsetOf(CUSTOMER_FIELDS),
+    deleted: flag,
+    contact: oneOf(['created', 'updated', 'primary', 'deleted']),
+    contactId: uuid,
+    ids: uuidList,
+    count: number,
+    tagAdded: flag,
+    exported: flag,
+    selected: flag,
+    resultCount: number,
+    filters: subsetOf(['search', 'status', 'kind', 'typeId', 'region', 'tagId', 'ownerUserId']),
+  },
+  /** Settings › Číselníky: which list, which fields, switched on or off. Names are not kept. */
+  code_list: {
+    list: oneOf([...CODE_LISTS, 'tag']),
+    fields: subsetOf(['name', 'active']),
+    active: flag,
+  },
 };
 
 const SECRET_KEY = /pass(word)?|token|secret|hash|authorization|cookie/i;
@@ -92,7 +156,7 @@ const FIELD_NAME = /^[A-Za-z][A-Za-z0-9_]{0,63}$/;
 const REDACTED = '[redacted]';
 const OMITTED = '[omitted]';
 const MAX_KEYS = 50;
-const MAX_DIFF_CHARS = 4000;
+const MAX_DIFF_CHARS = 6000;
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value) && !(value instanceof Date);

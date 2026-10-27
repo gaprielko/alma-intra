@@ -9,6 +9,13 @@ export const ACTIONS = [
   'user.deactivate',
   'user.reactivate',
   'user.reset_second_factor',
+  // Customers and their contacts: reading, creating and editing, the soft delete, the CSV export.
+  'customer.read',
+  'customer.write',
+  'customer.delete',
+  'customer.export',
+  // Settings › Číselníky: customer types, sources and tags.
+  'code_list.manage',
 ] as const;
 export type Action = (typeof ACTIONS)[number];
 
@@ -26,6 +33,11 @@ const POLICY: Record<Action, readonly Role[]> = {
   'user.deactivate': ['admin'],
   'user.reactivate': ['admin'],
   'user.reset_second_factor': ['admin'],
+  'customer.read': ['admin'],
+  'customer.write': ['admin'],
+  'customer.delete': ['admin'],
+  'customer.export': ['admin'],
+  'code_list.manage': ['admin'],
 };
 
 /**

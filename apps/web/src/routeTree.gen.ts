@@ -16,12 +16,16 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AppAccountRouteImport } from './routes/_app/account'
-import { Route as AppCustomersRouteImport } from './routes/_app/customers'
 import { Route as AppEmailsRouteImport } from './routes/_app/emails'
 import { Route as AppFilesRouteImport } from './routes/_app/files'
 import { Route as AppOverviewRouteImport } from './routes/_app/overview'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as AppCustomersIndexRouteImport } from './routes/_app/customers.index'
+import { Route as AppCustomersNewRouteImport } from './routes/_app/customers.new'
+import { Route as AppSettingsCodeListsRouteImport } from './routes/_app/settings.code-lists'
 import { Route as AppSettingsUsersRouteImport } from './routes/_app/settings.users'
+import { Route as AppCustomersCustomerIdIndexRouteImport } from './routes/_app/customers.$customerId.index'
+import { Route as AppCustomersCustomerIdEditRouteImport } from './routes/_app/customers.$customerId.edit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -57,11 +61,6 @@ const AppAccountRoute = AppAccountRouteImport.update({
   path: '/account',
   getParentRoute: () => AppRoute,
 } as any)
-const AppCustomersRoute = AppCustomersRouteImport.update({
-  id: '/customers',
-  path: '/customers',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppEmailsRoute = AppEmailsRouteImport.update({
   id: '/emails',
   path: '/emails',
@@ -82,11 +81,38 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCustomersIndexRoute = AppCustomersIndexRouteImport.update({
+  id: '/customers/',
+  path: '/customers/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCustomersNewRoute = AppCustomersNewRouteImport.update({
+  id: '/customers/new',
+  path: '/customers/new',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsCodeListsRoute = AppSettingsCodeListsRouteImport.update({
+  id: '/code-lists',
+  path: '/code-lists',
+  getParentRoute: () => AppSettingsRoute,
+} as any)
 const AppSettingsUsersRoute = AppSettingsUsersRouteImport.update({
   id: '/users',
   path: '/users',
   getParentRoute: () => AppSettingsRoute,
 } as any)
+const AppCustomersCustomerIdIndexRoute =
+  AppCustomersCustomerIdIndexRouteImport.update({
+    id: '/customers/$customerId/',
+    path: '/customers/$customerId/',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppCustomersCustomerIdEditRoute =
+  AppCustomersCustomerIdEditRouteImport.update({
+    id: '/customers/$customerId/edit',
+    path: '/customers/$customerId/edit',
+    getParentRoute: () => AppRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -95,12 +121,16 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/account': typeof AppAccountRoute
-  '/customers': typeof AppCustomersRoute
   '/emails': typeof AppEmailsRoute
   '/files': typeof AppFilesRoute
   '/overview': typeof AppOverviewRoute
   '/settings': typeof AppSettingsRouteWithChildren
+  '/customers/new': typeof AppCustomersNewRoute
+  '/settings/code-lists': typeof AppSettingsCodeListsRoute
   '/settings/users': typeof AppSettingsUsersRoute
+  '/customers/': typeof AppCustomersIndexRoute
+  '/customers/$customerId/edit': typeof AppCustomersCustomerIdEditRoute
+  '/customers/$customerId/': typeof AppCustomersCustomerIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -109,12 +139,16 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/account': typeof AppAccountRoute
-  '/customers': typeof AppCustomersRoute
   '/emails': typeof AppEmailsRoute
   '/files': typeof AppFilesRoute
   '/overview': typeof AppOverviewRoute
   '/settings': typeof AppSettingsRouteWithChildren
+  '/customers/new': typeof AppCustomersNewRoute
+  '/settings/code-lists': typeof AppSettingsCodeListsRoute
   '/settings/users': typeof AppSettingsUsersRoute
+  '/customers': typeof AppCustomersIndexRoute
+  '/customers/$customerId/edit': typeof AppCustomersCustomerIdEditRoute
+  '/customers/$customerId': typeof AppCustomersCustomerIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -125,12 +159,16 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_app/account': typeof AppAccountRoute
-  '/_app/customers': typeof AppCustomersRoute
   '/_app/emails': typeof AppEmailsRoute
   '/_app/files': typeof AppFilesRoute
   '/_app/overview': typeof AppOverviewRoute
   '/_app/settings': typeof AppSettingsRouteWithChildren
+  '/_app/customers/new': typeof AppCustomersNewRoute
+  '/_app/settings/code-lists': typeof AppSettingsCodeListsRoute
   '/_app/settings/users': typeof AppSettingsUsersRoute
+  '/_app/customers/': typeof AppCustomersIndexRoute
+  '/_app/customers/$customerId/edit': typeof AppCustomersCustomerIdEditRoute
+  '/_app/customers/$customerId/': typeof AppCustomersCustomerIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -141,12 +179,16 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/account'
-    | '/customers'
     | '/emails'
     | '/files'
     | '/overview'
     | '/settings'
+    | '/customers/new'
+    | '/settings/code-lists'
     | '/settings/users'
+    | '/customers/'
+    | '/customers/$customerId/edit'
+    | '/customers/$customerId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -155,12 +197,16 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/account'
-    | '/customers'
     | '/emails'
     | '/files'
     | '/overview'
     | '/settings'
+    | '/customers/new'
+    | '/settings/code-lists'
     | '/settings/users'
+    | '/customers'
+    | '/customers/$customerId/edit'
+    | '/customers/$customerId'
   id:
     | '__root__'
     | '/'
@@ -170,12 +216,16 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/_app/account'
-    | '/_app/customers'
     | '/_app/emails'
     | '/_app/files'
     | '/_app/overview'
     | '/_app/settings'
+    | '/_app/customers/new'
+    | '/_app/settings/code-lists'
     | '/_app/settings/users'
+    | '/_app/customers/'
+    | '/_app/customers/$customerId/edit'
+    | '/_app/customers/$customerId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -238,13 +288,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAccountRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/customers': {
-      id: '/_app/customers'
-      path: '/customers'
-      fullPath: '/customers'
-      preLoaderRoute: typeof AppCustomersRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/emails': {
       id: '/_app/emails'
       path: '/emails'
@@ -273,6 +316,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/customers/': {
+      id: '/_app/customers/'
+      path: '/customers'
+      fullPath: '/customers/'
+      preLoaderRoute: typeof AppCustomersIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/customers/new': {
+      id: '/_app/customers/new'
+      path: '/customers/new'
+      fullPath: '/customers/new'
+      preLoaderRoute: typeof AppCustomersNewRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings/code-lists': {
+      id: '/_app/settings/code-lists'
+      path: '/code-lists'
+      fullPath: '/settings/code-lists'
+      preLoaderRoute: typeof AppSettingsCodeListsRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
     '/_app/settings/users': {
       id: '/_app/settings/users'
       path: '/users'
@@ -280,14 +344,30 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsUsersRouteImport
       parentRoute: typeof AppSettingsRoute
     }
+    '/_app/customers/$customerId/': {
+      id: '/_app/customers/$customerId/'
+      path: '/customers/$customerId'
+      fullPath: '/customers/$customerId/'
+      preLoaderRoute: typeof AppCustomersCustomerIdIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/customers/$customerId/edit': {
+      id: '/_app/customers/$customerId/edit'
+      path: '/customers/$customerId/edit'
+      fullPath: '/customers/$customerId/edit'
+      preLoaderRoute: typeof AppCustomersCustomerIdEditRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppSettingsRouteChildren {
+  AppSettingsCodeListsRoute: typeof AppSettingsCodeListsRoute
   AppSettingsUsersRoute: typeof AppSettingsUsersRoute
 }
 
 const AppSettingsRouteChildren: AppSettingsRouteChildren = {
+  AppSettingsCodeListsRoute: AppSettingsCodeListsRoute,
   AppSettingsUsersRoute: AppSettingsUsersRoute,
 }
 
@@ -297,20 +377,26 @@ const AppSettingsRouteWithChildren = AppSettingsRoute._addFileChildren(
 
 interface AppRouteChildren {
   AppAccountRoute: typeof AppAccountRoute
-  AppCustomersRoute: typeof AppCustomersRoute
   AppEmailsRoute: typeof AppEmailsRoute
   AppFilesRoute: typeof AppFilesRoute
   AppOverviewRoute: typeof AppOverviewRoute
   AppSettingsRoute: typeof AppSettingsRouteWithChildren
+  AppCustomersNewRoute: typeof AppCustomersNewRoute
+  AppCustomersIndexRoute: typeof AppCustomersIndexRoute
+  AppCustomersCustomerIdEditRoute: typeof AppCustomersCustomerIdEditRoute
+  AppCustomersCustomerIdIndexRoute: typeof AppCustomersCustomerIdIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppAccountRoute: AppAccountRoute,
-  AppCustomersRoute: AppCustomersRoute,
   AppEmailsRoute: AppEmailsRoute,
   AppFilesRoute: AppFilesRoute,
   AppOverviewRoute: AppOverviewRoute,
   AppSettingsRoute: AppSettingsRouteWithChildren,
+  AppCustomersNewRoute: AppCustomersNewRoute,
+  AppCustomersIndexRoute: AppCustomersIndexRoute,
+  AppCustomersCustomerIdEditRoute: AppCustomersCustomerIdEditRoute,
+  AppCustomersCustomerIdIndexRoute: AppCustomersCustomerIdIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

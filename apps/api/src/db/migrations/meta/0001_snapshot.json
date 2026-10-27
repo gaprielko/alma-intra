@@ -152,13 +152,9 @@
         "users_invited_by_user_id_users_id_fk": {
           "name": "users_invited_by_user_id_users_id_fk",
           "tableFrom": "users",
-          "columnsFrom": [
-            "invited_by_user_id"
-          ],
+          "columnsFrom": ["invited_by_user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -249,13 +245,9 @@
         "auth_tokens_user_id_users_id_fk": {
           "name": "auth_tokens_user_id_users_id_fk",
           "tableFrom": "auth_tokens",
-          "columnsFrom": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -264,9 +256,7 @@
       "uniqueConstraints": {
         "auth_tokens_token_hash_unique": {
           "name": "auth_tokens_token_hash_unique",
-          "columns": [
-            "token_hash"
-          ],
+          "columns": ["token_hash"],
           "nullsNotDistinct": false
         }
       },
@@ -319,10 +309,7 @@
       "compositePrimaryKeys": {
         "rate_limits_key_window_start_pk": {
           "name": "rate_limits_key_window_start_pk",
-          "columns": [
-            "key",
-            "window_start"
-          ]
+          "columns": ["key", "window_start"]
         }
       },
       "uniqueConstraints": {},
@@ -443,13 +430,9 @@
         "refresh_tokens_user_id_users_id_fk": {
           "name": "refresh_tokens_user_id_users_id_fk",
           "tableFrom": "refresh_tokens",
-          "columnsFrom": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -458,9 +441,7 @@
       "uniqueConstraints": {
         "refresh_tokens_token_hash_unique": {
           "name": "refresh_tokens_token_hash_unique",
-          "columns": [
-            "token_hash"
-          ],
+          "columns": ["token_hash"],
           "nullsNotDistinct": false
         }
       },
@@ -526,13 +507,9 @@
         "second_factor_recovery_codes_user_id_users_id_fk": {
           "name": "second_factor_recovery_codes_user_id_users_id_fk",
           "tableFrom": "second_factor_recovery_codes",
-          "columnsFrom": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -601,13 +578,9 @@
         "second_factor_trusted_devices_user_id_users_id_fk": {
           "name": "second_factor_trusted_devices_user_id_users_id_fk",
           "tableFrom": "second_factor_trusted_devices",
-          "columnsFrom": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -616,9 +589,7 @@
       "uniqueConstraints": {
         "second_factor_trusted_devices_token_hash_unique": {
           "name": "second_factor_trusted_devices_token_hash_unique",
-          "columns": [
-            "token_hash"
-          ],
+          "columns": ["token_hash"],
           "nullsNotDistinct": false
         }
       },
@@ -686,13 +657,9 @@
         "user_second_factors_user_id_users_id_fk": {
           "name": "user_second_factors_user_id_users_id_fk",
           "tableFrom": "user_second_factors",
-          "columnsFrom": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -968,13 +935,9 @@
         "audit_events_user_id_users_id_fk": {
           "name": "audit_events_user_id_users_id_fk",
           "tableFrom": "audit_events",
-          "columnsFrom": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -990,35 +953,22 @@
     "public.user_role": {
       "name": "user_role",
       "schema": "public",
-      "values": [
-        "admin"
-      ]
+      "values": ["admin"]
     },
     "public.user_status": {
       "name": "user_status",
       "schema": "public",
-      "values": [
-        "invited",
-        "active",
-        "deactivated"
-      ]
+      "values": ["invited", "active", "deactivated"]
     },
     "public.auth_token_type": {
       "name": "auth_token_type",
       "schema": "public",
-      "values": [
-        "invitation",
-        "password_reset"
-      ]
+      "values": ["invitation", "password_reset"]
     },
     "public.mail_kind": {
       "name": "mail_kind",
       "schema": "public",
-      "values": [
-        "invitation",
-        "password_reset",
-        "second_factor_changed"
-      ]
+      "values": ["invitation", "password_reset", "second_factor_changed"]
     }
   },
   "schemas": {},

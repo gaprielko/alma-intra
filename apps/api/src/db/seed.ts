@@ -2,6 +2,7 @@ import argon2 from 'argon2';
 import { sql } from 'drizzle-orm';
 import { encryptField } from '../crypto/field-encryption.js';
 import type { Db } from './db.module.js';
+import { seedCustomers } from './seed-customers.js';
 import { userSecondFactors, users } from './schema/index.js';
 
 /** The password of every seeded active user. Public on purpose: the seed refuses production. */
@@ -25,7 +26,8 @@ export const SEED_USERS = {
 
 /**
  * Development and test data: three active colleagues with a password and a second factor, one
- * invitation not accepted yet and one deactivated account. Idempotent: rows are upserted by id.
+ * invitation not accepted yet and one deactivated account, and ten customers with their contacts
+ * (`seed-customers.ts`). Idempotent: rows are upserted by id.
  */
 export async function seed(db: Db, encryptionKey: string) {
   const passwordHash = await argon2.hash(SEED_PASSWORD);
@@ -96,5 +98,6 @@ export async function seed(db: Db, encryptionKey: string) {
           set: { secretEncrypted: secret, confirmedAt: sql`now()`, lastUsedStep: null },
         });
     }
+    await seedCustomers(tx, SEED_USERS);
   });
 }
