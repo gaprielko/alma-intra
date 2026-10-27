@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
 import { DbModule } from './db/db.module.js';
+import { EmailModule } from './email/email.module.js';
 import { FilesModule } from './files/files.module.js';
 import { HealthController } from './health/health.controller.js';
 import { loggerOptions } from './logging/logger-options.js';
@@ -19,6 +20,7 @@ import { TrpcModule } from './trpc/trpc.module.js';
     BreachCheckModule,
     StorageModule,
     FilesModule,
+    EmailModule,
     TrpcModule,
   ],
   controllers: [HealthController],

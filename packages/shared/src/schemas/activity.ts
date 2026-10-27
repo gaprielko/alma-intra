@@ -117,9 +117,12 @@ export const timelineSchema = z.object({
   filter: z.enum(TIMELINE_FILTERS).default('all'),
 });
 
-/** Files offered to attach: the customer's folders or the company's, by name. */
+/**
+ * Files offered to attach: the customer's folders or the company's, by name. A template has no
+ * customer: only the company's documents.
+ */
 export const pickableFilesSchema = z.object({
   scope: z.enum(['customer', 'company']),
-  customerId: idSchema,
+  customerId: idSchema.optional(),
   search: z.string().trim().max(100).optional(),
 });

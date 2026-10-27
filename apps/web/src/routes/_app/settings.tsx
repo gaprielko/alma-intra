@@ -34,6 +34,13 @@ function SettingsLayout() {
         >
           {t.tabs.codeLists}
         </Link>
+        <Link
+          to="/settings/email-look"
+          className={tabClass}
+          activeProps={{ className: activeTabClass }}
+        >
+          {t.tabs.emailLook}
+        </Link>
       </nav>
       <Outlet />
     </>

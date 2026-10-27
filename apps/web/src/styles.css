@@ -807,3 +807,47 @@ html {
     font-size: 9pt;
   }
 }
+
+/*
+ * The body of an e-mail in the template editor: the typography the rendered e-mail has
+ * (apps/api/src/email/render.tsx), so what is edited is what arrives.
+ */
+.email-body p {
+  margin: 0 0 16px;
+}
+.email-body h2 {
+  margin: 24px 0 12px;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 700;
+}
+.email-body h3 {
+  margin: 24px 0 12px;
+  font-size: 17px;
+  line-height: 24px;
+  font-weight: 700;
+}
+.email-body ul,
+.email-body ol {
+  margin: 0 0 16px;
+  padding-left: 22px;
+}
+.email-body ul {
+  list-style: disc;
+}
+.email-body ol {
+  list-style: decimal;
+}
+.email-body li p {
+  margin: 0;
+}
+.email-body a {
+  text-decoration: underline;
+}
+.email-body hr {
+  margin: 24px 0;
+  border-color: #e5eaea;
+}
+.email-body > :first-child {
+  margin-top: 0;
+}

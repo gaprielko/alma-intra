@@ -29,10 +29,12 @@ import { cn } from '@/lib/utils';
 
 const t = sk.codeLists;
 type Section = CodeList | 'tags';
-const SECTIONS: readonly Section[] = ['customer_type', 'source', 'tags'];
+const SECTIONS: readonly Section[] = ['customer_type', 'source', 'template_category', 'tags'];
 
 export const Route = createFileRoute('/_app/settings/code-lists')({
-  validateSearch: z.object({ list: z.enum(['customer_type', 'source', 'tags']).optional() }),
+  validateSearch: z.object({
+    list: z.enum(['customer_type', 'source', 'template_category', 'tags']).optional(),
+  }),
   component: CodeListsPage,
 });
 
@@ -42,10 +44,12 @@ function CodeListsPage() {
   const navigate = useNavigate({ from: Route.fullPath });
   const types = useQuery(trpc.codeList.list.queryOptions({ list: 'customer_type' }));
   const sources = useQuery(trpc.codeList.list.queryOptions({ list: 'source' }));
+  const categories = useQuery(trpc.codeList.list.queryOptions({ list: 'template_category' }));
   const tags = useQuery(trpc.codeList.tags.queryOptions());
   const count = {
     customer_type: types.data?.items.length,
     source: sources.data?.items.length,
+    template_category: categories.data?.items.length,
     tags: tags.data?.length,
   };
   return (
@@ -142,7 +146,7 @@ function ItemsTable({ list }: { list: CodeList }) {
         columns={[
           t.columns.order,
           t.columns.name,
-          t.columns.customers,
+          list === 'template_category' ? t.columns.templates : t.columns.customers,
           t.columns.offered,
           <span key="a" className="sr-only">
             {t.columns.actions}

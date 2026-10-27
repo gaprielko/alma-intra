@@ -50,6 +50,22 @@ export function DropdownMenuItem({
   );
 }
 
+/** The name of a group of items: 11 px caps in tertiary, not an item. */
+export function DropdownMenuLabel({
+  className,
+  ...props
+}: ComponentProps<typeof MenuPrimitive.Label>) {
+  return (
+    <MenuPrimitive.Label
+      className={cn(
+        'px-3 pt-2 pb-1 text-[11px] font-semibold tracking-[0.06em] text-tertiary uppercase',
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
 /** A line between two groups of items, with 4 px of air on each side. */
 export function DropdownMenuSeparator({
   className,

@@ -4,6 +4,7 @@ import {
   CUSTOMER_KINDS,
   CUSTOMER_STATUSES,
   FILE_GROUPS,
+  HEADER_STYLES,
   SECOND_STEPS,
   USER_STATUSES,
 } from '@intra/shared/schemas';
@@ -192,6 +193,37 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     nextStepDone: flag,
     deleted: flag,
   },
+  /** An e-mail template: which fields changed, its category, switched on or off; never its text. */
+  email_template: {
+    categoryId: uuid,
+    active: flag,
+    duplicatedFrom: uuid,
+    fields: subsetOf([
+      'name',
+      'categoryId',
+      'language',
+      'subject',
+      'body',
+      'customFields',
+      'active',
+    ]),
+  },
+  /** Settings › Vzhľad e-mailov: which settings changed. */
+  email_look: {
+    fields: subsetOf([
+      'logoKey',
+      'headerStyle',
+      'brandName',
+      'headerText',
+      'accent',
+      'footerCompany',
+      'footerIco',
+      'footerWeb',
+      'footerEmail',
+    ]),
+    headerStyle: oneOf(HEADER_STYLES),
+  },
+  email_image: { size: number },
   folder: {
     parentId: uuid,
     customerId: uuid,

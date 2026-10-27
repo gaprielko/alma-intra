@@ -495,13 +495,14 @@ const PICKER_LIMIT = 200;
 export async function pickableFiles(
   db: Db,
   scope: 'customer' | 'company',
-  customerId: string,
+  customerId: string | undefined,
   search: string | undefined,
 ) {
-  await liveCustomer(db, customerId);
+  if (customerId) await liveCustomer(db, customerId);
+  else if (scope === 'customer') throw new ActivityError('CUSTOMER_NOT_FOUND');
   const where = [
     isNull(files.deletedAt),
-    scope === 'customer' ? eq(folders.customerId, customerId) : isNull(folders.customerId),
+    scope === 'customer' ? eq(folders.customerId, customerId!) : isNull(folders.customerId),
   ];
   if (search) {
     where.push(sql`${files.name} ilike ${`%${search.replace(/[\\%_]/g, (c) => `\\${c}`)}%`}`);
@@ -511,7 +512,7 @@ export async function pickableFiles(
       ? await db
           .select({ id: folders.id })
           .from(folders)
-          .where(and(eq(folders.customerId, customerId), isNull(folders.parentId)))
+          .where(and(eq(folders.customerId, customerId!), isNull(folders.parentId)))
       : [{ id: COMPANY_ROOT_FOLDER_ID }];
   const rows = await db
     .select({

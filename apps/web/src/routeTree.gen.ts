@@ -23,9 +23,12 @@ import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppCustomersIndexRouteImport } from './routes/_app/customers.index'
 import { Route as AppCustomersNewRouteImport } from './routes/_app/customers.new'
 import { Route as AppSettingsCodeListsRouteImport } from './routes/_app/settings.code-lists'
+import { Route as AppSettingsEmailLookRouteImport } from './routes/_app/settings.email-look'
 import { Route as AppSettingsUsersRouteImport } from './routes/_app/settings.users'
 import { Route as AppCustomersCustomerIdIndexRouteImport } from './routes/_app/customers.$customerId.index'
 import { Route as AppCustomersCustomerIdEditRouteImport } from './routes/_app/customers.$customerId.edit'
+import { Route as AppEmailsTemplatesIndexRouteImport } from './routes/_app/emails.templates.index'
+import { Route as AppEmailsTemplatesTemplateIdRouteImport } from './routes/_app/emails.templates.$templateId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -96,6 +99,11 @@ const AppSettingsCodeListsRoute = AppSettingsCodeListsRouteImport.update({
   path: '/code-lists',
   getParentRoute: () => AppSettingsRoute,
 } as any)
+const AppSettingsEmailLookRoute = AppSettingsEmailLookRouteImport.update({
+  id: '/email-look',
+  path: '/email-look',
+  getParentRoute: () => AppSettingsRoute,
+} as any)
 const AppSettingsUsersRoute = AppSettingsUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -113,6 +121,17 @@ const AppCustomersCustomerIdEditRoute =
     path: '/customers/$customerId/edit',
     getParentRoute: () => AppRoute,
   } as any)
+const AppEmailsTemplatesIndexRoute = AppEmailsTemplatesIndexRouteImport.update({
+  id: '/templates/',
+  path: '/templates/',
+  getParentRoute: () => AppEmailsRoute,
+} as any)
+const AppEmailsTemplatesTemplateIdRoute =
+  AppEmailsTemplatesTemplateIdRouteImport.update({
+    id: '/templates/$templateId',
+    path: '/templates/$templateId',
+    getParentRoute: () => AppEmailsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -121,16 +140,19 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/account': typeof AppAccountRoute
-  '/emails': typeof AppEmailsRoute
+  '/emails': typeof AppEmailsRouteWithChildren
   '/files': typeof AppFilesRoute
   '/overview': typeof AppOverviewRoute
   '/settings': typeof AppSettingsRouteWithChildren
   '/customers/new': typeof AppCustomersNewRoute
   '/settings/code-lists': typeof AppSettingsCodeListsRoute
+  '/settings/email-look': typeof AppSettingsEmailLookRoute
   '/settings/users': typeof AppSettingsUsersRoute
   '/customers/': typeof AppCustomersIndexRoute
   '/customers/$customerId/edit': typeof AppCustomersCustomerIdEditRoute
+  '/emails/templates/$templateId': typeof AppEmailsTemplatesTemplateIdRoute
   '/customers/$customerId/': typeof AppCustomersCustomerIdIndexRoute
+  '/emails/templates/': typeof AppEmailsTemplatesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -139,16 +161,19 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/account': typeof AppAccountRoute
-  '/emails': typeof AppEmailsRoute
+  '/emails': typeof AppEmailsRouteWithChildren
   '/files': typeof AppFilesRoute
   '/overview': typeof AppOverviewRoute
   '/settings': typeof AppSettingsRouteWithChildren
   '/customers/new': typeof AppCustomersNewRoute
   '/settings/code-lists': typeof AppSettingsCodeListsRoute
+  '/settings/email-look': typeof AppSettingsEmailLookRoute
   '/settings/users': typeof AppSettingsUsersRoute
   '/customers': typeof AppCustomersIndexRoute
   '/customers/$customerId/edit': typeof AppCustomersCustomerIdEditRoute
+  '/emails/templates/$templateId': typeof AppEmailsTemplatesTemplateIdRoute
   '/customers/$customerId': typeof AppCustomersCustomerIdIndexRoute
+  '/emails/templates': typeof AppEmailsTemplatesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -159,16 +184,19 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_app/account': typeof AppAccountRoute
-  '/_app/emails': typeof AppEmailsRoute
+  '/_app/emails': typeof AppEmailsRouteWithChildren
   '/_app/files': typeof AppFilesRoute
   '/_app/overview': typeof AppOverviewRoute
   '/_app/settings': typeof AppSettingsRouteWithChildren
   '/_app/customers/new': typeof AppCustomersNewRoute
   '/_app/settings/code-lists': typeof AppSettingsCodeListsRoute
+  '/_app/settings/email-look': typeof AppSettingsEmailLookRoute
   '/_app/settings/users': typeof AppSettingsUsersRoute
   '/_app/customers/': typeof AppCustomersIndexRoute
   '/_app/customers/$customerId/edit': typeof AppCustomersCustomerIdEditRoute
+  '/_app/emails/templates/$templateId': typeof AppEmailsTemplatesTemplateIdRoute
   '/_app/customers/$customerId/': typeof AppCustomersCustomerIdIndexRoute
+  '/_app/emails/templates/': typeof AppEmailsTemplatesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -185,10 +213,13 @@ export interface FileRouteTypes {
     | '/settings'
     | '/customers/new'
     | '/settings/code-lists'
+    | '/settings/email-look'
     | '/settings/users'
     | '/customers/'
     | '/customers/$customerId/edit'
+    | '/emails/templates/$templateId'
     | '/customers/$customerId/'
+    | '/emails/templates/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -203,10 +234,13 @@ export interface FileRouteTypes {
     | '/settings'
     | '/customers/new'
     | '/settings/code-lists'
+    | '/settings/email-look'
     | '/settings/users'
     | '/customers'
     | '/customers/$customerId/edit'
+    | '/emails/templates/$templateId'
     | '/customers/$customerId'
+    | '/emails/templates'
   id:
     | '__root__'
     | '/'
@@ -222,10 +256,13 @@ export interface FileRouteTypes {
     | '/_app/settings'
     | '/_app/customers/new'
     | '/_app/settings/code-lists'
+    | '/_app/settings/email-look'
     | '/_app/settings/users'
     | '/_app/customers/'
     | '/_app/customers/$customerId/edit'
+    | '/_app/emails/templates/$templateId'
     | '/_app/customers/$customerId/'
+    | '/_app/emails/templates/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -337,6 +374,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsCodeListsRouteImport
       parentRoute: typeof AppSettingsRoute
     }
+    '/_app/settings/email-look': {
+      id: '/_app/settings/email-look'
+      path: '/email-look'
+      fullPath: '/settings/email-look'
+      preLoaderRoute: typeof AppSettingsEmailLookRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
     '/_app/settings/users': {
       id: '/_app/settings/users'
       path: '/users'
@@ -358,16 +402,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCustomersCustomerIdEditRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/emails/templates/': {
+      id: '/_app/emails/templates/'
+      path: '/templates'
+      fullPath: '/emails/templates/'
+      preLoaderRoute: typeof AppEmailsTemplatesIndexRouteImport
+      parentRoute: typeof AppEmailsRoute
+    }
+    '/_app/emails/templates/$templateId': {
+      id: '/_app/emails/templates/$templateId'
+      path: '/templates/$templateId'
+      fullPath: '/emails/templates/$templateId'
+      preLoaderRoute: typeof AppEmailsTemplatesTemplateIdRouteImport
+      parentRoute: typeof AppEmailsRoute
+    }
   }
 }
 
+interface AppEmailsRouteChildren {
+  AppEmailsTemplatesTemplateIdRoute: typeof AppEmailsTemplatesTemplateIdRoute
+  AppEmailsTemplatesIndexRoute: typeof AppEmailsTemplatesIndexRoute
+}
+
+const AppEmailsRouteChildren: AppEmailsRouteChildren = {
+  AppEmailsTemplatesTemplateIdRoute: AppEmailsTemplatesTemplateIdRoute,
+  AppEmailsTemplatesIndexRoute: AppEmailsTemplatesIndexRoute,
+}
+
+const AppEmailsRouteWithChildren = AppEmailsRoute._addFileChildren(
+  AppEmailsRouteChildren,
+)
+
 interface AppSettingsRouteChildren {
   AppSettingsCodeListsRoute: typeof AppSettingsCodeListsRoute
+  AppSettingsEmailLookRoute: typeof AppSettingsEmailLookRoute
   AppSettingsUsersRoute: typeof AppSettingsUsersRoute
 }
 
 const AppSettingsRouteChildren: AppSettingsRouteChildren = {
   AppSettingsCodeListsRoute: AppSettingsCodeListsRoute,
+  AppSettingsEmailLookRoute: AppSettingsEmailLookRoute,
   AppSettingsUsersRoute: AppSettingsUsersRoute,
 }
 
@@ -377,7 +451,7 @@ const AppSettingsRouteWithChildren = AppSettingsRoute._addFileChildren(
 
 interface AppRouteChildren {
   AppAccountRoute: typeof AppAccountRoute
-  AppEmailsRoute: typeof AppEmailsRoute
+  AppEmailsRoute: typeof AppEmailsRouteWithChildren
   AppFilesRoute: typeof AppFilesRoute
   AppOverviewRoute: typeof AppOverviewRoute
   AppSettingsRoute: typeof AppSettingsRouteWithChildren
@@ -389,7 +463,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppAccountRoute: AppAccountRoute,
-  AppEmailsRoute: AppEmailsRoute,
+  AppEmailsRoute: AppEmailsRouteWithChildren,
   AppFilesRoute: AppFilesRoute,
   AppOverviewRoute: AppOverviewRoute,
   AppSettingsRoute: AppSettingsRouteWithChildren,

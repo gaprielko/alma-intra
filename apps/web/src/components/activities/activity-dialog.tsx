@@ -484,7 +484,7 @@ export function ActivityDialog({
       {picking ? (
         <FilePicker
           customerId={customerId}
-          customerName={customerName}
+          lead={sk.activities.picker.lead(customerName)}
           already={new Set(attachments.map((a) => a.fileId))}
           onClose={() => setPicking(false)}
           onPick={addPicked}

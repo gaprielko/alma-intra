@@ -20,6 +20,8 @@ export default defineConfig({
     proxy: {
       '/trpc': 'http://localhost:3100',
       '/health': 'http://localhost:3100',
+      // The images of e-mails (`/m/<key>`), served by the API.
+      '/m/': 'http://localhost:3100',
     },
   },
 });

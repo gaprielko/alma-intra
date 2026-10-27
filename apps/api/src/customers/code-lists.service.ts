@@ -6,7 +6,9 @@ import {
   customerSources,
   customerTags,
   customerTypes,
+  emailTemplates,
   tags,
+  templateCategories,
 } from '../db/schema/index.js';
 
 /** A refusal the web words for itself (`sk.codeLists.errors`). */
@@ -16,11 +18,33 @@ export class CodeListError extends Error {
   }
 }
 
-const TABLES = { customer_type: customerTypes, source: customerSources } as const;
-const USED_BY = { customer_type: customers.typeId, source: customers.sourceId } as const;
+const TABLES = {
+  customer_type: customerTypes,
+  source: customerSources,
+  template_category: templateCategories,
+} as const;
+/** What uses an item: customers for their type and source, templates for their category. */
+const USED_BY = {
+  customer_type: customers.typeId,
+  source: customers.sourceId,
+  template_category: emailTemplates.categoryId,
+} as const;
 // Raw names for the correlated count: Drizzle writes columns bare in a single-table query.
-const TABLE_NAMES = { customer_type: 'customer_types', source: 'customer_sources' } as const;
-const USED_BY_COLUMN = { customer_type: 'type_id', source: 'source_id' } as const;
+const TABLE_NAMES = {
+  customer_type: 'customer_types',
+  source: 'customer_sources',
+  template_category: 'template_categories',
+} as const;
+const USED_BY_TABLE = {
+  customer_type: 'customers',
+  source: 'customers',
+  template_category: 'email_templates',
+} as const;
+const USED_BY_COLUMN = {
+  customer_type: 'type_id',
+  source: 'source_id',
+  template_category: 'category_id',
+} as const;
 
 const isNameClash = (error: unknown) => {
   const constraint =
@@ -38,26 +62,41 @@ async function mapNameClash<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
-/** The items of a list in their order, with how many live customers use each. */
+/**
+ * How many live rows use an item: customers for a type or a source, templates (deactivated ones
+ * included) for a category.
+ */
+const usageCount = (list: CodeList) =>
+  list === 'template_category'
+    ? sql<number>`(select count(*) from email_templates c
+        where c.category_id = "template_categories"."id")`.mapWith(Number)
+    : sql<number>`(select count(*) from ${sql.raw(USED_BY_TABLE[list])} c
+        where c.${sql.raw(USED_BY_COLUMN[list])} = ${sql.raw(`"${TABLE_NAMES[list]}"."id"`)}
+          and c.deleted_at is null)`.mapWith(Number);
+
+/** The items of a list in their order, with how many live rows use each. */
 export async function listItems(db: Db | Tx, list: CodeList) {
   const table = TABLES[list];
-  const usedBy = USED_BY[list];
   const items = await db
     .select({
       id: table.id,
       name: table.name,
       active: table.active,
       position: table.position,
-      customers: sql<number>`(select count(*) from customers c
-        where c.${sql.raw(USED_BY_COLUMN[list])} = ${sql.raw(`"${TABLE_NAMES[list]}"."id"`)}
-          and c.deleted_at is null)`.mapWith(Number),
+      customers: usageCount(list),
     })
     .from(table)
     .orderBy(asc(table.position), sql`${table.name} collate "sk-x-icu"`);
-  const [without] = await db
-    .select({ count: sql<number>`count(*)`.mapWith(Number) })
-    .from(customers)
-    .where(and(isNull(usedBy), isNull(customers.deletedAt)));
+  const [without] =
+    list === 'template_category'
+      ? await db
+          .select({ count: sql<number>`count(*)`.mapWith(Number) })
+          .from(emailTemplates)
+          .where(isNull(emailTemplates.categoryId))
+      : await db
+          .select({ count: sql<number>`count(*)`.mapWith(Number) })
+          .from(customers)
+          .where(and(isNull(USED_BY[list]), isNull(customers.deletedAt)));
   return { items, withoutCount: without?.count ?? 0 };
 }
 
@@ -95,16 +134,22 @@ export async function updateItem(
   });
 }
 
-/** Only an item no customer uses goes; one in use can only be switched off. */
+/** Only an item nothing uses goes; one in use can only be switched off. */
 export async function deleteItem(db: Db, list: CodeList, id: string) {
   const table = TABLES[list];
-  const usedBy = USED_BY[list];
   await db.transaction(async (tx) => {
-    const [used] = await tx
-      .select({ id: customers.id })
-      .from(customers)
-      .where(eq(usedBy, id))
-      .limit(1);
+    const [used] =
+      list === 'template_category'
+        ? await tx
+            .select({ id: emailTemplates.id })
+            .from(emailTemplates)
+            .where(eq(emailTemplates.categoryId, id))
+            .limit(1)
+        : await tx
+            .select({ id: customers.id })
+            .from(customers)
+            .where(eq(USED_BY[list], id))
+            .limit(1);
     if (used) throw new CodeListError('IN_USE');
     const rows = await tx.delete(table).where(eq(table.id, id)).returning({ id: table.id });
     if (rows.length === 0) throw new CodeListError('NOT_FOUND');

@@ -1,5 +1,5 @@
 import { sk } from '@intra/shared/i18n';
-import { FILE_ACCEPT } from '@intra/shared/schemas';
+import { COMPANY_ROOT_FOLDER_ID, FILE_ACCEPT } from '@intra/shared/schemas';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Search, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -40,23 +40,29 @@ function useDebounced<T>(value: T, ms: number) {
 
 /**
  * „Priložiť súbory“: the customer's folder first, the company's documents a tab away, and an
- * upload from the computer that lands in the customer's folder and is picked at once.
+ * upload from the computer that lands in the customer's folder and is picked at once. Without a
+ * customer (a template's default attachments) only the company's documents, and an upload lands
+ * in „Firemné dokumenty“.
  */
 export function FilePicker({
   customerId,
-  customerName,
+  lead,
+  notes,
   already,
   onClose,
   onPick,
 }: {
-  customerId: string;
-  customerName: string;
+  customerId?: string | undefined;
+  /** The line under the title: who the files are for. */
+  lead: string;
+  /** What attaching means here; the activity's words by default. */
+  notes?: string[] | undefined;
   /** Files attached already: not offered again. */
   already: ReadonlySet<string>;
   onClose: () => void;
   onPick: (files: PickedFile[]) => void;
 }) {
-  const [scope, setScope] = useState<'customer' | 'company'>('customer');
+  const [scope, setScope] = useState<'customer' | 'company'>(customerId ? 'customer' : 'company');
   const [typed, setTyped] = useState('');
   const search = useDebounced(typed.trim(), 250);
   const [picked, setPicked] = useState<Map<string, PickedFile>>(new Map());
@@ -65,12 +71,16 @@ export function FilePicker({
   const list = useQuery({
     ...trpc.activity.pickableFiles.queryOptions({
       scope,
-      customerId,
+      ...(customerId ? { customerId } : {}),
       ...(search ? { search } : {}),
     }),
     placeholderData: keepPreviousData,
   });
-  const customerFolder = useQuery(trpc.file.customerFolder.queryOptions({ customerId }));
+  const customerFolder = useQuery({
+    ...trpc.file.customerFolder.queryOptions({ customerId: customerId ?? '' }),
+    enabled: customerId !== undefined,
+  });
+  const uploadFolder = customerId ? customerFolder.data?.id : COMPANY_ROOT_FOLDER_ID;
   const files = (list.data?.files ?? []).filter((file) => !already.has(file.id));
   const total = [...picked.values()].reduce((sum, file) => sum + file.size, 0);
 
@@ -83,7 +93,7 @@ export function FilePicker({
     });
 
   const upload = async (chosen: File[]) => {
-    const rootId = customerFolder.data?.id;
+    const rootId = uploadFolder;
     if (!rootId || chosen.length === 0) return;
     setUploading(true);
     try {
@@ -104,35 +114,37 @@ export function FilePicker({
       <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>{t.title}</DialogTitle>
-          <DialogDescription>{t.lead(customerName)}</DialogDescription>
+          <DialogDescription>{lead}</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div
-            role="tablist"
-            aria-label={t.tabs.label}
-            className="flex rounded-[10px] bg-surface p-1"
-          >
-            {(['customer', 'company'] as const).map((key) => (
-              <button
-                key={key}
-                type="button"
-                role="tab"
-                aria-selected={scope === key}
-                onClick={() => setScope(key)}
-                className={cn(
-                  'h-8 rounded-lg px-3 text-[13px] font-semibold transition-colors',
-                  scope === key ? 'bg-white text-primary-text shadow-rest' : 'text-muted',
-                )}
-              >
-                {t.tabs[key]}
-              </button>
-            ))}
-          </div>
+          {customerId ? (
+            <div
+              role="tablist"
+              aria-label={t.tabs.label}
+              className="flex rounded-[10px] bg-surface p-1"
+            >
+              {(['customer', 'company'] as const).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  role="tab"
+                  aria-selected={scope === key}
+                  onClick={() => setScope(key)}
+                  className={cn(
+                    'h-8 rounded-lg px-3 text-[13px] font-semibold transition-colors',
+                    scope === key ? 'bg-white text-primary-text shadow-rest' : 'text-muted',
+                  )}
+                >
+                  {t.tabs[key]}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <Button
             variant="ghost"
             size="sm"
-            disabled={uploading || !customerFolder.data}
+            disabled={uploading || !uploadFolder}
             onClick={() => input.current?.click()}
           >
             <Upload className="size-3.5" aria-hidden />
@@ -199,8 +211,9 @@ export function FilePicker({
         </ul>
 
         <div className="space-y-1 text-xs text-muted">
-          <p>{t.versionNote}</p>
-          <p>{t.uploadNote}</p>
+          {(notes ?? [t.versionNote, t.uploadNote]).map((note) => (
+            <p key={note}>{note}</p>
+          ))}
         </div>
 
         <DialogFooter className="items-center">

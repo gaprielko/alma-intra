@@ -24,6 +24,11 @@ const envSchema = z.object({
   MAIL_FROM: z.string().default('Alma Intra <onboarding@resend.dev>'),
   /** Where an answer to a system e-mail goes. Empty sends no Reply-To. Checked at boot. */
   MAIL_REPLY_TO: z.union([z.literal(''), z.string().email()]).default('info@alma-care.eu'),
+  /**
+   * The shared sending address of e-mails to customers (D-17a): the From shows the colleague's
+   * name with it. Its domain must be verified in Resend.
+   */
+  CAMPAIGN_FROM_ADDRESS: z.string().email().default('info@mail.alma-care.eu'),
   /** Built `apps/web` served by the API (staging/production image). Unset in dev: Vite serves it. */
   WEB_DIST_DIR: optionalString(z.string().min(1)),
   /**

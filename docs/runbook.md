@@ -167,6 +167,7 @@ Environment variables (all **runtime**, none a build variable; the web needs no 
 | `RESEND_API_KEY`       | from step 5                                                              |
 | `MAIL_FROM`            | `Alma Intra <info@mail.alma-care.eu>`                                    |
 | `MAIL_REPLY_TO`        | unset (default `info@alma-care.eu`)                                      |
+| `CAMPAIGN_FROM_ADDRESS` | `info@mail.alma-care.eu` (the default; e-mails to customers, E5) |
 | `S3_ENDPOINT`          | `https://nbg1.your-objectstorage.com`                                    |
 | `S3_REGION`            | `nbg1`                                                                   |
 | `S3_BUCKET`            | `alma-intra-files`                                                       |

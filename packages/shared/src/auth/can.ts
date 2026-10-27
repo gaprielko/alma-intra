@@ -25,6 +25,10 @@ export const ACTIONS = [
   'activity.read',
   'activity.write',
   'activity.delete',
+  // E-mail templates (reading them is part of sending), and Settings › Vzhľad e-mailov.
+  'template.read',
+  'template.write',
+  'email_look.manage',
 ] as const;
 export type Action = (typeof ACTIONS)[number];
 
@@ -53,6 +57,9 @@ const POLICY: Record<Action, readonly Role[]> = {
   'activity.read': ['admin'],
   'activity.write': ['admin'],
   'activity.delete': ['admin'],
+  'template.read': ['admin'],
+  'template.write': ['admin'],
+  'email_look.manage': ['admin'],
 };
 
 /**
