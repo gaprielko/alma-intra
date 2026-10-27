@@ -584,6 +584,8 @@ export const sk = {
         noOwner: 'Nikto',
         source: 'Zdroj',
         noSource: 'Nezadaný',
+        newSource: 'Nový zdroj',
+        newSourcePlaceholder: 'Napríklad Veľtrh',
         tags: 'Štítky',
         tagPlaceholder: 'Pridať štítok',
         removeTag: (tag: string) => `Odobrať štítok ${tag}`,

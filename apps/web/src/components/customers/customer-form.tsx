@@ -46,7 +46,7 @@ const offered = <T extends { id: string; active: boolean }>(
   items: T[] | undefined,
   chosen: string,
 ) => (items ?? []).filter((item) => item.active || item.id === chosen);
-const NEW_TYPE = '__new';
+const NEW_ITEM = '__new';
 
 /** Everything the form edits, flat, both kinds' fields at once; the schema keeps the kind's. */
 export interface CustomerFormValues {
@@ -414,44 +414,66 @@ function IndividualBasics() {
   );
 }
 
-/** The type, with „Nový typ organizácie“ adding one to the code list on the spot. */
-function TypeField() {
+/**
+ * A code list field (the type, the source) whose last option adds a new item to the code list on
+ * the spot and picks it: „Nový typ organizácie“, „Nový zdroj“.
+ */
+function CodeListField({
+  list,
+  name,
+  label,
+  emptyLabel,
+  newLabel,
+  placeholder,
+  items,
+}: {
+  list: 'customer_type' | 'source';
+  name: 'customer.typeId' | 'customer.sourceId';
+  label: string;
+  emptyLabel: string;
+  newLabel: string;
+  placeholder: string;
+  items: { id: string; name: string; active: boolean }[] | undefined;
+}) {
   const { setValue, control } = useFormContext<CustomerFormValues>();
-  const typeId = useWatch({ control, name: 'customer.typeId' });
+  const value = useWatch({ control, name });
   const toast = useToast();
   const queryClient = useQueryClient();
-  const options = useQuery(trpc.customer.options.queryOptions());
   const [adding, setAdding] = useState(false);
-  const [name, setName] = useState('');
+  const [text, setText] = useState('');
+  const inputId = `new-${list}`;
   const create = useMutation(
     trpc.codeList.create.mutationOptions({
       onSuccess: async (created) => {
         await queryClient.invalidateQueries(trpc.customer.options.pathFilter());
-        setValue('customer.typeId', created.id, { shouldDirty: true });
+        setValue(name, created.id, { shouldDirty: true });
         setAdding(false);
-        setName('');
+        setText('');
       },
       onError: (error) => toast('error', errorMessage(error, sk.codeLists.errors)),
     }),
   );
+  const add = () => {
+    if (text.trim()) create.mutate({ list, name: text.trim() });
+  };
   if (adding) {
     return (
       <div className="space-y-2">
-        <label htmlFor="new-type" className="text-sm font-medium">
-          {t.basics.newType}
+        <label htmlFor={inputId} className="text-sm font-medium">
+          {newLabel}
         </label>
         <div className="flex gap-2">
           <Input
-            id="new-type"
+            id={inputId}
             autoFocus
             maxLength={80}
-            placeholder={t.basics.newTypePlaceholder}
-            value={name}
-            onChange={(event) => setName(event.target.value)}
+            placeholder={placeholder}
+            value={text}
+            onChange={(event) => setText(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
                 event.preventDefault();
-                if (name.trim()) create.mutate({ list: 'customer_type', name: name.trim() });
+                add();
               }
               if (event.key === 'Escape') setAdding(false);
             }}
@@ -459,8 +481,8 @@ function TypeField() {
           <Button
             type="button"
             variant="secondary"
-            disabled={!name.trim() || create.isPending}
-            onClick={() => create.mutate({ list: 'customer_type', name: name.trim() })}
+            disabled={!text.trim() || create.isPending}
+            onClick={add}
           >
             {t.basics.addType}
           </Button>
@@ -473,22 +495,38 @@ function TypeField() {
   }
   return (
     <SelectField
-      name="customer.typeId"
-      label={t.basics.type}
-      onPick={(value) => {
-        if (value !== NEW_TYPE) return false;
+      name={name}
+      label={label}
+      onPick={(picked) => {
+        if (picked !== NEW_ITEM) return false;
         setAdding(true);
         return true;
       }}
     >
-      <SelectItem value="">{t.basics.noType}</SelectItem>
-      {offered(options.data?.types, typeId).map((type) => (
-        <SelectItem key={type.id} value={type.id}>
-          {type.name}
+      <SelectItem value="">{emptyLabel}</SelectItem>
+      {offered(items, value).map((item) => (
+        <SelectItem key={item.id} value={item.id}>
+          {item.name}
         </SelectItem>
       ))}
-      <SelectItem value={NEW_TYPE}>+ {t.basics.newType}</SelectItem>
+      <SelectItem value={NEW_ITEM}>+ {newLabel}</SelectItem>
     </SelectField>
+  );
+}
+
+/** The type, with „Nový typ organizácie“ adding one to the code list on the spot. */
+function TypeField() {
+  const options = useQuery(trpc.customer.options.queryOptions());
+  return (
+    <CodeListField
+      list="customer_type"
+      name="customer.typeId"
+      label={t.basics.type}
+      emptyLabel={t.basics.noType}
+      newLabel={t.basics.newType}
+      placeholder={t.basics.newTypePlaceholder}
+      items={options.data?.types}
+    />
   );
 }
 
@@ -496,7 +534,6 @@ function Classification() {
   const { control } = useFormContext<CustomerFormValues>();
   const options = useQuery(trpc.customer.options.queryOptions());
   const kind = useWatch({ control, name: 'customer.kind' });
-  const sourceId = useWatch({ control, name: 'customer.sourceId' });
   const c = t.classification;
   return (
     <Section title={c.title} lead={c.lead}>
@@ -516,14 +553,15 @@ function Classification() {
             </SelectItem>
           ))}
         </SelectField>
-        <SelectField name="customer.sourceId" label={c.source}>
-          <SelectItem value="">{c.noSource}</SelectItem>
-          {offered(options.data?.sources, sourceId).map((s) => (
-            <SelectItem key={s.id} value={s.id}>
-              {s.name}
-            </SelectItem>
-          ))}
-        </SelectField>
+        <CodeListField
+          list="source"
+          name="customer.sourceId"
+          label={c.source}
+          emptyLabel={c.noSource}
+          newLabel={c.newSource}
+          placeholder={c.newSourcePlaceholder}
+          items={options.data?.sources}
+        />
         {kind === 'individual' ? (
           <div className="@md:col-span-3">
             <TypeOfIndividual />
