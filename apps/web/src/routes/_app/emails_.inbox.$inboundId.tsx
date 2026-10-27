@@ -2,7 +2,7 @@ import { sk } from '@intra/shared/i18n';
 import { personName } from '@intra/shared/schemas';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { Building2, Paperclip, Trash2, UserRound } from 'lucide-react';
+import { Building2, Paperclip, Reply, Trash2, UserRound } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
 import { ErrorState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { Input, Textarea } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
 import { formatDateTime } from '@/lib/format';
@@ -51,6 +51,7 @@ function InboundPage() {
   const queryClient = useQueryClient();
   const [assigning, setAssigning] = useState(false);
   const [discarding, setDiscarding] = useState(false);
+  const [replying, setReplying] = useState(false);
   const inbound = useQuery(trpc.inbound.get.queryOptions({ id: inboundId }));
   const discard = useMutation(
     trpc.inbound.discard.mutationOptions({
@@ -98,6 +99,12 @@ function InboundPage() {
           ) : undefined
         }
       >
+        {m.status === 'assigned' ? (
+          <Button onClick={() => setReplying(true)}>
+            <Reply className="size-4" aria-hidden />
+            {t.reply}
+          </Button>
+        ) : null}
         <Button variant="secondary" onClick={() => setAssigning(true)}>
           <Building2 className="size-4" aria-hidden />
           {m.status === 'unassigned' ? t.assign : t.reassign}
@@ -202,6 +209,13 @@ function InboundPage() {
           fromEmail={m.fromEmail}
           current={m.customerId ? { id: m.customerId, name: m.customerName ?? '' } : null}
           onClose={() => setAssigning(false)}
+        />
+      ) : null}
+      {replying ? (
+        <ReplyDialog
+          inboundId={m.id}
+          to={m.fromName ?? m.fromEmail}
+          onClose={() => setReplying(false)}
         />
       ) : null}
       <ConfirmDialog
@@ -346,6 +360,65 @@ function AssignDialog({
             onClick={() =>
               picked && assign.mutate({ id: inboundId, customerId: picked.id, contactId })
             }
+          >
+            {d.submit}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** „Odpovedať“: the answer's own text; the received e-mail is quoted below it when it leaves. */
+function ReplyDialog({
+  inboundId,
+  to,
+  onClose,
+}: {
+  inboundId: string;
+  to: string;
+  onClose: () => void;
+}) {
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const [text, setText] = useState('');
+  const send = useMutation(
+    trpc.inbound.reply.mutationOptions({
+      onSuccess: async () => {
+        await queryClient.invalidateQueries(trpc.activity.timeline.pathFilter());
+        await queryClient.invalidateQueries(trpc.campaign.pathFilter());
+        toast('success', t.replyDialog.sent);
+        onClose();
+      },
+      onError: (error) => toast('error', errorMessage(error, t.errors)),
+    }),
+  );
+  const d = t.replyDialog;
+  return (
+    <Dialog open onOpenChange={(open) => (open ? null : onClose())}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{d.title(to)}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-2">
+          <Textarea
+            aria-label={d.text}
+            placeholder={d.text}
+            rows={8}
+            maxLength={10_000}
+            autoFocus
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+          />
+          <p className="text-xs text-muted">{d.quoted}</p>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
+            {sk.common.cancel}
+          </Button>
+          <Button
+            disabled={!text.trim() || send.isPending}
+            onClick={() => send.mutate({ id: inboundId, text })}
           >
             {d.submit}
           </Button>

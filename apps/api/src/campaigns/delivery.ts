@@ -79,6 +79,10 @@ export async function drainCampaigns(
         attempts: campaignMessages.attempts,
         senderName: users.name,
         senderEmail: users.email,
+        // An answer from the app: the e-mail it answers, to thread it in the customer's client.
+        answers: sql<{ messageId: string | null; references: string | null } | null>`(
+          select json_build_object('messageId', i.header_message_id, 'references', i.references)
+          from inbound_messages i where i.id = ${campaignMessages.inReplyToInboundId})`,
       })
       .from(campaignMessages)
       .innerJoin(campaigns, eq(campaigns.id, campaignMessages.campaignId))
@@ -117,10 +121,22 @@ export async function drainCampaigns(
           text: m.text ?? '',
           from: `${m.senderName} | ${look.brandName} <${env.CAMPAIGN_FROM_ADDRESS}>`,
           replyTo: replyTo ?? m.senderEmail,
-          headers: {
-            'List-Unsubscribe': `<${oneClick}>`,
-            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-          },
+          headers: m.answers
+            ? {
+                // Correspondence (D-14): threaded, without an unsubscribe link.
+                ...(m.answers.messageId
+                  ? {
+                      'In-Reply-To': m.answers.messageId,
+                      References: [m.answers.references, m.answers.messageId]
+                        .filter(Boolean)
+                        .join(' '),
+                    }
+                  : {}),
+              }
+            : {
+                'List-Unsubscribe': `<${oneClick}>`,
+                'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+              },
           ...(attachments.length > 0 ? { attachments } : {}),
         },
         `campaign-message/${id}`,

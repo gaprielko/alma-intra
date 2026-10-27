@@ -1236,6 +1236,15 @@ export const sk = {
     assign: 'Priradiť ku kontaktu',
     reassign: 'Zmeniť kontakt',
     discard: 'Zahodiť',
+    reply: 'Odpovedať',
+    replyDialog: {
+      title: (to: string) => `Odpoveď pre ${to}`,
+      text: 'Text odpovede',
+      quoted: 'Pôvodný e-mail sa pripojí pod text.',
+      submit: 'Odoslať',
+      sent: 'Odpoveď sa odosiela.',
+      assignFirst: 'Najprv e-mail priraďte ku kontaktu.',
+    },
     assignDialog: {
       title: 'Priradiť ku kontaktu',
       search: 'Nájsť kontakt',

@@ -260,6 +260,7 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
   },
   /** Received e-mail: whom it was filed under, and its state. Never its sender or content. */
   inbound: {
+    campaignId: uuid,
     customerId: uuid,
     contactId: uuid,
     status: oneOf(INBOUND_STATUSES),

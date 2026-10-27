@@ -1,4 +1,9 @@
-import { assignInboundSchema, inboundIdSchema, inboundListSchema } from '@intra/shared/schemas';
+import {
+  assignInboundSchema,
+  inboundIdSchema,
+  inboundListSchema,
+  replyInboundSchema,
+} from '@intra/shared/schemas';
 import { TRPCError } from '@trpc/server';
 import { Logger } from '@nestjs/common';
 import { loadEnv } from '../config/env.js';
@@ -59,6 +64,17 @@ export const inboundRouter = router({
         },
       });
       return { ok: true };
+    }),
+
+  /** „Odpovedať“: the answer is queued like any e-mail to a customer and leaves within seconds. */
+  reply: authorizedProcedure('email.send')
+    .input(replyInboundSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { campaignId } = await run(() =>
+        inbound.replyToInbound(ctx.db, ctx.session.userId, input),
+      );
+      ctx.audit.set({ entityType: 'inbound', entityId: input.id, diff: { campaignId } });
+      return { campaignId };
     }),
 
   discard: authorizedProcedure('email.read')

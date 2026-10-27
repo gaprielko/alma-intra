@@ -97,6 +97,11 @@ export const campaignMessages = pgTable(
     text: text('text'),
     totalBytes: integer('total_bytes'),
     unsubscribeTokenHash: text('unsubscribe_token_hash'),
+    /**
+     * The received e-mail this one answers („Odpovedať“, spec 6.6): it is correspondence, threaded
+     * with `In-Reply-To` / `References`, without an unsubscribe link (D-14).
+     */
+    inReplyToInboundId: uuid('in_reply_to_inbound_id'),
     /** The token of its Reply-To (`r+<token>@…`, spec 6.6): a reply carries it back. */
     replyToken: text('reply_token'),
     attempts: integer('attempts').notNull().default(0),

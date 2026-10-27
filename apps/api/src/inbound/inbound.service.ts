@@ -1,7 +1,13 @@
 import { type InboundListInput, inboundListSchema, PAGE_SIZE } from '@intra/shared/schemas';
 import { and, desc, eq, isNull, ne, sql } from 'drizzle-orm';
 import type { Db } from '../db/db.module.js';
-import { campaignMessages, contacts, customers, inboundMessages } from '../db/schema/index.js';
+import {
+  campaignMessages,
+  campaigns,
+  contacts,
+  customers,
+  inboundMessages,
+} from '../db/schema/index.js';
 
 /** A refusal the web words for itself (`sk.inbound.errors`). */
 export class InboundError extends Error {
@@ -143,4 +149,62 @@ export async function discardInbound(db: Db, id: string) {
     .returning({ customerId: inboundMessages.customerId });
   if (rows.length === 0) throw new InboundError('NOT_FOUND');
   return rows[0]!;
+}
+
+const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+
+/** Plain text as paragraphs of HTML, line breaks kept. */
+const paragraphs = (text: string) =>
+  text
+    .split(/\n{2,}/)
+    .map((p) => `<p style="margin:0 0 12px">${escapeHtml(p).replace(/\n/g, '<br>')}</p>`)
+    .join('');
+
+/**
+ * „Odpovedať“ (spec 6.6): an answer to a received e-mail, queued like any e-mail to a customer (a
+ * campaign of one, so it shows in „Odoslané“ and on the timeline), to the sender, with the subject
+ * „Re: …“ and the received text quoted below. Correspondence, not marketing: it goes even to a
+ * person who unsubscribed (D-14), and the worker threads it instead of adding an unsubscribe link.
+ */
+export async function replyToInbound(db: Db, userId: string, input: { id: string; text: string }) {
+  const [received] = await db
+    .select()
+    .from(inboundMessages)
+    .where(and(eq(inboundMessages.id, input.id), eq(inboundMessages.status, 'assigned')));
+  if (!received?.customerId) throw new InboundError('NOT_FOUND');
+  const subject = /^re:/i.test(received.subject) ? received.subject : `Re: ${received.subject}`;
+  const quoted = received.text?.trim() ?? '';
+  const sender = received.fromName
+    ? `${received.fromName} <${received.fromEmail}>`
+    : received.fromEmail;
+  const html =
+    `<div style="font:14px/1.5 Arial,sans-serif;color:#1b2424">${paragraphs(input.text)}` +
+    (quoted
+      ? `<blockquote style="margin:16px 0 0;padding-left:12px;border-left:3px solid #d5dede;color:#5b6b6b">` +
+        `<p style="margin:0 0 8px">${escapeHtml(sender)}:</p>${paragraphs(quoted)}</blockquote>`
+      : '') +
+    `</div>`;
+  const text = quoted ? `${input.text}\n\n${sender}:\n${quoted.replace(/^/gm, '> ')}` : input.text;
+  return db.transaction(async (tx) => {
+    const now = new Date();
+    const [campaign] = await tx
+      .insert(campaigns)
+      .values({ status: 'sending', subjectText: subject, senderUserId: userId, sentAt: now })
+      .returning({ id: campaigns.id });
+    await tx.insert(campaignMessages).values({
+      campaignId: campaign!.id,
+      customerId: received.customerId!,
+      contactId: received.contactId,
+      status: 'queued',
+      toEmail: received.fromEmail,
+      toName: received.fromName,
+      subject,
+      html,
+      text,
+      inReplyToInboundId: received.id,
+      queuedAt: now,
+      nextAttemptAt: now,
+    });
+    return { campaignId: campaign!.id };
+  });
 }
