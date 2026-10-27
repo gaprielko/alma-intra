@@ -69,6 +69,9 @@ const optionalIco = z
   .transform((v) => (v ? v : undefined))
   .pipe(icoSchema.optional());
 
+/** An IČO to look up in the business register. */
+export const icoLookupSchema = z.object({ ico: icoSchema });
+
 /** The fields of a person, shared by a contact and a private-person customer. */
 export const personFields = {
   titleBefore: optionalText(40),
@@ -84,8 +87,12 @@ export const personFields = {
 
 /** Where a customer sits, how it is classified and who has it in hand. */
 const classificationFields = {
-  typeId: idSchema.optional().nullable(),
-  status: z.enum(CUSTOMER_STATUSES),
+  /** Zákazník, Partner, Dodávateľ, …: every record has one. */
+  contactTypeId: idSchema,
+  /** ADOS, DOS, Stacionár, …: none, one or several. */
+  productIds: z.array(idSchema).max(20).default([]),
+  /** Only a „Zákazník“ keeps it (the server drops it for other types); empty until set. */
+  status: z.enum(CUSTOMER_STATUSES).optional().nullable(),
   street: optionalText(160),
   postalCode: optionalText(12),
   city: optionalText(80),
@@ -145,16 +152,18 @@ export type UpdateCustomerInput = z.infer<typeof updateCustomerSchema>;
 
 export const customerIdSchema = z.object({ id: idSchema });
 
-export const CUSTOMER_SORTS = ['name', 'status', 'createdAt', 'updatedAt'] as const;
+export const CUSTOMER_SORTS = ['name', 'status', 'createdAt', 'updatedAt', 'lastContact'] as const;
 export type CustomerSort = (typeof CUSTOMER_SORTS)[number];
 
 /** The filters of the list; also what a CSV export and (later) a saved segment are made of. */
 export const customerFilterSchema = z.object({
   search: z.string().trim().max(100).optional(),
-  status: z.enum(CUSTOMER_STATUSES).optional(),
+  /** A status, or `none` for the records without one. */
+  status: z.enum(CUSTOMER_STATUSES).or(z.literal('none')).optional(),
   kind: z.enum(CUSTOMER_KINDS).optional(),
-  /** A type, or `none` for the customers without one. */
-  typeId: idSchema.or(z.literal('none')).optional(),
+  contactTypeId: idSchema.optional(),
+  /** A product, or `none` for the records without any. */
+  productId: idSchema.or(z.literal('none')).optional(),
   region: z.enum(REGIONS).optional(),
   tagId: idSchema.optional(),
   ownerUserId: idSchema.optional(),
@@ -189,8 +198,8 @@ export const updateContactSchema = z.object({
 });
 export const contactIdSchema = z.object({ id: idSchema });
 
-/** Customer types and sources: a name each, offered in the forms while active. */
-export const CODE_LISTS = ['customer_type', 'source', 'template_category'] as const;
+/** Contact types, products and sources: a name each, offered in the forms while active. */
+export const CODE_LISTS = ['contact_type', 'product', 'source', 'template_category'] as const;
 export type CodeList = (typeof CODE_LISTS)[number];
 
 export const codeListSchema = z.object({ list: z.enum(CODE_LISTS) });

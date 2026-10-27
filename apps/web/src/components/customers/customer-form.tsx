@@ -4,11 +4,12 @@ import {
   CUSTOMER_STATUSES,
   type CreateCustomerInput,
   type CustomerKind,
+  icoLookupSchema,
   REGIONS,
 } from '@intra/shared/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Building2, Plus, UserRound } from 'lucide-react';
+import { Building2, Plus, Search, UserRound } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
 import { type Resolver, useForm, useFormContext, useWatch } from 'react-hook-form';
 import { TagChip } from '@/components/customers/customer-bits';
@@ -33,6 +34,7 @@ import { Input, Textarea } from '@/components/ui/input';
 import { Select, SelectItem } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/toast';
+import { Tooltip } from '@/components/ui/tooltip';
 import { errorMessage } from '@/lib/errors';
 import { applyServerFieldErrors, refusedField } from '@/lib/form-errors';
 import { useSession } from '@/lib/session';
@@ -46,19 +48,21 @@ const offered = <T extends { id: string; active: boolean }>(
   items: T[] | undefined,
   chosen: string,
 ) => (items ?? []).filter((item) => item.active || item.id === chosen);
-const NEW_TYPE = '__new';
+const NEW_ITEM = '__new';
 
 /** Everything the form edits, flat, both kinds' fields at once; the schema keeps the kind's. */
 export interface CustomerFormValues {
   customer: PersonValues & {
     kind: CustomerKind;
+    contactTypeId: string;
     name: string;
     ico: string;
     dic: string;
     icDph: string;
     web: string;
-    typeId: string;
-    status: (typeof CUSTOMER_STATUSES)[number];
+    productIds: string[];
+    /** Empty: „Bez zaradenia“. */
+    status: (typeof CUSTOMER_STATUSES)[number] | '';
     street: string;
     postalCode: string;
     city: string;
@@ -79,13 +83,15 @@ export function emptyCustomer(ownerUserId: string): CustomerFormValues {
     customer: {
       ...emptyPerson(),
       kind: 'organization',
+      // „Zákazník“ once the options are loaded (`ContactTypeField`).
+      contactTypeId: '',
       name: '',
       ico: '',
       dic: '',
       icDph: '',
       web: '',
-      typeId: '',
-      status: 'lead',
+      productIds: [],
+      status: '',
       street: '',
       postalCode: '',
       city: '',
@@ -108,7 +114,7 @@ function toInput(values: CustomerFormValues) {
   return {
     customer: {
       ...c,
-      typeId: c.typeId || null,
+      status: c.status || null,
       region: c.region || null,
       ownerUserId: c.ownerUserId || null,
       sourceId: c.sourceId || null,
@@ -373,9 +379,13 @@ function OrganizationBasics() {
   return (
     <Section title={t.basics.title}>
       <div className="grid gap-4 @md:grid-cols-2">
-        <TextField name="customer.name" label={t.basics.name} autoComplete="organization" />
-        <TypeField />
-        <TextField name="customer.ico" label={t.basics.ico} />
+        <TextField
+          name="customer.name"
+          label={t.basics.name}
+          autoComplete="organization"
+          className="@md:col-span-2"
+        />
+        <IcoField />
         <TextField name="customer.dic" label={t.basics.dic} />
         <TextField name="customer.icDph" label={t.basics.icDph} />
         <TextField name="customer.web" label={t.basics.web} autoComplete="url" />
@@ -383,6 +393,90 @@ function OrganizationBasics() {
         <TextField name="customer.phone" label={t.basics.phone} type="tel" />
       </div>
     </Section>
+  );
+}
+
+/** The IČO, with a button that fills the name and the seat from the business register. */
+function IcoField() {
+  const { control, getValues, setValue, setError } = useFormContext<CustomerFormValues>();
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const [loading, setLoading] = useState(false);
+  const lookup = async () => {
+    const parsed = icoLookupSchema.safeParse({ ico: getValues('customer.ico') });
+    if (!parsed.success) {
+      setError('customer.ico', { message: sk.validation.invalid_ico });
+      return;
+    }
+    setLoading(true);
+    try {
+      const company = await queryClient.fetchQuery({
+        ...trpc.customer.lookupIco.queryOptions(parsed.data),
+        staleTime: 0,
+      });
+      if (!company) {
+        toast('warning', t.basics.lookupNotFound);
+        return;
+      }
+      const fill = { shouldDirty: true, shouldValidate: true };
+      setValue('customer.ico', company.ico, fill);
+      setValue('customer.name', company.name, fill);
+      setValue('customer.street', company.street ?? '', fill);
+      setValue('customer.postalCode', company.postalCode ?? '', fill);
+      setValue('customer.city', company.city ?? '', fill);
+      toast(
+        company.terminated ? 'warning' : 'success',
+        company.terminated
+          ? t.basics.lookupTerminated(company.name)
+          : t.basics.lookupFound(company.name),
+      );
+    } catch (error) {
+      toast('error', errorMessage(error, { REGISTER_UNAVAILABLE: t.basics.lookupUnavailable }));
+    } finally {
+      setLoading(false);
+    }
+  };
+  return (
+    <FormField
+      control={control}
+      name="customer.ico"
+      render={({ field }) => (
+        <FormItem>
+          <div className="flex gap-2">
+            <div className="field-inside min-w-0 flex-1">
+              <FormLabel>{t.basics.ico}</FormLabel>
+              <FormControl>
+                <Input
+                  inputMode="numeric"
+                  autoComplete="off"
+                  {...field}
+                  value={field.value ?? ''}
+                  onKeyDown={(event) => {
+                    if (event.key !== 'Enter') return;
+                    event.preventDefault();
+                    void lookup();
+                  }}
+                />
+              </FormControl>
+            </div>
+            <Tooltip text={t.basics.lookupHint}>
+              <Button
+                type="button"
+                variant="secondary"
+                size="lg"
+                className="shrink-0"
+                disabled={loading}
+                onClick={() => void lookup()}
+              >
+                <Search className="size-4" aria-hidden />
+                {t.basics.lookup}
+              </Button>
+            </Tooltip>
+          </div>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
   );
 }
 
@@ -414,44 +508,67 @@ function IndividualBasics() {
   );
 }
 
-/** The type, with „Nový typ organizácie“ adding one to the code list on the spot. */
-function TypeField() {
+/**
+ * A code list field (the type, the source) whose last option adds a new item to the code list on
+ * the spot and picks it: „Nový typ organizácie“, „Nový zdroj“.
+ */
+function CodeListField({
+  list,
+  name,
+  label,
+  emptyLabel,
+  newLabel,
+  placeholder,
+  items,
+}: {
+  list: 'contact_type' | 'source';
+  name: 'customer.contactTypeId' | 'customer.sourceId';
+  label: string;
+  /** The option for none; a field without one must have a value. */
+  emptyLabel?: string;
+  newLabel: string;
+  placeholder: string;
+  items: { id: string; name: string; active: boolean }[] | undefined;
+}) {
   const { setValue, control } = useFormContext<CustomerFormValues>();
-  const typeId = useWatch({ control, name: 'customer.typeId' });
+  const value = useWatch({ control, name });
   const toast = useToast();
   const queryClient = useQueryClient();
-  const options = useQuery(trpc.customer.options.queryOptions());
   const [adding, setAdding] = useState(false);
-  const [name, setName] = useState('');
+  const [text, setText] = useState('');
+  const inputId = `new-${list}`;
   const create = useMutation(
     trpc.codeList.create.mutationOptions({
       onSuccess: async (created) => {
         await queryClient.invalidateQueries(trpc.customer.options.pathFilter());
-        setValue('customer.typeId', created.id, { shouldDirty: true });
+        setValue(name, created.id, { shouldDirty: true });
         setAdding(false);
-        setName('');
+        setText('');
       },
       onError: (error) => toast('error', errorMessage(error, sk.codeLists.errors)),
     }),
   );
+  const add = () => {
+    if (text.trim()) create.mutate({ list, name: text.trim() });
+  };
   if (adding) {
     return (
       <div className="space-y-2">
-        <label htmlFor="new-type" className="text-sm font-medium">
-          {t.basics.newType}
+        <label htmlFor={inputId} className="text-sm font-medium">
+          {newLabel}
         </label>
         <div className="flex gap-2">
           <Input
-            id="new-type"
+            id={inputId}
             autoFocus
             maxLength={80}
-            placeholder={t.basics.newTypePlaceholder}
-            value={name}
-            onChange={(event) => setName(event.target.value)}
+            placeholder={placeholder}
+            value={text}
+            onChange={(event) => setText(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
                 event.preventDefault();
-                if (name.trim()) create.mutate({ list: 'customer_type', name: name.trim() });
+                add();
               }
               if (event.key === 'Escape') setAdding(false);
             }}
@@ -459,10 +576,10 @@ function TypeField() {
           <Button
             type="button"
             variant="secondary"
-            disabled={!name.trim() || create.isPending}
-            onClick={() => create.mutate({ list: 'customer_type', name: name.trim() })}
+            disabled={!text.trim() || create.isPending}
+            onClick={add}
           >
-            {t.basics.addType}
+            {t.basics.addItem}
           </Button>
           <Button type="button" variant="ghost" onClick={() => setAdding(false)}>
             {sk.common.cancel}
@@ -473,41 +590,72 @@ function TypeField() {
   }
   return (
     <SelectField
-      name="customer.typeId"
-      label={t.basics.type}
-      onPick={(value) => {
-        if (value !== NEW_TYPE) return false;
+      name={name}
+      label={label}
+      onPick={(picked) => {
+        if (picked !== NEW_ITEM) return false;
         setAdding(true);
         return true;
       }}
     >
-      <SelectItem value="">{t.basics.noType}</SelectItem>
-      {offered(options.data?.types, typeId).map((type) => (
-        <SelectItem key={type.id} value={type.id}>
-          {type.name}
+      {emptyLabel === undefined ? null : <SelectItem value="">{emptyLabel}</SelectItem>}
+      {offered(items, value).map((item) => (
+        <SelectItem key={item.id} value={item.id}>
+          {item.name}
         </SelectItem>
       ))}
-      <SelectItem value={NEW_TYPE}>+ {t.basics.newType}</SelectItem>
+      <SelectItem value={NEW_ITEM}>+ {newLabel}</SelectItem>
     </SelectField>
+  );
+}
+
+/** The type, with „Nový typ organizácie“ adding one to the code list on the spot. */
+/** Zákazník, Partner, …: a new record starts as „Zákazník“. */
+function ContactTypeField() {
+  const options = useQuery(trpc.customer.options.queryOptions());
+  const { control, getValues, setValue } = useFormContext<CustomerFormValues>();
+  const c = t.classification;
+  const value = useWatch({ control, name: 'customer.contactTypeId' });
+  const customerType = options.data?.contactTypes.find((type) => type.systemKey === 'customer');
+  useEffect(() => {
+    if (customerType && !getValues('customer.contactTypeId')) {
+      setValue('customer.contactTypeId', customerType.id);
+    }
+  }, [customerType, getValues, setValue, value]);
+  return (
+    <CodeListField
+      list="contact_type"
+      name="customer.contactTypeId"
+      label={c.contactType}
+      newLabel={c.newContactType}
+      placeholder={c.newContactTypePlaceholder}
+      items={options.data?.contactTypes}
+    />
   );
 }
 
 function Classification() {
   const { control } = useFormContext<CustomerFormValues>();
   const options = useQuery(trpc.customer.options.queryOptions());
-  const kind = useWatch({ control, name: 'customer.kind' });
-  const sourceId = useWatch({ control, name: 'customer.sourceId' });
+  const contactTypeId = useWatch({ control, name: 'customer.contactTypeId' });
+  // The sales status belongs to a „Zákazník“ only; another type has none.
+  const salesStatus =
+    options.data?.contactTypes.find((type) => type.id === contactTypeId)?.systemKey === 'customer';
   const c = t.classification;
   return (
     <Section title={c.title} lead={c.lead}>
       <div className="grid gap-4 @md:grid-cols-3">
-        <SelectField name="customer.status" label={c.status}>
-          {CUSTOMER_STATUSES.map((s) => (
-            <SelectItem key={s} value={s}>
-              {sk.customers.status[s]}
-            </SelectItem>
-          ))}
-        </SelectField>
+        <ContactTypeField />
+        {salesStatus ? (
+          <SelectField name="customer.status" label={c.status}>
+            <SelectItem value="">{c.noStatus}</SelectItem>
+            {CUSTOMER_STATUSES.map((s) => (
+              <SelectItem key={s} value={s}>
+                {sk.customers.status[s]}
+              </SelectItem>
+            ))}
+          </SelectField>
+        ) : null}
         <SelectField name="customer.ownerUserId" label={c.owner}>
           <SelectItem value="">{c.noOwner}</SelectItem>
           {(options.data?.users ?? []).map((u) => (
@@ -516,19 +664,18 @@ function Classification() {
             </SelectItem>
           ))}
         </SelectField>
-        <SelectField name="customer.sourceId" label={c.source}>
-          <SelectItem value="">{c.noSource}</SelectItem>
-          {offered(options.data?.sources, sourceId).map((s) => (
-            <SelectItem key={s.id} value={s.id}>
-              {s.name}
-            </SelectItem>
-          ))}
-        </SelectField>
-        {kind === 'individual' ? (
-          <div className="@md:col-span-3">
-            <TypeOfIndividual />
-          </div>
-        ) : null}
+        <CodeListField
+          list="source"
+          name="customer.sourceId"
+          label={c.source}
+          emptyLabel={c.noSource}
+          newLabel={c.newSource}
+          placeholder={c.newSourcePlaceholder}
+          items={options.data?.sources}
+        />
+        <div className="@md:col-span-3">
+          <ProductsField items={options.data?.products} />
+        </div>
         <div className="@md:col-span-2">
           <TagsField suggestions={(options.data?.tags ?? []).map((tag) => tag.name)} />
         </div>
@@ -551,22 +698,112 @@ function Classification() {
   );
 }
 
-/** A private person may have a type too, though usually none. */
-function TypeOfIndividual() {
-  const options = useQuery(trpc.customer.options.queryOptions());
-  const typeId = useWatch({
-    control: useFormContext<CustomerFormValues>().control,
-    name: 'customer.typeId',
-  });
+/**
+ * The products as chips to switch on and off (ADOS, DOS, …), and „Nový produkt“ to add one to the
+ * code list on the spot, switched on.
+ */
+function ProductsField({
+  items,
+}: {
+  items: { id: string; name: string; active: boolean }[] | undefined;
+}) {
+  const { control, getValues, setValue } = useFormContext<CustomerFormValues>();
+  const picked = useWatch({ control, name: 'customer.productIds' });
+  const c = t.classification;
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const [adding, setAdding] = useState(false);
+  const [text, setText] = useState('');
+  const toggle = (id: string) => {
+    const current = getValues('customer.productIds');
+    setValue(
+      'customer.productIds',
+      current.includes(id) ? current.filter((p) => p !== id) : [...current, id],
+      { shouldDirty: true },
+    );
+  };
+  const create = useMutation(
+    trpc.codeList.create.mutationOptions({
+      onSuccess: async (created) => {
+        await queryClient.invalidateQueries(trpc.customer.options.pathFilter());
+        setValue('customer.productIds', [...getValues('customer.productIds'), created.id], {
+          shouldDirty: true,
+        });
+        setAdding(false);
+        setText('');
+      },
+      onError: (error) => toast('error', errorMessage(error, sk.codeLists.errors)),
+    }),
+  );
+  const add = () => {
+    if (text.trim()) create.mutate({ list: 'product', name: text.trim() });
+  };
+  // The switched-on products, and any switched off since that the record still has.
+  const shown = (items ?? []).filter((item) => item.active || picked.includes(item.id));
   return (
-    <SelectField name="customer.typeId" label={t.basics.type}>
-      <SelectItem value="">{t.basics.noType}</SelectItem>
-      {offered(options.data?.types, typeId).map((type) => (
-        <SelectItem key={type.id} value={type.id}>
-          {type.name}
-        </SelectItem>
-      ))}
-    </SelectField>
+    <fieldset className="space-y-2">
+      <legend className="mb-2 text-sm font-medium">{c.products}</legend>
+      <div className="flex flex-wrap items-center gap-2">
+        {shown.length === 0 && !adding ? (
+          <span className="text-sm text-muted">{c.noProducts}</span>
+        ) : null}
+        {shown.map((item) => {
+          const on = picked.includes(item.id);
+          return (
+            <button
+              key={item.id}
+              type="button"
+              aria-pressed={on}
+              onClick={() => toggle(item.id)}
+              className={cn(
+                'inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium whitespace-nowrap transition-colors',
+                on
+                  ? 'border-primary bg-primary-soft font-semibold text-primary-text'
+                  : 'border-border bg-white hover:bg-hover',
+              )}
+            >
+              {item.name}
+            </button>
+          );
+        })}
+        {adding ? null : (
+          <Button type="button" variant="ghost" size="sm" onClick={() => setAdding(true)}>
+            <Plus className="size-3.5" aria-hidden />
+            {c.newProduct}
+          </Button>
+        )}
+      </div>
+      {adding ? (
+        <div className="flex gap-2">
+          <Input
+            aria-label={c.newProduct}
+            autoFocus
+            maxLength={80}
+            placeholder={c.newProductPlaceholder}
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                add();
+              }
+              if (event.key === 'Escape') setAdding(false);
+            }}
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={!text.trim() || create.isPending}
+            onClick={add}
+          >
+            {t.basics.addItem}
+          </Button>
+          <Button type="button" variant="ghost" onClick={() => setAdding(false)}>
+            {sk.common.cancel}
+          </Button>
+        </div>
+      ) : null}
+    </fieldset>
   );
 }
 

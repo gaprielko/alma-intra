@@ -363,7 +363,9 @@ function RecipientsStep({ campaign, onNext }: { campaign: Campaign; onNext: () =
                       customer.city,
                       customer.kind === 'individual'
                         ? r.individual
-                        : sk.customers.status[customer.status],
+                        : customer.status
+                          ? sk.customers.status[customer.status]
+                          : null,
                     ]
                       .filter(Boolean)
                       .join(' · ')}

@@ -78,6 +78,34 @@
       "when": 1793116787838,
       "tag": "0010_campaigns",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793136644125,
+      "tag": "0011_contact_types",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793137067692,
+      "tag": "0012_status_customers_only",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793137362265,
+      "tag": "0013_products",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793137374746,
+      "tag": "0014_drop_customer_types",
+      "breakpoints": true
     }
   ]
 }

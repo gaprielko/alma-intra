@@ -41,9 +41,23 @@ export const codeListColumns = () => ({
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-/** ADOS, a social care home, …: optional, independent of the kind. */
-export const customerTypes = pgTable('customer_types', codeListColumns(), (t) => [
-  uniqueIndex('customer_types_name_unique').on(sql`lower(${t.name})`),
+/**
+ * What a record of the list is to Alma: a customer, a partner, a supplier, … Every record has one.
+ * `systemKey` marks the items the app relies on: „Zákazník“ (`customer`) is the only type with a
+ * sales status; it can be renamed, never deleted.
+ */
+export const contactTypes = pgTable(
+  'contact_types',
+  { ...codeListColumns(), systemKey: text('system_key') },
+  (t) => [
+    uniqueIndex('contact_types_name_unique').on(sql`lower(${t.name})`),
+    uniqueIndex('contact_types_system_key_unique').on(t.systemKey),
+  ],
+);
+
+/** What Alma offers a record (ADOS, DOS, Stacionár, …): none, one or several. */
+export const products = pgTable('products', codeListColumns(), (t) => [
+  uniqueIndex('products_name_unique').on(sql`lower(${t.name})`),
 ]);
 
 /** Where a customer came from: a referral, a conference, the web. */
@@ -73,12 +87,15 @@ export const customers = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     kind: customerKind('kind').notNull(),
-    typeId: uuid('type_id').references(() => customerTypes.id),
+    contactTypeId: uuid('contact_type_id')
+      .notNull()
+      .references(() => contactTypes.id),
     name: text('name').notNull(),
     ico: text('ico'),
     dic: text('dic'),
     icDph: text('ic_dph'),
-    status: customerStatus('status').notNull().default('lead'),
+    /** The sales pipeline: a „Zákazník“ only, empty until somebody sets it; null for any other type. */
+    status: customerStatus('status'),
     street: text('street'),
     postalCode: text('postal_code'),
     city: text('city'),
@@ -111,7 +128,7 @@ export const customers = pgTable(
       .on(t.ico)
       .where(sql`${t.deletedAt} is null`),
     index('customers_status_idx').on(t.status),
-    index('customers_type_idx').on(t.typeId),
+    index('customers_contact_type_idx').on(t.contactTypeId),
     index('customers_owner_idx').on(t.ownerUserId),
     check('customers_name_length', sql`char_length(${t.name}) between 1 and 200`),
     check(
@@ -134,6 +151,22 @@ export const customerTags = pgTable(
   (t) => [
     primaryKey({ columns: [t.customerId, t.tagId] }),
     index('customer_tags_tag_idx').on(t.tagId),
+  ],
+);
+
+export const customerProducts = pgTable(
+  'customer_products',
+  {
+    customerId: uuid('customer_id')
+      .notNull()
+      .references(() => customers.id),
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => products.id),
+  },
+  (t) => [
+    primaryKey({ columns: [t.customerId, t.productId] }),
+    index('customer_products_product_idx').on(t.productId),
   ],
 );
 

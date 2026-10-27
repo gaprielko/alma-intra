@@ -7,10 +7,12 @@ import {
   customerIdSchema,
   customerListSchema,
   exportCustomersSchema,
+  icoLookupSchema,
   updateContactSchema,
   updateCustomerSchema,
 } from '@intra/shared/schemas';
 import { TRPCError } from '@trpc/server';
+import { lookupCompany, RegisterUnavailableError } from '../customers/business-register.js';
 import * as customers from '../customers/customers.service.js';
 import { toCsv } from '../customers/csv.js';
 import type { Context } from './context.js';
@@ -56,14 +58,30 @@ export const customerRouter = router({
   /** Types, sources, tags and colleagues for the forms and the filters. */
   options: authorizedProcedure('customer.read').query(({ ctx }) => customers.formOptions(ctx.db)),
 
+  /** The name and seat of a company from the business register, to fill the form with. */
+  lookupIco: authorizedProcedure('customer.write')
+    .input(icoLookupSchema)
+    .query(async ({ input }) => {
+      try {
+        return await lookupCompany(input.ico);
+      } catch (error) {
+        if (!(error instanceof RegisterUnavailableError)) throw error;
+        throw new TRPCError({ code: 'SERVICE_UNAVAILABLE', message: error.message });
+      }
+    }),
+
   create: authorizedProcedure('customer.write')
     .input(createCustomerSchema)
     .mutation(async ({ ctx, input }) => {
       const created = await run(() => customers.createCustomer(ctx.db, ctx.session.userId, input));
       auditCustomer(ctx, created.id, {
         kind: input.customer.kind,
-        status: input.customer.status,
+        // As stored: a type other than „Zákazník“ has none.
+        ...(created.status ? { status: created.status } : {}),
+        contactTypeId: input.customer.contactTypeId,
         firstContact: input.firstContact !== undefined,
+        ...(created.tagsAdded.length > 0 ? { tagsAdded: created.tagsAdded } : {}),
+        ...(created.productsAdded.length > 0 ? { productsAdded: created.productsAdded } : {}),
       });
       return created;
     }),
@@ -78,6 +96,16 @@ export const customerRouter = router({
         ...(change.ownerUserId.before !== change.ownerUserId.after
           ? { ownerUserId: change.ownerUserId }
           : {}),
+        // Ids only: the history resolves the names when it is shown (names never go into the
+        // append-only trail).
+        ...(change.contactTypeId.before !== change.contactTypeId.after
+          ? { contactTypeId: change.contactTypeId }
+          : {}),
+        ...(change.sourceId.before !== change.sourceId.after ? { sourceId: change.sourceId } : {}),
+        ...(change.tagsAdded.length > 0 ? { tagsAdded: change.tagsAdded } : {}),
+        ...(change.tagsRemoved.length > 0 ? { tagsRemoved: change.tagsRemoved } : {}),
+        ...(change.productsAdded.length > 0 ? { productsAdded: change.productsAdded } : {}),
+        ...(change.productsRemoved.length > 0 ? { productsRemoved: change.productsRemoved } : {}),
       });
       return { ok: true as const };
     }),
@@ -93,8 +121,11 @@ export const customerRouter = router({
   bulkAddTag: authorizedProcedure('customer.write')
     .input(bulkTagSchema)
     .mutation(async ({ ctx, input }) => {
-      const ids = await customers.bulkAddTag(ctx.db, input.ids, input.tag);
-      ctx.audit.set({ entityType: 'customer', diff: { ids, count: ids.length, tagAdded: true } });
+      const { ids, tagId } = await customers.bulkAddTag(ctx.db, input.ids, input.tag);
+      ctx.audit.set({
+        entityType: 'customer',
+        diff: { ids, count: ids.length, tagAdded: true, tagId },
+      });
       return { count: ids.length };
     }),
 

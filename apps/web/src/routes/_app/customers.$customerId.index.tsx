@@ -16,7 +16,12 @@ import { ActivityDialog } from '@/components/activities/activity-dialog';
 import { ActivitySheet } from '@/components/activities/activity-sheet';
 import { Avatar } from '@/components/avatar';
 import { ContactDialog, type Contact } from '@/components/customers/contact-dialog';
-import { CustomerAvatar, CustomerStatusBadge, TagChip } from '@/components/customers/customer-bits';
+import {
+  CustomerAvatar,
+  CustomerStatusBadge,
+  ProductChip,
+  TagChip,
+} from '@/components/customers/customer-bits';
 import { ErrorState } from '@/components/empty-state';
 import { CustomerFilesCard } from '@/components/files/customer-files-card';
 import { PageHeader } from '@/components/page-header';
@@ -92,9 +97,8 @@ function CustomerDetailPage() {
   }
   const c = customer.data;
   const meta = [
-    c.kind === 'individual'
-      ? sk.customers.kind.individual
-      : (c.typeName ?? sk.customers.filters.noType),
+    c.contactTypeName,
+    c.kind === 'individual' ? sk.customers.kind.individual : null,
     c.city,
     c.ico ? t.ico(c.ico.replace(/^(\d{2})(\d{3})(\d{3})$/, '$1 $2 $3')) : null,
   ]
@@ -107,7 +111,7 @@ function CustomerDetailPage() {
         title={c.name}
         subtitle={meta}
         back={{ to: '/customers', label: t.back }}
-        badge={<CustomerStatusBadge status={c.status} />}
+        badge={c.status ? <CustomerStatusBadge status={c.status} /> : undefined}
       >
         {canSend ? (
           <Button
@@ -198,7 +202,6 @@ function OrganizationCard({ customer: c }: { customer: Customer }) {
       <CardHeader title={t.basics} />
       <Rows>
         <Row label={f.kind}>{sk.customers.kind[c.kind]}</Row>
-        <Row label={f.type}>{c.typeName ?? sk.customers.filters.noType}</Row>
         <Row label={f.ico}>{c.ico}</Row>
         <Row label={f.dic}>{c.dic}</Row>
         <Row label={f.icDph}>{c.icDph}</Row>
@@ -266,9 +269,15 @@ function ClassificationCard({ customer: c }: { customer: Customer }) {
     <Card>
       <CardHeader title={t.classification} />
       <Rows>
-        {c.kind === 'individual' ? (
-          <Row label={f.type}>{c.typeName ?? sk.customers.filters.noType}</Row>
-        ) : null}
+        <Row label={f.products}>
+          {c.products.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {c.products.map((product) => (
+                <ProductChip key={product.id}>{product.name}</ProductChip>
+              ))}
+            </div>
+          ) : null}
+        </Row>
         <Row label={f.owner}>{c.owner?.name}</Row>
         <Row label={f.source}>{c.sourceName}</Row>
         <Row label={f.tags}>
@@ -503,9 +512,32 @@ const isStatus = (value: unknown): value is CustomerStatus =>
 function describe(event: HistoryEvent): ReactNode {
   const h = t.history;
   const diff = event.diff ?? {};
+  // Names come with the event, resolved when the history is read; an id without one (deleted
+  // since) is left out.
+  const nameOf = (id: unknown) => (typeof id === 'string' ? (event.names[id] ?? null) : null);
+  const namesOf = (ids: unknown) =>
+    Array.isArray(ids) ? ids.map(nameOf).filter((n): n is string => n !== null) : [];
+  const change = (key: string) => {
+    const value = diff[key] as { before?: unknown; after?: unknown } | undefined;
+    if (!value) return null;
+    const before = nameOf(value.before) ?? h.none;
+    const after = nameOf(value.after) ?? h.none;
+    return `${before} → ${after}`;
+  };
+  const contactName = nameOf(diff.contactId);
+  const withContact = (text: string) => (contactName ? `${text}: ${contactName}` : text);
+  const added = namesOf(diff.tagsAdded);
+  const removed = namesOf(diff.tagsRemoved);
+  const tagDetail = [...added.map((n) => `+ ${n}`), ...removed.map((n) => `− ${n}`)].join(', ');
+  const productsAdded = namesOf(diff.productsAdded);
+  const productDetail = [
+    ...productsAdded.map((n) => `+ ${n}`),
+    ...namesOf(diff.productsRemoved).map((n) => `− ${n}`),
+  ].join(', ');
   const status = diff.status as { before?: unknown; after?: unknown } | undefined;
+  // Set, changed or cleared (the type is no longer „Zákazník“, or „Bez zaradenia“ was picked).
   const statusChange =
-    status && isStatus(status.after) ? (
+    status && (isStatus(status.after) || isStatus(status.before)) ? (
       <>
         {h.status}
         {isStatus(status.before) ? (
@@ -514,7 +546,7 @@ function describe(event: HistoryEvent): ReactNode {
             <CustomerStatusBadge status={status.before} /> →
           </>
         ) : null}{' '}
-        <CustomerStatusBadge status={status.after} />
+        {isStatus(status.after) ? <CustomerStatusBadge status={status.after} /> : h.none}
       </>
     ) : null;
   const fieldList = Array.isArray(diff.fields)
@@ -528,28 +560,51 @@ function describe(event: HistoryEvent): ReactNode {
     : '';
   switch (event.action) {
     case 'customer.create':
-      return h.created;
+      return [
+        h.created,
+        productsAdded.length > 0 ? `${h.fieldNames.products}: ${productsAdded.join(', ')}` : null,
+        added.length > 0 ? `${h.fieldNames.tags}: ${added.join(', ')}` : null,
+      ]
+        .filter(Boolean)
+        .join(' · ');
     case 'customer.delete':
       return h.deleted;
     case 'customer.bulkAddTag':
-      return h.tagAdded;
+      return nameOf(diff.tagId) ? `${h.tagAdded}: ${nameOf(diff.tagId)}` : h.tagAdded;
     case 'customer.bulkSetStatus':
       return statusChange ?? h.status;
     case 'customer.exportCsv':
       return h.exported;
     case 'customer.contactCreate':
-      return h.contactCreated;
+      return withContact(h.contactCreated);
     case 'customer.contactUpdate':
-      return fieldList ? `${h.contactUpdated}: ${fieldList}` : h.contactUpdated;
+      return fieldList
+        ? `${withContact(h.contactUpdated)} (${fieldList})`
+        : withContact(h.contactUpdated);
     case 'customer.contactSetPrimary':
-      return h.contactPrimary;
+      return withContact(h.contactPrimary);
     case 'customer.contactDelete':
-      return h.contactDeleted;
+      return withContact(h.contactDeleted);
     case 'customer.update': {
       const parts: ReactNode[] = [];
       if (statusChange) parts.push(<span key="s">{statusChange}</span>);
-      if (diff.ownerUserId) parts.push(<span key="o">{h.owner}</span>);
-      if (fieldList) parts.push(<span key="f">{h.updated(fieldList)}</span>);
+      if (diff.ownerUserId) {
+        parts.push(<span key="o">{`${h.owner}: ${change('ownerUserId') ?? ''}`}</span>);
+      }
+      const details = [
+        diff.contactTypeId ? `${h.fieldNames.contactTypeId}: ${change('contactTypeId')}` : null,
+        productDetail ? `${h.fieldNames.products}: ${productDetail}` : null,
+        diff.sourceId ? `${h.fieldNames.sourceId}: ${change('sourceId')}` : null,
+        tagDetail ? `${h.fieldNames.tags}: ${tagDetail}` : null,
+      ].filter(Boolean);
+      if (fieldList) {
+        parts.push(
+          <span key="f">
+            {h.updated(fieldList)}
+            {details.length > 0 ? ` · ${details.join(' · ')}` : null}
+          </span>,
+        );
+      }
       return parts.length > 0 ? (
         <span className="flex flex-col gap-1">{parts}</span>
       ) : (

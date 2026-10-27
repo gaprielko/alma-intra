@@ -4,6 +4,7 @@ import {
   CUSTOMER_SORTS,
   CUSTOMER_STATUSES,
   type CustomerFilter,
+  PAGE_SIZE,
   type CustomerStatus,
   REGIONS,
 } from '@intra/shared/schemas';
@@ -15,6 +16,7 @@ import { z } from 'zod';
 import {
   CustomerAvatar,
   CustomerStatusBadge,
+  ProductChip,
   FilterMenu,
   TagChip,
 } from '@/components/customers/customer-bits';
@@ -45,18 +47,22 @@ import { type RouterOutputs, trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 
 const t = sk.customers;
+/** How many customers a page shows, as a person chooses it. */
+const PAGE_SIZES = [20, 50, 100] as const;
 
 const search = z.object({
   q: z.string().optional(),
-  status: z.enum(CUSTOMER_STATUSES).optional(),
+  status: z.enum([...CUSTOMER_STATUSES, 'none']).optional(),
   kind: z.enum(CUSTOMER_KINDS).optional(),
-  type: z.string().optional(),
+  contactType: z.string().optional(),
+  product: z.string().optional(),
   region: z.enum(REGIONS).optional(),
   tag: z.string().optional(),
   owner: z.string().optional(),
   sort: z.enum(CUSTOMER_SORTS).optional(),
   dir: z.enum(['asc', 'desc']).optional(),
   page: z.number().int().min(1).optional(),
+  size: z.union([z.literal(20), z.literal(50), z.literal(100)]).optional(),
 });
 type ListSearch = z.infer<typeof search>;
 
@@ -106,7 +112,8 @@ function CustomersPage() {
     search: params.q,
     status: params.status,
     kind: params.kind,
-    typeId: params.type,
+    contactTypeId: params.contactType,
+    productId: params.product,
     region: params.region,
     tagId: params.tag,
     ownerUserId: params.owner,
@@ -120,6 +127,7 @@ function CustomersPage() {
     sort: params.sort ?? 'name',
     dir: params.dir ?? 'asc',
     page: params.page ?? 1,
+    pageSize: params.size ?? PAGE_SIZE,
   } as Parameters<typeof trpc.customer.list.queryOptions>[0];
   const list = useQuery({
     ...trpc.customer.list.queryOptions(input),
@@ -167,10 +175,13 @@ function CustomersPage() {
 
   const filtered = Object.values(filter).some((v) => v !== undefined && v !== params.status);
   const counts = list.data?.counts;
-  const typeOptions = useMemo(
+  const productOptions = useMemo(
     () => [
-      ...(options.data?.types ?? []).map((type) => ({ value: type.id, label: type.name })),
-      { value: 'none', label: t.filters.noType },
+      ...(options.data?.products ?? []).map((product) => ({
+        value: product.id,
+        label: product.name,
+      })),
+      { value: 'none', label: t.filters.noProduct },
     ],
     [options.data],
   );
@@ -183,7 +194,13 @@ function CustomersPage() {
       <button
         type="button"
         className="inline-flex items-center gap-1 uppercase"
-        onClick={() => setSearch({ sort: key, dir: active && dir === 'asc' ? 'desc' : 'asc' })}
+        onClick={() =>
+          setSearch({
+            sort: key,
+            // The most recent contact first on the first click; names and states A to Z.
+            dir: active ? (dir === 'asc' ? 'desc' : 'asc') : key === 'lastContact' ? 'desc' : 'asc',
+          })
+        }
       >
         {label}
         {active ? <Arrow className="size-3" aria-hidden /> : null}
@@ -237,16 +254,25 @@ function CustomersPage() {
                 </label>
                 <div className="flex flex-wrap gap-2">
                   <FilterMenu
+                    label={t.filters.contactType}
+                    value={params.contactType}
+                    options={(options.data?.contactTypes ?? []).map((type) => ({
+                      value: type.id,
+                      label: type.name,
+                    }))}
+                    onChange={(contactType) => setSearch({ contactType })}
+                  />
+                  <FilterMenu
                     label={t.filters.kind}
                     value={params.kind}
                     options={CUSTOMER_KINDS.map((k) => ({ value: k, label: t.kind[k] }))}
                     onChange={(kind) => setSearch({ kind })}
                   />
                   <FilterMenu
-                    label={t.filters.type}
-                    value={params.type}
-                    options={typeOptions}
-                    onChange={(type) => setSearch({ type })}
+                    label={t.filters.product}
+                    value={params.product}
+                    options={productOptions}
+                    onChange={(product) => setSearch({ product })}
                   />
                   <FilterMenu
                     label={t.filters.region}
@@ -279,7 +305,7 @@ function CustomersPage() {
                 role="group"
                 aria-label={t.columns.status}
               >
-                {(['all', ...CUSTOMER_STATUSES] as const).map((key) => {
+                {(['all', ...CUSTOMER_STATUSES, 'none'] as const).map((key) => {
                   const on = (params.status ?? 'all') === key;
                   return (
                     <button
@@ -333,22 +359,30 @@ function CustomersPage() {
               onChange={toggleAll}
             />,
             sortHeader('name', t.columns.customer),
+            t.columns.products,
             t.columns.primaryContact,
-            sortHeader('status', t.columns.status),
             t.columns.owner,
             t.columns.tags,
-            t.columns.lastContact,
+            sortHeader('lastContact', t.columns.lastContact),
           ]}
           columnClassNames={[
             'w-10',
             undefined,
+            'hidden md:table-cell',
             'hidden lg:table-cell',
-            undefined,
             'hidden xl:table-cell',
             'hidden 2xl:table-cell',
             'hidden xl:table-cell',
           ]}
-          columnSort={[undefined, sortState('name'), undefined, sortState('status')]}
+          columnSort={[
+            undefined,
+            sortState('name'),
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            sortState('lastContact'),
+          ]}
           loading={list.isPending}
           refreshing={list.isPlaceholderData}
           message={
@@ -369,6 +403,8 @@ function CustomersPage() {
                 pageSize={list.data.pageSize}
                 total={list.data.total}
                 onPageChange={(page) => setSearch({ page }, true)}
+                pageSizes={PAGE_SIZES}
+                onPageSizeChange={(size) => setSearch({ size: size as 20 | 50 | 100 })}
               />
             ) : null
           }
@@ -429,10 +465,7 @@ function CustomerRow({
   onToggle: () => void;
 }) {
   const href = `/customers/${row.id}`;
-  const meta = [
-    row.city,
-    row.kind === 'individual' ? t.kind.individual : (row.typeName ?? t.filters.noType),
-  ]
+  const meta = [row.contactTypeName, row.city, row.kind === 'individual' ? t.kind.individual : null]
     .filter(Boolean)
     .join(' · ');
   return (
@@ -451,12 +484,23 @@ function CustomerRow({
             <RowLink href={href} className="block truncate font-semibold">
               {row.name}
             </RowLink>
-            <p className="truncate text-xs text-muted">{meta}</p>
+            <div className="mt-0.5 flex min-w-0 items-center gap-2">
+              {row.status ? <CustomerStatusBadge status={row.status} /> : null}
+              <p className="truncate text-xs text-muted">{meta}</p>
+            </div>
           </div>
         </div>
       </TableCell>
+      <TableCell className="hidden md:table-cell">
+        <div className="flex flex-wrap gap-1">
+          {row.products.map((product) => (
+            <ProductChip key={product.id}>{product.name}</ProductChip>
+          ))}
+        </div>
+      </TableCell>
       <TableCell className="hidden lg:table-cell">
-        {row.primaryContact ? (
+        {/* A private person is their own contact: nothing to repeat here. */}
+        {row.kind === 'individual' ? null : row.primaryContact ? (
           <>
             <p className="truncate">{row.primaryContact.name}</p>
             <p className="truncate text-xs text-muted">{row.primaryContact.email}</p>
@@ -467,9 +511,6 @@ function CustomerRow({
             <p className="text-xs font-semibold text-warning">{t.addContactHint}</p>
           </>
         )}
-      </TableCell>
-      <TableCell>
-        <CustomerStatusBadge status={row.status} />
       </TableCell>
       <TableCell className="hidden text-muted xl:table-cell">
         {row.owner?.name ?? sk.common.none}

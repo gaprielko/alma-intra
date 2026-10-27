@@ -39,6 +39,7 @@ import { loadFailed } from '@/lib/query-view';
 import { useSession } from '@/lib/session';
 import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
+import { PhoneInput } from '@/components/phone-input';
 
 const t = sk.account;
 const tf = sk.secondFactor;
@@ -179,7 +180,7 @@ function ProfileForm({
                 <FormItem>
                   <FormLabel>{t.profile.phone}</FormLabel>
                   <FormControl>
-                    <Input type="tel" autoComplete="tel" {...field} />
+                    <PhoneInput autoComplete="tel" {...field} value={field.value ?? ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

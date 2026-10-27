@@ -5,6 +5,7 @@ import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState, type AriaAttributes, type ReactNode } from 'react';
 import { LoadingStatus, SkeletonRows } from '@/components/skeletons';
 import { Button } from '@/components/ui/button';
+import { Select, SelectItem } from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -163,6 +164,9 @@ export interface TablePaginationProps {
   /** Undefined until the first page has loaded: the footer stays, the count waits. */
   total: number | undefined;
   onPageChange: (page: number) => void;
+  /** The sizes a person may choose („Na stránku: 20 / 50 / 100“); without them the size is fixed. */
+  pageSizes?: readonly number[];
+  onPageSizeChange?: (size: number) => void;
 }
 
 /** The footer of every paged table: the count while there are rows, the arrows only with more than one page. */
@@ -171,6 +175,8 @@ export function TablePagination({
   pageSize = PAGE_SIZE,
   total,
   onPageChange,
+  pageSizes,
+  onPageSizeChange,
 }: TablePaginationProps) {
   const range = total === undefined ? null : pageRange(page, pageSize, total);
   if (!showsPagination(page, total)) return null;
@@ -179,6 +185,23 @@ export function TablePagination({
       <p className="text-xs text-muted">
         {range ? sk.common.range(range.from, range.to, total ?? 0) : null}
       </p>
+      {pageSizes && onPageSizeChange ? (
+        <label className="ml-auto flex items-center gap-2 text-xs text-muted">
+          {sk.common.perPage}
+          <Select
+            aria-label={sk.common.perPage}
+            className="h-8 w-20 text-[13px]"
+            value={String(pageSize)}
+            onChange={(value) => onPageSizeChange(Number(value))}
+          >
+            {pageSizes.map((size) => (
+              <SelectItem key={size} value={String(size)}>
+                {String(size)}
+              </SelectItem>
+            ))}
+          </Select>
+        </label>
+      ) : null}
       {total !== undefined && showsPageArrows(page, pageSize, total) ? (
         <div className="flex gap-2">
           <Button

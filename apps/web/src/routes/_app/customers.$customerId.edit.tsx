@@ -30,6 +30,7 @@ function valuesOf(c: Customer): CustomerFormValues {
     customer: {
       ...empty.customer,
       kind: c.kind,
+      contactTypeId: c.contactTypeId,
       name: c.name,
       ico: c.ico ?? '',
       dic: c.dic ?? '',
@@ -37,8 +38,8 @@ function valuesOf(c: Customer): CustomerFormValues {
       web: c.web ?? '',
       email: c.email ?? '',
       phone: c.phone ?? '',
-      typeId: c.typeId ?? '',
-      status: c.status,
+      productIds: c.products.map((product) => product.id),
+      status: c.status ?? '',
       street: c.street ?? '',
       postalCode: c.postalCode ?? '',
       city: c.city ?? '',

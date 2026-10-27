@@ -12,6 +12,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { PhoneInput } from '@/components/phone-input';
 
 const d = sk.contacts.dialog;
 
@@ -64,12 +65,20 @@ function TextField({
         <FormItem className={className}>
           <FormLabel>{label}</FormLabel>
           <FormControl>
-            <Input
-              type={type}
-              autoComplete={autoComplete}
-              {...field}
-              value={(field.value as string) ?? ''}
-            />
+            {type === 'tel' ? (
+              <PhoneInput
+                autoComplete={autoComplete}
+                {...field}
+                value={(field.value as string) ?? ''}
+              />
+            ) : (
+              <Input
+                type={type}
+                autoComplete={autoComplete}
+                {...field}
+                value={(field.value as string) ?? ''}
+              />
+            )}
           </FormControl>
           {description ? <FormDescription>{description}</FormDescription> : null}
           <FormMessage />

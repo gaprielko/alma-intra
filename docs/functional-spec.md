@@ -124,7 +124,7 @@ other screen.
 
 ## 4. Customers and contacts
 
-### 4.1 Customer kind and type **[D-3]**
+### 4.1 Customer kind, contact type and products **[D-3]**
 
 Customers are mostly ADOS, but may be other organizations or private persons. Two separate
 attributes:
@@ -133,21 +133,26 @@ attributes:
   - `organization`: a company with a name, company ids, address and contact persons;
   - `individual`: a private person; the customer *is* the person (name, salutation, e-mail, phone,
     address), no company ids, no separate contacts.
-- **Type** (optional): a **code list managed in Settings** (add, rename, reorder, deactivate; never
-  deleted while used), independent of the kind. Seeded with one value, „ADOS“. A customer may have
-  no type („Bez typu“), which is also a filter in the list. Wherever an organization is created
-  (the customer form, assigning an unknown sender's e-mail) the type picker also offers „Nový typ
-  organizácie“, which adds the type to the code list on the spot.
+- **Contact type** (required): what the record is to Alma, „Zákazník“, „Partner“, „Dodávateľ“,
+  „Spolupracovník“, …; a code list managed in Settings, also addable from the form („Nový typ
+  kontaktu“). „Zákazník“ is a system item (renamed or switched off, never deleted): only a
+  „Zákazník“ has a sales status. The register is therefore called „Kontakty“ in the UI; the persons
+  at an organization are „Kontaktné osoby“.
+- **Products** (none, one or several): what Alma offers the record, „ADOS“, „DOS“, „Stacionár“, …;
+  a code list managed in Settings (add, rename, reorder, deactivate; never deleted while used),
+  independent of the kind, addable from the form („Nový produkt“). Filter „Bez produktu“ finds
+  the records without any. (Until 2026-10 this was a single optional „type“.)
 
 ### 4.2 Customer
 
 | Field                | Note                                                                                  |
 | -------------------- | ------------------------------------------------------------------------------------- |
 | Kind                 | `organization` / `individual`; decides which fields apply                             |
-| Type                 | optional, from the code list                                                          |
+| Contact type         | required, from the code list; new records start as „Zákazník“                         |
+| Products             | none, one or several, from the code list                                              |
 | Name                 | organization: company name; individual: built from the person's name                  |
-| IČO, DIČ, IČ DPH     | organization only, optional; IČO unique. **[D-5]** look-up in the business register (RPO / ORSR) if its public API is usable |
-| Status               | `lead` → `contacted` → `interested` → `customer` → `former_customer`; `not_interested` |
+| IČO, DIČ, IČ DPH     | organization only, optional; IČO unique. **[D-5]** name and seat filled from the register of legal persons (RPO, public API); DIČ and IČ DPH by hand |
+| Status               | „Zákazník“ only, empty by default; `lead` → `contacted` → `interested` → `customer` → `former_customer`; `not_interested` |
 | Address              | street, city, postal code, region (for filtering)                                     |
 | Web, e-mail, phone   | general ones of the organization                                                      |
 | Owner                | the Intra user responsible for the customer                                           |
@@ -179,10 +184,12 @@ Deleting is a **soft delete** (customer, contact); the communication history sta
 
 **Customer list** (the patient list's pattern, `DataList`):
 
-- columns: customer (name, city, type), primary contact (name, e-mail), status (badge), owner,
-  tags, last contact (date of the last e-mail, reply or activity);
-- search (name, IČO, a contact's name or e-mail), status chips with counts, filters (kind, type
-  including „Bez typu“, region, tag, owner), sorting, paging;
+- columns: contact (name; under it the status badge, the contact type and the city), products
+  (chips), primary contact (name, e-mail; empty for a private person), owner, tags, last contact
+  (date of the last e-mail, reply or activity);
+- search (name, IČO, a contact person's name or e-mail), status chips with counts (including „Bez
+  stavu“), filters (contact type, kind, product including „Bez produktu“, region, tag, owner),
+  sorting, paging;
 - **bulk selection** → „Poslať e-mail“, „Pridať štítok“, „Zmeniť stav“, „Export CSV“;
 - saved filters (segments), pattern of `saved_filters`; a campaign can target a segment **[D-7]**.
   A segment stores its rules, not a list of customers, so a new customer matching them joins it on
@@ -194,7 +201,7 @@ typed by hand, no Google Places **[D-6]**.
 
 **Customer detail** (the patient card's pattern: header + cards / tabs):
 
-- header: name, status, type, tags, quick actions („Poslať e-mail“, „Zapísať aktivitu“,
+- header: name, status, contact type, tags, quick actions („Poslať e-mail“, „Zapísať aktivitu“,
   „Nahrať súbor“, „Upraviť“);
 - **Basics** and address;
 - **Contacts**: add, edit, make primary, unsubscribe, remove;
@@ -494,8 +501,10 @@ oauth_clients, oauth_grants   (MCP OAuth, D-31)
 audit_events            (taken over, without organization_id; + actor_kind user | claude)
 mail_outbox             (taken over: system mail – invitations, password reset)
 
-customer_types          id, name, active, position            (seed: ADOS)
-customers               id, kind (organization | individual), type_id?, name, ico, dic, ic_dph, status, address_*, region, web,
+contact_types           id, name, active, position, system_key (seed: Zákazník = customer, Partner, Dodávateľ, Spolupracovník)
+products                id, name, active, position            (seed: ADOS, DOS, Stacionár)
+customer_products       customer_id, product_id
+customers               id, kind (organization | individual), contact_type_id, name, ico, dic, ic_dph, status?, address_*, region, web,
                         email, phone, owner_user_id, source_id, note, alma_org_id,
                         -- individual only: title_*, first_name, last_name, gender, salutation,
                         email_status, unsubscribed_at, deleted_at
@@ -563,7 +572,7 @@ both attach files.
 | ----- | ------------------------------------------------------------------------------------------------------------------------- |
 | D-1   | Every user may manage users, with safeguards (no self-deactivation, at least one active user)                             |
 | D-2   | 2FA mandatory for everyone                                                                                                |
-| D-3   | Customer kind (organization / individual) is part of the model; type is an optional code list seeded with „ADOS“          |
+| D-3   | Kind (organization / individual) is part of the model; every record has a contact type (code list, „Zákazník“ alone has a status) and any number of products (code list seeded with „ADOS“) |
 | D-4   | Optional Alma ADOS organization id, no synchronisation                                                                    |
 | D-5   | Company look-up by IČO in the business register, if its public API is usable                                              |
 | D-6   | Addresses typed by hand, no Google Places                                                                                 |

@@ -37,7 +37,8 @@ export function toCsv(rows: Row[]): string {
   const header = [
     c.name,
     c.kind,
-    c.type,
+    c.contactType,
+    c.products,
     c.status,
     c.ico,
     c.dic,
@@ -62,8 +63,9 @@ export function toCsv(rows: Row[]): string {
     [
       r.name,
       sk.customers.kind[r.kind],
-      r.type,
-      sk.customers.status[r.status],
+      r.contactType,
+      r.products.map((p) => p.name).join(', '),
+      r.status ? sk.customers.status[r.status] : null,
       r.ico,
       r.dic,
       r.icDph,
