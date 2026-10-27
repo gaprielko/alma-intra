@@ -432,7 +432,7 @@ export const sk = {
       contacted: 'Oslovený',
       interested: 'Má záujem',
       customer: 'Aktívna spolupráca',
-      former_customer: 'Bývalý zákazník',
+      former_customer: 'Ukončená spolupráca',
       not_interested: 'Bez záujmu',
     },
     /** The chips over the list, in the plural. */
@@ -442,7 +442,7 @@ export const sk = {
       contacted: 'Oslovení',
       interested: 'Majú záujem',
       customer: 'Aktívna spolupráca',
-      former_customer: 'Bývalí',
+      former_customer: 'Ukončená spolupráca',
       not_interested: 'Bez záujmu',
       none: 'Bez stavu',
     },
