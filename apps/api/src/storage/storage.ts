@@ -41,6 +41,11 @@ export interface Storage {
   head(key: string): Promise<{ contentType: string | null; contentLength: number | null } | null>;
   /** The first `length` bytes of the object (a ranged GET), for a look at the file signature. */
   readPrefix(key: string, length: number): Promise<Uint8Array>;
+  /**
+   * Bytes the server has in hand (a received e-mail's attachment), written directly; everything a
+   * person uploads goes through a signed PUT instead.
+   */
+  put(key: string, body: Uint8Array, contentType: string): Promise<void>;
   /** A copy inside the bucket: a restored version gets an object of its own. */
   copy(fromKey: string, toKey: string): Promise<void>;
   /** Idempotent: deleting what is not there is not an error. */
@@ -153,6 +158,18 @@ export function createStorageClient(config: StorageEnv): Storage {
         new GetObjectCommand({ Bucket, Key: key, Range: `bytes=0-${String(length - 1)}` }),
       );
       return (await result.Body?.transformToByteArray()) ?? new Uint8Array();
+    },
+
+    async put(key, body, contentType) {
+      await client.send(
+        new PutObjectCommand({
+          Bucket,
+          Key: key,
+          Body: body,
+          ContentType: contentType,
+          ContentLength: body.byteLength,
+        }),
+      );
     },
 
     async copy(fromKey, toKey) {

@@ -25,7 +25,8 @@ import { transportFor } from '../mail/mailer.js';
 import type { MailTransport } from '../mail/transport.js';
 import { STORAGE } from '../storage/storage.module.js';
 import type { Storage } from '../storage/storage.js';
-import { type InboundSource, receiveInbound, resendInboundSource } from '../inbound/inbound.js';
+import { saveInboundAttachments } from '../inbound/attachments.js';
+import { type InboundSource, inboundSource, receiveInbound } from '../inbound/inbound.js';
 import {
   dropForUnsubscribed,
   drainCampaigns,
@@ -88,6 +89,7 @@ export class CampaignWebhookController {
   constructor(
     @Inject(DB) private readonly db: Db,
     @Inject(INBOUND_SOURCE) private readonly inbound: InboundSource | null,
+    @Inject(STORAGE) private readonly storage: Storage | null,
   ) {}
 
   @Post('webhooks/resend')
@@ -130,6 +132,17 @@ export class CampaignWebhookController {
     if (!email) return;
     const filed = await receiveInbound(this.db, loadEnv(), email);
     this.logger.log({ msg: 'e-mail received', inboundId: filed.id, matched: filed.matched });
+    // The e-mail is kept whatever happens to its attachments; a failure is retried on assigning.
+    if (filed.id && filed.matched) {
+      await saveInboundAttachments(this.db, this.storage, this.inbound, filed.id).catch(
+        (error: unknown) =>
+          this.logger.warn({
+            msg: 'attachments of a received e-mail not saved',
+            inboundId: filed.id,
+            ...describeError(error),
+          }),
+      );
+    }
   }
 
   @Post('u/:token')
@@ -167,13 +180,7 @@ export class CampaignWebhookController {
 @Module({
   providers: [
     { provide: CAMPAIGN_TRANSPORT, useFactory: () => transportFor(loadEnv()) },
-    {
-      provide: INBOUND_SOURCE,
-      useFactory: () => {
-        const key = loadEnv().RESEND_API_KEY;
-        return key ? resendInboundSource(key) : null;
-      },
-    },
+    { provide: INBOUND_SOURCE, useFactory: () => inboundSource(loadEnv()) },
     CampaignWorker,
   ],
   controllers: [CampaignWebhookController],

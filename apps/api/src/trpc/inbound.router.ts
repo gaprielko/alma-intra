@@ -1,6 +1,11 @@
 import { assignInboundSchema, inboundIdSchema, inboundListSchema } from '@intra/shared/schemas';
 import { TRPCError } from '@trpc/server';
+import { Logger } from '@nestjs/common';
+import { loadEnv } from '../config/env.js';
+import { saveInboundAttachments } from '../inbound/attachments.js';
+import { inboundSource } from '../inbound/inbound.js';
 import * as inbound from '../inbound/inbound.service.js';
+import { describeError } from '../logging/describe-error.js';
 import { authorizedProcedure, router } from './trpc.js';
 
 /** The service's refusals as tRPC errors, with the code as message for the web to word. */
@@ -15,6 +20,8 @@ async function run<T>(fn: () => Promise<T>): Promise<T> {
     });
   }
 }
+
+const logger = new Logger('inbound');
 
 /**
  * Received e-mail (spec 6.6, 6.8 „Prijaté“): the list with the unassigned first, one e-mail, and
@@ -33,6 +40,15 @@ export const inboundRouter = router({
     .input(assignInboundSchema)
     .mutation(async ({ ctx, input }) => {
       const { before } = await run(() => inbound.assignInbound(ctx.db, ctx.session.userId, input));
+      // Its attachments go into the customer's folder now; the filing stands even if they fail.
+      await saveInboundAttachments(ctx.db, ctx.storage, inboundSource(loadEnv()), input.id).catch(
+        (error: unknown) =>
+          logger.warn({
+            msg: 'attachments of a received e-mail not saved',
+            inboundId: input.id,
+            ...describeError(error),
+          }),
+      );
       ctx.audit.set({
         entityType: 'inbound',
         entityId: input.id,

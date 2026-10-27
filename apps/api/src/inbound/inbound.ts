@@ -36,9 +36,16 @@ export interface InboundEmail {
   receivedAt: Date;
 }
 
+/** An attachment of a received e-mail with a link to its bytes, valid about an hour. */
+export interface InboundAttachmentLink {
+  id: string;
+  downloadUrl: string;
+}
+
 /** Where received e-mails are fetched from: Resend, or nothing in dev without a key. */
 export interface InboundSource {
   get(providerEmailId: string): Promise<InboundEmail | null>;
+  attachmentLinks(providerEmailId: string): Promise<InboundAttachmentLink[]>;
 }
 
 /** The provider did not give the e-mail: the webhook answers 5xx and Resend tries again. */
@@ -50,7 +57,7 @@ export class InboundFetchError extends Error {
 }
 
 /** The part of the Resend SDK we use, so a test can stand in for it. */
-export type ResendReceiving = Pick<Resend['emails']['receiving'], 'get'>;
+export type ResendReceiving = Pick<Resend['emails']['receiving'], 'get' | 'attachments'>;
 
 const header = (headers: Record<string, string> | null, name: string) => {
   if (!headers) return null;
@@ -91,7 +98,20 @@ export function resendInboundSource(
         receivedAt: new Date(data.created_at),
       };
     },
+    async attachmentLinks(id) {
+      const { data, error } = await receiving.attachments.list({ emailId: id });
+      if (error) throw new InboundFetchError(error.name);
+      return data.data.map((a) => ({ id: a.id, downloadUrl: a.download_url }));
+    },
   };
+}
+
+let fromEnv: InboundSource | null | undefined;
+/** The source for this process: Resend with the configured key, or none without one. */
+export function inboundSource(env: Pick<Env, 'RESEND_API_KEY'>): InboundSource | null {
+  if (fromEnv === undefined)
+    fromEnv = env.RESEND_API_KEY ? resendInboundSource(env.RESEND_API_KEY) : null;
+  return fromEnv;
 }
 
 /**

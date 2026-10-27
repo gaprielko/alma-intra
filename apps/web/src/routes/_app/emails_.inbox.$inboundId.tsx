@@ -23,6 +23,7 @@ import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
 import { formatDateTime } from '@/lib/format';
 import { loadFailed } from '@/lib/query-view';
+import { downloadFile } from '@/lib/uploads';
 import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 
@@ -160,14 +161,37 @@ function InboundPage() {
           ) : null}
           {m.attachments.length > 0 ? (
             <Fact label={t.attachments(m.attachments.length)}>
-              <ul className="space-y-1">
+              <ul className="space-y-1.5">
                 {m.attachments.map((file) => (
-                  <li key={file.id} className="flex items-center gap-1.5 text-muted">
-                    <Paperclip className="size-3.5 shrink-0" aria-hidden />
-                    <span className="truncate">{file.filename}</span>
+                  <li key={file.id} className="flex items-start gap-1.5">
+                    <Paperclip className="mt-0.5 size-3.5 shrink-0 text-muted" aria-hidden />
+                    {file.fileId ? (
+                      <button
+                        type="button"
+                        aria-label={t.download(file.filename)}
+                        className="truncate text-left font-medium text-primary-text hover:underline"
+                        onClick={() =>
+                          void downloadFile(file.fileId!, file.filename).catch((error: unknown) =>
+                            toast('error', errorMessage(error, sk.files.errors)),
+                          )
+                        }
+                      >
+                        {file.filename}
+                      </button>
+                    ) : (
+                      <span className="min-w-0 text-muted">
+                        <span className="block truncate">{file.filename}</span>
+                        {file.skipped ? (
+                          <span className="text-xs">{t.skipped[file.skipped]}</span>
+                        ) : null}
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>
+              <p className="mt-2 text-xs text-muted">
+                {m.customerId ? t.savedToFolder : t.notSavedYet}
+              </p>
             </Fact>
           ) : null}
         </Card>

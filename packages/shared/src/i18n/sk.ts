@@ -1244,6 +1244,14 @@ export const sk = {
     plainText: 'Text e-mailu',
     noBody: 'E-mail nemá text.',
     safeNote: 'Obrázky z internetu sa nenačítavajú.',
+    download: (name: string) => `Stiahnuť ${name}`,
+    savedToFolder: 'Prílohy sú uložené v priečinku kontaktu.',
+    notSavedYet: 'Prílohy sa uložia do priečinka kontaktu po priradení.',
+    skipped: {
+      type: 'neuložená, tento typ súboru sa neukladá',
+      size: 'neuložená, príliš veľká',
+      content: 'neuložená, obsah nezodpovedá názvu',
+    },
     errors: {
       NOT_FOUND: 'E-mail sa nenašiel.',
       CUSTOMER_NOT_FOUND: 'Kontakt sa nenašiel.',

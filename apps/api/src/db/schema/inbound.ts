@@ -37,8 +37,22 @@ export const inboundMessages = pgTable(
     headerMessageId: text('header_message_id'),
     inReplyTo: text('in_reply_to'),
     references: text('references'),
+    /**
+     * As the e-mail listed them; once filed under a customer each is saved into its folder
+     * (`fileId`) or left out with the reason (`skipped`: a type Files does not take, too big, or
+     * bytes that are not what the name says).
+     */
     attachments: jsonb('attachments')
-      .$type<{ id: string; filename: string; contentType: string; size: number }[]>()
+      .$type<
+        {
+          id: string;
+          filename: string;
+          contentType: string;
+          size: number;
+          fileId?: string;
+          skipped?: 'type' | 'size' | 'content';
+        }[]
+      >()
       .notNull()
       .default([]),
     receivedAt: timestamp('received_at', { withTimezone: true }).notNull(),
