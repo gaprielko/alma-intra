@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>Prehľad</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif;color:#152b2a;-webkit-font-smoothing:antialiased}
+a{color:#0a6466;text-decoration:none}a:hover{color:#0c3b3c;text-decoration:underline}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none;height:40px;padding:0 16px;font-size:14px}
+.btn:hover{text-decoration:none}
+.btn-primary{background:linear-gradient(180deg,#139698 0%,#0b6e70 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 2px rgba(12,59,60,.06),0 4px 12px rgba(12,59,60,.07)}
+.btn-primary:hover{color:#fff}
+.btn-secondary{background:#e3f3f2;color:#0a6466}
+.btn-icon{width:36px;height:36px;padding:0;border:1px solid #d6e1de;background:#fff;color:#48625f}
+.search{display:flex;align-items:center;gap:8px;height:40px;min-width:200px;padding:0 12px;border:1px solid #d6e1de;border-radius:10px;background:#fff;color:#6f8784;font-size:14px;box-sizing:border-box}
+.kbd{margin-left:auto;font-size:11px;font-weight:600;color:#48625f;border:1px solid #d6e1de;border-radius:6px;padding:1px 6px;background:#f7faf9}
+.card{border:1px solid #dfe8e6;border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(12,59,60,.08),0 8px 22px rgba(12,59,60,.08)}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px 12px}
+.card-h h2{margin:0;font-size:17px;font-weight:600}
+.kpi{padding:16px 18px;display:flex;flex-direction:column;gap:2px;text-decoration:none;color:#152b2a}
+.kpi:hover{text-decoration:none;box-shadow:0 2px 4px rgba(12,59,60,.08),0 12px 28px rgba(12,59,60,.12)}
+.badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.badge i{width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block}
+.row{display:flex;align-items:center;gap:12px;padding:12px 20px;border-top:1px solid #dfe8e6;text-decoration:none;color:#152b2a}
+.row:hover{background:#f0f8f7;text-decoration:none}
+.cb{width:18px;height:18px;accent-color:#0f8b8d;margin:0}
+.avatar{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.leg{display:flex;align-items:center;gap:8px;font-size:13px}
+.leg i{width:10px;height:10px;border-radius:3px;display:inline-block;flex-shrink:0}
+table{width:100%;border-collapse:collapse;font-size:14px;text-align:left}
+th{height:40px;padding:0 14px;background:#f7faf9;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#6f8784;white-space:nowrap}
+td{height:50px;padding:8px 14px;border-top:1px solid #dfe8e6;white-space:nowrap}
+th:first-child,td:first-child{padding-left:20px}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 1160px; background: #eaf0ee">
+  <div style="flex: 0 0 232px; background: #0c3b3c">
+    <dc-import name="Sidebar" active="overview" hint-size="232px,900px"></dc-import>
+  </div>
+  <main style="flex: 999 1 560px; min-width: 0">
+    <header style="min-height: 72px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 28px; box-sizing: border-box; background: rgba(255,255,255,0.8); border-bottom: 1px solid #d6e1de">
+      <div style="flex: 1 1 auto; min-width: 0">
+        <h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em">Prehľad</h1>
+        <p style="margin: 0; font-size: 13px; color: #48625f">Pondelok 26. 10. 2026 · Jana Horváthová</p>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+        <div class="search"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Hľadať<span class="kbd">Ctrl K</span></div>
+        <button type="button" class="btn btn-icon" aria-label="Upozornenia, 3 nové" style="position: relative"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg><span aria-hidden="true" style="position: absolute; top: 6px; right: 7px; width: 8px; height: 8px; border-radius: 50%; background: #dc2626; box-shadow: 0 0 0 2px #fff"></span></button>
+        <a href="SendRecipients.dc.html" class="btn btn-primary"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg>Nový e-mail</a>
+      </div>
+    </header>
+
+    <div style="padding: 24px 28px 40px; display: flex; flex-direction: column; gap: 20px; max-width: 1400px">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px">
+        <a href="Inbox.dc.html" class="card kpi"><span style="font-size: 13px; color: #48625f">Nové odpovede</span><span style="font-size: 30px; font-weight: 700; color: #334e7b">3</span><span style="font-size: 12px; color: #48625f">2 na vaše e-maily</span></a>
+        <a href="AssignReply.dc.html" class="card kpi"><span style="font-size: 13px; color: #48625f">Nepriradené e-maily</span><span style="font-size: 30px; font-weight: 700; color: #b45309">1</span><span style="font-size: 12px; color: #48625f">od neznámeho odosielateľa</span></a>
+        <a href="Scheduled.dc.html" class="card kpi"><span style="font-size: 13px; color: #48625f">Naplánované e-maily</span><span style="font-size: 30px; font-weight: 700">2</span><span style="font-size: 12px; color: #48625f">najbližší zajtra 8:30</span></a>
+        <a href="ActivityDetail.dc.html" class="card kpi"><span style="font-size: 13px; color: #48625f">Moje kroky po termíne</span><span style="font-size: 30px; font-weight: 700; color: #dc2626">1</span><span style="font-size: 12px; color: #48625f">z 5 otvorených</span></a>
+      </div>
+
+      <section class="card" style="padding: 18px 20px 20px">
+        <div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px">
+          <h2 style="margin: 0; font-size: 17px; font-weight: 600">Zákazníci podľa stavu</h2>
+          <span style="font-size: 13px; color: #48625f">128 spolu · za október +9 nových, 2 noví zákazníci</span>
+        </div>
+        <div role="img" aria-label="Potenciálni 41, oslovení 27, majú záujem 14, zákazníci 32, bývalí 6, bez záujmu 8" style="margin-top: 16px; display: flex; gap: 3px; height: 28px; border-radius: 8px; overflow: hidden">
+          <sc-for list="{{pipeline}}" as="p" hint-placeholder-count="6"><a href="Customers.dc.html" style="{{p.bar}}" aria-hidden="true"></a></sc-for>
+        </div>
+        <div style="margin-top: 14px; display: flex; flex-wrap: wrap; gap: 10px 24px">
+          <sc-for list="{{pipeline}}" as="p" hint-placeholder-count="6">
+            <a href="Customers.dc.html" class="leg" style="color: #152b2a"><i style="background: {{p.color}}"></i>{{p.label}} <strong>{{p.count}}</strong></a>
+          </sc-for>
+        </div>
+      </section>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+        <section class="card" style="flex: 1 1 440px; min-width: 0; overflow: hidden">
+          <div class="card-h"><h2>Moje ďalšie kroky</h2><a href="#" style="font-size: 13px; font-weight: 600">Všetky</a></div>
+          <sc-for list="{{steps}}" as="s" hint-placeholder-count="4">
+            <div class="row" style="{{s.rowStyle}}">
+              <input type="checkbox" class="cb" aria-label="Hotovo: {{s.text}}">
+              <div style="flex: 1; min-width: 0"><p style="margin: 0; font-size: 14px; font-weight: 600">{{s.text}}</p><p style="margin: 2px 0 0; font-size: 13px; color: #48625f">{{s.customer}}</p></div>
+              <span class="badge" style="{{s.dueStyle}}">{{s.due}}</span>
+            </div>
+          </sc-for>
+        </section>
+
+        <section class="card" style="flex: 1 1 440px; min-width: 0; overflow: hidden">
+          <div class="card-h"><h2>Odpovede čakajú</h2><a href="Inbox.dc.html" style="font-size: 13px; font-weight: 600">Prijaté</a></div>
+          <sc-for list="{{replies}}" as="r" hint-placeholder-count="3">
+            <a href="Conversation.dc.html" class="row">
+              <span class="avatar" style="{{r.avatar}}" aria-hidden="true">{{r.initials}}</span>
+              <div style="flex: 1; min-width: 0"><p style="margin: 0; font-size: 14px"><strong>{{r.from}}</strong> <span style="color: #48625f">· {{r.customer}}</span></p><p style="margin: 2px 0 0; font-size: 13px; color: #48625f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{r.snippet}}</p></div>
+              <span style="font-size: 12px; color: #48625f; white-space: nowrap">{{r.when}}</span>
+            </a>
+          </sc-for>
+        </section>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+        <section class="card" style="flex: 2 1 560px; min-width: 0; overflow: hidden">
+          <div class="card-h"><h2>Posledné odoslané e-maily</h2><a href="Campaign.dc.html" style="font-size: 13px; font-weight: 600">Odoslané</a></div>
+          <div style="overflow-x: auto">
+            <table>
+              <thead><tr><th>Predmet</th><th>Odoslal</th><th>Kedy</th><th>Doručené</th><th>Nedoručené</th><th>Odpovede</th></tr></thead>
+              <tbody>
+                <tr><td><a href="Campaign.dc.html" style="font-weight: 600">Cenová ponuka Alma na rok 2027</a></td><td style="color: #48625f">Peter Kováč</td><td style="color: #48625f">27. 10.</td><td>4 z 5</td><td style="color: #dc2626; font-weight: 600">1</td><td>1</td></tr>
+                <tr><td><a href="#" style="font-weight: 600">Novinky v Alme: október 2026</a></td><td style="color: #48625f">Lucia Bartošová</td><td style="color: #48625f">21. 10.</td><td>38 z 38</td><td style="color: #48625f">0</td><td>2</td></tr>
+                <tr><td><a href="#" style="font-weight: 600">Pozvánka na webinár o plánovaní</a></td><td style="color: #48625f">Jana Horváthová</td><td style="color: #48625f">15. 10.</td><td>52 z 54</td><td style="color: #dc2626; font-weight: 600">2</td><td>6</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <section class="card" style="flex: 1 1 340px; min-width: 0; overflow: hidden">
+          <div class="card-h"><h2>Bez kontaktu 30 a viac dní</h2></div>
+          <p style="margin: -4px 20px 4px; font-size: 13px; color: #48625f">Moji zákazníci a záujemcovia</p>
+          <a href="CustomerDetail.dc.html" class="row"><div style="flex: 1"><p style="margin: 0; font-size: 14px; font-weight: 600">ADOS Slnečnica</p><p style="margin: 0; font-size: 12px; color: #48625f">Bývalý zákazník</p></div><span style="font-size: 13px; color: #48625f">73 dní</span></a>
+          <a href="CustomerDetail.dc.html" class="row"><div style="flex: 1"><p style="margin: 0; font-size: 14px; font-weight: 600">Opatrovateľská služba Nádej</p><p style="margin: 0; font-size: 12px; color: #48625f">Oslovený</p></div><span style="font-size: 13px; color: #48625f">44 dní</span></a>
+          <a href="CustomerDetail.dc.html" class="row"><div style="flex: 1"><p style="margin: 0; font-size: 14px; font-weight: 600">ADOS Svätá Alžbeta, n.o.</p><p style="margin: 0; font-size: 12px; color: #48625f">Oslovený</p></div><span style="font-size: 13px; color: #48625f">38 dní</span></a>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1160}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const total = 128;
+    const pipeline = [
+      ['Potenciálni', 41, '#8fa3a1'], ['Oslovení', 27, '#5b7fb5'], ['Majú záujem', 14, '#d97706'],
+      ['Zákazníci', 32, '#16a34a'], ['Bývalí', 6, '#c5d3d1'], ['Bez záujmu', 8, '#dde6e3']
+    ].map((p) => ({ label: p[0], count: p[1], color: p[2], bar: 'flex:' + p[1] + ' 1 0;background:' + p[2] + ';min-width:6px;display:block' }));
+    const late = 'background:#fce8e8;color:#dc2626';
+    const soon = 'background:#fcf0de;color:#b45309';
+    const later = 'background:#f7faf9;color:#48625f;border:1px solid #dfe8e6';
+    const steps = [
+      ['Zavolať ekonómovi ohľadom rozpočtu', 'ADOS Medicare Žilina', 'Včera', late, 'background:#fffafa'],
+      ['Poslať rozpis zaškolenia po týždňoch', 'ADOS Harmónia, s.r.o.', 'Do 31. 10.', soon, ''],
+      ['Pripraviť prezentáciu pre vedenie', 'Domáca ošetrovateľská starostlivosť Lipa', '4. 11.', later, ''],
+      ['Poslať záznam z webinára', 'ADOS Pri Dunaji', '12. 11.', later, '']
+    ].map((s) => ({ text: s[0], customer: s[1], due: s[2], dueStyle: s[3], rowStyle: s[4] }));
+    const replies = [
+      ['ET', 'Mgr. Eva Tóthová', 'ADOS Harmónia', 'Ďakujem za ponuku, s rozsahom súhlasíme. Ekonóm by ešte potreboval…', '11:42', 'background:#e3f3f2;color:#0a6466'],
+      ['ZM', 'Bc. Zuzana Mikulová', 'Lipa', 'Cenu prerokujeme na porade vo štvrtok a ozvem sa v piatok.', '10:05', 'background:#fbeaf0;color:#993556'],
+      ['?', 'jan.novak@ados-zdravie.sk', 'nepriradený', 'Kolegyňa z Harmónie mi preposlala vašu ponuku…', '9:14', 'background:#dde6e3;color:#48625f']
+    ].map((r) => ({ initials: r[0], from: r[1], customer: r[2], snippet: r[3], when: r[4], avatar: r[5] }));
+    return { pipeline, steps, replies, total };
+  }
+}
+</script>
+</body>
+</html>

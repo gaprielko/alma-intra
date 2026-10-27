@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>Zákazníci</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif;color:#152b2a;-webkit-font-smoothing:antialiased}
+a{color:#0a6466;text-decoration:none}a:hover{color:#0c3b3c;text-decoration:underline}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none}
+.btn:hover{text-decoration:none}
+.btn-primary{height:40px;padding:0 16px;font-size:14px;background:linear-gradient(180deg,#139698 0%,#0b6e70 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 2px rgba(12,59,60,.06),0 4px 12px rgba(12,59,60,.07)}
+.btn-primary:hover{color:#fff}
+.btn-secondary{height:40px;padding:0 14px;font-size:14px;background:#e3f3f2;color:#0a6466}
+.btn-bar{height:32px;padding:0 12px;font-size:13px;background:rgba(255,255,255,.12);color:#fff}
+.btn-icon{width:36px;height:36px;border:1px solid #d6e1de;background:#fff;color:#48625f}
+.search{display:flex;align-items:center;gap:8px;height:40px;min-width:220px;padding:0 12px;border:1px solid #d6e1de;border-radius:10px;background:#fff;color:#6f8784;font-size:14px;box-sizing:border-box}
+.kbd{margin-left:auto;font-size:11px;font-weight:600;color:#48625f;border:1px solid #d6e1de;border-radius:6px;padding:1px 6px;background:#f7faf9}
+.badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.badge i{width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block}
+.b-success{background:#eaf5e6;color:#16a34a}.b-info{background:#e9eef6;color:#334e7b}.b-warning{background:#fcf0de;color:#b45309}.b-danger{background:#fce8e8;color:#dc2626}.b-neutral{background:#dde6e3;color:#48625f}
+.tag{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;background:#f7faf9;border:1px solid #dfe8e6;font-size:12px;font-weight:500;color:#48625f;white-space:nowrap}
+.card{border:1px solid #dfe8e6;border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(12,59,60,.08),0 8px 22px rgba(12,59,60,.08)}
+.chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:1px solid #d6e1de;border-radius:999px;background:#fff;font:inherit;font-size:13px;font-weight:500;color:#152b2a;cursor:pointer;white-space:nowrap}
+.chip-on{border-color:#0f8b8d;background:#e3f3f2;color:#0a6466;font-weight:600}
+.filter{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 10px 0 12px;border:1px solid #d6e1de;border-radius:10px;background:#fff;font:inherit;font-size:13px;font-weight:500;color:#152b2a;cursor:pointer;white-space:nowrap}
+.filter-on{border-color:#0f8b8d;color:#0a6466;font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:14px;text-align:left}
+th{height:44px;padding:0 16px;background:#f7faf9;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#6f8784;white-space:nowrap}
+td{height:56px;padding:10px 16px;border-top:1px solid #dfe8e6;vertical-align:middle}
+th:first-child,td:first-child{padding-left:20px;width:20px}
+.muted{color:#48625f}
+.sub{margin:0;font-size:12px;color:#48625f;white-space:nowrap}
+.avatar{width:32px;height:32px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.cb{width:18px;height:18px;accent-color:#0f8b8d;margin:0;cursor:pointer}
+.sort{display:inline-flex;align-items:center;gap:4px;border:0;background:transparent;font:inherit;letter-spacing:inherit;text-transform:inherit;color:inherit;cursor:pointer;padding:0}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 1040px; background: #eaf0ee">
+  <div style="flex: 0 0 232px; background: #0c3b3c">
+    <dc-import name="Sidebar" active="customers" hint-size="232px,900px"></dc-import>
+  </div>
+  <main style="flex: 999 1 560px; min-width: 0">
+    <header style="min-height: 72px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 28px; box-sizing: border-box; background: rgba(255,255,255,0.8); border-bottom: 1px solid #d6e1de">
+      <div style="flex: 1 1 auto; min-width: 0">
+        <h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em">Zákazníci</h1>
+        <p style="margin: 0; font-size: 13px; line-height: 18px; color: #48625f">128 zákazníkov · 32 s uzavretou spoluprácou</p>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+        <div class="search"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Hľadať<span class="kbd">Ctrl K</span></div>
+        <button type="button" class="btn btn-icon" aria-label="Upozornenia"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg></button>
+        <a href="CustomerForm.dc.html" class="btn btn-primary"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Nový zákazník</a>
+      </div>
+    </header>
+
+    <div style="padding: 20px 28px 40px; max-width: 1400px">
+      <section class="card" style="overflow: hidden">
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 16px 20px 0">
+          <label style="flex: 1 1 320px; max-width: 420px; display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border: 1px solid #d6e1de; border-radius: 10px; background: #fff; box-sizing: border-box">
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#6f8784" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+            <span style="position: absolute; width: 1px; height: 1px; overflow: hidden">Hľadať zákazníka</span>
+            <input placeholder="Názov, IČO, meno alebo e-mail kontaktu" style="flex: 1; min-width: 0; border: 0; outline: 0; font: inherit; font-size: 14px; color: #152b2a; background: transparent">
+          </label>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <button type="button" class="filter">Druh<svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></button>
+            <button type="button" class="filter filter-on">Typ: ADOS<svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+            <button type="button" class="filter">Kraj<svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></button>
+            <button type="button" class="filter">Štítok<svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></button>
+            <button type="button" class="filter">Zodpovedá<svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></button>
+          </div>
+          <button type="button" class="filter" style="margin-left: auto"><svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg>Uložené filtre</button>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 20px 16px">
+          <sc-for list="{{chips}}" as="c" hint-placeholder-count="7">
+            <button type="button" class="{{c.cls}}">{{c.label}}</button>
+          </sc-for>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 12px 12px; padding: 8px 8px 8px 16px; border-radius: 12px; background: #0c3b3c; color: #fff">
+          <p style="margin: 0; font-size: 14px; font-weight: 600; flex: 1 1 auto">2 vybraní zákazníci</p>
+          <button type="button" class="btn btn-bar" style="background: #5fd0c9; color: #0c2b2c"><svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-10 6L2 7"></path></svg>Poslať e-mail</button>
+          <button type="button" class="btn btn-bar">Pridať štítok</button>
+          <button type="button" class="btn btn-bar">Zmeniť stav</button>
+          <button type="button" class="btn btn-bar">Exportovať CSV</button>
+          <button type="button" class="btn btn-bar" aria-label="Zrušiť výber" style="width: 32px; padding: 0"><svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+        </div>
+
+        <div style="overflow-x: auto">
+          <table>
+            <thead>
+              <tr>
+                <th><input type="checkbox" class="cb" aria-label="Vybrať všetkých na strane"></th>
+                <th><button type="button" class="sort" style="color: #152b2a">Zákazník<svg aria-hidden="true" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 19V5M5 12l7-7 7 7"></path></svg></button></th>
+                <th>Hlavný kontakt</th>
+                <th>Stav</th>
+                <th><button type="button" class="sort">Zodpovedá</button></th>
+                <th>Štítky</th>
+                <th><button type="button" class="sort">Posledný kontakt</button></th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{rows}}" as="r" hint-placeholder-count="10">
+                <tr style="{{r.rowStyle}}">
+                  <td><input type="checkbox" class="cb" checked="{{r.checked}}" aria-label="Vybrať {{r.name}}"></td>
+                  <td>
+                    <div style="display: flex; align-items: center; gap: 12px">
+                      <span class="avatar" style="{{r.avatarStyle}}">{{r.initials}}</span>
+                      <div style="min-width: 0">
+                        <a href="{{r.href}}" style="font-weight: 600; color: #152b2a; white-space: nowrap">{{r.name}}</a>
+                        <p class="sub">{{r.meta}}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <p style="margin: 0; white-space: nowrap; {{r.contactStyle}}">{{r.contact}}</p>
+                    <p class="sub">{{r.email}}</p>
+                  </td>
+                  <td><span class="badge {{r.statusCls}}"><i></i>{{r.status}}</span></td>
+                  <td class="muted" style="white-space: nowrap">{{r.owner}}</td>
+                  <td><div style="display: flex; gap: 4px; flex-wrap: wrap"><sc-for list="{{r.tags}}" as="t" hint-placeholder-count="1"><span class="tag">{{t}}</span></sc-for></div></td>
+                  <td class="muted" style="white-space: nowrap">{{r.last}}</td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+        <footer style="min-height: 64px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; border-top: 1px solid #dfe8e6">
+          <p style="margin: 0; font-size: 12px; color: #48625f">1–25 z 128</p>
+          <div style="display: flex; gap: 8px">
+            <button type="button" class="btn btn-icon" aria-label="Predchádzajúca strana" disabled style="opacity: 0.5"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"></path></svg></button>
+            <button type="button" class="btn btn-icon" aria-label="Ďalšia strana"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"></path></svg></button>
+          </div>
+        </footer>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const tones = { customer: 'b-success', interested: 'b-warning', contacted: 'b-info', lead: 'b-neutral', former: 'b-neutral', lost: 'b-neutral' };
+    const labels = { customer: 'Zákazník', interested: 'Má záujem', contacted: 'Oslovený', lead: 'Potenciálny', former: 'Bývalý zákazník', lost: 'Bez záujmu' };
+    const avatars = [
+      'background:#e3f3f2;color:#0a6466', 'background:#e6f1fb;color:#0c447c', 'background:#faeeda;color:#854f0b',
+      'background:#fbeaf0;color:#993556', 'background:#eeedfe;color:#3c3489', 'background:#eaf3de;color:#3b6d11', 'background:#faece7;color:#993c1d'
+    ];
+    const data = [
+      ['ADOS Harmónia, s.r.o.', 'AH', 'Košice · ADOS', 'Mgr. Eva Tóthová', 'eva.tothova@adosharmonia.sk', 'customer', 'Peter Kováč', ['pilot 2026'], '24. 10. 2026', true],
+      ['Domáca ošetrovateľská starostlivosť Lipa', 'DL', 'Prešov · ADOS', 'Bc. Zuzana Mikulová', 'mikulova@adoslipa.sk', 'interested', 'Jana Horváthová', ['konferencia Košice'], '22. 10. 2026', true],
+      ['ADOS Svätá Alžbeta, n.o.', 'SA', 'Bratislava · ADOS', 'PhDr. Katarína Nováková', 'riaditelka@ados-alzbeta.sk', 'contacted', 'Peter Kováč', [], '18. 10. 2026', false],
+      ['Mária Kováčová', 'MK', 'Trnava · Fyzická osoba', 'Mária Kováčová', 'maria.kovacova@gmail.com', 'lead', 'Lucia Bartošová', ['web'], '15. 10. 2026', false],
+      ['Opatrovateľská služba Nádej', 'ON', 'Nitra · Bez typu', 'Ing. Róbert Baláž', 'balaz@nadej-nitra.sk', 'contacted', 'Jana Horváthová', [], '12. 10. 2026', false],
+      ['ADOS Medicare Žilina, s.r.o.', 'MŽ', 'Žilina · ADOS', 'Mgr. Ivana Kubíková', 'kubikova@medicare-za.sk', 'customer', 'Peter Kováč', ['pilot 2026'], '9. 10. 2026', false],
+      ['ADOS Pri Dunaji', 'PD', 'Komárno · ADOS', 'Erika Szabóová', 'info@adosdunaj.sk', 'lead', 'Lucia Bartošová', ['konferencia Košice'], '2. 10. 2026', false],
+      ['Agentúra Zdravie Plus, s.r.o.', 'ZP', 'Trnava · ADOS', 'Mgr. Jozef Hruška', 'hruska@zdravieplus.sk', 'lost', 'Peter Kováč', [], '28. 9. 2026', false],
+      ['ADOS Slnečnica', 'AS', 'Banská Bystrica · ADOS', 'Mgr. Alena Vargová', 'vargova@slnecnica-bb.sk', 'former', 'Jana Horváthová', [], '14. 8. 2026', false],
+      ['ADOS Večernica', 'AV', 'Martin · ADOS', 'Bez kontaktnej osoby', 'Pridajte kontakt', 'lead', 'Lucia Bartošová', ['web'], '—', false]
+    ];
+    const rows = data.map((d, i) => ({
+      name: d[0], initials: d[1], meta: d[2], contact: d[3], email: d[4],
+      statusCls: tones[d[5]], status: labels[d[5]], owner: d[6], tags: d[7], last: d[8], checked: d[9],
+      rowStyle: d[9] ? 'background:#f0f8f7' : '',
+      avatarStyle: d[2].indexOf('Fyzická') >= 0 ? avatars[i % avatars.length] + ';border-radius:50%' : avatars[i % avatars.length],
+      contactStyle: d[4] === 'Pridajte kontakt' ? 'color:#b45309;font-weight:600' : '',
+      href: d[2].indexOf('Fyzická') >= 0 ? 'IndividualDetail.dc.html' : 'CustomerDetail.dc.html'
+    }));
+    const chips = [
+      ['Všetci · 128', true], ['Potenciálni · 41', false], ['Oslovení · 27', false], ['Majú záujem · 14', false],
+      ['Zákazníci · 32', false], ['Bývalí · 6', false], ['Bez záujmu · 8', false]
+    ].map((c) => ({ label: c[0], cls: c[1] ? 'chip chip-on' : 'chip' }));
+    return { rows, chips };
+  }
+}
+</script>
+</body>
+</html>

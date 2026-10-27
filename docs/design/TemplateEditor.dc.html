@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>Úprava šablóny</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif;color:#152b2a;-webkit-font-smoothing:antialiased}
+a{color:#0a6466;text-decoration:none}a:hover{color:#0c3b3c;text-decoration:underline}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none;height:40px;padding:0 16px;font-size:14px}
+.btn-primary{background:linear-gradient(180deg,#139698 0%,#0b6e70 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 2px rgba(12,59,60,.06),0 4px 12px rgba(12,59,60,.07)}
+.btn-secondary{background:#e3f3f2;color:#0a6466}
+.btn-ghost{background:transparent;color:#0a6466}
+.btn-sm{height:32px;padding:0 10px;font-size:13px}
+.card{border:1px solid #dfe8e6;border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(12,59,60,.08),0 8px 22px rgba(12,59,60,.08)}
+.field{position:relative;display:block;border:1px solid #d6e1de;border-radius:12px;background:#fff;min-height:56px;box-sizing:border-box;padding:8px 14px 6px}
+.field>span{display:block;font-size:12px;font-weight:500;color:#48625f;line-height:16px}
+.field input,.field select{display:block;width:100%;border:0;outline:0;font:inherit;font-size:15px;color:#152b2a;background:transparent;padding:2px 0 0;-webkit-appearance:none;appearance:none}
+.var{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;background:#e3f3f2;color:#0a6466;font-size:13px;font-weight:600;box-shadow:inset 0 0 0 1px #bfe2df;white-space:nowrap}
+.lbl{margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#6f8784}
+.cf{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #dfe8e6;border-radius:10px}
+.tb{min-width:32px;height:32px;padding:0 6px;border:0;border-radius:8px;background:transparent;color:#48625f;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font:inherit;font-weight:600;font-size:13px}
+.tb:hover{background:#f0f8f7}
+.tb-on{background:#e3f3f2;color:#0a6466}
+.sep{width:1px;height:20px;background:#dfe8e6;margin:0 4px}
+.seg{display:inline-flex;padding:3px;border-radius:10px;background:#dde6e3;gap:2px}
+.seg button{height:30px;padding:0 12px;border:0;border-radius:8px;background:transparent;font:inherit;font-size:13px;font-weight:600;color:#48625f;cursor:pointer}
+.seg .on{background:#fff;color:#152b2a;box-shadow:0 1px 2px rgba(12,59,60,.12)}
+.menu{position:absolute;top:44px;right:8px;z-index:5;width:280px;padding:8px;border:1px solid #dfe8e6;border-radius:12px;background:#fff;box-shadow:0 1px 3px rgba(12,59,60,.06),0 12px 32px rgba(12,59,60,.16)}
+.menu p{margin:8px 8px 4px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#6f8784}
+.menu button{display:flex;width:100%;align-items:center;justify-content:space-between;height:32px;padding:0 8px;border:0;border-radius:8px;background:transparent;font:inherit;font-size:14px;color:#152b2a;cursor:pointer;text-align:left}
+.menu button:hover{background:#f0f8f7}
+.menu small{font-size:12px;color:#6f8784}
+.switch{position:relative;width:40px;height:24px;border-radius:999px;background:#0f8b8d;flex-shrink:0;border:0;cursor:pointer;padding:0}
+.switch i{position:absolute;top:3px;left:19px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 1200px; background: #eaf0ee">
+  <div style="flex: 0 0 232px; background: #0c3b3c">
+    <dc-import name="Sidebar" active="emails" hint-size="232px,900px"></dc-import>
+  </div>
+  <main style="flex: 999 1 560px; min-width: 0">
+    <header style="min-height: 72px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 28px; box-sizing: border-box; background: rgba(255,255,255,0.8); border-bottom: 1px solid #d6e1de">
+      <div style="flex: 1 1 auto; min-width: 0">
+        <a href="Templates.dc.html" style="display: inline-flex; align-items: center; gap: 2px; font-size: 13px; font-weight: 500"><svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"></path></svg>Šablóny</a>
+        <h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em">Cenová ponuka 2027</h1>
+        <p style="margin: 0; font-size: 13px; color: #48625f">Uložené pred 2 minútami · Jana Horváthová</p>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px">
+        <button type="button" class="btn btn-ghost">Duplikovať</button>
+        <button type="button" class="btn btn-secondary"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg>Poslať test sebe</button>
+        <button type="button" class="btn btn-primary">Uložiť šablónu</button>
+      </div>
+    </header>
+
+    <div style="padding: 20px 28px 40px; display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; max-width: 1440px">
+      <aside class="card" style="flex: 1 1 300px; max-width: 340px; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px">
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <label class="field"><span>Názov šablóny</span><input value="Cenová ponuka 2027"></label>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+            <label class="field"><span>Kategória</span><select><option>Ponuka</option></select></label>
+            <label class="field"><span>Jazyk</span><select><option>Slovenčina</option></select></label>
+          </div>
+          <div class="field" style="min-height: 72px"><span>Predmet</span><p style="margin: 4px 0 0; font-size: 15px; line-height: 24px">Cenová ponuka Alma na rok 2027 pre <span class="var">Názov zákazníka</span></p></div>
+        </div>
+
+        <div>
+          <p class="lbl">Vlastné polia</p>
+          <p style="margin: -2px 0 10px; font-size: 13px; line-height: 18px; color: #48625f">Vyplnia sa pri odosielaní. Pole pre každého adresáta môže mať u každého inú hodnotu.</p>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <div class="cf"><span class="var">Počet sestier</span><span style="margin-left: auto; font-size: 12px; color: #48625f">číslo · pre každého</span></div>
+            <div class="cf"><span class="var">Cena mesačne</span><span style="margin-left: auto; font-size: 12px; color: #48625f">suma · pre každého</span></div>
+            <div class="cf"><span class="var">Platnosť ponuky</span><span style="margin-left: auto; font-size: 12px; color: #48625f">dátum · spoločné</span></div>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" style="margin-top: 6px; padding: 0 4px">+ Pridať pole</button>
+        </div>
+
+        <div>
+          <p class="lbl">Predvolené prílohy</p>
+          <div class="cf"><span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 7px; background: #fce8e8; color: #b0232a; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700">PDF</span><span style="font-size: 13px; font-weight: 600; flex: 1; min-width: 0">Licenčné podmienky.pdf</span></div>
+          <button type="button" class="btn btn-ghost btn-sm" style="margin-top: 6px; padding: 0 4px">+ Priložiť zo Súborov</button>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 12px; padding-top: 4px; border-top: 1px solid #dfe8e6">
+          <span style="flex: 1; padding-top: 14px"><span id="act" style="display: block; font-size: 14px; font-weight: 600">Aktívna</span><span style="display: block; font-size: 13px; color: #48625f">Ponúka sa pri odosielaní.</span></span>
+          <button type="button" class="switch" role="switch" aria-checked="true" aria-labelledby="act" style="margin-top: 14px"><i></i></button>
+        </div>
+      </aside>
+
+      <section class="card" style="flex: 999 1 640px; min-width: 0; overflow: visible">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #dfe8e6">
+          <div class="seg" role="tablist" aria-label="Režim">
+            <button type="button" role="tab" aria-selected="true" class="on">Upraviť</button>
+            <button type="button" role="tab" aria-selected="false">Náhľad pre kontakt</button>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #48625f">
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"></rect><path d="M8 21h8M12 17v4"></path></svg>
+            Počítač
+            <span style="color: #c5d3d1">|</span>
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M12 18h.01"></path></svg>
+            Telefón
+          </div>
+        </div>
+        <div role="toolbar" aria-label="Formátovanie" style="position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; padding: 8px 12px; border-bottom: 1px solid #dfe8e6; background: #f7faf9">
+          <button type="button" class="tb" style="padding: 0 10px">Odsek<svg aria-hidden="true" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></button>
+          <span class="sep" aria-hidden="true"></span>
+          <button type="button" class="tb" aria-label="Tučné" style="font-weight: 800">B</button>
+          <button type="button" class="tb" aria-label="Kurzíva" style="font-style: italic">I</button>
+          <button type="button" class="tb" aria-label="Odkaz"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg></button>
+          <button type="button" class="tb" aria-label="Odrážky"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"></path></svg></button>
+          <span class="sep" aria-hidden="true"></span>
+          <button type="button" class="tb" aria-label="Obrázok"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"></path></svg></button>
+          <button type="button" class="tb">Tlačidlo</button>
+          <button type="button" class="tb">Zvýraznený blok</button>
+          <button type="button" class="tb">Dva stĺpce</button>
+          <button type="button" class="tb" aria-label="Oddeľovač"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h18"></path></svg></button>
+          <button type="button" class="tb tb-on" aria-expanded="true" style="margin-left: auto; padding: 0 10px"><span style="font-family: ui-monospace, monospace">{ }</span>Vložiť premennú</button>
+          <div class="menu" role="menu">
+            <p>Kontakt</p>
+            <button type="button" role="menuitem">Oslovenie<small>Vážená pani riaditeľka</small></button>
+            <button type="button" role="menuitem">Meno a priezvisko<small>Eva Tóthová</small></button>
+            <button type="button" role="menuitem">Pozícia<small>Riaditeľka</small></button>
+            <p>Zákazník</p>
+            <button type="button" role="menuitem">Názov zákazníka<small>ADOS Harmónia</small></button>
+            <button type="button" role="menuitem">Mesto<small>Košice</small></button>
+            <p>Odosielateľ</p>
+            <button type="button" role="menuitem">Meno, pozícia, telefón<small>Peter Kováč</small></button>
+            <p>Vlastné polia</p>
+            <button type="button" role="menuitem">Počet sestier<small>pre každého</small></button>
+            <button type="button" role="menuitem">Cena mesačne<small>pre každého</small></button>
+          </div>
+        </div>
+        <div style="background: #e9eeee; padding: 28px 16px 36px; display: flex; justify-content: center">
+          <div style="outline: 2px dashed rgba(15,139,141,0.35); outline-offset: 6px; border-radius: 14px">
+            <dc-import name="EmailCanvas" mode="template" hint-size="600px,1000px"></dc-import>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

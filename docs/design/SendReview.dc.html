@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>Nový e-mail, kontrola a odoslanie</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif;color:#152b2a;-webkit-font-smoothing:antialiased}
+a{color:#0a6466;text-decoration:none}a:hover{color:#0c3b3c;text-decoration:underline}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none;height:40px;padding:0 16px;font-size:14px}
+.btn:hover{text-decoration:none}
+.btn-primary{background:linear-gradient(180deg,#139698 0%,#0b6e70 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 2px rgba(12,59,60,.06),0 4px 12px rgba(12,59,60,.07)}
+.btn-primary:hover{color:#fff}
+.btn-secondary{background:#e3f3f2;color:#0a6466}
+.btn-ghost{background:transparent;color:#0a6466}
+.card{border:1px solid #dfe8e6;border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(12,59,60,.08),0 8px 22px rgba(12,59,60,.08)}
+.steps{display:flex;flex-wrap:wrap;gap:6px 22px;margin:0;padding:0;list-style:none}
+.st{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#48625f}
+.st i{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-size:12px;font-weight:700;background:#dde6e3}
+.st-on{color:#0a6466}.st-on i{background:#0f8b8d;color:#fff}
+.st-done{color:#16a34a}.st-done i{background:#eaf5e6}
+.row{display:flex;flex-wrap:wrap;gap:4px 16px;padding:14px 0;border-top:1px solid #dfe8e6}
+.row dt{flex:0 0 180px;font-size:13px;font-weight:500;color:#48625f}
+.row dd{flex:1 1 300px;margin:0;font-size:14px;line-height:21px}
+.when{display:flex;gap:12px;align-items:flex-start;padding:14px;border:1px solid #d6e1de;border-radius:12px;cursor:pointer}
+.when-on{border:2px solid #0f8b8d;padding:13px;background:#f0f8f7}
+.field{position:relative;display:block;border:1px solid #d6e1de;border-radius:10px;background:#fff;box-sizing:border-box;padding:6px 12px 4px}
+.field>span{display:block;font-size:11px;font-weight:500;color:#48625f}
+.field input{display:block;width:100%;border:0;outline:0;font:inherit;font-size:14px;color:#152b2a;background:transparent;padding:0}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 1000px; background: #eaf0ee">
+  <div style="flex: 0 0 232px; background: #0c3b3c">
+    <dc-import name="Sidebar" active="emails" hint-size="232px,900px"></dc-import>
+  </div>
+  <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 14px 28px; box-sizing: border-box; background: rgba(255,255,255,0.8); border-bottom: 1px solid #d6e1de">
+      <div style="flex: 0 0 auto">
+        <h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em">Nový e-mail</h1>
+        <p style="margin: 0; font-size: 13px; color: #48625f">Šablóna Cenová ponuka 2027 · 5 adresátov</p>
+      </div>
+      <ol class="steps" aria-label="Kroky" style="flex: 1 1 auto; justify-content: center">
+        <li class="st st-done"><i>✓</i>Adresáti</li>
+        <li class="st st-done"><i>✓</i>Šablóna</li>
+        <li class="st st-done"><i>✓</i>Obsah</li>
+        <li class="st st-done"><i>✓</i>Náhľad</li>
+        <li class="st st-on" aria-current="step"><i>5</i>Odoslanie</li>
+      </ol>
+      <button type="button" class="btn btn-ghost">Zrušiť koncept</button>
+    </header>
+
+    <div style="flex: 1; padding: 24px 28px; display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; max-width: 1240px; box-sizing: border-box; width: 100%">
+      <section class="card" style="flex: 999 1 560px; min-width: 0; padding: 20px 22px 8px">
+        <h2 style="margin: 0 0 6px; font-size: 17px; font-weight: 600">Súhrn</h2>
+        <dl style="margin: 0">
+          <div class="row"><dt>Predmet</dt><dd>Cenová ponuka Alma na rok 2027 pre {názov zákazníka}</dd></div>
+          <div class="row"><dt>Odosielateľ</dt><dd>Peter Kováč | Alma &lt;info@mail.adosalma.sk&gt;</dd></div>
+          <div class="row"><dt>Odpovede</dt><dd>Prídu do Alma Intra k zákazníkovi. Kópiu dostanete na peter.kovac@adosalma.sk.</dd></div>
+          <div class="row"><dt>Adresáti</dt><dd><strong>5 e-mailov</strong>, každý zvlášť: Eva Tóthová, Marek Lukáč, Zuzana Mikulová, Ivana Kubíková, Mária Kováčová</dd></div>
+          <div class="row"><dt>Vynechaní</dt><dd>Jana Pavlíková (odhlásená), ADOS Večernica (bez e-mailu)</dd></div>
+          <div class="row"><dt>Upravené pre adresáta</dt><dd>1 · Eva Tóthová</dd></div>
+          <div class="row"><dt>Prílohy</dt><dd>Licenčné podmienky.pdf pre všetkých, vlastná cenová ponuka pre 2 adresátov. Najväčší e-mail má 1,3 MB z 40 MB.</dd></div>
+          <div class="row"><dt>Kontrola</dt><dd style="color: #16a34a; font-weight: 600; display: flex; align-items: center; gap: 6px"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>Všetky premenné sú vyplnené</dd></div>
+        </dl>
+      </section>
+
+      <aside style="flex: 1 1 340px; max-width: 420px; display: flex; flex-direction: column; gap: 20px">
+        <section class="card" style="padding: 20px">
+          <h2 style="margin: 0; font-size: 17px; font-weight: 600">Testovací e-mail</h2>
+          <p style="margin: 4px 0 0; font-size: 13px; line-height: 19px; color: #48625f">Pošle sa vám e-mail prvého adresáta presne tak, ako ho dostane, s označením TEST v predmete.</p>
+          <button type="button" class="btn btn-secondary" style="margin-top: 14px; width: 100%">Poslať test na peter.kovac@adosalma.sk</button>
+          <p role="status" style="margin: 10px 0 0; font-size: 13px; color: #16a34a; display: flex; align-items: center; gap: 6px"><svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>Test odoslaný o 14:08</p>
+        </section>
+
+        <section class="card" style="padding: 20px">
+          <h2 style="margin: 0 0 12px; font-size: 17px; font-weight: 600">Kedy odoslať</h2>
+          <div role="radiogroup" aria-label="Kedy odoslať" style="display: flex; flex-direction: column; gap: 10px">
+            <label class="when"><input type="radio" name="when" style="accent-color: #0f8b8d; margin: 2px 0 0"><span><span style="display: block; font-size: 14px; font-weight: 600">Hneď</span><span style="display: block; font-size: 13px; color: #48625f">Odošle sa do niekoľkých minút.</span></span></label>
+            <label class="when when-on"><input type="radio" name="when" checked style="accent-color: #0f8b8d; margin: 2px 0 0"><span style="flex: 1"><span style="display: block; font-size: 14px; font-weight: 600">Naplánovať</span><span style="display: block; font-size: 13px; color: #48625f">Do odoslania sa dá zrušiť alebo zmeniť.</span>
+              <span style="margin-top: 10px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+                <span class="field"><span>Dátum</span><input value="27. 10. 2026" aria-label="Dátum odoslania"></span>
+                <span class="field"><span>Čas</span><input value="8:30" aria-label="Čas odoslania"></span>
+              </span>
+            </span></label>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <footer style="position: sticky; bottom: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 14px 28px; background: rgba(255,255,255,0.94); border-top: 1px solid #d6e1de; box-shadow: 0 -6px 18px rgba(12,43,44,0.07)">
+      <p style="margin: 0 auto 0 0; font-size: 14px; color: #48625f">Odošle sa 27. 10. 2026 o 8:30</p>
+      <a href="SendPreview.dc.html" class="btn btn-ghost">Späť</a>
+      <a href="Campaign.dc.html" class="btn btn-primary"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg>Naplánovať 5 e-mailov</a>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

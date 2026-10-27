@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>Číselníky</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif;color:#152b2a;-webkit-font-smoothing:antialiased}
+a{color:#0a6466;text-decoration:none}a:hover{color:#0c3b3c;text-decoration:underline}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none}
+.btn-primary{height:40px;padding:0 16px;font-size:14px;background:linear-gradient(180deg,#139698 0%,#0b6e70 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 2px rgba(12,59,60,.06),0 4px 12px rgba(12,59,60,.07)}
+.btn-icon{width:36px;height:36px;border:1px solid #d6e1de;background:#fff;color:#48625f}
+.search{display:flex;align-items:center;gap:8px;height:40px;min-width:220px;padding:0 12px;border:1px solid #d6e1de;border-radius:10px;background:#fff;color:#6f8784;font-size:14px;box-sizing:border-box}
+.kbd{margin-left:auto;font-size:11px;font-weight:600;color:#48625f;border:1px solid #d6e1de;border-radius:6px;padding:1px 6px;background:#f7faf9}
+.card{border:1px solid #dfe8e6;border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(12,59,60,.08),0 8px 22px rgba(12,59,60,.08)}
+.tab{height:36px;padding:0 14px;border-radius:10px;font-size:14px;font-weight:600;color:#48625f;display:inline-flex;align-items:center}
+.tab-on{background:#e3f3f2;color:#0a6466}
+.list-item{display:flex;align-items:center;justify-content:space-between;gap:8px;height:44px;padding:0 12px;border-radius:10px;font-size:14px;font-weight:500;color:#152b2a}
+.list-on{background:#e3f3f2;color:#0a6466;font-weight:600}
+.count{font-size:12px;font-weight:600;color:#48625f}
+table{width:100%;border-collapse:collapse;font-size:14px;text-align:left}
+th{height:44px;padding:0 16px;background:#f7faf9;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#6f8784;white-space:nowrap}
+td{height:56px;padding:8px 16px;border-top:1px solid #dfe8e6;vertical-align:middle}
+.switch{position:relative;width:40px;height:24px;border-radius:999px;background:#0f8b8d;border:0;cursor:pointer;padding:0;display:inline-block}
+.switch i{position:absolute;top:3px;left:19px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.field{display:flex;align-items:center;height:40px;padding:0 12px;border:1px solid #d6e1de;border-radius:10px;background:#fff;box-sizing:border-box}
+.field input{flex:1;min-width:0;border:0;outline:0;font:inherit;font-size:14px;background:transparent;color:#152b2a}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 900px; background: #eaf0ee">
+  <div style="flex: 0 0 232px; background: #0c3b3c">
+    <dc-import name="Sidebar" active="settings" hint-size="232px,900px"></dc-import>
+  </div>
+  <main style="flex: 999 1 560px; min-width: 0">
+    <header style="min-height: 72px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 28px; box-sizing: border-box; background: rgba(255,255,255,0.8); border-bottom: 1px solid #d6e1de">
+      <div style="flex: 1 1 auto; min-width: 0">
+        <h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em">Nastavenia</h1>
+        <p style="margin: 0; font-size: 13px; line-height: 18px; color: #48625f">Firma, používatelia a číselníky</p>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px">
+        <div class="search"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Hľadať<span class="kbd">Ctrl K</span></div>
+        <button type="button" class="btn btn-icon" aria-label="Upozornenia"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg></button>
+      </div>
+    </header>
+
+    <div style="padding: 20px 28px 40px; display: flex; flex-direction: column; gap: 20px; max-width: 1240px">
+      <nav aria-label="Sekcie nastavení" style="display: flex; flex-wrap: wrap; gap: 6px">
+        <a href="#" class="tab">Firma</a>
+        <a href="Users.dc.html" class="tab">Používatelia</a>
+        <a href="CodeLists.dc.html" class="tab tab-on" aria-current="page">Číselníky</a>
+        <a href="#" class="tab">Vzhľad e-mailov</a>
+      </nav>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+        <nav aria-label="Číselníky" class="card" style="flex: 1 1 220px; max-width: 280px; padding: 8px; display: flex; flex-direction: column; gap: 2px">
+          <a href="#" class="list-item list-on" aria-current="page">Typy zákazníkov<span class="count">1</span></a>
+          <a href="#" class="list-item">Zdroje zákazníkov<span class="count">4</span></a>
+          <a href="#" class="list-item">Štítky<span class="count">9</span></a>
+        </nav>
+
+        <section class="card" style="flex: 999 1 520px; min-width: 0; overflow: hidden">
+          <div style="padding: 20px 20px 16px">
+            <h2 style="margin: 0; font-size: 17px; line-height: 22px; font-weight: 600">Typy zákazníkov</h2>
+            <p style="margin: 2px 0 0; font-size: 13px; line-height: 19px; color: #48625f">Typ je nepovinný, zákazník môže zostať bez typu. Či ide o organizáciu alebo fyzickú osobu, sa volí zvlášť. Typ, ktorý má niektorý zákazník, sa nedá odstrániť, dá sa len vypnúť.</p>
+          </div>
+          <div style="overflow-x: auto">
+            <table>
+              <thead><tr><th style="width: 28px; padding-left: 20px"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden">Poradie</span></th><th>Názov</th><th>Zákazníkov</th><th>Ponúkať pri zakladaní</th><th><span style="position: absolute; width: 1px; height: 1px; overflow: hidden">Akcie</span></th></tr></thead>
+              <tbody>
+                <tr>
+                  <td style="padding-left: 20px; color: #6f8784"><svg aria-label="Presunúť" role="img" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="9" cy="6" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></td>
+                  <td style="font-weight: 600">ADOS</td>
+                  <td style="color: #48625f">117</td>
+                  <td><button type="button" class="switch" role="switch" aria-checked="true" aria-label="Ponúkať typ ADOS"><i></i></button></td>
+                  <td style="text-align: right"><button type="button" class="btn btn-icon" aria-label="Premenovať ADOS" style="width: 32px; height: 32px; border: 0; background: transparent"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></button></td>
+                </tr>
+                <tr>
+                  <td style="padding-left: 20px"></td>
+                  <td colspan="4" style="color: #48625f; font-size: 13px">Bez typu · 11 zákazníkov</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <form style="display: flex; flex-wrap: wrap; gap: 10px; padding: 16px 20px 20px; border-top: 1px solid #dfe8e6">
+            <label class="field" style="flex: 1 1 260px"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden">Nový typ</span><input placeholder="Nový typ, napríklad Sociálne zariadenie"></label>
+            <button type="submit" class="btn btn-primary"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Pridať typ</button>
+          </form>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

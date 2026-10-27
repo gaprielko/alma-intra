@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>Súbory</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif;color:#152b2a;-webkit-font-smoothing:antialiased}
+a{color:#0a6466;text-decoration:none}a:hover{color:#0c3b3c;text-decoration:underline}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none;height:40px;padding:0 16px;font-size:14px}
+.btn:hover{text-decoration:none}
+.btn-primary{background:linear-gradient(180deg,#139698 0%,#0b6e70 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 2px rgba(12,59,60,.06),0 4px 12px rgba(12,59,60,.07)}
+.btn-secondary{background:#e3f3f2;color:#0a6466}
+.btn-icon{width:36px;height:36px;padding:0;border:1px solid #d6e1de;background:#fff;color:#48625f}
+.search{display:flex;align-items:center;gap:8px;height:40px;min-width:200px;padding:0 12px;border:1px solid #d6e1de;border-radius:10px;background:#fff;color:#6f8784;font-size:14px;box-sizing:border-box}
+.kbd{margin-left:auto;font-size:11px;font-weight:600;color:#48625f;border:1px solid #d6e1de;border-radius:6px;padding:1px 6px;background:#f7faf9}
+.card{border:1px solid #dfe8e6;border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(12,59,60,.08),0 8px 22px rgba(12,59,60,.08)}
+.tree-h{margin:14px 10px 6px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#6f8784}
+.node{display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;border-radius:9px;font-size:14px;font-weight:500;color:#152b2a;text-decoration:none}
+.node:hover{background:#f0f8f7;text-decoration:none}
+.node-on{background:#e3f3f2;color:#0a6466;font-weight:600}
+.node svg{flex-shrink:0;color:#48625f}
+.node-on svg{color:#0a6466}
+.cnt{margin-left:auto;font-size:12px;color:#6f8784}
+table{width:100%;border-collapse:collapse;font-size:14px;text-align:left}
+th{height:44px;padding:0 16px;background:#f7faf9;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#6f8784;white-space:nowrap}
+td{height:54px;padding:8px 16px;border-top:1px solid #dfe8e6;vertical-align:middle;white-space:nowrap}
+th:first-child,td:first-child{padding-left:20px}
+.ft{width:34px;height:34px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;letter-spacing:.02em;flex-shrink:0}
+.ver{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;background:#f7faf9;border:1px solid #dfe8e6;font-size:12px;font-weight:600;color:#48625f}
+.claude{display:inline-flex;align-items:center;gap:6px}
+.claude i{width:18px;height:18px;border-radius:5px;background:#fcf0de;color:#b45309;display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-size:10px;font-weight:700}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 1000px; background: #eaf0ee; position: relative">
+  <div style="flex: 0 0 232px; background: #0c3b3c">
+    <dc-import name="Sidebar" active="files" hint-size="232px,900px"></dc-import>
+  </div>
+  <main style="flex: 999 1 560px; min-width: 0">
+    <header style="min-height: 72px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 28px; box-sizing: border-box; background: rgba(255,255,255,0.8); border-bottom: 1px solid #d6e1de">
+      <div style="flex: 1 1 auto; min-width: 0">
+        <h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em">Súbory</h1>
+        <p style="margin: 0; font-size: 13px; line-height: 18px; color: #48625f">Firemné dokumenty a priečinky zákazníkov</p>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+        <div class="search"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Hľadať<span class="kbd">Ctrl K</span></div>
+        <button type="button" class="btn btn-secondary"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path><path d="M12 10v6M9 13h6"></path></svg>Nový priečinok</button>
+        <button type="button" class="btn btn-primary"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m17 8-5-5-5 5M12 3v12"></path></svg>Nahrať súbory</button>
+      </div>
+    </header>
+
+    <div style="padding: 20px 28px 40px; display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; max-width: 1440px">
+      <nav aria-label="Priečinky" class="card" style="flex: 1 1 240px; max-width: 280px; padding: 6px 8px 10px; box-sizing: border-box">
+        <p class="tree-h">Firemné dokumenty</p>
+        <sc-for list="{{company}}" as="n" hint-placeholder-count="6">
+          <a href="#" class="{{n.cls}}" style="{{n.indent}}">
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg>
+            {{n.name}}<span class="cnt">{{n.count}}</span>
+          </a>
+        </sc-for>
+        <p class="tree-h">Zákazníci</p>
+        <label style="display: flex; align-items: center; gap: 6px; height: 32px; margin: 0 4px 4px; padding: 0 10px; border: 1px solid #dfe8e6; border-radius: 9px; font-size: 13px; color: #6f8784">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+          <span style="position: absolute; width: 1px; height: 1px; overflow: hidden">Nájsť zákazníka</span>
+          <input placeholder="Nájsť zákazníka" style="flex: 1; min-width: 0; border: 0; outline: 0; font: inherit; background: transparent; color: #152b2a">
+        </label>
+        <sc-for list="{{customers}}" as="n" hint-placeholder-count="4">
+          <a href="#" class="node">
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V7l9-4 9 4v14"></path><path d="M9 21v-6h6v6"></path></svg>
+            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{n.name}}</span><span class="cnt">{{n.count}}</span>
+          </a>
+        </sc-for>
+        <a href="#" class="node" style="font-size: 13px; color: #0a6466; font-weight: 600; padding-left: 34px">Všetci zákazníci · 128</a>
+        <div style="height: 1px; background: #dfe8e6; margin: 10px 4px"></div>
+        <a href="#" class="node">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          Kôš<span class="cnt">3</span>
+        </a>
+      </nav>
+
+      <section class="card" style="flex: 999 1 560px; min-width: 0; overflow: hidden">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 18px 20px 16px">
+          <div style="flex: 1 1 260px; min-width: 0">
+            <nav aria-label="Cesta" style="font-size: 13px; font-weight: 500; color: #48625f"><a href="#">Firemné dokumenty</a> <span aria-hidden="true">/</span></nav>
+            <h2 style="margin: 2px 0 0; font-size: 19px; line-height: 24px; font-weight: 700">Cenníky</h2>
+          </div>
+          <label style="flex: 0 1 280px; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border: 1px solid #d6e1de; border-radius: 10px; box-sizing: border-box">
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#6f8784" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+            <span style="position: absolute; width: 1px; height: 1px; overflow: hidden">Hľadať v súboroch</span>
+            <input placeholder="Hľadať vo všetkých priečinkoch" style="flex: 1; min-width: 0; border: 0; outline: 0; font: inherit; font-size: 13px; background: transparent; color: #152b2a">
+          </label>
+          <button type="button" class="btn btn-icon" aria-label="Filtrovať podľa typu"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.5V19l4 2v-8.5z"></path></svg></button>
+        </div>
+        <div style="overflow-x: auto">
+          <table>
+            <thead><tr><th>Názov</th><th>Zmenené</th><th>Zmenil</th><th>Veľkosť</th><th>Verzia</th><th><span style="position: absolute; width: 1px; height: 1px; overflow: hidden">Akcie</span></th></tr></thead>
+            <tbody>
+              <tr>
+                <td><div style="display: flex; align-items: center; gap: 12px"><span class="ft" style="background: #e3f3f2; color: #0a6466" aria-hidden="true"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg></span><a href="#" style="font-weight: 600; color: #152b2a">Archív 2025</a></div></td>
+                <td style="color: #48625f">8. 1. 2026</td><td style="color: #48625f">Jana Horváthová</td><td style="color: #48625f">6 súborov</td><td></td><td></td>
+              </tr>
+              <sc-for list="{{files}}" as="f" hint-placeholder-count="5">
+                <tr style="{{f.rowStyle}}">
+                  <td><div style="display: flex; align-items: center; gap: 12px"><span class="ft" style="{{f.ftStyle}}" aria-hidden="true">{{f.ext}}</span><a href="FileDetail.dc.html" style="font-weight: 600; color: #152b2a">{{f.name}}</a></div></td>
+                  <td style="color: #48625f">{{f.changed}}</td>
+                  <td style="color: #48625f">
+                    <sc-if value="{{f.byClaude}}" hint-placeholder-val="{{ false }}"><span class="claude"><i aria-hidden="true">C</i>{{f.by}}</span></sc-if>
+                    <sc-if value="{{f.byPerson}}" hint-placeholder-val="{{ true }}">{{f.by}}</sc-if>
+                  </td>
+                  <td style="color: #48625f">{{f.size}}</td>
+                  <td><span class="ver">v{{f.version}}</span></td>
+                  <td style="text-align: right"><button type="button" class="btn btn-icon" aria-label="Akcie pre {{f.name}}" style="width: 32px; height: 32px; border: 0; background: transparent"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg></button></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+        <div style="margin: 16px 20px 20px; border: 1.5px dashed #c5d3d1; border-radius: 14px; padding: 18px; display: flex; align-items: center; justify-content: center; gap: 10px; color: #48625f; font-size: 14px">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m17 8-5-5-5 5M12 3v12"></path></svg>
+          Pretiahnite súbory sem alebo <a href="#" style="font-weight: 600">vyberte z počítača</a>. Najviac 50 MB na súbor.
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div role="status" style="position: absolute; right: 28px; bottom: 28px; width: 340px; border-radius: 14px; background: #0c2b2c; color: #fff; padding: 14px 16px; box-shadow: 0 12px 32px rgba(12,43,44,0.3)">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+      <p style="margin: 0; font-size: 14px; font-weight: 600">Nahráva sa 2 z 3 súborov</p>
+      <button type="button" aria-label="Zbaliť" style="border: 0; background: transparent; color: #a9c9c7; cursor: pointer; padding: 4px"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></button>
+    </div>
+    <p style="margin: 10px 0 6px; font-size: 13px; color: #d7f2ef; display: flex; justify-content: space-between"><span>Prezentácia pre ADOS 2027.pptx</span><span>64 %</span></p>
+    <div style="height: 6px; border-radius: 999px; background: rgba(255,255,255,0.14); overflow: hidden"><div style="width: 64%; height: 100%; border-radius: 999px; background: #5fd0c9"></div></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const company = [
+      ['Zmluvy', 14, false, 0], ['Cenníky', 6, true, 0], ['Marketing', 23, false, 0], ['Prezentácie', 4, false, 1],
+      ['Šablóny dokumentov', 5, false, 0], ['Interné', 11, false, 0]
+    ].map((n) => ({ name: n[0], count: n[1], cls: n[2] ? 'node node-on' : 'node', indent: n[3] ? 'padding-left:34px' : '' }));
+    const customers = [['ADOS Harmónia, s.r.o.', 7], ['Domáca starostlivosť Lipa', 3], ['ADOS Medicare Žilina', 5]].map((n) => ({ name: n[0], count: n[1] }));
+    const types = {
+      XLSX: 'background:#eaf3de;color:#3b6d11', DOCX: 'background:#e6f1fb;color:#0c447c', PDF: 'background:#fce8e8;color:#b0232a'
+    };
+    const files = [
+      ['Cenník Alma ADOS 2027.xlsx', 'XLSX', 'Dnes 9:40', 'Jana Horváthová', false, '48 kB', 3],
+      ['Cenová ponuka vzor 2027.docx', 'DOCX', '24. 10. 2026', 'Claude za Petra Kováča', true, '112 kB', 5],
+      ['Cenník Alma ADOS 2026.pdf', 'PDF', '3. 1. 2026', 'Peter Kováč', false, '286 kB', 1],
+      ['Zľavy pre pilotné ADOS.docx', 'DOCX', '12. 9. 2026', 'Lucia Bartošová', false, '64 kB', 2],
+      ['Licenčné podmienky.pdf', 'PDF', '1. 9. 2026', 'Jana Horváthová', false, '1,2 MB', 1]
+    ].map((f, i) => ({
+      name: f[0], ext: f[1], ftStyle: types[f[1]], changed: f[2], by: f[3], byClaude: f[4], byPerson: !f[4], size: f[5], version: f[6],
+      rowStyle: i === 1 ? 'background:#f0f8f7' : ''
+    }));
+    return { company, customers, files };
+  }
+}
+</script>
+</body>
+</html>

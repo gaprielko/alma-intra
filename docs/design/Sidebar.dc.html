@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>Bočný panel</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.nav-item{position:relative;display:flex;align-items:center;gap:12px;height:44px;padding:0 10px;border-radius:12px;font-size:15px;font-weight:500;color:#a9c9c7;text-decoration:none}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff;text-decoration:none}
+.nav-on{color:#fff;background:linear-gradient(90deg,rgba(95,208,201,.22) 0%,rgba(95,208,201,.06) 100%);box-shadow:inset 0 0 0 1px rgba(95,208,201,.28),0 4px 14px rgba(0,0,0,.18)}
+.nav-bar{position:absolute;left:0;top:11px;width:3px;height:22px;border-radius:0 3px 3px 0;background:#5fd0c9}
+.mark{width:28px;height:28px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(255,255,255,.07);color:#a9c9c7;box-shadow:inset 0 0 0 1px rgba(169,201,199,.14)}
+.mark-on{background:linear-gradient(160deg,#18a5a7 0%,#0b7375 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 3px 10px rgba(95,208,201,.25)}
+</style>
+</helmet>
+<nav aria-label="Hlavná navigácia" style="width: 232px; min-height: 900px; height: 100%; box-sizing: border-box; padding: 16px 14px; display: flex; flex-direction: column; font-family: 'Figtree', system-ui, sans-serif; background: radial-gradient(140% 55% at 0% 0%, rgba(95,208,201,0.2) 0%, rgba(95,208,201,0) 60%), linear-gradient(180deg, #104b4c 0%, #0c3b3c 48%, #082c2d 100%)">
+  <div style="display: flex; align-items: center; gap: 12px; padding: 4px">
+    <span aria-hidden="true" style="width: 32px; height: 32px; border-radius: 9px; background: linear-gradient(160deg, #135a5b 0%, #0a3233 100%); display: inline-flex; align-items: center; justify-content: center; box-shadow: inset 0 0 0 1px rgba(95,208,201,0.35), 0 4px 14px rgba(95,208,201,0.2)">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#5fd0c9" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h16A1.5 1.5 0 0 1 21.5 6v10a1.5 1.5 0 0 1-1.5 1.5h-7.5L8 21v-3.5H4A1.5 1.5 0 0 1 2.5 16V6A1.5 1.5 0 0 1 4 4.5z"></path><path d="M7.5 9.5v.6a3.4 3.4 0 0 0 3.4 3.4"></path><path d="M16.5 9.5v.6a3.4 3.4 0 0 1-3.4 3.4"></path><circle cx="12" cy="8.8" r="1.9"></circle></svg>
+    </span>
+    <div style="flex: 1; min-width: 0">
+      <p style="margin: 0; font-size: 14px; line-height: 18px; font-weight: 600; color: #fff">Alma Intra</p>
+      <p style="margin: 0; font-size: 12px; color: #a9c9c7">Interný systém</p>
+    </div>
+    <button type="button" aria-label="Zbaliť menu" style="width: 36px; height: 36px; border: 0; border-radius: 10px; background: transparent; color: #a9c9c7; display: inline-flex; align-items: center; justify-content: center; cursor: pointer">
+      <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M9 3v18M16 15l-3-3 3-3"></path></svg>
+    </button>
+  </div>
+
+  <div style="margin-top: 28px; display: flex; flex-direction: column; gap: 4px; flex: 1">
+    <sc-for list="{{main}}" as="it" hint-placeholder-count="4">
+      <a href="{{it.href}}" class="{{it.cls}}">
+        <sc-if value="{{it.on}}" hint-placeholder-val="{{ false }}"><span class="nav-bar" aria-hidden="true"></span></sc-if>
+        <span class="{{it.markCls}}" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+            <sc-for list="{{it.paths}}" as="d" hint-placeholder-count="2"><path d="{{d}}"></path></sc-for>
+            <sc-for list="{{it.circles}}" as="c" hint-placeholder-count="1"><circle cx="{{c.x}}" cy="{{c.y}}" r="{{c.r}}"></circle></sc-for>
+          </svg>
+        </span>
+        {{it.label}}
+      </a>
+    </sc-for>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 4px; border-top: 1px solid #1e4e4f; padding-top: 12px">
+    <sc-for list="{{bottom}}" as="it" hint-placeholder-count="1">
+      <a href="{{it.href}}" class="{{it.cls}}">
+        <sc-if value="{{it.on}}" hint-placeholder-val="{{ false }}"><span class="nav-bar" aria-hidden="true"></span></sc-if>
+        <span class="{{it.markCls}}" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+            <sc-for list="{{it.paths}}" as="d" hint-placeholder-count="2"><path d="{{d}}"></path></sc-for>
+            <sc-for list="{{it.circles}}" as="c" hint-placeholder-count="1"><circle cx="{{c.x}}" cy="{{c.y}}" r="{{c.r}}"></circle></sc-for>
+          </svg>
+        </span>
+        {{it.label}}
+      </a>
+    </sc-for>
+    <a href="Account.dc.html" class="{{account.cls}}" style="height: 52px; margin-top: 4px">
+      <sc-if value="{{account.on}}" hint-placeholder-val="{{ false }}"><span class="nav-bar" aria-hidden="true" style="top: 15px"></span></sc-if>
+      <span aria-hidden="true" style="width: 32px; height: 32px; margin-left: -2px; border-radius: 50%; background: #e3f3f2; color: #0a6466; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0">JH</span>
+      <span style="min-width: 0; display: flex; flex-direction: column; line-height: 17px">
+        <span style="font-size: 14px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Jana Horváthová</span>
+        <span style="font-size: 12px; color: #a9c9c7">Môj účet</span>
+      </span>
+    </a>
+    <button type="button" class="nav-item" style="border: 0; background: transparent; font: inherit; font-size: 15px; font-weight: 500; cursor: pointer; text-align: left">
+      <span class="mark" aria-hidden="true" style="background: transparent; box-shadow: none"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="m16 17 5-5-5-5M21 12H9"></path></svg></span>
+      Odhlásiť sa
+    </button>
+  </div>
+</nav>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","options":["overview","customers","emails","files","settings","account"],"default":"customers"},"$preview":{"width":232,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const active = this.props.active ?? 'customers';
+    // Each item has its own mark, drawn like the app logo (24 grid, 1.75 to 1.85 stroke, round caps).
+    const marks = {
+      overview: { paths: ['M6 3.5h12A2.5 2.5 0 0 1 20.5 6v12a2.5 2.5 0 0 1-2.5 2.5H6A2.5 2.5 0 0 1 3.5 18V6A2.5 2.5 0 0 1 6 3.5z', 'M8 16.5v-3', 'M12 16.5v-7', 'M16 16.5v-4.5'], circles: [] },
+      customers: { paths: ['M8.6 14.2a3.4 3.4 0 0 0 6.8 0', 'M6.3 6.3l2.4 2.4', 'M17.7 6.3l-2.4 2.4', 'M6.3 17.7l1.9-1.9', 'M17.7 17.7l-1.9-1.9'], circles: [{ x: 12, y: 10.6, r: 2 }, { x: 5, y: 5, r: 1.6 }, { x: 19, y: 5, r: 1.6 }, { x: 5, y: 19, r: 1.6 }, { x: 19, y: 19, r: 1.6 }] },
+      emails: { paths: ['M4 5.5h16A1.5 1.5 0 0 1 21.5 7v10a1.5 1.5 0 0 1-1.5 1.5H4A1.5 1.5 0 0 1 2.5 17V7A1.5 1.5 0 0 1 4 5.5z', 'm3 7.5 9 6 9-6'], circles: [] },
+      files: { paths: ['M3 7.5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', 'M8.6 15.4a3.4 3.4 0 0 0 6.8 0'], circles: [{ x: 12, y: 12.2, r: 1.8 }] },
+      settings: { paths: ['M4 7h9', 'M17 7h3', 'M4 17h3', 'M11 17h9'], circles: [{ x: 15, y: 7, r: 2 }, { x: 9, y: 17, r: 2 }] }
+    };
+    const item = (key, label, href) => ({
+      key, label, href, on: key === active,
+      cls: key === active ? 'nav-item nav-on' : 'nav-item',
+      markCls: key === active ? 'mark mark-on' : 'mark',
+      paths: marks[key].paths, circles: marks[key].circles
+    });
+    const main = [
+      item('overview', 'Prehľad', '#'),
+      item('customers', 'Zákazníci', 'Customers.dc.html'),
+      item('emails', 'E-maily', '#'),
+      item('files', 'Súbory', 'Files.dc.html')
+    ];
+    const bottom = [item('settings', 'Nastavenia', 'CodeLists.dc.html')];
+    const account = { on: active === 'account', cls: active === 'account' ? 'nav-item nav-on' : 'nav-item' };
+    return { main, bottom, account };
+  }
+}
+</script>
+</body>
+</html>

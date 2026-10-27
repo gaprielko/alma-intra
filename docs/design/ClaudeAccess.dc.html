@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>Prístup pre Claude</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif;color:#152b2a;-webkit-font-smoothing:antialiased}
+a{color:#0a6466;text-decoration:none}a:hover{color:#0c3b3c;text-decoration:underline}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none;height:40px;padding:0 16px;font-size:14px}
+.btn:hover{text-decoration:none}
+.btn-primary{background:linear-gradient(180deg,#139698 0%,#0b6e70 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 2px rgba(12,59,60,.06),0 4px 12px rgba(12,59,60,.07)}
+.btn-primary:hover{color:#fff}
+.btn-secondary{background:#e3f3f2;color:#0a6466}
+.btn-ghost{background:transparent;color:#0a6466}
+.btn-sm{height:32px;padding:0 12px;font-size:13px}
+.card{border:1px solid #dfe8e6;border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(12,59,60,.08),0 8px 22px rgba(12,59,60,.08)}
+.tab{height:36px;padding:0 14px;border-radius:10px;font-size:14px;font-weight:600;color:#48625f;display:inline-flex;align-items:center}
+.tab-on{background:#e3f3f2;color:#0a6466}
+.code{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:#0c2b2c;color:#d7f2ef;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;overflow-x:auto}
+.code span{flex:1;white-space:nowrap}
+.copy{border:0;border-radius:8px;background:rgba(255,255,255,.12);color:#fff;font:inherit;font-family:'Figtree',system-ui,sans-serif;font-size:12px;font-weight:600;height:28px;padding:0 10px;cursor:pointer}
+.badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.badge i{width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block}
+.b-success{background:#eaf5e6;color:#16a34a}.b-neutral{background:#dde6e3;color:#48625f}
+table{width:100%;border-collapse:collapse;font-size:14px;text-align:left}
+th{height:40px;padding:0 14px;background:#f7faf9;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#6f8784;white-space:nowrap}
+td{height:52px;padding:8px 14px;border-top:1px solid #dfe8e6;white-space:nowrap}
+th:first-child,td:first-child{padding-left:20px}
+.can{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:20px}
+.can svg{flex-shrink:0;margin-top:2px}
+.claude-mark{width:40px;height:40px;border-radius:12px;background:#fcf0de;color:#b45309;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex-shrink:0}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 1100px; background: #eaf0ee">
+  <div style="flex: 0 0 232px; background: #0c3b3c">
+    <dc-import name="Sidebar" active="account" hint-size="232px,900px"></dc-import>
+  </div>
+  <main style="flex: 999 1 560px; min-width: 0">
+    <header style="min-height: 72px; display: flex; align-items: center; padding: 12px 28px; box-sizing: border-box; background: rgba(255,255,255,0.8); border-bottom: 1px solid #d6e1de">
+      <div>
+        <h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em">Môj účet</h1>
+        <p style="margin: 0; font-size: 13px; color: #48625f">Jana Horváthová · jana.horvathova@adosalma.sk</p>
+      </div>
+    </header>
+    <div style="padding: 20px 28px 40px; display: flex; flex-direction: column; gap: 20px; max-width: 1240px">
+      <nav aria-label="Sekcie účtu" style="display: flex; flex-wrap: wrap; gap: 6px">
+        <a href="Account.dc.html" class="tab">Profil a bezpečnosť</a>
+        <a href="ClaudeAccess.dc.html" class="tab tab-on" aria-current="page">Prístup pre Claude</a>
+      </nav>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+        <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+          <section class="card" style="padding: 22px">
+            <div style="display: flex; gap: 14px; align-items: flex-start">
+              <span class="claude-mark" aria-hidden="true">C</span>
+              <div style="flex: 1">
+                <h2 style="margin: 0; font-size: 17px; font-weight: 600">Claude v prehliadači a v aplikácii Claude</h2>
+                <p style="margin: 2px 0 0; font-size: 13px; line-height: 19px; color: #48625f">Pridajte Alma Intra ako vlastný konektor. Claude potom nájde súbory a zákazníkov a vytvorí nové dokumenty priamo tu.</p>
+              </div>
+            </div>
+            <ol style="margin: 18px 0 0; padding-left: 20px; font-size: 14px; line-height: 22px; display: flex; flex-direction: column; gap: 10px">
+              <li>V Claude otvorte Nastavenia, časť Konektory, a pridajte vlastný konektor.</li>
+              <li>Vložte túto adresu:
+                <div class="code" style="margin-top: 6px"><span>https://intra.adosalma.sk/mcp</span><button type="button" class="copy">Kopírovať</button></div>
+              </li>
+              <li>Prihláste sa svojím účtom Alma Intra a pripojenie povoľte.</li>
+            </ol>
+            <div style="margin-top: 18px; padding: 12px 14px; border-radius: 12px; background: #f7faf9; border: 1px solid #dfe8e6; display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+              <span class="badge b-success"><i></i>Pripojené</span>
+              <span style="flex: 1 1 260px; font-size: 13px; color: #48625f">Claude (claude.ai) · povolené 20. 10. 2026 · naposledy použité dnes 10:12</span>
+              <button type="button" class="btn btn-ghost btn-sm" style="color: #dc2626">Odpojiť</button>
+            </div>
+          </section>
+
+          <section class="card" style="overflow: hidden">
+            <div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px; padding: 22px 22px 14px">
+              <div style="flex: 1 1 300px">
+                <h2 style="margin: 0; font-size: 17px; font-weight: 600">Osobné kľúče pre Claude Code</h2>
+                <p style="margin: 2px 0 0; font-size: 13px; line-height: 19px; color: #48625f">Pre prácu v termináli. Kľúč sa zobrazí len raz a dá sa kedykoľvek odvolať.</p>
+              </div>
+              <a href="TokenCreated.dc.html" class="btn btn-secondary">+ Nový kľúč</a>
+            </div>
+            <div style="overflow-x: auto">
+              <table>
+                <thead><tr><th>Názov</th><th>Vytvorený</th><th>Platí do</th><th>Naposledy použitý</th><th><span style="position: absolute; width: 1px; height: 1px; overflow: hidden">Akcie</span></th></tr></thead>
+                <tbody>
+                  <tr><td style="font-weight: 600">Notebook v kancelárii</td><td style="color: #48625f">2. 10. 2026</td><td style="color: #48625f">2. 1. 2027</td><td style="color: #48625f">Včera 17:40</td><td style="text-align: right"><button type="button" class="btn btn-ghost btn-sm" style="color: #dc2626">Odvolať</button></td></tr>
+                  <tr><td style="font-weight: 600; color: #48625f">Starý počítač</td><td style="color: #48625f">4. 6. 2026</td><td><span class="badge b-neutral">Odvolaný 1. 10.</span></td><td style="color: #48625f">28. 9. 2026</td><td></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div style="padding: 14px 22px 22px">
+              <p style="margin: 0 0 6px; font-size: 13px; color: #48625f">Pridanie v Claude Code:</p>
+              <div class="code"><span>claude mcp add --transport http alma-intra https://intra.adosalma.sk/mcp --header "Authorization: Bearer VÁŠ_KĽÚČ"</span><button type="button" class="copy">Kopírovať</button></div>
+            </div>
+          </section>
+        </div>
+
+        <aside class="card" style="flex: 1 1 320px; max-width: 380px; padding: 22px; box-sizing: border-box">
+          <h2 style="margin: 0; font-size: 17px; font-weight: 600">Čo Claude smie</h2>
+          <p style="margin: 4px 0 14px; font-size: 13px; line-height: 19px; color: #48625f">Claude koná vždy vo vašom mene a s vašimi oprávneniami.</p>
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <div class="can"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>Hľadať a čítať súbory</div>
+            <div class="can"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>Vytvárať súbory a ukladať nové verzie</div>
+            <div class="can"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>Čítať zákazníkov, kontakty a časovú os</div>
+            <div class="can"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>Pripraviť koncept e-mailu na vašu kontrolu</div>
+            <div class="can" style="color: #48625f"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>Odoslať e-mail zákazníkovi</div>
+            <div class="can" style="color: #48625f"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>Mazať súbory alebo prepisovať staré verzie</div>
+            <div class="can" style="color: #48625f"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>Meniť používateľov a nastavenia</div>
+          </div>
+          <p style="margin: 18px 0 0; padding-top: 14px; border-top: 1px solid #dfe8e6; font-size: 13px; line-height: 19px; color: #48625f">Každá zmena od Claude sa zapíše s označením „Claude za Janu Horváthovú“. <a href="ClaudeActivity.dc.html" style="font-weight: 600">Zobraziť záznam</a></p>
+        </aside>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

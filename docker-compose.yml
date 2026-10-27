@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: alma-intra-postgres
+    environment:
+      POSTGRES_USER: intra_admin
+      POSTGRES_PASSWORD: intra_admin
+      POSTGRES_DB: alma_intra
+    ports:
+      # 5434 on the host: 5432 is usually a local Postgres, 5433 is Alma ADOS's.
+      - '5434:5432'
+    volumes:
+      - alma_intra_pgdata:/var/lib/postgresql/data
+      - ./apps/api/db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U intra_admin -d alma_intra']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+volumes:
+  alma_intra_pgdata:

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>Firemný e-mail</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.var{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;background:#e3f3f2;color:#0a6466;font-size:13px;font-weight:600;font-family:'Figtree',system-ui,sans-serif;vertical-align:1px;box-shadow:inset 0 0 0 1px #bfe2df;white-space:nowrap}
+.miss{background:#fce8e8;color:#b0232a;box-shadow:inset 0 0 0 1px #f3b9b9}
+</style>
+</helmet>
+<div style="width: 600px; box-sizing: border-box; background: #f4f6f6; padding: 24px 20px; font-family: Helvetica, Arial, sans-serif; color: #1f2933">
+  <div style="border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 1px 2px rgba(12,59,60,0.06)">
+    <div style="background: {{headerBg}}; padding: 22px 32px; display: flex; align-items: center; gap: 12px">
+      <span aria-hidden="true" style="width: 36px; height: 36px; border-radius: 10px; background: {{logoBg}}; display: inline-flex; align-items: center; justify-content: center">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="{{logoFg}}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3"></circle><path d="M4 9v4a5 5 0 0 0 5 5"></path><path d="M20 9v4a5 5 0 0 1-5 5"></path></svg>
+      </span>
+      <span style="font-size: 20px; font-weight: 700; color: {{headerFg}}; letter-spacing: -0.01em">Alma</span>
+      <span style="margin-left: auto; font-size: 12px; color: {{headerMuted}}">Domáca ošetrovateľská starostlivosť bez papierov</span>
+    </div>
+
+    <div style="padding: 32px; font-size: 15px; line-height: 24px">
+      <p style="margin: 0"><span class="{{v.salutation.cls}}">{{v.salutation.text}}</span>,</p>
+      <p style="margin: 16px 0 0">ďakujeme za stretnutie a za záujem rozšíriť Almu vo vašej agentúre. Na základe nášho rozhovoru posielame cenovú ponuku pre <span class="{{v.customer.cls}}">{{v.customer.text}}</span> na rok 2027.</p>
+
+      <sc-if value="{{hasExtra}}" hint-placeholder-val="{{ false }}">
+        <p style="{{extraStyle}}">{{extra}}</p>
+      </sc-if>
+
+      <div style="margin: 20px 0 0; border-radius: 10px; background: #f0f8f7; padding: 16px 18px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+        <div><p style="margin: 0; font-size: 12px; color: #616e7c">Počet sestier</p><p style="margin: 2px 0 0; font-size: 18px; font-weight: 700"><span class="{{v.nurses.cls}}">{{v.nurses.text}}</span></p></div>
+        <div><p style="margin: 0; font-size: 12px; color: #616e7c">Cena mesačne</p><p style="margin: 2px 0 0; font-size: 18px; font-weight: 700"><span class="{{v.price.cls}}">{{v.price.text}}</span></p></div>
+        <div><p style="margin: 0; font-size: 12px; color: #616e7c">Ponuka platí do</p><p style="margin: 2px 0 0; font-size: 18px; font-weight: 700"><span class="{{v.validity.cls}}">{{v.validity.text}}</span></p></div>
+      </div>
+
+      <p style="margin: 20px 0 0">Súčasťou ponuky je zaškolenie nových sestier a podpora počas celého roka. Podrobný rozpis nájdete v prílohe.</p>
+      <p style="margin: 24px 0 0"><a href="#" style="display: inline-block; background: {{buttonBg}}; color: #fff; border-radius: 10px; padding: 12px 20px; font-weight: 700; text-decoration: none">Dohodnúť termín stretnutia</a></p>
+
+      <div style="margin: 28px 0 0; padding-top: 20px; border-top: 1px solid #e5eaea">
+        <p style="margin: 0">S pozdravom</p>
+        <p style="margin: 12px 0 0; font-weight: 700"><span class="{{v.sender.cls}}">{{v.sender.text}}</span></p>
+        <p style="margin: 0; color: #616e7c; font-size: 14px"><span class="{{v.role.cls}}">{{v.role.text}}</span> · Alma · <span class="{{v.phone.cls}}">{{v.phone.text}}</span></p>
+      </div>
+    </div>
+
+    <div style="padding: 20px 32px; background: #f7f9f9; border-top: 1px solid #e5eaea; font-size: 12px; line-height: 18px; color: #616e7c">
+      <p style="margin: 0">Alma · [Obchodné meno a adresa firmy] · IČO [IČO]</p>
+      <p style="margin: 2px 0 0"><a href="#" style="color: #0a6466">info@adosalma.sk</a> · <a href="#" style="color: #0a6466">adosalma.sk</a></p>
+      <p style="margin: 10px 0 0">Tento e-mail ste dostali ako kontakt spoločnosti <span class="{{v.customer.cls}}" style="font-size: 12px; height: 18px">{{v.customer.text}}</span>. <a href="#" style="color: #0a6466">Odhlásiť sa z odberu</a></p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mode":{"editor":"enum","options":["template","filled"],"default":"template"},"salutation":{"editor":"text","default":"Vážená pani riaditeľka"},"customer":{"editor":"text","default":"ADOS Harmónia, s.r.o."},"nurses":{"editor":"text","default":"18"},"price":{"editor":"text","default":"1 260 €"},"validity":{"editor":"text","default":"30. 11. 2026"},"extra":{"editor":"text","default":""},"accent":{"editor":"color","options":["#0f766e","#0c3b3c","#0d7f81"],"default":"#0f766e"},"headerStyle":{"editor":"enum","options":["dark","light"],"default":"dark"},"$preview":{"width":600,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const tpl = (p.mode ?? 'template') === 'template';
+    const field = (name, value) => {
+      if (tpl) return { cls: 'var', text: name };
+      if (value === '' || value === undefined || value === null) return { cls: 'var miss', text: name + ' chýba' };
+      return { cls: '', text: value };
+    };
+    const v = {
+      salutation: field('Oslovenie', p.salutation ?? 'Vážená pani riaditeľka'),
+      customer: field('Názov zákazníka', p.customer ?? 'ADOS Harmónia, s.r.o.'),
+      nurses: field('Počet sestier', p.nurses ?? '18'),
+      price: field('Cena mesačne', p.price ?? '1 260 €'),
+      validity: field('Platnosť ponuky', p.validity ?? '30. 11. 2026'),
+      sender: field('Meno odosielateľa', 'Peter Kováč'),
+      role: field('Pozícia', 'Obchodný manažér'),
+      phone: field('Telefón', '+421 905 318 442')
+    };
+    const extra = p.extra ?? '';
+    const dark = (p.headerStyle ?? 'dark') === 'dark';
+    const accent = p.accent ?? '#0f766e';
+    return {
+      v,
+      hasExtra: extra !== '',
+      extra,
+      extraStyle: 'margin:16px 0 0;padding:10px 12px;border-radius:8px;background:#fffaf2;box-shadow:inset 3px 0 0 #d97706',
+      headerBg: dark ? 'linear-gradient(135deg,#104b4c 0%,#0c3b3c 100%)' : '#ffffff;border-bottom:1px solid #e5eaea',
+      headerFg: dark ? '#ffffff' : '#0c3b3c',
+      headerMuted: dark ? '#a9c9c7' : '#616e7c',
+      logoBg: dark ? '#0d7f81' : '#0d7f81',
+      logoFg: '#ffffff',
+      buttonBg: accent
+    };
+  }
+}
+</script>
+</body>
+</html>

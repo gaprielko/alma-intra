@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<title>Môj účet</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif;color:#152b2a;-webkit-font-smoothing:antialiased}
+a{color:#0a6466;text-decoration:none}a:hover{color:#0c3b3c;text-decoration:underline}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none}
+.btn-primary{height:40px;padding:0 16px;font-size:14px;background:linear-gradient(180deg,#139698 0%,#0b6e70 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 2px rgba(12,59,60,.06),0 4px 12px rgba(12,59,60,.07)}
+.btn-secondary{height:36px;padding:0 14px;font-size:13px;background:#e3f3f2;color:#0a6466}
+.btn-ghost{height:32px;padding:0 10px;font-size:13px;background:transparent;color:#0a6466}
+.btn-icon{width:36px;height:36px;border:1px solid #d6e1de;background:#fff;color:#48625f}
+.search{display:flex;align-items:center;gap:8px;height:40px;min-width:220px;padding:0 12px;border:1px solid #d6e1de;border-radius:10px;background:#fff;color:#6f8784;font-size:14px;box-sizing:border-box}
+.kbd{margin-left:auto;font-size:11px;font-weight:600;color:#48625f;border:1px solid #d6e1de;border-radius:6px;padding:1px 6px;background:#f7faf9}
+.badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.badge i{width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block}
+.b-success{background:#eaf5e6;color:#16a34a}.b-neutral{background:#dde6e3;color:#48625f}
+.card{border:1px solid #dfe8e6;border-radius:16px;background:#fff;box-shadow:0 1px 2px rgba(12,59,60,.08),0 8px 22px rgba(12,59,60,.08);padding:20px}
+.card h2{margin:0;font-size:17px;line-height:22px;font-weight:600}
+.card .lead{margin:2px 0 0;font-size:13px;line-height:18px;color:#48625f}
+.field{position:relative;display:block;border:1px solid #d6e1de;border-radius:12px;background:#fff;height:56px;box-sizing:border-box;padding:8px 14px 0}
+.field span{display:block;font-size:12px;font-weight:500;color:#48625f;line-height:16px}
+.field input{display:block;width:100%;border:0;outline:0;font:inherit;font-size:15px;color:#152b2a;background:transparent;padding:2px 0 0}
+.field-ro{background:#eaf0ee}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:14px 0;border-top:1px solid #dfe8e6}
+.row-icon{width:36px;height:36px;border-radius:10px;background:#e3f3f2;color:#0a6466;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 1180px; background: #eaf0ee">
+  <div style="flex: 0 0 232px; background: #0c3b3c">
+    <dc-import name="Sidebar" active="account" hint-size="232px,900px"></dc-import>
+  </div>
+  <main style="flex: 999 1 560px; min-width: 0">
+    <header style="min-height: 72px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 28px; box-sizing: border-box; background: rgba(255,255,255,0.8); border-bottom: 1px solid #d6e1de">
+      <div style="flex: 1 1 auto; min-width: 0">
+        <h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em">Môj účet</h1>
+        <p style="margin: 0; font-size: 13px; line-height: 18px; color: #48625f">Jana Horváthová · jana.horvathova@adosalma.sk</p>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px">
+        <div class="search"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Hľadať<span class="kbd">Ctrl K</span></div>
+        <button type="button" class="btn btn-icon" aria-label="Upozornenia"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg></button>
+      </div>
+    </header>
+
+    <div style="padding: 24px 28px 40px; display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 20px; max-width: 1240px; align-items: start">
+      <div style="display: flex; flex-direction: column; gap: 20px">
+        <section class="card">
+          <h2>Profil</h2>
+          <p class="lead">Meno a kontakt sa zobrazujú kolegom a v e-mailoch zákazníkom.</p>
+          <form style="margin-top: 16px; display: flex; flex-direction: column; gap: 12px">
+            <label class="field"><span>Meno a priezvisko</span><input value="Jana Horváthová"></label>
+            <label class="field field-ro"><span>E-mail na prihlásenie</span><input value="jana.horvathova@adosalma.sk" readonly></label>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+              <label class="field"><span>Telefón</span><input type="tel" value="+421 903 456 789"></label>
+              <label class="field"><span>Pozícia</span><input value="Konateľka"></label>
+            </div>
+            <div style="display: flex; justify-content: flex-end; margin-top: 4px"><button type="submit" class="btn btn-primary">Uložiť zmeny</button></div>
+          </form>
+        </section>
+
+        <section class="card">
+          <div style="display: flex; align-items: flex-start; gap: 12px">
+            <div style="flex: 1">
+              <h2>E-mailový podpis</h2>
+              <p class="lead">Pripojí sa na koniec každého e-mailu, ktorý odošlete zákazníkovi.</p>
+            </div>
+            <button type="button" class="btn btn-secondary">Upraviť podpis</button>
+          </div>
+          <div style="margin-top: 16px; border: 1px solid #dfe8e6; border-radius: 12px; background: #f7faf9; padding: 18px 20px; font-size: 14px; line-height: 20px">
+            <p style="margin: 0">S pozdravom</p>
+            <p style="margin: 14px 0 0; font-weight: 700">Jana Horváthová</p>
+            <p style="margin: 0; color: #48625f">Konateľka · Alma</p>
+            <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px">
+              <span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 8px; background: #0d7f81; display: inline-flex; align-items: center; justify-content: center"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3"></circle><path d="M4 9v4a5 5 0 0 0 5 5"></path><path d="M20 9v4a5 5 0 0 1-5 5"></path></svg></span>
+              <span style="font-size: 13px; color: #48625f">+421 903 456 789 · <a href="#">www.adosalma.sk</a></span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 20px">
+        <section class="card">
+          <h2>Prihlásenie a bezpečnosť</h2>
+          <p class="lead">Heslo a dvojstupňové overenie patria len vám.</p>
+          <div style="margin-top: 12px">
+            <div class="row">
+              <span class="row-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></span>
+              <div style="flex: 1 1 200px"><p style="margin: 0; font-weight: 600; font-size: 14px">Heslo</p><p style="margin: 0; font-size: 13px; color: #48625f">Zmenené 12. 10. 2026</p></div>
+              <button type="button" class="btn btn-secondary">Zmeniť heslo</button>
+            </div>
+            <div class="row">
+              <span class="row-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M12 18h.01"></path></svg></span>
+              <div style="flex: 1 1 200px"><p style="margin: 0; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px">Dvojstupňové overenie <span class="badge b-success"><i></i>Zapnuté</span></p><p style="margin: 0; font-size: 13px; color: #48625f">Aplikácia v telefóne · 7 z 10 záložných kódov nepoužitých</p></div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap"><button type="button" class="btn btn-ghost">Nové záložné kódy</button><button type="button" class="btn btn-secondary">Nový telefón</button></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div style="display: flex; align-items: flex-start; gap: 12px">
+            <div style="flex: 1">
+              <h2>Aktívne prihlásenia</h2>
+              <p class="lead">Zariadenia, na ktorých ste prihlásená.</p>
+            </div>
+            <button type="button" class="btn btn-ghost">Odhlásiť ostatné</button>
+          </div>
+          <div style="margin-top: 12px">
+            <div class="row">
+              <span class="row-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"></rect><path d="M8 21h8M12 17v4"></path></svg></span>
+              <div style="flex: 1 1 200px"><p style="margin: 0; font-weight: 600; font-size: 14px">Chrome · Windows <span style="font-weight: 500; color: #0a6466">· toto zariadenie</span></p><p style="margin: 0; font-size: 13px; color: #48625f">Aktívne teraz · zapamätané pre overenie do 25. 11. 2026</p></div>
+            </div>
+            <div class="row">
+              <span class="row-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M12 18h.01"></path></svg></span>
+              <div style="flex: 1 1 200px"><p style="margin: 0; font-weight: 600; font-size: 14px">Safari · iPhone</p><p style="margin: 0; font-size: 13px; color: #48625f">Naposledy 24. 10. 2026 18:05</p></div>
+              <button type="button" class="btn btn-ghost">Odhlásiť</button>
+            </div>
+            <div class="row">
+              <span class="row-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"></rect><path d="M8 21h8M12 17v4"></path></svg></span>
+              <div style="flex: 1 1 200px"><p style="margin: 0; font-weight: 600; font-size: 14px">Firefox · macOS</p><p style="margin: 0; font-size: 13px; color: #48625f">Naposledy 20. 10. 2026 11:32</p></div>
+              <button type="button" class="btn btn-ghost">Odhlásiť</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
