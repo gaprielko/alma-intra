@@ -4,11 +4,12 @@ import {
   CUSTOMER_STATUSES,
   type CreateCustomerInput,
   type CustomerKind,
+  icoLookupSchema,
   REGIONS,
 } from '@intra/shared/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Building2, Plus, UserRound } from 'lucide-react';
+import { Building2, Plus, Search, UserRound } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
 import { type Resolver, useForm, useFormContext, useWatch } from 'react-hook-form';
 import { TagChip } from '@/components/customers/customer-bits';
@@ -375,7 +376,7 @@ function OrganizationBasics() {
       <div className="grid gap-4 @md:grid-cols-2">
         <TextField name="customer.name" label={t.basics.name} autoComplete="organization" />
         <TypeField />
-        <TextField name="customer.ico" label={t.basics.ico} />
+        <IcoField />
         <TextField name="customer.dic" label={t.basics.dic} />
         <TextField name="customer.icDph" label={t.basics.icDph} />
         <TextField name="customer.web" label={t.basics.web} autoComplete="url" />
@@ -383,6 +384,89 @@ function OrganizationBasics() {
         <TextField name="customer.phone" label={t.basics.phone} type="tel" />
       </div>
     </Section>
+  );
+}
+
+/** The IČO, with a button that fills the name and the seat from the business register. */
+function IcoField() {
+  const { control, getValues, setValue, setError } = useFormContext<CustomerFormValues>();
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const [loading, setLoading] = useState(false);
+  const lookup = async () => {
+    const parsed = icoLookupSchema.safeParse({ ico: getValues('customer.ico') });
+    if (!parsed.success) {
+      setError('customer.ico', { message: sk.validation.invalid_ico });
+      return;
+    }
+    setLoading(true);
+    try {
+      const company = await queryClient.fetchQuery({
+        ...trpc.customer.lookupIco.queryOptions(parsed.data),
+        staleTime: 0,
+      });
+      if (!company) {
+        toast('warning', t.basics.lookupNotFound);
+        return;
+      }
+      const fill = { shouldDirty: true, shouldValidate: true };
+      setValue('customer.ico', company.ico, fill);
+      setValue('customer.name', company.name, fill);
+      setValue('customer.street', company.street ?? '', fill);
+      setValue('customer.postalCode', company.postalCode ?? '', fill);
+      setValue('customer.city', company.city ?? '', fill);
+      toast(
+        company.terminated ? 'warning' : 'success',
+        company.terminated
+          ? t.basics.lookupTerminated(company.name)
+          : t.basics.lookupFound(company.name),
+      );
+    } catch (error) {
+      toast('error', errorMessage(error, { REGISTER_UNAVAILABLE: t.basics.lookupUnavailable }));
+    } finally {
+      setLoading(false);
+    }
+  };
+  return (
+    <FormField
+      control={control}
+      name="customer.ico"
+      render={({ field }) => (
+        <FormItem>
+          <div className="flex gap-2">
+            <div className="field-inside min-w-0 flex-1">
+              <FormLabel>{t.basics.ico}</FormLabel>
+              <FormControl>
+                <Input
+                  inputMode="numeric"
+                  autoComplete="off"
+                  {...field}
+                  value={field.value ?? ''}
+                  onKeyDown={(event) => {
+                    if (event.key !== 'Enter') return;
+                    event.preventDefault();
+                    void lookup();
+                  }}
+                />
+              </FormControl>
+            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              size="lg"
+              className="shrink-0"
+              title={t.basics.lookupHint}
+              disabled={loading}
+              onClick={() => void lookup()}
+            >
+              <Search className="size-4" aria-hidden />
+              {t.basics.lookup}
+            </Button>
+          </div>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
   );
 }
 

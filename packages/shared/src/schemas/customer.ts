@@ -69,6 +69,9 @@ const optionalIco = z
   .transform((v) => (v ? v : undefined))
   .pipe(icoSchema.optional());
 
+/** An IČO to look up in the business register. */
+export const icoLookupSchema = z.object({ ico: icoSchema });
+
 /** The fields of a person, shared by a contact and a private-person customer. */
 export const personFields = {
   titleBefore: optionalText(40),

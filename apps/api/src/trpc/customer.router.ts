@@ -7,10 +7,12 @@ import {
   customerIdSchema,
   customerListSchema,
   exportCustomersSchema,
+  icoLookupSchema,
   updateContactSchema,
   updateCustomerSchema,
 } from '@intra/shared/schemas';
 import { TRPCError } from '@trpc/server';
+import { lookupCompany, RegisterUnavailableError } from '../customers/business-register.js';
 import * as customers from '../customers/customers.service.js';
 import { toCsv } from '../customers/csv.js';
 import type { Context } from './context.js';
@@ -55,6 +57,18 @@ export const customerRouter = router({
 
   /** Types, sources, tags and colleagues for the forms and the filters. */
   options: authorizedProcedure('customer.read').query(({ ctx }) => customers.formOptions(ctx.db)),
+
+  /** The name and seat of a company from the business register, to fill the form with. */
+  lookupIco: authorizedProcedure('customer.write')
+    .input(icoLookupSchema)
+    .query(async ({ input }) => {
+      try {
+        return await lookupCompany(input.ico);
+      } catch (error) {
+        if (!(error instanceof RegisterUnavailableError)) throw error;
+        throw new TRPCError({ code: 'SERVICE_UNAVAILABLE', message: error.message });
+      }
+    }),
 
   create: authorizedProcedure('customer.write')
     .input(createCustomerSchema)

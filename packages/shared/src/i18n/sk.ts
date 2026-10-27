@@ -560,6 +560,13 @@ export const sk = {
         newTypePlaceholder: 'Napríklad Sociálne zariadenie',
         addType: 'Pridať',
         ico: 'IČO',
+        lookup: 'Načítať z registra',
+        lookupFound: (name: string) => `Doplnené z registra: ${name}`,
+        lookupTerminated: (name: string) =>
+          `Doplnené z registra: ${name}. Firma je v registri vedená ako zaniknutá.`,
+        lookupNotFound: 'V registri nie je firma s týmto IČO.',
+        lookupUnavailable: 'Register teraz neodpovedá. Údaje vyplňte ručne.',
+        lookupHint: 'Názov a adresu doplníme z registra právnických osôb.',
         dic: 'DIČ',
         icDph: 'IČ DPH',
         web: 'Web',
