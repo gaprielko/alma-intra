@@ -16,7 +16,7 @@ function contrast(a: string, b: string): number {
   return (light + 0.05) / (dark + 0.05);
 }
 
-describe('the dark teal of the login and the Profil header (ALMA-293)', () => {
+describe('the dark teal of the login and the Profil header', () => {
   it('is `ink`, Figma `bg/dark` (VariableID:1:8), which frames M01 and M25 bind', () => {
     expect(tokens.colors.ink).toBe('#0C3B3C');
   });
@@ -45,7 +45,7 @@ describe('the dark teal of the login and the Profil header (ALMA-293)', () => {
   });
 });
 
-describe('the web neutrals for a projector (ALMA-353)', () => {
+describe('the web neutrals for a projector', () => {
   const web = tokens.web.colors;
 
   it('are darker than the phone neutrals they stand in for', () => {

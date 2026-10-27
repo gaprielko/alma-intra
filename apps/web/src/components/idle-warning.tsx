@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 
 /**
- * HS-0 (ALMA-90): two minutes before the idle logout. It needs no handler of its own: pressing its
+ * two minutes before the idle logout. It needs no handler of its own: pressing its
  * button, Escape, a click anywhere, any key is an interaction, which starts the hour again and
  * withdraws the warning (`watchInactivity`).
  */

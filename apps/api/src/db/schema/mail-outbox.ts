@@ -12,7 +12,11 @@ import {
 } from 'drizzle-orm/pg-core';
 
 /** The system e-mails of the app. E-mails to customers have their own tables. */
-export const mailKind = pgEnum('mail_kind', ['invitation', 'password_reset', 'second_factor_changed']);
+export const mailKind = pgEnum('mail_kind', [
+  'invitation',
+  'password_reset',
+  'second_factor_changed',
+]);
 
 /** What happened to her second factor; the mail names it, never a secret or a code. */
 export const SECOND_FACTOR_CHANGES = ['enabled', 'replaced', 'reset'] as const;

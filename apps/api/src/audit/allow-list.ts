@@ -1,7 +1,7 @@
 import { SECOND_STEPS, USER_STATUSES } from '@intra/shared/schemas';
 
 /**
- * What an audit event may contain (ADR-016). `audit_events` is append-only: a value written there
+ * What an audit event may contain. `audit_events` is append-only: a value written there
  * stays for good, so a value is stored only for a key named here, per entity type, and only when
  * it is of the kind declared for that key. Everything else a procedure passes to
  * `ctx.audit.set({ diff })` is replaced by `[omitted]` — the key stays, so the trail still says
@@ -24,8 +24,6 @@ const text: Rule = (v) => typeof v === 'string' && v.length <= MAX_TEXT;
 const number: Rule = (v) => typeof v === 'number' && Number.isFinite(v);
 const flag: Rule = (v) => typeof v === 'boolean';
 const uuid: Rule = (v) => typeof v === 'string' && UUID.test(v);
-/** A calendar day (`2026-09-22`): when something applies, never a birth date. */
-const day: Rule = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
 const oneOf =
   (values: readonly (string | number)[]): Rule =>
   (v) =>

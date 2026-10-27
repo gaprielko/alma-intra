@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 const DELAY_MS = 300;
 
 /**
- * A tooltip (ALMA-268, Figma W18): the ink as background, 12 px medium text, rounded 6, no arrow;
+ * A tooltip: the ink as background, 12 px medium text, rounded 6, no arrow;
  * it waits 300 ms and fades in 100 ms. Wrap the control (`asChild`: the control itself gets the
  * `aria-describedby`); the text is what the control would say with `title`, and it never replaces
  * a visible label or an `aria-label`. Each tooltip brings its own provider, so it works wherever

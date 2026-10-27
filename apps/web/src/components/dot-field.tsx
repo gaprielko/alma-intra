@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 /**
- * The login panel's dot grid, alive (ALMA-288 item 13). The grid itself stays the CSS background
+ * The login panel's dot grid, alive. The grid itself stays the CSS background
  * of the panel (18 px, 1 px dots of the active icon's colour at 20 %); this canvas over it only
  * lights some of its dots:
  *

@@ -14,14 +14,14 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 /**
- * ALMA-268 (Figma W10): a screen or a card with nothing to show says so with the illustration of
- * the phone's set (ALMA-259 „DU-08", ALMA-260 I1) at 96 px, a headline, one sentence and at most
+ * A screen or a card with nothing to show says so with the illustration of
+ * the phone's set at 96 px, a headline, one sentence and at most
  * one secondary action. `ErrorState` is the same shape in danger with „Skúsiť znova“.
  *
  * The illustration: a soft disc, a white circle with one glyph on it, two small dots beside it
  * that drift a little, as on the phone. Decorative, hidden from screen readers. It comes in once
  * (700 ms) and the dots breathe very slowly after; nothing moves for a user who asked for less
- * motion (ALMA-288 item 33). Every empty and error state of the web is this one component.
+ * motion. Every empty and error state of the web is this one component.
  */
 export type IllustrationKind =
   'empty' | 'nobodyFound' | 'done' | 'noNotifications' | 'offline' | 'welcome' | 'error';

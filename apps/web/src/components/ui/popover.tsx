@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
  * shadcn/ui popover over Radix: a panel next to a field (the calendar of `DatePicker`, the hours
  * of `TimePicker`). Escape, click outside and focus return come from the primitive; it works
  * inside `Dialog` too. `PopoverAnchor` lets the panel line up with a whole field while only its
- * icon button is the `PopoverTrigger`. The look is the dropdown's (ALMA-268, W15): Elevation/3,
+ * icon button is the `PopoverTrigger`. The look is the dropdown's: Elevation/3,
  * rounded 12, opening in 120 ms from its anchor.
  */
 export const Popover = PopoverPrimitive.Root;

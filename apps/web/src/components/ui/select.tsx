@@ -30,7 +30,7 @@ export type SelectProps = {
 };
 
 /**
- * Our own select instead of the browser's list (ALMA-170 item 23), on Radix Select: a field in
+ * Our own select instead of the browser's list, on Radix Select: a field in
  * the `Input` style and a list with hover, keyboard, typeahead and a tick on the chosen item.
  *
  * ```tsx

@@ -1,6 +1,6 @@
 import { isReservedAddress } from './reserved-domain.js';
 
-describe('reserved mail domains (RFC 2606 / 6761, ALMA-212)', () => {
+describe('reserved mail domains (RFC 2606 / 6761)', () => {
   it.each([
     'eva@example.com',
     'eva@example.org',

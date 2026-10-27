@@ -1,7 +1,7 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 /*
- * RFC 6238 TOTP (ALMA-91), with nothing but `node:crypto`: HMAC-SHA1, 30-second steps, 6 digits,
+ * RFC 6238 TOTP, with nothing but `node:crypto`: HMAC-SHA1, 30-second steps, 6 digits,
  * one step of tolerance either way for a phone whose clock drifts. Pure functions, tested against
  * the RFC's own vectors (`totp.test.ts`). What is stored, when a step counts as used and who may
  * ask lives in `second-factor.service.ts`.

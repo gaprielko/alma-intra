@@ -9,10 +9,10 @@ import type {
 import { cn } from '@/lib/utils';
 
 /**
- * The table of the web (ALMA-268, Figma W4): rows 52 high (44 compact), 12/16 padding, the header
+ * The table of the web: rows 52 high (44 compact), 12/16 padding, the header
  * on bg/subtle in the overline style (not sticky: the frame scrolls sideways, and a sticky row
  * inside an overflow box has nothing to stick to), subtle dividers and none after the last row. A row
- * given `href` is a link to its detail as a whole (`TableRow`, ALMA-288 item 27). Numbers and dates stand in
+ * given `href` is a link to its detail as a whole (`TableRow`). Numbers and dates stand in
  * `tabular-nums` (styles.css) and go to the right with `align="right"` on their cells.
  */
 export function Table({ className, ...props }: HTMLAttributes<HTMLTableElement>) {
@@ -36,7 +36,7 @@ export function TableBody(props: HTMLAttributes<HTMLTableSectionElement>) {
 }
 
 /**
- * What a click on a clickable row does (ALMA-288 item 27). A click that lands on something of its
+ * What a click on a clickable row does. A click that lands on something of its
  * own inside the row (a link, a button, a checkbox, a menu) is that thing's, never the row's; a
  * click that ends a text selection selects. Cmd/Ctrl/Shift or the middle button open a new tab, as
  * on a link; a plain left click opens the detail here.
@@ -109,7 +109,7 @@ function openInNewTab(href: string) {
 }
 
 /**
- * A table row. With `href` the whole row is a link to the detail (ALMA-288 item 27): hover tint
+ * A table row. With `href` the whole row is a link to the detail: hover tint
  * and pointer, a plain click opens it, Cmd/Ctrl/Shift or the middle button a new tab, and inner
  * buttons and checkboxes keep their own clicks. For the keyboard and for „Otvoriť v novej karte“
  * the row's first cell holds the same address as a real link (`RowLink`). A row given only

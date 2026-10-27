@@ -13,14 +13,14 @@ export interface OutgoingMail {
 export interface SentMail {
   providerMessageId: string | null;
   /**
-   * The address is on a reserved domain (`@example.com`, `.test` …, ALMA-212): the provider was
+   * The address is on a reserved domain (`@example.com`, `.test` …): the provider was
    * not asked, because no mail can arrive there. Not a failure, and nothing to retry.
    */
   skipped?: true;
 }
 
 /**
- * The provider behind the mailer (ALMA-88). One implementation talks to Resend; the other keeps
+ * The provider behind the mailer. One implementation talks to Resend; the other keeps
  * the mail in memory (dev without a key, tests). Templates, links and tokens stay in the mailer,
  * so a second provider would be one more `send`, nothing else.
  */
@@ -39,7 +39,7 @@ export class MailProviderError extends Error {
   constructor(
     readonly providerCode: string,
     /**
-     * The provider refused this very message and would refuse it again (ALMA-212): the worker
+     * The provider refused this very message and would refuse it again: the worker
      * gives up at once instead of asking seven more times over two hours.
      */
     readonly permanent = false,
@@ -56,7 +56,7 @@ const KEY_ERRORS = ['missing_api_key', 'invalid_api_key', 'restricted_api_key'];
 
 /**
  * A 4xx is the provider saying no to the message itself: a recipient the test sender may not
- * write to (`validation_error` with 403, the staging case of ALMA-212), a sender that is not
+ * write to (`validation_error` with 403), a sender that is not
  * verified, a malformed field. Asking again changes nothing, so the worker gives up at once.
  * What passes: 408 (timed out), 409 (a concurrent request with the same idempotency key), 429
  * (rate limit, daily or monthly quota), a 5xx, no status at all (the SDK's answer to a network

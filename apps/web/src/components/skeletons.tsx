@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
 /**
- * What a screen shows before its data arrives (ALMA-205): the shape of the content in grey, never
+ * What a screen shows before its data arrives: the shape of the content in grey, never
  * the empty state („Žiadne …“), which belongs to a load that succeeded with nothing in it. Which
  * of the two to draw is `queryView` (lib/query-view.ts). The pieces:
  *
@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
  *   screen reader, the grey shapes themselves are hidden from it. Skeletons put together into a
  *   bigger one (a page of tiles and tables) say it once: a nested region stays quiet. Parts of a
  *   screen that load on their own (the week grid and its two panels) sit in one region with
- *   `active` (true while any of them loads), so the screen says it once too (ALMA-206).
+ *   `active` (true while any of them loads), so the screen says it once too.
  * - `FieldSkeleton` stands in for a select whose chosen value needs a list that is still loading,
  *   `FormSkeleton` for a whole form whose values are still loading.
  * - `TableSkeleton` stands in for a table outside `TableShell` (which draws its own skeleton rows
@@ -47,7 +47,7 @@ export function LoadingRegion({
   const nested = useContext(InsideLoading);
   const speaks = active && !nested;
   // One shape whether it is loading or not: flipping `active` must not remount the children, or a
-  // dialog's fields would lose focus and a half-typed value when its check answers (ALMA-206).
+  // dialog's fields would lose focus and a half-typed value when its check answers.
   return (
     <Tag aria-busy={speaks ? 'true' : undefined} className={className}>
       {speaks ? (

@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 /*
- * Figtree (ALMA-255), served with the app rather than from Google Fonts, so a page load tells no
+ * Figtree, served with the app rather than from Google Fonts, so a page load tells no
  * third party who opened it. One variable file per subset covers 400–700; latin-ext carries the
  * Slovak letters (č, ď, ľ, ň, ŕ, š, ť, ž). Files from Google Fonts, SIL Open Font License 1.1
  * (assets/fonts/OFL.txt).
@@ -30,7 +30,7 @@
 }
 
 /*
- * `wide:` (ALMA-285): the content area beside the sidebar is at least `WIDE_CONTENT_PX` wide.
+ * `wide:`: the content area beside the sidebar is at least `WIDE_CONTENT_PX` wide.
  * The shell measures it and sets `data-content="wide"` on its wrapper (lib/content-width.ts),
  * so a 1600 px window with the sidebar open and a 1440 px one with it folded each get the
  * layout their content area fits. A CSS container query would do the same, but a query
@@ -47,10 +47,10 @@
   --color-primary-soft: #e3f3f2;
   /* Figma „accent/text": teal text on `primary-soft` and the colour of a text link. */
   --color-primary-text: #0a6466;
-  /* ALMA-255: neutrals retinted towards the teal (Figma „Farby“, 1. 10. 2026). */
+  /* neutrals retinted towards the teal (Figma „Farby“, 1. 10. 2026). */
   --color-ink: #0c3b3c;
   /*
-   * ALMA-353: the web's canvas, borders and grey text are a step darker than the phone's
+   * the web's canvas, borders and grey text are a step darker than the phone's
    * (`tokens.web.colors`), so cards and meta text hold on a washed-out projector.
    */
   --color-surface: #eaf0ee;
@@ -61,7 +61,7 @@
   --color-muted: #48625f;
   /* Non-essential meta text only: it does not reach 4.5:1 on white. */
   --color-tertiary: #6f8784;
-  /* The web's sidebar (ALMA-255): dark teal, its own text and active colours. */
+  /* The web's sidebar: dark teal, its own text and active colours. */
   --color-sidebar: #0c3b3c;
   --color-sidebar-border: #1e4e4f;
   --color-sidebar-text: #a9c9c7;
@@ -76,17 +76,17 @@
   --color-info: #334e7b;
   --color-info-soft: #e9eef6;
   --font-sans: 'Figtree', ui-sans-serif, system-ui, sans-serif;
-  /* Web-only greys for scrollbars (ALMA-170): a thumb that is seen without being looked at. */
+  /* Web-only greys for scrollbars: a thumb that is seen without being looked at. */
   --color-scrollbar: #c5d3d1;
   --color-scrollbar-hover: #a6b8b6;
 
   /*
-   * ALMA-268 (Figma „Premium systém · Web"): `tokens.web` of packages/shared, mirrored. The dark
+   * `tokens.web` of packages/shared, mirrored. The dark
    * backdrop, the hover tint of a row, the track of a skeleton and a segmented control.
    */
   --color-dark: #0c2b2c;
   --color-hover: #f0f8f7;
-  /* ALMA-353: darker with the canvas, so a skeleton or a badge on it still shows. */
+  /* darker with the canvas, so a skeleton or a badge on it still shows. */
   --color-track: #dde6e3;
   --color-trust: #7fb3b0;
   /* W9: Elevation/1 Rest, /2 Raised, /3 Floating, a button, and the light edge on top. */
@@ -114,17 +114,17 @@
   --animate-flash-success: flash-success 300ms ease-out;
   --animate-approved-row: approved-row 700ms ease-in forwards;
   --animate-breathe: breathe 12s ease-in-out infinite;
-  /* ALMA-288 item 33: an empty or error state's illustration comes in once, then rests. */
+  /* an empty or error state's illustration comes in once, then rests. */
   --animate-illustration-in: illustration-in 700ms var(--ease-out-soft) both;
-  /* ALMA-354: the row a list was left from, lit once on the way back. */
+  /* the row a list was left from, lit once on the way back. */
   --animate-row-return: row-return 1800ms ease-out;
-  /* ALMA-359: a nurse's pin when she just finished a visit. */
+  /* a nurse's pin when she just finished a visit. */
   --animate-pin-pop: pin-pop 700ms var(--ease-out-soft);
 }
 
 :root {
   /*
-   * ALMA-353: the sidebar's fill, lighter at the top and darker at the bottom, with a soft glow
+   * the sidebar's fill, lighter at the top and darker at the bottom, with a soft glow
    * of the active colour behind the brand; and the active item, the same glow running out to the
    * right. Plain variables, not theme ones: `bg-(image:--sidebar-fill)` keeps them apart from the
    * `bg-sidebar` colour for tailwind-merge.
@@ -145,7 +145,7 @@ body {
 }
 
 /*
- * W9 (ALMA-268): a card at rest and the same card raised under the pointer; a floating layer.
+ * W9: a card at rest and the same card raised under the pointer; a floating layer.
  * Utilities so that a screen says `shadow-rest` the way it says `rounded-2xl`.
  */
 @utility shadow-edge-rest {
@@ -157,7 +157,7 @@ body {
 }
 
 /*
- * W7 (ALMA-268): the label sits inside the field, above the value, as on the phone. Any wrapper
+ * W7: the label sits inside the field, above the value, as on the phone. Any wrapper
  * whose first child is a `<label>` and whose next child is a field (`data-input`) draws it so:
  * `<FormItem>` and the plain `<div><Label/><Input/></div>` of the dialogs alike, with no change
  * to how a label names its control. Not a label laid out as a row (`flex`: it wraps a checkbox),
@@ -233,7 +233,7 @@ body {
   )
   > label:first-child
   + textarea[data-input] {
-  /* The inputs' 23 px: the first line of text stands where an input's value does (ALMA-285). */
+  /* The inputs' 23 px: the first line of text stands where an input's value does. */
   padding-top: 1.4375rem;
 }
 
@@ -264,7 +264,7 @@ body {
 }
 
 /*
- * What stands at either end of a field (ALMA-285 item 2): the calendar and clock buttons, a unit
+ * What stands at either end of a field: the calendar and clock buttons, a unit
  * („min“, „€/km“), the search icon, each marked `data-leading` / `data-trailing`. Centred on the
  * field (`top-1/2`); with the label inside they follow the value 8 px down, onto its line (36 of
  * 56), where the select's chevron already sits.
@@ -280,7 +280,7 @@ body {
 }
 
 /*
- * A field's tag follows its label (ALMA-288 #29, `FieldTagSlot`): where a leading icon moves the
+ * A field's tag follows its label: where a leading icon moves the
  * label, the tag moves with it.
  */
 .field-inside:has(> [data-input] > [data-leading]) > [data-field-tag],
@@ -321,7 +321,7 @@ html {
 }
 
 /*
- * The browser's own UI does not belong in the app (ALMA-170, items 8, 23, 30). These rules sit in
+ * The browser's own UI does not belong in the app. These rules sit in
  * the base layer, so a component that says otherwise with a utility class still wins.
  */
 @layer base {
@@ -379,14 +379,14 @@ html {
     outline-color: var(--color-sidebar-icon-active);
   }
 
-  /* ALMA-255: one lighter stroke for every lucide icon, instead of a prop on each of them. Only
+  /* one lighter stroke for every lucide icon, instead of a prop on each of them. Only
      the default 2: an icon given its own width (the checkbox tick, 3) keeps it, since CSS would
      otherwise beat the attribute. */
   svg.lucide[stroke-width='2'] {
     stroke-width: 1.75;
   }
 
-  /* Numbers that stand in columns or say a time line up (ALMA-255). */
+  /* Numbers that stand in columns or say a time line up. */
   td,
   th,
   time {
@@ -549,7 +549,7 @@ html {
   }
 }
 
-/* ALMA-359: the pin grows a third and settles back, once. */
+/* the pin grows a third and settles back, once. */
 @keyframes pin-pop {
   40% {
     scale: 1.35;
@@ -568,7 +568,7 @@ html {
   }
 }
 
-/* An empty state's illustration settles in once: it rises 6 px and grows from 92 % (ALMA-288). */
+/* An empty state's illustration settles in once: it rises 6 px and grows from 92 %. */
 @keyframes illustration-in {
   from {
     opacity: 0;
@@ -580,7 +580,7 @@ html {
   }
 }
 
-/* ALMA-354: the row the user came back from, accent/soft fading out. */
+/* the row the user came back from, accent/soft fading out. */
 @keyframes row-return {
   0%,
   30% {
@@ -599,7 +599,7 @@ html {
 }
 
 /* The login panel's glow breathes (W30): 7 s, 35 → 90 → 35 % and 1 → 1.18 → 1. */
-/* A slow, shallow breath (ALMA-282): the glow barely moves, it only warms and cools. */
+/* A slow, shallow breath: the glow barely moves, it only warms and cools. */
 @keyframes breathe {
   0%,
   100% {
@@ -640,7 +640,7 @@ html {
 }
 
 /*
- * Paper (ALMA-117). An ADOS runs on paper more than we would like: a nurse without a signal, a
+ * Paper. An ADOS runs on paper more than we would like: a nurse without a signal, a
  * head nurse who wants the week on the wall. Printing is the browser's own dialog on the screen
  * that is already open — no second screen to keep in step with the first.
  *
@@ -651,7 +651,7 @@ html {
  */
 @media print {
   /*
-   * ALMA-288 #53: no page margin, so the browser has nowhere to print its own header and footer
+   * No page margin, so the browser has nowhere to print its own header and footer
    * (the date, the address of the page, „1/7“). The margin is padding instead: on `main` for the
    * first page, and on each block that starts a page of its own (`data-print="page"`, below).
    */
@@ -699,14 +699,14 @@ html {
   /*
    * A print of pages (the day's sheets) takes its margin from each page instead: Safari repeats
    * padding over pages for inline boxes only, so a `main` that runs over pages would leave every
-   * page after the first at the paper's edge, where no printer prints (review of ALMA-288 E, #2).
+   * page after the first at the paper's edge, where no printer prints.
    */
   main:has([data-print='page']) {
     -webkit-box-decoration-break: slice;
     box-decoration-break: slice;
   }
 
-  /* ALMA-288 #53: the day's sheet, one nurse per page, ink only where it reads. */
+  /* The day's sheet, one nurse per page, ink only where it reads. */
   .print-sheet {
     color: #000;
     font-size: 10pt;
@@ -730,7 +730,7 @@ html {
 
   /*
    * The week's chips are cut to one line on screen, the rest in a tooltip; paper has no tooltip,
-   * so there every code and name wraps, and the grid takes the sheet's width (ALMA-285 review S2).
+   * so there every code and name wraps, and the grid takes the sheet's width.
    */
   [data-print-wrap] {
     min-width: 0 !important;
@@ -766,7 +766,7 @@ html {
   }
 
   /*
-   * The week (ALMA-286): a nurse's row is a whole week of visits, taller than a third of a page,
+   * The week: a nurse's row is a whole week of visits, taller than a third of a page,
    * so keeping rows whole put about one nurse on a sheet. Here a row may break between two visits
    * (each chip stays whole, `print:break-inside-avoid` on the chip) and the header above repeats
    * on every page.
@@ -793,7 +793,7 @@ html {
   }
 
   /*
-   * The annual report (ALMA-304) is one sheet drawn in ink: its table has rules between the rows
+   * The annual report is one sheet drawn in ink: its table has rules between the rows
    * and nothing else, not the grid the plan's tables print with.
    */
   .annual-sheet th,

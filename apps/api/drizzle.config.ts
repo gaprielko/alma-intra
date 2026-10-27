@@ -9,7 +9,9 @@ export default defineConfig({
   schema: './src/db/schema/index.ts',
   out: './src/db/migrations',
   dbCredentials: {
-    url: process.env.DATABASE_ADMIN_URL ?? 'postgres://intra_admin:intra_admin@localhost:5434/alma_intra',
+    url:
+      process.env.DATABASE_ADMIN_URL ??
+      'postgres://intra_admin:intra_admin@localhost:5434/alma_intra',
   },
   strict: true,
   verbose: true,

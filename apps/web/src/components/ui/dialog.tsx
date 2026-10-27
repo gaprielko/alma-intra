@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
  * primitive. `DialogContent` renders the overlay too, so a screen composes `Dialog` + `DialogContent`
  * + `DialogTitle` (required for the accessible name) and the rest.
  *
- * The look (ALMA-268, Figma W8): a dark teal backdrop at 55 % with a 4 px blur, the dialog rounded
+ * The look: a dark teal backdrop at 55 % with a 4 px blur, the dialog rounded
  * 24 on Elevation/3, 480 / 640 / 880 wide (`size`), fading in while growing from 0.98. The body
  * keeps a 20 px rhythm; `DialogFooter` sits on bg/subtle under a subtle line, its actions on the
  * right. `DialogIcon` is the 40 px soft circle before the title.
@@ -118,7 +118,7 @@ export function DialogIcon({
 /**
  * The footer: it stays in view at the bottom of a long dialog, on bg/subtle under a subtle line,
  * reaching the dialog's edges whatever the body's padding. The body ends 20 px above its line in
- * every dialog (ALMA-285 item 8): the dialog's own column gives the gap when the footer is its
+ * every dialog: the dialog's own column gives the gap when the footer is its
  * child, and so does a form that is a flex column, a grid or `contents`; inside a form laid out
  * as a block (`space-y-4`), the footer keeps the 20 px itself (its margin meets the last field's
  * 16 and the larger one counts).

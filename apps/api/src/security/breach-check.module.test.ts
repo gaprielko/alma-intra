@@ -4,7 +4,7 @@ import { breachCheckFor } from './breach-check.module.js';
 
 const env = (values: Partial<Env>) => values as Env;
 
-describe('which breached-password check the API runs (ALMA-90)', () => {
+describe('which breached-password check the API runs', () => {
   it('none in tests unless asked for: no test reaches the network', () => {
     expect(breachCheckFor(env({ NODE_ENV: 'test' }))).toBeNull();
   });

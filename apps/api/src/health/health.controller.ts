@@ -5,7 +5,7 @@ import { DB, type Db } from '../db/db.module.js';
 
 /**
  * REST on purpose: uptime checkers and Coolify health checks do not speak tRPC. `commit` tells the
- * staging E2E run (ALMA-102) when the build of its push is the one serving; `null` outside images.
+ * staging E2E run when the build of its push is the one serving; `null` outside images.
  */
 @Controller('health')
 export class HealthController {

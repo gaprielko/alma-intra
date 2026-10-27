@@ -11,7 +11,7 @@ export function breachCheckFor(env: Env): BreachCheck | null {
 }
 
 /**
- * The breached-password check of the tRPC context (ALMA-90); `null` when switched off. Tests
+ * The breached-password check of the tRPC context; `null` when switched off. Tests
  * override the provider with `hibpBreachCheck({ fetch })` and a stubbed answer.
  */
 @Global()

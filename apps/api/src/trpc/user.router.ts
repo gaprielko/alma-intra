@@ -17,7 +17,11 @@ async function run<T>(fn: () => Promise<T>): Promise<T> {
   } catch (error) {
     if (!(error instanceof users.UserError)) throw error;
     const code =
-      error.code === 'NOT_FOUND' ? 'NOT_FOUND' : error.code === 'EMAIL_TAKEN' ? 'CONFLICT' : 'BAD_REQUEST';
+      error.code === 'NOT_FOUND'
+        ? 'NOT_FOUND'
+        : error.code === 'EMAIL_TAKEN'
+          ? 'CONFLICT'
+          : 'BAD_REQUEST';
     throw new TRPCError({ code, message: error.code });
   }
 }

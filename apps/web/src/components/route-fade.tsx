@@ -1,7 +1,6 @@
 import { useRouterState } from '@tanstack/react-router';
 import { useEffect, useRef, type ReactNode } from 'react';
 
-
 const prefersReducedMotion = () =>
   typeof window.matchMedia === 'function' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -19,7 +18,7 @@ export function sectionOf(pathname: string): string {
 }
 
 /**
- * The page fades and rises in when the sidebar moves to another section (ALMA-353). The Web
+ * The page fades and rises in when the sidebar moves to another section. The Web
  * Animations API on the one wrapper, so nothing remounts and nothing is left behind: once the
  * animation ends the wrapper has no transform. Nothing moves for who asked for less motion.
  */

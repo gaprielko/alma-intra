@@ -2,7 +2,7 @@ import type { HTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
- * A grey placeholder in the shape of content that has not arrived yet (ALMA-205; ALMA-268 W10):
+ * A grey placeholder in the shape of content that has not arrived yet:
  * #E9EFEE, rounded 6, a lighter band shimmering over it every 1.4 s, and it appears only after
  * 200 ms so that a fast answer never flashes grey first. The shimmer stops for a user who asked the
  * system for less motion (the pulse class stays as the name the tests know). Size it with classes

@@ -1,5 +1,5 @@
 /**
- * Which of four faces a screen shows for one query (ALMA-205):
+ * Which of four faces a screen shows for one query:
  *
  * - `loading` — nothing has arrived yet: a skeleton in the shape of the content;
  * - `error` — the load failed: the error, with the screen's own `errorMessage` wording;
@@ -33,13 +33,13 @@ export function queryView<T>(
 
 /**
  * Whether a screen (or a part of one) shows its error state: the load failed and there is nothing
- * to show instead (ALMA-288 item 64). `isError` alone is not that. React Query keeps a query whose
+ * to show instead. `isError` alone is not that. React Query keeps a query whose
  * refetch failed (a refocused tab or Dnes's minute while the API restarts for a deploy) in
  * `error` with the data it had, and keeps it there while the next refetch runs. A screen asking
  * `isError` then swapped its content for the error, and every later visit to it flashed the
  * error, illustration and all, for the second the refetch took before the page came back. With
  * data in hand the screen shows it; the header's chip says that a load failed and offers
- * „Skúsiť znova“ (ALMA-288 item 11). A load with nothing in hand is `pending` again while it
+ * „Skúsiť znova“. A load with nothing in hand is `pending` again while it
  * retries, so its skeleton shows, never this.
  *
  * Used where a screen read `isError`: `if (query.isPending)` for the skeleton, then

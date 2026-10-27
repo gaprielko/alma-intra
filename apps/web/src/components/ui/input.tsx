@@ -2,13 +2,13 @@ import type { InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'rea
 import { cn } from '@/lib/utils';
 
 /**
- * The field of the web (ALMA-268, Figma W7, variant A): 56 px tall when its label sits inside it
+ * The field of the web: 56 px tall when its label sits inside it
  * (styles.css `field-inside`, which the wrapper draws by itself), rounded 12, a 1.5 px accent
  * border with a 3 px glow on focus, the danger border on an error, bg/subtle when disabled. No
  * microphone and no hint text on the web. Shared with the fields that look like an input:
  * `Select`, `DatePicker`, `TimePicker`, `Combobox`.
  *
- * Read-only (`readOnly`, ALMA-285 item 3) is the one look of a value a form shows but does not
+ * Read-only (`readOnly`) is the one look of a value a form shows but does not
  * change (the login e-mail, an accepted nurse's name, the insurance number, the nurse being
  * replaced, the patient of a planned visit): the same field, label inside, on bg/surface with the
  * value in the text colour, so it reads as information rather than as a field to fill. It is left
@@ -23,7 +23,7 @@ export const readOnlyFieldClass = 'border-border bg-surface text-foreground';
 
 /**
  * `suffix`: a unit at the right end of the field („min“, „€/km“), kept on the value's line whether
- * the label is inside or above (ALMA-285 item 2). The input then sits in a wrapper that carries
+ * the label is inside or above. The input then sits in a wrapper that carries
  * `data-input`, so the label rules of styles.css still find it; every prop goes to the input.
  */
 export function Input({

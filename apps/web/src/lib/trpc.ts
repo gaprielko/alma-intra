@@ -1,4 +1,5 @@
 import type { AppRouter } from '@intra/api/src/trpc/app.router.js';
+import type { inferRouterOutputs } from '@trpc/server';
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
 import { createTRPCClient, httpBatchLink, TRPCClientError } from '@trpc/client';
 import { createTRPCOptionsProxy } from '@trpc/tanstack-react-query';
@@ -105,3 +106,6 @@ const trpcClient = createTRPCClient<AppRouter>({
 
 export const trpc = createTRPCOptionsProxy<AppRouter>({ client: trpcClient, queryClient });
 export { trpcClient };
+
+/** What each procedure answers, for the props of a component that shows it. */
+export type RouterOutputs = inferRouterOutputs<AppRouter>;

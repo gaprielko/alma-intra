@@ -6,13 +6,13 @@ import { DotField } from '@/components/dot-field';
 import { cn } from '@/lib/utils';
 
 /**
- * The public layout of HS-0, HS-0b, HS-0c and SA-4 (ALMA-268, Figma W30, variant S2-1): two halves.
+ * The public layout of the sign-in pages: two halves.
  * Left, the dark panel: a dot grid that a soft wave of light crosses now and then and that lights
- * up under the cursor (`DotField`, ALMA-288 item 13), the logo top-left, the claim in the middle
+ * up under the cursor (`DotField`), the logo top-left, the claim in the middle
  * and the trust lines at the bottom. Right, the canvas with a faint accent glow
  * behind the card.
  *
- * ALMA-285 item 10: the claim is centred on the panel's height, so it stands level with the card,
+ * the claim is centred on the panel's height, so it stands level with the card,
  * which is centred on the window (three rows, the outer two equal). The panel takes 45 % of the
  * window, at least 520 px and at most 820, so a wide screen is not half empty dark teal. On a
  * phone the panel is hidden and the logo stands above the card.
@@ -26,7 +26,7 @@ export function BrandLayout({ children }: { children: ReactNode }) {
           aria-hidden
           className="absolute inset-0 bg-[radial-gradient(circle,rgba(95,208,201,0.2)_1px,transparent_1.5px)] bg-[length:18px_18px]"
         />
-        {/* ALMA-288 item 13: a wave of light every ~7 s and a spotlight at the cursor, on the
+        {/* a wave of light every ~7 s and a spotlight at the cursor, on the
             same dots; static with prefers-reduced-motion. No breathing glow any more. */}
         <DotField />
         <BrandName className="relative self-start" />
@@ -89,7 +89,7 @@ export function BrandCardTitle({ title, text }: { title: string; text?: string |
 /**
  * The small print under the card (W30: Caption tertiary, outside the card). Beside the panel it
  * hangs under the card instead of being centred with it, so the card's middle is the window's
- * and the claim on the left stands level with it (ALMA-285 item 10).
+ * and the claim on the left stands level with it.
  */
 export function BrandCardNote({ children }: { children: ReactNode }) {
   return (

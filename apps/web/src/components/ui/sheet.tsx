@@ -6,7 +6,7 @@ import { onToast } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
 /**
- * A side panel (ALMA-303): the dialog's primitive, docked to the right edge instead of centred, for
+ * A side panel: the dialog's primitive, docked to the right edge instead of centred, for
  * a list that is read beside the page it comes from („Štatistiky“ opens the rows behind a number).
  * Focus trap, Escape, click outside and `aria-*` wiring are Radix's, as in `Dialog`; a screen
  * composes `Sheet` + `SheetContent` + `DialogTitle` (required for the accessible name).

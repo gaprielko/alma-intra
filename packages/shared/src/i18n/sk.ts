@@ -28,6 +28,7 @@ export const sk = {
     previousPage: 'Predchádzajúca strana',
     nextPage: 'Ďalšia strana',
     actions: 'Akcie',
+    showAll: 'Zobraziť všetko',
     today: 'Dnes',
     yesterday: 'Včera',
     discardChanges: {
@@ -66,6 +67,7 @@ export const sk = {
       'Toto heslo sa objavilo v uniknutých databázach hesiel. Zvoľte si iné, ktoré nepoužívate nikde inde.',
     password_mismatch: 'Heslá sa nezhodujú.',
     email_taken: 'Používateľ s týmto e-mailom už existuje.',
+    wrong_password: 'Heslo nie je správne.',
   },
   brand: {
     name: 'Alma Intra',
@@ -432,8 +434,7 @@ export const sk = {
       enabled: 'na vašom účte je odteraz nastavené overenie v telefóne.',
       replaced:
         'overenie na vašom účte je odteraz nastavené na novom telefóne. Pôvodný telefón a staré záložné kódy už neplatia.',
-      reset:
-        'kolega vám obnovil overenie v telefóne. Pri ďalšom prihlásení si ho nastavíte znova.',
+      reset: 'kolega vám obnovil overenie v telefóne. Pri ďalšom prihlásení si ho nastavíte znova.',
       action: 'Prihlásiť sa',
       notYou: 'Ak ste túto zmenu nerobili vy, ihneď si zmeňte heslo a dajte vedieť kolegom.',
     },

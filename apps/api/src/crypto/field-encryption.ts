@@ -31,9 +31,7 @@ function aadOf(at: FieldLocation): Buffer {
     throw new Error('Encrypted field location: table and column must be SQL names');
   }
   return Buffer.from(
-    ['intra:field', FIELD_VERSION, at.table, at.column, at.rowId]
-      .join('|')
-      .toLowerCase(),
+    ['intra:field', FIELD_VERSION, at.table, at.column, at.rowId].join('|').toLowerCase(),
     'utf8',
   );
 }

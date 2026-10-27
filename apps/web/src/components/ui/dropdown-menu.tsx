@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 
 /**
  * shadcn/ui dropdown over Radix: keyboard navigation, typeahead, focus return and `aria-*` come
- * from the primitive. The look (ALMA-268, Figma W15): Elevation/3, rounded 12, 6 px padding, at
+ * from the primitive. The look: Elevation/3, rounded 12, 6 px padding, at
  * least 220 wide, opening in 120 ms from its anchor. An item is 36 high, rounded 7, with its icon
  * in accent/soft and the hover tint; `destructive` paints it danger, and it goes last.
  */
@@ -74,7 +74,7 @@ export function DropdownMenuShortcut({ className, ...props }: ComponentProps<'kb
 }
 
 /**
- * An item with a box to tick (ALMA-372), drawn like the Figma `Checkbox`: 18×18, rounded 5,
+ * An item with a box to tick, drawn like the Figma `Checkbox`: 18×18, rounded 5,
  * `primary` with a white tick when on. Radix gives it `menuitemcheckbox` and `aria-checked`.
  */
 export function DropdownMenuCheckboxItem({

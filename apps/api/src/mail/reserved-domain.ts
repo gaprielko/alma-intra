@@ -4,7 +4,7 @@ const RESERVED_DOMAINS = ['example.com', 'example.net', 'example.org'];
 const RESERVED_TLDS = ['test', 'example', 'invalid', 'localhost'];
 
 /**
- * An address no mail can reach (ALMA-212): `@example.com` and its siblings, and anything under a
+ * An address no mail can reach: `@example.com` and its siblings, and anything under a
  * reserved top-level name. The seeds and the demo use them on purpose, so a provider asked to
  * deliver there only fails eight times and reports it. Case and a trailing root dot do not
  * matter; `notexample.com` is somebody's real domain and is not reserved.

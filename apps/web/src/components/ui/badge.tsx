@@ -3,7 +3,7 @@ import type { HTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
- * The status badge shared with the phone (ALMA-260 P7, ALMA-268): a pill with a dot in its tone
+ * The status badge shared with the phone: a pill with a dot in its tone
  * before the word, so the colour is never the only signal. `dot={false}` for a count or a tag
  * that is not a state.
  */

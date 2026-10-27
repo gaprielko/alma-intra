@@ -14,7 +14,7 @@ const SUFFIX = '1E4C9B93F3F0682250B6CF8331B7EE68FD8';
 const answer = (body: string, status = 200) =>
   vi.fn<typeof fetch>().mockResolvedValue(new Response(body, { status }));
 
-describe('the breached-password check (ALMA-90)', () => {
+describe('the breached-password check', () => {
   it('splits the SHA-1 into the 5 characters that are sent and the 35 that are not', () => {
     expect(sha1Range('password')).toEqual({ prefix: PREFIX, suffix: SUFFIX });
     // Upper-case hex whatever the input, UTF-8 for anything beyond ASCII.

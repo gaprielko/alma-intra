@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 
 /**
- * The one question before something that cannot be taken back (ALMA-170, item 22): discarding an
+ * The one question before something that cannot be taken back: discarding an
  * intake, cancelling a visit, taking a patient from a nurse, logging out… Never the browser's
  * `window.confirm` (the ESLint config bans it).
  *

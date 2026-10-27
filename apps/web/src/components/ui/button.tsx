@@ -4,7 +4,7 @@ import type { ComponentProps } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
- * The one Button of the web (ALMA-268, Figma W6), shared in look with the phone's: the primary and
+ * The one Button of the web, shared in look with the phone's: the primary and
  * the danger one are a gradient with the light edge on top and a shadow underneath, the secondary
  * is tonal (accent/soft, no border), the ghost is only its text. A press squeezes it to 0.98 for
  * 80 ms. Heights: 40 by default, 32 in a table row or a dialog footer (`sm`), 48 on the login

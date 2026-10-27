@@ -30,11 +30,41 @@ export const SEED_USERS = {
 export async function seed(db: Db, encryptionKey: string) {
   const passwordHash = await argon2.hash(SEED_PASSWORD);
   const people = [
-    { id: SEED_USERS.jana, email: 'jana.horvathova@example.com', name: 'Jana Horváthová', position: 'Konateľka', status: 'active' },
-    { id: SEED_USERS.peter, email: 'peter.kovac@example.com', name: 'Peter Kováč', position: 'Obchodný manažér', status: 'active' },
-    { id: SEED_USERS.lucia, email: 'lucia.bartosova@example.com', name: 'Lucia Bartošová', position: 'Marketing', status: 'active' },
-    { id: SEED_USERS.martin, email: 'martin.simko@example.com', name: 'Martin Šimko', position: 'Podpora zákazníkov', status: 'invited' },
-    { id: SEED_USERS.tomas, email: 'tomas.hudec@example.com', name: 'Tomáš Hudec', position: 'Obchod', status: 'deactivated' },
+    {
+      id: SEED_USERS.jana,
+      email: 'jana.horvathova@example.com',
+      name: 'Jana Horváthová',
+      position: 'Konateľka',
+      status: 'active',
+    },
+    {
+      id: SEED_USERS.peter,
+      email: 'peter.kovac@example.com',
+      name: 'Peter Kováč',
+      position: 'Obchodný manažér',
+      status: 'active',
+    },
+    {
+      id: SEED_USERS.lucia,
+      email: 'lucia.bartosova@example.com',
+      name: 'Lucia Bartošová',
+      position: 'Marketing',
+      status: 'active',
+    },
+    {
+      id: SEED_USERS.martin,
+      email: 'martin.simko@example.com',
+      name: 'Martin Šimko',
+      position: 'Podpora zákazníkov',
+      status: 'invited',
+    },
+    {
+      id: SEED_USERS.tomas,
+      email: 'tomas.hudec@example.com',
+      name: 'Tomáš Hudec',
+      position: 'Obchod',
+      status: 'deactivated',
+    },
   ] as const;
 
   await db.transaction(async (tx) => {

@@ -10,7 +10,7 @@ import {
 import { cn } from '@/lib/utils';
 
 /**
- * The tabs of a detail screen (ALMA-268, Figma W20): 44 high, 13 px in text/secondary, the chosen
+ * The tabs of a detail screen: 44 high, 13 px in text/secondary, the chosen
  * one in accent/text medium with a 2 px underline that slides to it in 180 ms; a count sits in a
  * small pill (accent/soft on the chosen tab). The bar stays under the sticky header, with its
  * bottom line. Every tab is a link: the chosen one is the current route or the `tab` search.
@@ -115,7 +115,7 @@ export const underlineOf = (tab: Pick<HTMLElement, 'offsetLeft' | 'offsetWidth'>
 /**
  * `left-0` anchors the line at that same padding edge. Without it an absolute box in a flex row
  * starts where the content starts, after the bar's padding, and a bar given `px-7` (the agency's
- * detail) drew the line 28 px right of its tab: the padding counted twice (ALMA-285 item 1).
+ * detail) drew the line 28 px right of its tab: the padding counted twice.
  */
 export const underlineClass =
   'absolute bottom-0 left-0 h-0.5 rounded-t-sm bg-primary transition-[transform,width] duration-[180ms] ease-out-soft motion-reduce:transition-none';

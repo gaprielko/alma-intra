@@ -1,11 +1,7 @@
 import { expectTypeOf } from 'vitest';
 import { loadEnv } from '../config/env.js';
 import { createMailer } from './mailer.js';
-import type {
-  InvitationEmail,
-  PasswordResetEmail,
-  SecondFactorChangedEmail,
-} from './templates.js';
+import type { InvitationEmail, PasswordResetEmail, SecondFactorChangedEmail } from './templates.js';
 import type { MailTransport, OutgoingMail } from './transport.js';
 
 const env = loadEnv({
@@ -35,7 +31,9 @@ async function renderAll() {
     await render('invitation by a colleague', () =>
       mailer.sendInvitation(to, 'tok-inv', { invitedByName: 'Peter Kováč' }),
     ),
-    await render('first user', () => mailer.sendInvitation(to, 'tok-first', { invitedByName: null })),
+    await render('first user', () =>
+      mailer.sendInvitation(to, 'tok-first', { invitedByName: null }),
+    ),
     await render('password reset', () => mailer.sendPasswordReset(to, 'tok-reset')),
     await render('second factor enabled', () => mailer.sendSecondFactorChanged(to, 'enabled')),
     await render('second factor replaced', () => mailer.sendSecondFactorChanged(to, 'replaced')),

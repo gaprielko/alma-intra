@@ -78,7 +78,9 @@ export async function revokeAuthTokens(
   await db
     .update(authTokens)
     .set({ usedAt: new Date() })
-    .where(and(eq(authTokens.userId, userId), eq(authTokens.type, type), isNull(authTokens.usedAt)));
+    .where(
+      and(eq(authTokens.userId, userId), eq(authTokens.type, type), isNull(authTokens.usedAt)),
+    );
 }
 
 /** A token whose e-mail never left: removed, so that a retry does not pile up live links. */
@@ -141,8 +143,7 @@ export async function resetPassword(
 }
 
 export type AcceptInvitationResult =
-  | { ok: true; userId: string }
-  | { ok: false; reason: 'invalid_token' | 'breached_password' };
+  { ok: true; userId: string } | { ok: false; reason: 'invalid_token' | 'breached_password' };
 
 /**
  * Sets the invited person's first password and makes her active. The second factor follows at

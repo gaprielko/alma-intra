@@ -12,7 +12,7 @@ const SIZES = {
 } as const;
 
 /**
- * A person as a circle of initials on the colour her name keeps (ALMA-268, W26), or her photo if
+ * A person as a circle of initials on the colour her name keeps, or her photo if
  * there is one. Decorative when the name stands next to it; else `label` names her.
  */
 export function Avatar({

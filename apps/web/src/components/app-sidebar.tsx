@@ -4,22 +4,19 @@ import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import type { ComponentType, ReactNode } from 'react';
 import { BrandMark } from '@/components/brand-mark';
 import { Tooltip } from '@/components/ui/tooltip';
-import { startNewTrail } from '@/lib/back-trail';
-import { forgetListReturn } from '@/lib/list-return';
 import { toggleSidebar, useSidebarCollapsed } from '@/lib/sidebar-state';
 import { cn } from '@/lib/utils';
 
 /** The id the toggle's `aria-controls` points at. */
 export const SIDEBAR_ID = 'app-sidebar';
 
-/** W1: the rail's tooltips wait 200 ms, a little less than the rest of the app's. */
+/** The rail's tooltips wait 200 ms, a little less than the rest of the app's. */
 const RAIL_TOOLTIP_DELAY = 200;
 
 /**
- * An item of the navigation (ALMA-268, Figma W1): 40 high, rounded 10, padding 10/12, the icon 20.
- * Hovered, it takes white at 8 %; active, a glow of the active icon's colour running out to the
- * right (ALMA-353) with a 3 × 22 bar on its left edge, a 1 px ring and a soft shadow. (The board's duotone fill is
- * left out: filled, lucide's outline icons grow blobs.) Folded, it is the icon alone, centred.
+ * An item of the navigation: 40 high, rounded 10, padding 10/12, the mark 20. Hovered, it takes
+ * white at 8 %; active, a glow running out to the right with a 3 × 22 bar on its left edge, a
+ * 1 px ring and a soft shadow. Folded, it is the mark alone, centred.
  */
 function itemClass(collapsed: boolean) {
   return cn(
@@ -60,10 +57,10 @@ export function SidebarToggle({
 }
 
 /**
- * The sidebar of both web shells (ADOS and operator). It is as tall as the window and stays where
- * it is while the page scrolls (ALMA-228): the brand on top, the navigation in the middle (the
- * only part that scrolls inside it, on a window too short for all of it), the footer (settings,
- * the user, logout) always in view. 232 px wide; folded, it is an icon rail 72 px wide (W1).
+ * The sidebar of the shell. It is as tall as the window and stays where it is while the page
+ * scrolls: the brand on top, the navigation in the middle (the only part that scrolls inside it,
+ * on a window too short for all of it), the footer (settings, the user, logout) always in view.
+ * 232 px wide; folded, it is an icon rail 72 px wide.
  */
 export function AppSidebar({
   title,
@@ -72,10 +69,9 @@ export function AppSidebar({
   nav,
   footer,
 }: {
-  /** The agency's name or the brand; hidden in the rail, the brand mark stays. */
   title: ReactNode;
   subtitle: string;
-  /** The name as a tooltip: on the brand mark in the rail, on the name when it is cut. */
+  /** The name as a tooltip on the brand mark in the rail. */
   railTitle?: string | undefined;
   nav: (collapsed: boolean) => ReactNode;
   footer: (collapsed: boolean) => ReactNode;
@@ -87,8 +83,7 @@ export function AppSidebar({
       id={SIDEBAR_ID}
       data-collapsed={collapsed}
       className={cn(
-        // Dark teal (ALMA-255): the brand's colour carries the frame, the pages stay light. Lit
-        // from the top left, as the login panel is (ALMA-353).
+        // Dark teal: the brand's colour carries the frame, the pages stay light.
         'sticky top-0 flex h-dvh flex-col bg-sidebar bg-(image:--sidebar-fill) shadow-[inset_-1px_0_0_rgba(255,255,255,0.05)] transition-[width] duration-150 ease-out-soft',
         collapsed ? 'w-[72px] px-4 py-4' : 'w-[232px] px-3.5 py-4',
       )}
@@ -105,11 +100,7 @@ export function AppSidebar({
         />
         {collapsed ? null : (
           <div className="min-w-0 flex-1">
-            {/* Two lines before an ellipsis, and the whole name on hover (ALMA-285 item 23). */}
-            <p
-              title={railTitle}
-              className="line-clamp-2 text-sm leading-[18px] font-semibold break-words text-sidebar-text-active"
-            >
+            <p className="truncate text-sm leading-[18px] font-semibold text-sidebar-text-active">
               {title}
             </p>
             <p className="truncate text-xs text-sidebar-text">{subtitle}</p>
@@ -129,7 +120,7 @@ export function AppSidebar({
 
 type NavIcon = ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
 
-/** In the rail the label is the tooltip; open, the words stand next to the icon. */
+/** In the rail the label is the tooltip; open, the words stand next to the mark. */
 function RailTooltip({
   collapsed,
   label,
@@ -147,7 +138,7 @@ function RailTooltip({
   );
 }
 
-/** A navigation link. Folded, it is its icon; the label stays as tooltip and accessible name. */
+/** A navigation link. Folded, it is its mark; the label stays as tooltip and accessible name. */
 export function SidebarLink({
   to,
   icon: Icon,
@@ -168,21 +159,6 @@ export function SidebarLink({
         activeProps={{ className: activeClass }}
         inactiveProps={{ className: idleClass }}
         aria-label={collapsed ? label : undefined}
-        // A list opened from the sidebar starts from the top, not where its last row was opened.
-        // and a new way back: a section opened from the menu is no step from where she was (ALMA-361).
-        onClick={(event) => {
-          // A new tab from the menu leaves this one as it is.
-          if (
-            event.button !== 0 ||
-            event.metaKey ||
-            event.ctrlKey ||
-            event.shiftKey ||
-            event.altKey
-          )
-            return;
-          forgetListReturn();
-          startNewTrail();
-        }}
       >
         <Icon className="size-5 shrink-0" aria-hidden />
         {collapsed ? null : <span className="truncate">{label}</span>}

@@ -3,7 +3,7 @@ import { Logger } from '@nestjs/common';
 import { describeError } from '../logging/describe-error.js';
 
 /**
- * Have I Been Pwned's range API (ALMA-90, ADR-003 amendment): a new password is refused when it
+ * Have I Been Pwned's range API: a new password is refused when it
  * appears in a known breach. k-anonymity: only the first 5 hex characters of the password's SHA-1
  * leave the server; the answer lists every suffix of that range (several hundred), and the match
  * is made here. The password, its hash and the prefix are never logged.
@@ -42,7 +42,7 @@ interface Options {
 }
 
 /**
- * **Fail-open** (decided in ALMA-90): a timeout, a network error or an answer other than 200 lets
+ * **Fail-open**: a timeout, a network error or an answer other than 200 lets
  * the password through and logs a warning with the error's names only. The breach list is a
  * second line behind the length rule; an HIBP outage must not stop a nurse from setting her
  * password, and it must never make our API unavailable.

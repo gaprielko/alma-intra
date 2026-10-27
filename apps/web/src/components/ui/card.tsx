@@ -2,7 +2,7 @@ import type { HTMLAttributes, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
- * A card (ALMA-268, Figma W9): surface white on the canvas, Elevation/1 at rest, corners 16, the
+ * A card: surface white on the canvas, Elevation/1 at rest, corners 16, the
  * subtle border only. `interactive` lifts it under the pointer (Elevation/2, 2 px up); `edge`
  * gives the main action card its 1 px light edge on top.
  */

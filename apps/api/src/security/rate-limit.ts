@@ -150,7 +150,7 @@ export async function refund(db: Db, rule: RateLimitRule, subject: string, count
 }
 
 /*
- * Login lockout (ALMA-90). The per-e-mail failure counter alone is a fixed window: ten failures at
+ * Login lockout. The per-e-mail failure counter alone is a fixed window: ten failures at
  * 14:59 and ten more at 15:00 would pass. So the failure that reaches the limit also LOCKS the
  * e-mail from that moment, for 15 minutes; a lock that follows within an hour of the previous one
  * ending lasts 30, then 60 (the cap). Only a password reset ends a lock early (`unlockLogin`).
@@ -172,7 +172,7 @@ export const LOGIN_LOCK = {
 } as const;
 
 /**
- * The second step's lock (ALMA-91): the same escalation as the login's, keyed by the user, and
+ * The second step's lock: the same escalation as the login's, keyed by the user, and
  * never ended by a password reset — only by its time running out.
  */
 export const SECOND_FACTOR_LOCK = {
@@ -214,7 +214,7 @@ export const loginLockedUntil = (db: Db | Tx, email: string) => lockedUntil(db, 
 /** Locks the e-mail from now on; returns for how many minutes (the level's). */
 export const lockLogin = (db: Db | Tx, email: string) => lock(db, LOGIN_LOCK, lockKey(email));
 
-/** When the lock on her second step ends, or `null` (ALMA-91). */
+/** When the lock on her second step ends, or `null`. */
 export const secondFactorLockedUntil = (db: Db | Tx, userId: string) =>
   lockedUntil(db, keyOf(SECOND_FACTOR_LOCK, userId));
 
@@ -223,7 +223,7 @@ export const lockSecondFactor = (db: Db | Tx, userId: string) =>
   lock(db, SECOND_FACTOR_LOCK, keyOf(SECOND_FACTOR_LOCK, userId));
 
 /**
- * Takes a one-time value (a second-step challenge, ALMA-91): `true` for the first caller, `false`
+ * Takes a one-time value (a second-step challenge): `true` for the first caller, `false`
  * for every later one. A row of this table under its own scope, like a lock; `until` is when the
  * value expires anyway, so the sweep removes the row two hours after that. `releaseOnce` gives it
  * back, for a call that took it and then failed for another reason (a mistyped code).

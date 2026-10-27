@@ -8,7 +8,7 @@ type CheckboxProps = Omit<ComponentProps<'input'>, 'type'> & {
 };
 
 /**
- * The Figma `Checkbox` (ALMA-170, item 12; ALMA-268 W18): 18×18, rounded 5, `border` when off,
+ * The Figma `Checkbox`: 18×18, rounded 5, `border` when off,
  * `primary` fill and a white tick drawn in 150 ms when on, pale when disabled. It is still the native `<input type="checkbox">`, only
  * drawn by us (`appearance-none` + an icon over it), so `{...form.register('x')}`, `checked` +
  * `onChange`, `getByRole('checkbox')`, Space and the label click all work as with the browser's.
@@ -18,8 +18,8 @@ type CheckboxProps = Omit<ComponentProps<'input'>, 'type'> & {
  *
  * The box always has an id, and a `<label>` around it without `htmlFor` is pointed at it
  * (`pointLabelAt`): a label that only wraps its checkbox names it for the browser, but not for
- * every tool that reads the page, which heard „on“ (the value) instead (ALMA-285 item 9). A disabled box keeps a visible
- * outline; `title` (why it cannot be ticked) shows over the whole box (ALMA-285 item 21).
+ * every tool that reads the page, which heard „on“ (the value) instead. A disabled box keeps a visible
+ * outline; `title` (why it cannot be ticked) shows over the whole box.
  */
 export function Checkbox({
   className,

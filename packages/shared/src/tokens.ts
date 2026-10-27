@@ -4,9 +4,9 @@ export const tokens = {
     primary: '#0F8B8D',
     primaryForeground: '#FFFFFF',
     primarySoft: '#E3F3F2',
-    /** Figma „accent/text": teal text on `primarySoft` (the active tab, ALMA-256). */
+    /** Figma „accent/text": teal text on `primarySoft` (the active tab). */
     primaryText: '#0A6466',
-    /** ALMA-255: neutrals retinted towards the teal (hue ~175), Figma „Farby“ of 1. 10. 2026. */
+    /** neutrals retinted towards the teal (hue ~175), Figma „Farby“ of 1. 10. 2026. */
     ink: '#0C3B3C',
     background: '#FFFFFF',
     /** The app's canvas, behind the cards. */
@@ -25,13 +25,13 @@ export const tokens = {
     warningSoft: '#FCF0DE',
     danger: '#DC2626',
     dangerSoft: '#FCE8E8',
-    /** Days a nurse is away (M22, ALMA-73). */
+    /** Days a nurse is away. */
     absence: '#6D28D9',
     absenceSoft: '#EFE9FD',
     /** The light tints of the dark surfaces (the toast, the illustrations' dots, the header's blobs). */
     tealLight: '#5FD0C9',
     /*
-     * ALMA-293: the phone's sign-in screens and the Profil header lie on `ink`, Figma `bg/dark`
+     * the phone's sign-in screens and the Profil header lie on `ink`, Figma `bg/dark`
      * (`VariableID:1:8`), which frames M01 and M25 bind. The text on it, each at 4.5:1 or more
      * (`tokens.test.ts`):
      */
@@ -50,7 +50,7 @@ export const tokens = {
     viewerBackdrop: '#111111',
   },
   /**
-   * Patient avatars (ALMA-259, Figma „DU-02"): a patient's initials sit on one of these pairs,
+   * Patient avatars: a patient's initials sit on one of these pairs,
    * chosen from the name (`avatarColorOf` in the mobile app), so the same person keeps their colour.
    */
   avatars: [
@@ -63,7 +63,7 @@ export const tokens = {
     { bg: '#FAECE7', text: '#993C1D' },
   ],
   /**
-   * Icons in tinted circles (ALMA-259 item 12): each section of a visit record keeps one tint, on
+   * Icons in tinted circles: each section of a visit record keeps one tint, on
    * the summary of M11 and on the cards of M07. `bg` is the circle, `fg` the glyph on it.
    */
   sections: {
@@ -75,10 +75,10 @@ export const tokens = {
   },
   radius: { sm: 6, md: 10, lg: 16 },
   spacing: { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 },
-  /** The one typeface of both apps (ALMA-255): Figtree, self-hosted, never fetched from Google. */
+  /** The one typeface of both apps: Figtree, self-hosted, never fetched from Google. */
   fontFamily: 'Figtree',
   /**
-   * ALMA-260 (P30): the durations of the mobile app's motion, in ms: `fast` a press, `base` a
+   * The durations of the mobile app's motion, in ms: `fast` a press, `base` a
    * fade or a transition, `spring` a sheet, a pill or a toast (its spring's damping and
    * stiffness). The easing is Figma's `out`.
    */
@@ -91,23 +91,23 @@ export const tokens = {
     /** `cubic-bezier(.2,.8,.2,1)`. */
     easing: [0.2, 0.8, 0.2, 1],
   },
-  /** ALMA-260 (P4): the primary and the danger button are a gradient, top to bottom. */
+  /** The primary and the danger button are a gradient, top to bottom. */
   gradients: {
     primary: ['#14999B', '#0D8284'],
     danger: ['#CC3338', '#B22227'],
   },
   /**
-   * ALMA-268 (Figma „Premium systém · Web", W1, W6–W9, W18, W30): the web app's own values, the
+   * The web app's own values, the
    * ones the phone has no use for. `apps/web/src/styles.css` mirrors them as theme variables, the
    * way `colors` is mirrored; keep the two in step.
    */
   web: {
     /** W9: canvas behind the cards, the surface of a card, the dark backdrop of an overlay. */
     colors: {
-      /** ALMA-353: a step darker than the phone's `surface`, so the cards hold on a projector. */
+      /** a step darker than the phone's `surface`, so the cards hold on a projector. */
       canvas: '#EAF0EE',
       surface: '#FFFFFF',
-      /** ALMA-353: the web's borders and grey text, darker than `colors` for the same reason. */
+      /** the web's borders and grey text, darker than `colors` for the same reason. */
       border: '#D6E1DE',
       borderSubtle: '#DFE8E6',
       muted: '#48625F',
@@ -116,13 +116,13 @@ export const tokens = {
       dark: '#0C2B2C',
       /** A hovered row, menu item or palette row: accent/soft at half strength. */
       hover: '#F0F8F7',
-      /** A skeleton bar and the track of a segmented control; ALMA-353: darker with `canvas`. */
+      /** A skeleton bar and the track of a segmented control; darker with `canvas`. */
       track: '#DDE6E3',
       /** The trust lines of the login panel. */
       trust: '#7FB3B0',
     },
     /**
-     * W1: the dark teal sidebar and its one active colour. ALMA-353: `bg` runs from `bgTop` to
+     * W1: the dark teal sidebar and its one active colour. `bg` runs from `bgTop` to
      * `bgBottom`, with a glow of `iconActive` behind the brand; the active item is that glow too.
      */
     sidebar: {
@@ -150,7 +150,7 @@ export const tokens = {
      * white line along the top of the main action card and the primary button.
      */
     elevation: {
-      /** ALMA-353: a little deeper than the phone's, as the web's canvas is darker. */
+      /** a little deeper than the phone's, as the web's canvas is darker. */
       rest: '0 1px 2px rgba(12, 59, 60, 0.08), 0 8px 22px rgba(12, 59, 60, 0.08)',
       raised: '0 2px 4px rgba(12, 59, 60, 0.08), 0 12px 28px rgba(12, 59, 60, 0.12)',
       floating: '0 1px 3px rgba(12, 59, 60, 0.06), 0 8px 24px rgba(12, 59, 60, 0.12)',
@@ -180,7 +180,7 @@ export const tokens = {
     },
   },
   /**
-   * ALMA-255: the depth of the mobile app's surfaces, in React Native's shape (one shadow on iOS,
+   * the depth of the mobile app's surfaces, in React Native's shape (one shadow on iOS,
    * `elevation` on Android), from Figma's two-layer shadows on the teal ink #0C3B3C:
    * * `rest`: every card, `0 1px 2px .06, 0 6px 16px .05`;
    * * `raised`: the „Teraz na rade" card, `0 1px 2px .06, 0 8px 20px .08`;

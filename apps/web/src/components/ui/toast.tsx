@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
  * away on its own and can be closed — it never takes a line of the page, so a screen does not jump
  * when a save succeeds or a drag is refused.
  *
- * The rule (ALMA-170, item 20):
+ * The rule:
  * - Every mutation that succeeds says so: `toast('success', …)` with a concrete sentence that names
  *   the thing („Pozvánka odoslaná na {email}“, „Pacient pridelený“, „Licencia uložená“), not „OK“.
  * - A refusal that is not about one field is an error toast (`toast('error', errorMessage(e))`).
@@ -31,7 +31,7 @@ import { cn } from '@/lib/utils';
  * it was done, but something needs attention; `info` (blue i) something to know, nothing went
  * wrong. Error and warning are read out at once (`role="alert"`) and stay longer.
  *
- * The look (ALMA-268, Figma W14): 320–400 wide on Elevation/3, rounded 12, the icon in a 26 px
+ * The look: 320–400 wide on Elevation/3, rounded 12, the icon in a 26 px
  * soft circle, a 2 px accent line running out along the bottom as the time runs out (it pauses
  * while the pointer is over it), the newest on top of a stack of three at most, the older ones a
  * little smaller and paler behind it. In 200 ms from below, out in a 150 ms fade.
@@ -40,7 +40,7 @@ export type ToastTone = 'success' | 'error' | 'warning' | 'info';
 
 /**
  * Something the message lets you do about what just happened — „Vrátiť späť“ after a substitution
- * (ALMA-118). It lives as long as the toast does: an undo nobody can reach is not an undo.
+ *. It lives as long as the toast does: an undo nobody can reach is not an undo.
  */
 export interface ToastAction {
   label: string;

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
- * A section of a long form (ALMA-268, Figma W24): the heading in a 240 px column on the left,
+ * A section of a long form: the heading in a 240 px column on the left,
  * the fields on the right; in a card narrower than 64 rem (a wizard beside its source document)
  * the heading stands above the fields. The card is the container (`@container` on it), so the
  * layout follows the card's width, not the window's. Sections in one card are separated by a

@@ -6,7 +6,7 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 /**
- * A segmented control (ALMA-268, Figma W13): a track in `bg-track`, rounded 10 with 3 px of padding,
+ * A segmented control: a track in `bg-track`, rounded 10 with 3 px of padding,
  * segments 32 high in 13 px medium, the chosen one white, rounded 8, on Elevation/1. The white
  * indicator slides to the chosen segment in 180 ms. For a choice between a few views (Týždeň /
  * Deň), never for a filter with many values. Each segment is a link, so the choice is a route.
@@ -145,7 +145,7 @@ export function PeriodStepper({
   todayLabel?: string | undefined;
   onToday?: (() => void) | undefined;
   /**
-   * The period shown is already today's (ALMA-288 item 45): „Dnes“ stays in its place, so
+   * The period shown is already today's: „Dnes“ stays in its place, so
    * nothing jumps, but quiet and inactive.
    */
   atToday?: boolean;

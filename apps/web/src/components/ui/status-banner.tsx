@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
- * A status banner (ALMA-268, Figma W29): at the top of a screen, as wide as the content, rounded 12,
+ * A status banner: at the top of a screen, as wide as the content, rounded 12,
  * the icon in a 24 px soft circle, the text in body (a title in body strong), the action at the
  * right in the tone's text colour. Warning, danger, info (with a 4 px progress line when
  * something is running) and success; every banner here is state, so none has a ×. One banner at

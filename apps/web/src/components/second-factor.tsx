@@ -1,29 +1,13 @@
 import { sk } from '@intra/shared/i18n';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import qrcode from 'qrcode-generator';
-import { type FormEvent, useMemo, useState } from 'react';
+import { useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader } from '@/components/ui/card';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/toast';
-import { errorMessage } from '@/lib/errors';
-import { formatDate } from '@/lib/format';
-import { useSession } from '@/lib/session';
-import { trpc } from '@/lib/trpc';
+import { cn } from '@/lib/utils';
 
 const t = sk.secondFactor;
 
-/** The `otpauth://` URI as an SVG data URL, like the intake's QR code (level M). */
+/** The `otpauth://` URI as an SVG data URL (level M). */
 function qrDataUrl(text: string) {
   const code = qrcode(0, 'M');
   code.addData(text);
@@ -35,52 +19,90 @@ function qrDataUrl(text: string) {
 const grouped = (secret: string) => secret.replace(/(.{4})/g, '$1 ').trim();
 
 /**
- * The secret of a new authenticator (ALMA-91): the QR code to scan, and the key as text for a
- * phone that cannot scan it. Shown once, never stored in the browser.
+ * The secret of a new authenticator: the QR code to scan, and the key as text for a phone that
+ * cannot scan it, with the three steps beside it. Shown once, never stored in the browser.
  */
 export function TotpQr({ uri, secret }: { uri: string; secret: string }) {
   const src = useMemo(() => qrDataUrl(uri), [uri]);
   return (
-    <div className="space-y-3">
-      <p className="text-sm text-muted">{t.setup.scan}</p>
-      <img src={src} alt={t.setup.qrAlt} className="mx-auto size-44" />
-      <div>
-        <p className="text-xs text-muted">{t.setup.manual}</p>
-        <p className="mt-1 rounded-xl bg-surface px-3 py-2 text-center font-mono text-sm tracking-wider select-all">
-          {grouped(secret)}
-        </p>
+    <div className="flex flex-wrap items-start gap-6">
+      <div className="shrink-0 rounded-[14px] border border-border-subtle bg-white p-3">
+        <img src={src} alt={t.qrAlt} className="size-[142px]" />
       </div>
+      <ol className="min-w-[240px] flex-1 list-decimal space-y-2.5 pl-5 text-sm leading-[21px]">
+        <li>{t.instructions[0]}</li>
+        <li>
+          {t.instructions[1]}
+          <code className="mt-1.5 block w-fit rounded-lg border border-border-subtle bg-subtle px-2 py-1 font-mono text-[13px] tracking-wider select-all">
+            {grouped(secret)}
+          </code>
+        </li>
+        <li>{t.instructions[2]}</li>
+      </ol>
     </div>
   );
 }
 
-/** Six digits: the phone's numeric keyboard, and a password manager's one-time-code autofill. */
-export function TotpCodeInput({
-  id,
+/**
+ * Six boxes for the six digits of the authenticator. Typing moves on, Backspace moves back, and a
+ * pasted code (or a password manager's one-time-code autofill) fills them all.
+ */
+export function CodeBoxes({
   value,
   onChange,
   invalid,
-  describedBy,
+  autoFocus,
+  labelOf,
 }: {
-  id: string;
   value: string;
   onChange: (value: string) => void;
   invalid?: boolean;
-  describedBy?: string | undefined;
+  autoFocus?: boolean;
+  labelOf: (n: number) => string;
 }) {
+  const refs = useRef<(HTMLInputElement | null)[]>([]);
+  const digits = Array.from({ length: 6 }, (_, i) => value[i] ?? '');
+  const focus = (i: number) => refs.current[Math.max(0, Math.min(5, i))]?.focus();
+  const set = (i: number, typed: string) => {
+    const only = typed.replace(/\D/g, '');
+    if (only.length > 1) {
+      onChange(only.slice(0, 6));
+      focus(only.length);
+      return;
+    }
+    const next = [...digits];
+    next[i] = only;
+    onChange(next.join('').slice(0, 6));
+    if (only) focus(i + 1);
+  };
   return (
-    <Input
-      id={id}
-      className="mt-2 font-mono tracking-[0.3em]"
-      inputMode="numeric"
-      autoComplete="one-time-code"
-      maxLength={6}
-      required
-      aria-invalid={invalid}
-      aria-describedby={describedBy}
-      value={value}
-      onChange={(event) => onChange(event.target.value.replace(/\D/g, ''))}
-    />
+    <div className="flex justify-between gap-2">
+      {digits.map((digit, i) => (
+        <input
+          key={i}
+          ref={(element) => {
+            refs.current[i] = element;
+          }}
+          aria-label={labelOf(i + 1)}
+          aria-invalid={invalid}
+          inputMode="numeric"
+          autoComplete={i === 0 ? 'one-time-code' : 'off'}
+          autoFocus={autoFocus && i === 0}
+          maxLength={i === 0 ? 6 : 1}
+          value={digit}
+          onChange={(event) => set(i, event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Backspace' && !digit) focus(i - 1);
+            if (event.key === 'ArrowLeft') focus(i - 1);
+            if (event.key === 'ArrowRight') focus(i + 1);
+          }}
+          className={cn(
+            'h-[60px] w-[52px] rounded-xl border border-border bg-white text-center text-2xl font-semibold text-foreground transition-[border-color,box-shadow] outline-none focus:border-2 focus:border-primary focus:shadow-[0_0_0_4px_rgba(15,139,141,0.12)]',
+            invalid && 'border-danger',
+          )}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -115,309 +137,5 @@ export function RecoveryCodes({ codes, onDone }: { codes: string[]; onDone: () =
         </Button>
       </div>
     </div>
-  );
-}
-
-/**
- * The factor in force, before it is moved or switched off (review S5): a code of the app, or one
- * of her recovery codes when the phone is the thing she lost.
- */
-function CurrentCodeField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return (
-    <div>
-      <Label htmlFor="second-factor-current-code">{t.setup.currentCode}</Label>
-      <Input
-        id="second-factor-current-code"
-        className="font-mono"
-        autoComplete="one-time-code"
-        autoCapitalize="none"
-        spellCheck={false}
-        maxLength={20}
-        aria-describedby="second-factor-current-code-hint"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      />
-      <p id="second-factor-current-code-hint" className="mt-1 text-xs text-muted">
-        {t.setup.currentCodeHint}
-      </p>
-    </div>
-  );
-}
-
-type SetupStage =
-  | { stage: 'password' }
-  | { stage: 'scan'; secret: string; otpauthUri: string }
-  | { stage: 'codes'; recoveryCodes: string[] };
-
-/**
- * „Zapnúť“ / „Nastaviť na novom telefóne“: her password, the QR code and its first code, then the
- * recovery codes. Its forms live in a portal but inside the settings form in React's tree, so each
- * submit stops there: it must never also save the settings.
- */
-function SetupDialog({
-  open,
-  replacing,
-  onOpenChange,
-}: {
-  open: boolean;
-  replacing: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const queryClient = useQueryClient();
-  const toast = useToast();
-  const [stage, setStage] = useState<SetupStage>({ stage: 'password' });
-  const [password, setPassword] = useState('');
-  const [currentCode, setCurrentCode] = useState('');
-  const [code, setCode] = useState('');
-  const setup = useMutation(
-    trpc.account.secondFactorSetup.mutationOptions({
-      onSuccess: (made) => setStage({ stage: 'scan', ...made }),
-    }),
-  );
-  const confirm = useMutation(
-    trpc.account.secondFactorConfirm.mutationOptions({
-      onSuccess: async ({ recoveryCodes }) => {
-        setStage({ stage: 'codes', recoveryCodes });
-        await queryClient.invalidateQueries({
-          queryKey: trpc.account.secondFactorStatus.queryKey(),
-        });
-      },
-    }),
-  );
-
-  const close = () => {
-    setStage({ stage: 'password' });
-    setPassword('');
-    setCurrentCode('');
-    setCode('');
-    setup.reset();
-    confirm.reset();
-    onOpenChange(false);
-  };
-  const submit = (event: FormEvent, run: () => void) => {
-    event.preventDefault();
-    event.stopPropagation();
-    run();
-  };
-  const error = setup.error ?? confirm.error;
-
-  return (
-    <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : close())}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            {stage.stage === 'codes'
-              ? t.recovery.title
-              : replacing
-                ? t.setup.replaceTitle
-                : t.setup.enableTitle}
-          </DialogTitle>
-          {stage.stage === 'password' ? (
-            <DialogDescription>{t.setup.passwordIntro}</DialogDescription>
-          ) : null}
-        </DialogHeader>
-
-        {error ? (
-          <p role="alert" className="rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">
-            {errorMessage(error, t.errors, t.errors.generic)}
-          </p>
-        ) : null}
-
-        {stage.stage === 'password' ? (
-          <form
-            noValidate
-            onSubmit={(event) =>
-              submit(event, () =>
-                setup.mutate(replacing ? { password, code: currentCode } : { password }),
-              )
-            }
-            className="space-y-4"
-          >
-            <div>
-              <Label htmlFor="second-factor-password">{t.setup.password}</Label>
-              <Input
-                id="second-factor-password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-            </div>
-            {replacing ? <CurrentCodeField value={currentCode} onChange={setCurrentCode} /> : null}
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={close}>
-                {t.setup.cancel}
-              </Button>
-              <Button
-                type="submit"
-                disabled={
-                  setup.isPending ||
-                  password.length === 0 ||
-                  (replacing && currentCode.trim().length < 6)
-                }
-              >
-                {t.setup.continue}
-              </Button>
-            </DialogFooter>
-          </form>
-        ) : stage.stage === 'scan' ? (
-          <form
-            noValidate
-            onSubmit={(event) => submit(event, () => confirm.mutate({ code }))}
-            className="space-y-4"
-          >
-            <TotpQr uri={stage.otpauthUri} secret={stage.secret} />
-            <div>
-              <Label htmlFor="second-factor-code">{t.setup.code}</Label>
-              <TotpCodeInput
-                id="second-factor-code"
-                value={code}
-                onChange={setCode}
-                describedBy="second-factor-code-hint"
-              />
-              <p id="second-factor-code-hint" className="mt-1 text-xs text-muted">
-                {replacing ? t.setup.replaceNote : t.setup.codeHint}
-              </p>
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={close}>
-                {t.setup.cancel}
-              </Button>
-              <Button type="submit" disabled={confirm.isPending || code.length !== 6}>
-                {confirm.isPending ? t.setup.confirming : t.setup.confirm}
-              </Button>
-            </DialogFooter>
-          </form>
-        ) : (
-          <RecoveryCodes
-            codes={stage.recoveryCodes}
-            onDone={() => {
-              toast('success', t.enabled);
-              close();
-            }}
-          />
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-/** „Vypnúť“: her password, then the factor, its codes and its trusted browsers are gone. */
-function DisableDialog({
-  open,
-  onOpenChange,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const queryClient = useQueryClient();
-  const toast = useToast();
-  const [password, setPassword] = useState('');
-  const [code, setCode] = useState('');
-  const disable = useMutation(
-    trpc.account.secondFactorDisable.mutationOptions({
-      onSuccess: async () => {
-        toast('success', t.disabled);
-        setPassword('');
-        setCode('');
-        onOpenChange(false);
-        await queryClient.invalidateQueries({
-          queryKey: trpc.account.secondFactorStatus.queryKey(),
-        });
-      },
-    }),
-  );
-  return (
-    <ConfirmDialog
-      open={open}
-      onOpenChange={(next) => {
-        if (!next) {
-          setPassword('');
-          setCode('');
-          disable.reset();
-        }
-        onOpenChange(next);
-      }}
-      title={t.disableDialog.title}
-      description={t.disableDialog.body}
-      confirmLabel={t.disableDialog.confirm}
-      pending={disable.isPending}
-      onConfirm={() => disable.mutate({ password, code })}
-    >
-      <div className="space-y-2">
-        <Label htmlFor="second-factor-disable-password">{t.setup.password}</Label>
-        <Input
-          id="second-factor-disable-password"
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-        />
-        <CurrentCodeField value={code} onChange={setCode} />
-        {disable.error ? (
-          <p role="alert" className="text-sm text-danger">
-            {errorMessage(disable.error, t.errors, t.errors.generic)}
-          </p>
-        ) : null}
-      </div>
-    </ConfirmDialog>
-  );
-}
-
-/**
- * „Bezpečnosť“ on „Môj účet“ (Figma HS-N1d, ALMA-91): whether her login has a second factor, and
- * the buttons to switch it on, move it to a new phone or switch it off (never the operator's).
- * Hidden for somebody who is offered none and has none: a nurse.
- */
-export function SecondFactorCard() {
-  const status = useQuery(trpc.account.secondFactorStatus.queryOptions());
-  const isNurse = useSession((s) => s.actor?.membership.roles.includes('nurse') ?? false);
-  const [setupOpen, setSetupOpen] = useState(false);
-  const [disableOpen, setDisableOpen] = useState(false);
-  const s = status.data;
-  if (!s || (!s.offered && !s.enabled)) return null;
-
-  return (
-    <Card>
-      <CardHeader title={t.title} />
-      <div className="space-y-3 p-5">
-        <div className="rounded-xl bg-surface px-3 py-2.5">
-          <p className="text-sm font-medium">{t.tile}</p>
-          <p className="mt-0.5 text-xs text-muted">
-            {s.enabled && s.confirmedAt
-              ? t.on(formatDate(new Date(s.confirmedAt).toISOString()), s.recoveryCodesLeft)
-              : t.off}
-          </p>
-          <p className="mt-0.5 text-xs text-muted">
-            {s.required ? t.requiredNote : t.optionalNote}
-          </p>
-          {isNurse ? <p className="mt-0.5 text-xs text-muted">{t.mobileNote}</p> : null}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {s.offered ? (
-            <Button
-              type="button"
-              variant={s.enabled ? 'secondary' : 'primary'}
-              onClick={() => setSetupOpen(true)}
-            >
-              {s.enabled ? t.replace : t.enable}
-            </Button>
-          ) : null}
-          {s.enabled && !s.required ? (
-            <Button
-              type="button"
-              variant="ghost"
-              className="text-danger"
-              onClick={() => setDisableOpen(true)}
-            >
-              {t.disable}
-            </Button>
-          ) : null}
-        </div>
-      </div>
-      <SetupDialog open={setupOpen} replacing={s.enabled} onOpenChange={setSetupOpen} />
-      <DisableDialog open={disableOpen} onOpenChange={setDisableOpen} />
-    </Card>
   );
 }

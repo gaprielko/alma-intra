@@ -25,7 +25,7 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> => {
 };
 
 /**
- * The safety net under CLAUDE.md rule 6 (ADR-006 amendment ALMA-93): every key of
+ * The safety net under CLAUDE.md rule 6: every key of
  * `SENSITIVE_KEYS`, at any depth of the object a line is logged with (`{ patient: { firstName } }`,
  * `{ input: { records: [{ subjective }] } }`), becomes `[redacted]`, and so does whatever is nested
  * deeper than anybody logs on purpose. Log lines are still built from ids, codes and counts; this

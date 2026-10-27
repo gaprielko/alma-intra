@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 
 /**
- * An on/off toggle (`role="switch"`), 34 × 20 with the knob sliding 150 ms (ALMA-268, W18); the
+ * An on/off toggle (`role="switch"`), 34 × 20 with the knob sliding 150 ms; the
  * label is for screen readers, the row shows its own.
  */
 export function Switch({

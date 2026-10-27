@@ -57,7 +57,10 @@ export async function startSession(
   userId: string,
   userAgent: string | null,
 ): Promise<IssuedTokens | null> {
-  const [user] = await db.select({ id: users.id }).from(users).where(and(eq(users.id, userId), isActive));
+  const [user] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.id, userId), isActive));
   if (!user) return null;
   const tokens = await issue(db, env, userId, randomUUID(), userAgent);
   // Never fatal: the token above is already live, and a login must not fail over a timestamp.
@@ -351,7 +354,10 @@ export async function listSessions(db: Db | Tx, userId: string) {
       sessionId: refreshTokens.familyId,
       userAgent: refreshTokens.userAgent,
       lastActiveAt: refreshTokens.createdAt,
-      startedAt: sql<Date>`(select min(r.created_at) from refresh_tokens r where r.family_id = ${refreshTokens.familyId})`.mapWith(refreshTokens.createdAt),
+      startedAt:
+        sql<Date>`(select min(r.created_at) from refresh_tokens r where r.family_id = ${refreshTokens.familyId})`.mapWith(
+          refreshTokens.createdAt,
+        ),
     })
     .from(refreshTokens)
     .where(

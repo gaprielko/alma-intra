@@ -16,7 +16,7 @@ import {
 import { cn } from '@/lib/utils';
 
 /**
- * Every table of the web app looks the same (ALMA-170, item 24): one frame, one header style, one
+ * Every table of the web app looks the same: one frame, one header style, one
  * „Žiadne …“ row, one footer. The pieces:
  *
  * - `TableShell` draws the frame, the column headers and the body rows the caller writes with
@@ -61,7 +61,7 @@ export function TableShell({
    * appears at (`hidden wide:table-cell`), matched by the same class on the body cells.
    */
   columnClassNames?: (string | undefined)[];
-  /** ALMA-357: `aria-sort` of each header cell, by index, for a list that sorts by its columns. */
+  /** `aria-sort` of each header cell, by index, for a list that sorts by its columns. */
   columnSort?: AriaAttributes['aria-sort'][];
   /** The body rows: `TableRow`s with one `TableCell` per column. */
   children?: ReactNode;
@@ -74,7 +74,7 @@ export function TableShell({
   message?: ReactNode;
   /**
    * Skeleton rows before the first data arrives. Pass the query's `isPending`, never leave the
-   * `message` to say „Žiadne …“ meanwhile: it only shows once `loading` is over (ALMA-205).
+   * `message` to say „Žiadne …“ meanwhile: it only shows once `loading` is over.
    */
   loading?: boolean;
   /** The rows are the previous page's or filter's while the next load runs: dimmed, not blanked. */
@@ -150,7 +150,7 @@ export function showsPageArrows(page: number, pageSize: number, total: number) {
 }
 
 /**
- * An empty table has nothing to count: no „0–0 z 0“ under its empty state (ALMA-284 item 40). A
+ * An empty table has nothing to count: no „0–0 z 0“ under its empty state. A
  * later page of a list that emptied under the user keeps the footer, for the arrow back.
  */
 export function showsPagination(page: number, total: number | undefined) {

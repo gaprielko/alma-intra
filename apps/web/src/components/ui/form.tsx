@@ -108,7 +108,7 @@ export function FormControl(props: ComponentProps<typeof Slot>) {
 
 /**
  * A hint under the control, linked to it with `aria-describedby` while rendered. The web shows no
- * hint text under a field (ALMA-268, W7): a rule the field has is said by its message when it is
+ * hint text under a field: a rule the field has is said by its message when it is
  * broken. Kept for a screen that must say something a message cannot.
  */
 export function FormDescription({ className, ...props }: HTMLAttributes<HTMLParagraphElement>) {

@@ -11,3 +11,4 @@ docs/design
 
 # Scratch checkouts of this repo (agent worktrees): a copy of the tree, not the tree.
 .claude/worktrees
+docs

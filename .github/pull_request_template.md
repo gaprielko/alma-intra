@@ -19,7 +19,7 @@ ALMA-
 ## `senior-review` only
 
 - [ ] Independent agent review posted as a comment, findings answered
-- [ ] Human checklist from ADR-011 gone through by the person merging
+- [ ] Review checklist gone through by the person merging
 
 ## Labels
 
