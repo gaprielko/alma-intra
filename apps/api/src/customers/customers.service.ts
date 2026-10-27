@@ -252,12 +252,23 @@ async function tagIds(tx: Tx, names: readonly string[]): Promise<string[]> {
   return rows.map((r) => r.id);
 }
 
+/** The customer's tags as named; answers which tag ids were added and which removed. */
 async function setTags(tx: Tx, customerId: string, names: readonly string[]) {
-  const ids = await tagIds(tx, names);
+  const before = (
+    await tx
+      .select({ id: customerTags.tagId })
+      .from(customerTags)
+      .where(eq(customerTags.customerId, customerId))
+  ).map((row) => row.id);
+  const ids = [...new Set(await tagIds(tx, names))];
   await tx.delete(customerTags).where(eq(customerTags.customerId, customerId));
   if (ids.length > 0) {
     await tx.insert(customerTags).values(ids.map((tagId) => ({ customerId, tagId })));
   }
+  return {
+    added: ids.filter((id) => !before.includes(id)),
+    removed: before.filter((id) => !ids.includes(id)),
+  };
 }
 
 async function assertIcoFree(tx: Tx, ico: string | undefined, except?: string) {
@@ -363,7 +374,7 @@ export async function createCustomer(db: Db, userId: string, input: CreateCustom
         .insert(customers)
         .values({ ...values, ...unsubscribed, createdByUserId: userId })
         .returning({ id: customers.id });
-      await setTags(tx, created!.id, input.customer.tags);
+      const { added } = await setTags(tx, created!.id, input.customer.tags);
       await createCustomerFolder(tx, created!.id);
       if (input.firstContact && input.customer.kind === 'organization') {
         await tx.insert(contacts).values({
@@ -372,7 +383,7 @@ export async function createCustomer(db: Db, userId: string, input: CreateCustom
           isPrimary: true,
         });
       }
-      return { id: created!.id };
+      return { id: created!.id, tagsAdded: added };
     }),
   );
 }
@@ -415,22 +426,16 @@ export async function updateCustomer(db: Db, id: string, input: CustomerInput) {
         .update(customers)
         .set({ ...values, ...unsubscribe, updatedAt: new Date() })
         .where(eq(customers.id, id));
-      const tagsBefore = await tx
-        .select({ name: tags.name })
-        .from(customerTags)
-        .innerJoin(tags, eq(tags.id, customerTags.tagId))
-        .where(eq(customerTags.customerId, id));
-      const lower = (names: readonly string[]) =>
-        names
-          .map((n) => n.toLocaleLowerCase('sk'))
-          .sort()
-          .join('\n');
-      if (lower(tagsBefore.map((t) => t.name)) !== lower(input.tags)) fields.push('tags');
-      await setTags(tx, id, input.tags);
+      const tagChange = await setTags(tx, id, input.tags);
+      if (tagChange.added.length + tagChange.removed.length > 0) fields.push('tags');
       return {
         fields: fields.sort(),
         status: { before: current.status, after: input.status },
         ownerUserId: { before: current.ownerUserId, after: values.ownerUserId },
+        typeId: { before: current.typeId, after: values.typeId },
+        sourceId: { before: current.sourceId, after: values.sourceId },
+        tagsAdded: tagChange.added,
+        tagsRemoved: tagChange.removed,
       };
     }),
   );
@@ -459,7 +464,7 @@ export async function bulkAddTag(db: Db, ids: string[], name: string) {
         .values(live.map((c) => ({ customerId: c.id, tagId: tagId! })))
         .onConflictDoNothing();
     }
-    return live.map((c) => c.id);
+    return { ids: live.map((c) => c.id), tagId: tagId! };
   });
 }
 
@@ -551,13 +556,69 @@ export async function customerHistory(db: Db | Tx, id: string) {
     )
     .orderBy(desc(auditEvents.at))
     .limit(50);
-  return rows as {
+  const events = rows as {
     id: string;
     at: Date;
     action: string;
     diff: Record<string, unknown> | null;
     userName: string | null;
   }[];
+  const names = await namesOf(
+    db,
+    events.map((event) => event.diff),
+  );
+  return events.map((event) => ({ ...event, names }));
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Every id an event's diff names: a value, a before/after pair, or a list of them. */
+function idsIn(value: unknown, into: Set<string>) {
+  if (typeof value === 'string' && UUID_RE.test(value)) into.add(value);
+  else if (Array.isArray(value)) value.forEach((item) => idsIn(item, into));
+  else if (value && typeof value === 'object')
+    Object.values(value).forEach((item) => idsIn(item, into));
+}
+
+/**
+ * The names behind the ids of a history (tags, contacts, colleagues, types, sources), resolved
+ * when it is read: the append-only trail keeps ids only, never a name somebody typed. A deleted
+ * contact keeps its name here; a tag deleted since is simply not named.
+ */
+async function namesOf(db: Db | Tx, diffs: (Record<string, unknown> | null)[]) {
+  const ids = new Set<string>();
+  for (const diff of diffs) idsIn(diff, ids);
+  const list = [...ids];
+  if (list.length === 0) return {} as Record<string, string>;
+  const [tagRows, contactRows, userRows, typeRows, sourceRows] = await Promise.all([
+    db.select({ id: tags.id, name: tags.name }).from(tags).where(inArray(tags.id, list)),
+    db
+      .select({
+        id: contacts.id,
+        titleBefore: contacts.titleBefore,
+        firstName: contacts.firstName,
+        lastName: contacts.lastName,
+        titleAfter: contacts.titleAfter,
+      })
+      .from(contacts)
+      .where(inArray(contacts.id, list)),
+    db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, list)),
+    db
+      .select({ id: customerTypes.id, name: customerTypes.name })
+      .from(customerTypes)
+      .where(inArray(customerTypes.id, list)),
+    db
+      .select({ id: customerSources.id, name: customerSources.name })
+      .from(customerSources)
+      .where(inArray(customerSources.id, list)),
+  ]);
+  return Object.fromEntries([
+    ...tagRows.map((row) => [row.id, row.name]),
+    ...contactRows.map((row) => [row.id, personName(row)]),
+    ...userRows.map((row) => [row.id, row.name]),
+    ...typeRows.map((row) => [row.id, row.name]),
+    ...sourceRows.map((row) => [row.id, row.name]),
+  ]) as Record<string, string>;
 }
 
 /** The owner a contact belongs to; contacts exist for organizations only. */

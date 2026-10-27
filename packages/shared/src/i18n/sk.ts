@@ -658,6 +658,7 @@ export const sk = {
         contactPrimary: 'Zmenený hlavný kontakt',
         contactDeleted: 'Odstránený kontakt',
         exported: 'Exportovaný do CSV',
+        none: 'nezadané',
         by: (name: string, when: string) => `${name} · ${when}`,
         fieldNames: {
           name: 'názov',

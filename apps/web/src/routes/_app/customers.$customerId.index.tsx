@@ -503,6 +503,23 @@ const isStatus = (value: unknown): value is CustomerStatus =>
 function describe(event: HistoryEvent): ReactNode {
   const h = t.history;
   const diff = event.diff ?? {};
+  // Names come with the event, resolved when the history is read; an id without one (deleted
+  // since) is left out.
+  const nameOf = (id: unknown) => (typeof id === 'string' ? (event.names[id] ?? null) : null);
+  const namesOf = (ids: unknown) =>
+    Array.isArray(ids) ? ids.map(nameOf).filter((n): n is string => n !== null) : [];
+  const change = (key: string) => {
+    const value = diff[key] as { before?: unknown; after?: unknown } | undefined;
+    if (!value) return null;
+    const before = nameOf(value.before) ?? h.none;
+    const after = nameOf(value.after) ?? h.none;
+    return `${before} → ${after}`;
+  };
+  const contactName = nameOf(diff.contactId);
+  const withContact = (text: string) => (contactName ? `${text}: ${contactName}` : text);
+  const added = namesOf(diff.tagsAdded);
+  const removed = namesOf(diff.tagsRemoved);
+  const tagDetail = [...added.map((n) => `+ ${n}`), ...removed.map((n) => `− ${n}`)].join(', ');
   const status = diff.status as { before?: unknown; after?: unknown } | undefined;
   const statusChange =
     status && isStatus(status.after) ? (
@@ -528,28 +545,46 @@ function describe(event: HistoryEvent): ReactNode {
     : '';
   switch (event.action) {
     case 'customer.create':
-      return h.created;
+      return added.length > 0
+        ? `${h.created} · ${h.fieldNames.tags}: ${added.join(', ')}`
+        : h.created;
     case 'customer.delete':
       return h.deleted;
     case 'customer.bulkAddTag':
-      return h.tagAdded;
+      return nameOf(diff.tagId) ? `${h.tagAdded}: ${nameOf(diff.tagId)}` : h.tagAdded;
     case 'customer.bulkSetStatus':
       return statusChange ?? h.status;
     case 'customer.exportCsv':
       return h.exported;
     case 'customer.contactCreate':
-      return h.contactCreated;
+      return withContact(h.contactCreated);
     case 'customer.contactUpdate':
-      return fieldList ? `${h.contactUpdated}: ${fieldList}` : h.contactUpdated;
+      return fieldList
+        ? `${withContact(h.contactUpdated)} (${fieldList})`
+        : withContact(h.contactUpdated);
     case 'customer.contactSetPrimary':
-      return h.contactPrimary;
+      return withContact(h.contactPrimary);
     case 'customer.contactDelete':
-      return h.contactDeleted;
+      return withContact(h.contactDeleted);
     case 'customer.update': {
       const parts: ReactNode[] = [];
       if (statusChange) parts.push(<span key="s">{statusChange}</span>);
-      if (diff.ownerUserId) parts.push(<span key="o">{h.owner}</span>);
-      if (fieldList) parts.push(<span key="f">{h.updated(fieldList)}</span>);
+      if (diff.ownerUserId) {
+        parts.push(<span key="o">{`${h.owner}: ${change('ownerUserId') ?? ''}`}</span>);
+      }
+      const details = [
+        diff.typeId ? `${h.fieldNames.typeId}: ${change('typeId')}` : null,
+        diff.sourceId ? `${h.fieldNames.sourceId}: ${change('sourceId')}` : null,
+        tagDetail ? `${h.fieldNames.tags}: ${tagDetail}` : null,
+      ].filter(Boolean);
+      if (fieldList) {
+        parts.push(
+          <span key="f">
+            {h.updated(fieldList)}
+            {details.length > 0 ? ` · ${details.join(' · ')}` : null}
+          </span>,
+        );
+      }
       return parts.length > 0 ? (
         <span className="flex flex-col gap-1">{parts}</span>
       ) : (

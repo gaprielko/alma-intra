@@ -64,6 +64,7 @@ export const customerRouter = router({
         kind: input.customer.kind,
         status: input.customer.status,
         firstContact: input.firstContact !== undefined,
+        ...(created.tagsAdded.length > 0 ? { tagsAdded: created.tagsAdded } : {}),
       });
       return created;
     }),
@@ -78,6 +79,12 @@ export const customerRouter = router({
         ...(change.ownerUserId.before !== change.ownerUserId.after
           ? { ownerUserId: change.ownerUserId }
           : {}),
+        // Ids only: the history resolves the names when it is shown (names never go into the
+        // append-only trail).
+        ...(change.typeId.before !== change.typeId.after ? { typeId: change.typeId } : {}),
+        ...(change.sourceId.before !== change.sourceId.after ? { sourceId: change.sourceId } : {}),
+        ...(change.tagsAdded.length > 0 ? { tagsAdded: change.tagsAdded } : {}),
+        ...(change.tagsRemoved.length > 0 ? { tagsRemoved: change.tagsRemoved } : {}),
       });
       return { ok: true as const };
     }),
@@ -93,8 +100,11 @@ export const customerRouter = router({
   bulkAddTag: authorizedProcedure('customer.write')
     .input(bulkTagSchema)
     .mutation(async ({ ctx, input }) => {
-      const ids = await customers.bulkAddTag(ctx.db, input.ids, input.tag);
-      ctx.audit.set({ entityType: 'customer', diff: { ids, count: ids.length, tagAdded: true } });
+      const { ids, tagId } = await customers.bulkAddTag(ctx.db, input.ids, input.tag);
+      ctx.audit.set({
+        entityType: 'customer',
+        diff: { ids, count: ids.length, tagAdded: true, tagId },
+      });
       return { count: ids.length };
     }),
 
