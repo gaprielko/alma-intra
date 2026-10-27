@@ -29,6 +29,7 @@ export const sk = {
     nextPage: 'Ďalšia strana',
     actions: 'Akcie',
     showAll: 'Zobraziť všetko',
+    perPage: 'Na stránku',
     today: 'Dnes',
     yesterday: 'Včera',
     discardChanges: {

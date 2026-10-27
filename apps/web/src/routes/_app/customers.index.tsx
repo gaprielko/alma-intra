@@ -4,6 +4,7 @@ import {
   CUSTOMER_SORTS,
   CUSTOMER_STATUSES,
   type CustomerFilter,
+  PAGE_SIZE,
   type CustomerStatus,
   REGIONS,
 } from '@intra/shared/schemas';
@@ -45,6 +46,8 @@ import { type RouterOutputs, trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 
 const t = sk.customers;
+/** How many customers a page shows, as a person chooses it. */
+const PAGE_SIZES = [20, 50, 100] as const;
 
 const search = z.object({
   q: z.string().optional(),
@@ -57,6 +60,7 @@ const search = z.object({
   sort: z.enum(CUSTOMER_SORTS).optional(),
   dir: z.enum(['asc', 'desc']).optional(),
   page: z.number().int().min(1).optional(),
+  size: z.union([z.literal(20), z.literal(50), z.literal(100)]).optional(),
 });
 type ListSearch = z.infer<typeof search>;
 
@@ -120,6 +124,7 @@ function CustomersPage() {
     sort: params.sort ?? 'name',
     dir: params.dir ?? 'asc',
     page: params.page ?? 1,
+    pageSize: params.size ?? PAGE_SIZE,
   } as Parameters<typeof trpc.customer.list.queryOptions>[0];
   const list = useQuery({
     ...trpc.customer.list.queryOptions(input),
@@ -369,6 +374,8 @@ function CustomersPage() {
                 pageSize={list.data.pageSize}
                 total={list.data.total}
                 onPageChange={(page) => setSearch({ page }, true)}
+                pageSizes={PAGE_SIZES}
+                onPageSizeChange={(size) => setSearch({ size: size as 20 | 50 | 100 })}
               />
             ) : null
           }
