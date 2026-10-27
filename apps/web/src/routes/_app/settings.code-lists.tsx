@@ -29,24 +29,34 @@ import { cn } from '@/lib/utils';
 
 const t = sk.codeLists;
 type Section = CodeList | 'tags';
-const SECTIONS: readonly Section[] = ['customer_type', 'source', 'template_category', 'tags'];
+const SECTIONS: readonly Section[] = [
+  'contact_type',
+  'customer_type',
+  'source',
+  'template_category',
+  'tags',
+];
 
 export const Route = createFileRoute('/_app/settings/code-lists')({
   validateSearch: z.object({
-    list: z.enum(['customer_type', 'source', 'template_category', 'tags']).optional(),
+    list: z
+      .enum(['contact_type', 'customer_type', 'source', 'template_category', 'tags'])
+      .optional(),
   }),
   component: CodeListsPage,
 });
 
 /** Settings › Číselníky: the lists on the left, the chosen one on the right. */
 function CodeListsPage() {
-  const { list = 'customer_type' } = Route.useSearch();
+  const { list = 'contact_type' } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
+  const contactTypes = useQuery(trpc.codeList.list.queryOptions({ list: 'contact_type' }));
   const types = useQuery(trpc.codeList.list.queryOptions({ list: 'customer_type' }));
   const sources = useQuery(trpc.codeList.list.queryOptions({ list: 'source' }));
   const categories = useQuery(trpc.codeList.list.queryOptions({ list: 'template_category' }));
   const tags = useQuery(trpc.codeList.tags.queryOptions());
   const count = {
+    contact_type: contactTypes.data?.items.length,
     customer_type: types.data?.items.length,
     source: sources.data?.items.length,
     template_category: categories.data?.items.length,
@@ -229,13 +239,15 @@ function ItemsTable({ list }: { list: CodeList }) {
                 >
                   <Pencil className="size-3.5" aria-hidden />
                 </Button>
-                <Tooltip text={row.customers > 0 ? t.removeInUse : t.remove}>
+                <Tooltip
+                  text={row.system ? t.removeSystem : row.customers > 0 ? t.removeInUse : t.remove}
+                >
                   <span>
                     <Button
                       size="icon"
                       className="size-8"
                       aria-label={`${t.remove} ${row.name}`}
-                      disabled={row.customers > 0}
+                      disabled={row.system || row.customers > 0}
                       onClick={() => setRemoving({ id: row.id, name: row.name })}
                     >
                       <Trash2 className="size-3.5" aria-hidden />

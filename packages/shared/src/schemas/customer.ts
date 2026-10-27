@@ -87,6 +87,8 @@ export const personFields = {
 
 /** Where a customer sits, how it is classified and who has it in hand. */
 const classificationFields = {
+  /** Zákazník, Partner, Dodávateľ, …: every record has one. */
+  contactTypeId: idSchema,
   typeId: idSchema.optional().nullable(),
   status: z.enum(CUSTOMER_STATUSES),
   street: optionalText(160),
@@ -156,6 +158,7 @@ export const customerFilterSchema = z.object({
   search: z.string().trim().max(100).optional(),
   status: z.enum(CUSTOMER_STATUSES).optional(),
   kind: z.enum(CUSTOMER_KINDS).optional(),
+  contactTypeId: idSchema.optional(),
   /** A type, or `none` for the customers without one. */
   typeId: idSchema.or(z.literal('none')).optional(),
   region: z.enum(REGIONS).optional(),
@@ -192,8 +195,8 @@ export const updateContactSchema = z.object({
 });
 export const contactIdSchema = z.object({ id: idSchema });
 
-/** Customer types and sources: a name each, offered in the forms while active. */
-export const CODE_LISTS = ['customer_type', 'source', 'template_category'] as const;
+/** Contact types, customer types and sources: a name each, offered in the forms while active. */
+export const CODE_LISTS = ['contact_type', 'customer_type', 'source', 'template_category'] as const;
 export type CodeList = (typeof CODE_LISTS)[number];
 
 export const codeListSchema = z.object({ list: z.enum(CODE_LISTS) });

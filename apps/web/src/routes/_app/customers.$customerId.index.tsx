@@ -92,6 +92,7 @@ function CustomerDetailPage() {
   }
   const c = customer.data;
   const meta = [
+    c.contactTypeName,
     c.kind === 'individual'
       ? sk.customers.kind.individual
       : (c.typeName ?? sk.customers.filters.noType),
@@ -573,6 +574,7 @@ function describe(event: HistoryEvent): ReactNode {
         parts.push(<span key="o">{`${h.owner}: ${change('ownerUserId') ?? ''}`}</span>);
       }
       const details = [
+        diff.contactTypeId ? `${h.fieldNames.contactTypeId}: ${change('contactTypeId')}` : null,
         diff.typeId ? `${h.fieldNames.typeId}: ${change('typeId')}` : null,
         diff.sourceId ? `${h.fieldNames.sourceId}: ${change('sourceId')}` : null,
         tagDetail ? `${h.fieldNames.tags}: ${tagDetail}` : null,

@@ -1,8 +1,9 @@
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import type { Tx } from './db.module.js';
 import { COMPANY_ROOT_FOLDER_ID } from '@intra/shared/schemas';
 import {
   contacts,
+  contactTypes,
   customers,
   customerSources,
   customerTags,
@@ -294,12 +295,18 @@ export async function seedCustomers(
     },
   ];
 
+  // „Zákazník“, installed by `0011_contact_types`.
+  const [customerType] = await tx
+    .select({ id: contactTypes.id })
+    .from(contactTypes)
+    .where(eq(contactTypes.systemKey, 'customer'));
   for (const [i, c] of list.entries()) {
     const customerId = id('d', i + 1);
     const self = c.kind === 'individual' ? c.people[0]! : undefined;
     const values: typeof customers.$inferInsert = {
       id: customerId,
       kind: c.kind,
+      contactTypeId: customerType!.id,
       typeId: c.ados ? ADOS_TYPE_ID : null,
       name: c.name,
       ico: c.ico ?? null,

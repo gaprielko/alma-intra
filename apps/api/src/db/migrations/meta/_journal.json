@@ -78,6 +78,13 @@
       "when": 1793116787838,
       "tag": "0010_campaigns",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793136644125,
+      "tag": "0011_contact_types",
+      "breakpoints": true
     }
   ]
 }

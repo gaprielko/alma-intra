@@ -95,6 +95,9 @@ export const customerRouter = router({
           : {}),
         // Ids only: the history resolves the names when it is shown (names never go into the
         // append-only trail).
+        ...(change.contactTypeId.before !== change.contactTypeId.after
+          ? { contactTypeId: change.contactTypeId }
+          : {}),
         ...(change.typeId.before !== change.typeId.after ? { typeId: change.typeId } : {}),
         ...(change.sourceId.before !== change.sourceId.after ? { sourceId: change.sourceId } : {}),
         ...(change.tagsAdded.length > 0 ? { tagsAdded: change.tagsAdded } : {}),

@@ -34,6 +34,7 @@ import { Input, Textarea } from '@/components/ui/input';
 import { Select, SelectItem } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/toast';
+import { Tooltip } from '@/components/ui/tooltip';
 import { errorMessage } from '@/lib/errors';
 import { applyServerFieldErrors, refusedField } from '@/lib/form-errors';
 import { useSession } from '@/lib/session';
@@ -53,6 +54,7 @@ const NEW_ITEM = '__new';
 export interface CustomerFormValues {
   customer: PersonValues & {
     kind: CustomerKind;
+    contactTypeId: string;
     name: string;
     ico: string;
     dic: string;
@@ -80,6 +82,8 @@ export function emptyCustomer(ownerUserId: string): CustomerFormValues {
     customer: {
       ...emptyPerson(),
       kind: 'organization',
+      // „Zákazník“ once the options are loaded (`ContactTypeField`).
+      contactTypeId: '',
       name: '',
       ico: '',
       dic: '',
@@ -450,18 +454,19 @@ function IcoField() {
                 />
               </FormControl>
             </div>
-            <Button
-              type="button"
-              variant="secondary"
-              size="lg"
-              className="shrink-0"
-              title={t.basics.lookupHint}
-              disabled={loading}
-              onClick={() => void lookup()}
-            >
-              <Search className="size-4" aria-hidden />
-              {t.basics.lookup}
-            </Button>
+            <Tooltip text={t.basics.lookupHint}>
+              <Button
+                type="button"
+                variant="secondary"
+                size="lg"
+                className="shrink-0"
+                disabled={loading}
+                onClick={() => void lookup()}
+              >
+                <Search className="size-4" aria-hidden />
+                {t.basics.lookup}
+              </Button>
+            </Tooltip>
           </div>
           <FormMessage />
         </FormItem>
@@ -511,10 +516,11 @@ function CodeListField({
   placeholder,
   items,
 }: {
-  list: 'customer_type' | 'source';
-  name: 'customer.typeId' | 'customer.sourceId';
+  list: 'contact_type' | 'customer_type' | 'source';
+  name: 'customer.contactTypeId' | 'customer.typeId' | 'customer.sourceId';
   label: string;
-  emptyLabel: string;
+  /** The option for none; a field without one must have a value. */
+  emptyLabel?: string;
   newLabel: string;
   placeholder: string;
   items: { id: string; name: string; active: boolean }[] | undefined;
@@ -587,7 +593,7 @@ function CodeListField({
         return true;
       }}
     >
-      <SelectItem value="">{emptyLabel}</SelectItem>
+      {emptyLabel === undefined ? null : <SelectItem value="">{emptyLabel}</SelectItem>}
       {offered(items, value).map((item) => (
         <SelectItem key={item.id} value={item.id}>
           {item.name}
@@ -614,6 +620,30 @@ function TypeField() {
   );
 }
 
+/** Zákazník, Partner, …: a new record starts as „Zákazník“. */
+function ContactTypeField() {
+  const options = useQuery(trpc.customer.options.queryOptions());
+  const { control, getValues, setValue } = useFormContext<CustomerFormValues>();
+  const c = t.classification;
+  const value = useWatch({ control, name: 'customer.contactTypeId' });
+  const customerType = options.data?.contactTypes.find((type) => type.systemKey === 'customer');
+  useEffect(() => {
+    if (customerType && !getValues('customer.contactTypeId')) {
+      setValue('customer.contactTypeId', customerType.id);
+    }
+  }, [customerType, getValues, setValue, value]);
+  return (
+    <CodeListField
+      list="contact_type"
+      name="customer.contactTypeId"
+      label={c.contactType}
+      newLabel={c.newContactType}
+      placeholder={c.newContactTypePlaceholder}
+      items={options.data?.contactTypes}
+    />
+  );
+}
+
 function Classification() {
   const { control } = useFormContext<CustomerFormValues>();
   const options = useQuery(trpc.customer.options.queryOptions());
@@ -622,6 +652,7 @@ function Classification() {
   return (
     <Section title={c.title} lead={c.lead}>
       <div className="grid gap-4 @md:grid-cols-3">
+        <ContactTypeField />
         <SelectField name="customer.status" label={c.status}>
           {CUSTOMER_STATUSES.map((s) => (
             <SelectItem key={s} value={s}>

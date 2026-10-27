@@ -456,6 +456,7 @@ export const sk = {
       kosice: 'Košický',
     },
     filters: {
+      contactType: 'Typ kontaktu',
       kind: 'Druh',
       type: 'Typ',
       region: 'Kraj',
@@ -519,6 +520,7 @@ export const sk = {
     csv: {
       name: 'Názov',
       kind: 'Druh',
+      contactType: 'Typ kontaktu',
       type: 'Typ',
       status: 'Stav',
       ico: 'IČO',
@@ -586,6 +588,9 @@ export const sk = {
       classification: {
         title: 'Zaradenie',
         lead: 'Stav obchodného vzťahu, kto má zákazníka na starosti a podľa čoho ho nájdete.',
+        contactType: 'Typ kontaktu',
+        newContactType: 'Nový typ kontaktu',
+        newContactTypePlaceholder: 'Napríklad Konzultant',
         status: 'Stav',
         owner: 'Zodpovedá',
         noOwner: 'Nikto',
@@ -677,6 +682,7 @@ export const sk = {
           web: 'web',
           email: 'e-mail',
           phone: 'telefón',
+          contactTypeId: 'typ kontaktu',
           typeId: 'typ',
           street: 'adresa',
           postalCode: 'PSČ',
@@ -751,12 +757,15 @@ export const sk = {
   codeLists: {
     title: 'Číselníky',
     lists: {
+      contact_type: 'Typy kontaktov',
       customer_type: 'Typy zákazníkov',
       source: 'Zdroje zákazníkov',
       template_category: 'Kategórie šablón',
       tags: 'Štítky',
     },
     leads: {
+      contact_type:
+        'Čím je kontakt pre Almu: zákazník, partner, dodávateľ. Každý kontakt má jeden typ. Obchodný stav sa vedie len pri zákazníkoch, preto sa typ Zákazník nedá odstrániť. Typ, ktorý niektorý kontakt má, sa dá len vypnúť.',
       customer_type:
         'Typ je nepovinný, zákazník môže zostať bez typu. Či ide o organizáciu alebo fyzickú osobu, sa volí zvlášť. Typ, ktorý má niektorý zákazník, sa nedá odstrániť, dá sa len vypnúť.',
       source:
@@ -775,16 +784,19 @@ export const sk = {
     },
     noType: (n: number) => `Bez typu · ${plural(n, 'zákazník', 'zákazníci', 'zákazníkov')}`,
     newItem: {
+      contact_type: 'Nový typ kontaktu',
       customer_type: 'Nový typ',
       source: 'Nový zdroj',
       template_category: 'Nová kategória',
     },
     newPlaceholder: {
+      contact_type: 'Nový typ kontaktu, napríklad Konzultant',
       customer_type: 'Nový typ, napríklad Sociálne zariadenie',
       source: 'Nový zdroj, napríklad Veľtrh',
       template_category: 'Nová kategória, napríklad Poďakovanie',
     },
     add: {
+      contact_type: 'Pridať typ kontaktu',
       customer_type: 'Pridať typ',
       source: 'Pridať zdroj',
       template_category: 'Pridať kategóriu',
@@ -794,6 +806,7 @@ export const sk = {
     rename: 'Premenovať',
     remove: 'Odstrániť',
     removeInUse: 'Používa sa, dá sa len vypnúť',
+    removeSystem: 'Typ Zákazník sa nedá odstrániť',
     offeredLabel: (name: string) => `Ponúkať ${name} pri zakladaní`,
     saved: 'Zmena je uložená.',
     added: 'Položka je pridaná.',
@@ -806,6 +819,7 @@ export const sk = {
     errors: {
       NAME_TAKEN: 'Položka s týmto názvom už existuje.',
       IN_USE: 'Položka sa používa, dá sa len vypnúť.',
+      SYSTEM_ITEM: 'Typ Zákazník sa nedá odstrániť.',
     },
   },
   files: {

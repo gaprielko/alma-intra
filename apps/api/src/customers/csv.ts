@@ -37,6 +37,7 @@ export function toCsv(rows: Row[]): string {
   const header = [
     c.name,
     c.kind,
+    c.contactType,
     c.type,
     c.status,
     c.ico,
@@ -62,6 +63,7 @@ export function toCsv(rows: Row[]): string {
     [
       r.name,
       sk.customers.kind[r.kind],
+      r.contactType,
       r.type,
       sk.customers.status[r.status],
       r.ico,

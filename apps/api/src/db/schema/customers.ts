@@ -41,6 +41,20 @@ export const codeListColumns = () => ({
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * What a record of the list is to Alma: a customer, a partner, a supplier, … Every record has one.
+ * `systemKey` marks the items the app relies on: „Zákazník“ (`customer`) is the only type with a
+ * sales status; it can be renamed, never deleted.
+ */
+export const contactTypes = pgTable(
+  'contact_types',
+  { ...codeListColumns(), systemKey: text('system_key') },
+  (t) => [
+    uniqueIndex('contact_types_name_unique').on(sql`lower(${t.name})`),
+    uniqueIndex('contact_types_system_key_unique').on(t.systemKey),
+  ],
+);
+
 /** ADOS, a social care home, …: optional, independent of the kind. */
 export const customerTypes = pgTable('customer_types', codeListColumns(), (t) => [
   uniqueIndex('customer_types_name_unique').on(sql`lower(${t.name})`),
@@ -73,6 +87,9 @@ export const customers = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     kind: customerKind('kind').notNull(),
+    contactTypeId: uuid('contact_type_id')
+      .notNull()
+      .references(() => contactTypes.id),
     typeId: uuid('type_id').references(() => customerTypes.id),
     name: text('name').notNull(),
     ico: text('ico'),
@@ -112,6 +129,7 @@ export const customers = pgTable(
       .where(sql`${t.deletedAt} is null`),
     index('customers_status_idx').on(t.status),
     index('customers_type_idx').on(t.typeId),
+    index('customers_contact_type_idx').on(t.contactTypeId),
     index('customers_owner_idx').on(t.ownerUserId),
     check('customers_name_length', sql`char_length(${t.name}) between 1 and 200`),
     check(

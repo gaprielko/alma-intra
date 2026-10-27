@@ -24,6 +24,7 @@ import type { Db, Tx } from '../db/db.module.js';
 import {
   auditEvents,
   contacts,
+  contactTypes,
   customerSources,
   customers,
   customerTags,
@@ -68,6 +69,7 @@ const likePattern = (text: string) => `%${text.replace(/[\\%_]/g, (c) => `\\${c}
 function filterWhere(filter: CustomerFilter): SQL[] {
   const where: SQL[] = [alive];
   if (filter.kind) where.push(eq(customers.kind, filter.kind));
+  if (filter.contactTypeId) where.push(eq(customers.contactTypeId, filter.contactTypeId));
   if (filter.typeId === 'none') where.push(isNull(customers.typeId));
   else if (filter.typeId) where.push(eq(customers.typeId, filter.typeId));
   if (filter.region) where.push(eq(customers.region, filter.region));
@@ -149,6 +151,7 @@ export async function listCustomers(db: Db | Tx, raw: CustomerListInput) {
         kind: customers.kind,
         name: customers.name,
         city: customers.city,
+        contactTypeName: contactTypes.name,
         typeName: customerTypes.name,
         status: customers.status,
         owner: sql<{ id: string; name: string } | null>`case when ${users.id} is null then null
@@ -159,6 +162,7 @@ export async function listCustomers(db: Db | Tx, raw: CustomerListInput) {
         total: sql<number>`count(*) over ()`.mapWith(Number),
       })
       .from(customers)
+      .innerJoin(contactTypes, eq(contactTypes.id, customers.contactTypeId))
       .leftJoin(customerTypes, eq(customerTypes.id, customers.typeId))
       .leftJoin(users, eq(users.id, customers.ownerUserId))
       .where(and(...where))
@@ -208,6 +212,7 @@ export async function getCustomer(db: Db | Tx, id: string) {
   const [row] = await db
     .select({
       customer: customers,
+      contactTypeName: contactTypes.name,
       typeName: customerTypes.name,
       sourceName: customerSources.name,
       owner,
@@ -215,6 +220,7 @@ export async function getCustomer(db: Db | Tx, id: string) {
       tags: tagsJson,
     })
     .from(customers)
+    .innerJoin(contactTypes, eq(contactTypes.id, customers.contactTypeId))
     .leftJoin(customerTypes, eq(customerTypes.id, customers.typeId))
     .leftJoin(customerSources, eq(customerSources.id, customers.sourceId))
     .where(and(eq(customers.id, id), alive));
@@ -283,6 +289,7 @@ async function assertIcoFree(tx: Tx, ico: string | undefined, except?: string) {
 /** The columns of a customer from the form. */
 function columnsOf(input: CustomerInput) {
   const common = {
+    contactTypeId: input.contactTypeId,
     typeId: input.typeId ?? null,
     status: input.status,
     street: input.street ?? null,
@@ -432,6 +439,7 @@ export async function updateCustomer(db: Db, id: string, input: CustomerInput) {
         fields: fields.sort(),
         status: { before: current.status, after: input.status },
         ownerUserId: { before: current.ownerUserId, after: values.ownerUserId },
+        contactTypeId: { before: current.contactTypeId, after: values.contactTypeId },
         typeId: { before: current.typeId, after: values.typeId },
         sourceId: { before: current.sourceId, after: values.sourceId },
         tagsAdded: tagChange.added,
@@ -502,6 +510,7 @@ export async function exportRows(
     .select({
       name: customers.name,
       kind: customers.kind,
+      contactType: contactTypes.name,
       type: customerTypes.name,
       status: customers.status,
       ico: customers.ico,
@@ -521,6 +530,7 @@ export async function exportRows(
       createdAt: customers.createdAt,
     })
     .from(customers)
+    .innerJoin(contactTypes, eq(contactTypes.id, customers.contactTypeId))
     .leftJoin(customerTypes, eq(customerTypes.id, customers.typeId))
     .leftJoin(customerSources, eq(customerSources.id, customers.sourceId))
     .leftJoin(users, eq(users.id, customers.ownerUserId))
@@ -590,34 +600,41 @@ async function namesOf(db: Db | Tx, diffs: (Record<string, unknown> | null)[]) {
   for (const diff of diffs) idsIn(diff, ids);
   const list = [...ids];
   if (list.length === 0) return {} as Record<string, string>;
-  const [tagRows, contactRows, userRows, typeRows, sourceRows] = await Promise.all([
-    db.select({ id: tags.id, name: tags.name }).from(tags).where(inArray(tags.id, list)),
-    db
-      .select({
-        id: contacts.id,
-        titleBefore: contacts.titleBefore,
-        firstName: contacts.firstName,
-        lastName: contacts.lastName,
-        titleAfter: contacts.titleAfter,
-      })
-      .from(contacts)
-      .where(inArray(contacts.id, list)),
-    db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, list)),
-    db
-      .select({ id: customerTypes.id, name: customerTypes.name })
-      .from(customerTypes)
-      .where(inArray(customerTypes.id, list)),
-    db
-      .select({ id: customerSources.id, name: customerSources.name })
-      .from(customerSources)
-      .where(inArray(customerSources.id, list)),
-  ]);
+  const [tagRows, contactRows, userRows, typeRows, sourceRows, contactTypeRows] = await Promise.all(
+    [
+      db.select({ id: tags.id, name: tags.name }).from(tags).where(inArray(tags.id, list)),
+      db
+        .select({
+          id: contacts.id,
+          titleBefore: contacts.titleBefore,
+          firstName: contacts.firstName,
+          lastName: contacts.lastName,
+          titleAfter: contacts.titleAfter,
+        })
+        .from(contacts)
+        .where(inArray(contacts.id, list)),
+      db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, list)),
+      db
+        .select({ id: customerTypes.id, name: customerTypes.name })
+        .from(customerTypes)
+        .where(inArray(customerTypes.id, list)),
+      db
+        .select({ id: customerSources.id, name: customerSources.name })
+        .from(customerSources)
+        .where(inArray(customerSources.id, list)),
+      db
+        .select({ id: contactTypes.id, name: contactTypes.name })
+        .from(contactTypes)
+        .where(inArray(contactTypes.id, list)),
+    ],
+  );
   return Object.fromEntries([
     ...tagRows.map((row) => [row.id, row.name]),
     ...contactRows.map((row) => [row.id, personName(row)]),
     ...userRows.map((row) => [row.id, row.name]),
     ...typeRows.map((row) => [row.id, row.name]),
     ...sourceRows.map((row) => [row.id, row.name]),
+    ...contactTypeRows.map((row) => [row.id, row.name]),
   ]) as Record<string, string>;
 }
 
@@ -733,7 +750,16 @@ export async function deleteContact(db: Db, id: string) {
 
 /** What the customer forms and filters offer: types, sources, tags and the active users. */
 export async function formOptions(db: Db | Tx) {
-  const [types, sources, tagRows, people] = await Promise.all([
+  const [contactTypeRows, types, sources, tagRows, people] = await Promise.all([
+    db
+      .select({
+        id: contactTypes.id,
+        name: contactTypes.name,
+        active: contactTypes.active,
+        systemKey: contactTypes.systemKey,
+      })
+      .from(contactTypes)
+      .orderBy(asc(contactTypes.position), collated(contactTypes.name)),
     db
       .select({ id: customerTypes.id, name: customerTypes.name, active: customerTypes.active })
       .from(customerTypes)
@@ -753,5 +779,5 @@ export async function formOptions(db: Db | Tx) {
       .where(and(eq(users.status, 'active'), isNull(users.deletedAt)))
       .orderBy(collated(users.name)),
   ]);
-  return { types, sources, tags: tagRows, users: people };
+  return { contactTypes: contactTypeRows, types, sources, tags: tagRows, users: people };
 }

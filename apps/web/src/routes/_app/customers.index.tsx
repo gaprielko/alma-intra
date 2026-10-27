@@ -53,6 +53,7 @@ const search = z.object({
   q: z.string().optional(),
   status: z.enum(CUSTOMER_STATUSES).optional(),
   kind: z.enum(CUSTOMER_KINDS).optional(),
+  contactType: z.string().optional(),
   type: z.string().optional(),
   region: z.enum(REGIONS).optional(),
   tag: z.string().optional(),
@@ -110,6 +111,7 @@ function CustomersPage() {
     search: params.q,
     status: params.status,
     kind: params.kind,
+    contactTypeId: params.contactType,
     typeId: params.type,
     region: params.region,
     tagId: params.tag,
@@ -247,6 +249,15 @@ function CustomersPage() {
                   />
                 </label>
                 <div className="flex flex-wrap gap-2">
+                  <FilterMenu
+                    label={t.filters.contactType}
+                    value={params.contactType}
+                    options={(options.data?.contactTypes ?? []).map((type) => ({
+                      value: type.id,
+                      label: type.name,
+                    }))}
+                    onChange={(contactType) => setSearch({ contactType })}
+                  />
                   <FilterMenu
                     label={t.filters.kind}
                     value={params.kind}
@@ -451,6 +462,7 @@ function CustomerRow({
 }) {
   const href = `/customers/${row.id}`;
   const meta = [
+    row.contactTypeName,
     row.city,
     row.kind === 'individual' ? t.kind.individual : (row.typeName ?? t.filters.noType),
   ]

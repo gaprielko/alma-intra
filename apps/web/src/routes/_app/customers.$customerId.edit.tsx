@@ -30,6 +30,7 @@ function valuesOf(c: Customer): CustomerFormValues {
     customer: {
       ...empty.customer,
       kind: c.kind,
+      contactTypeId: c.contactTypeId,
       name: c.name,
       ico: c.ico ?? '',
       dic: c.dic ?? '',
