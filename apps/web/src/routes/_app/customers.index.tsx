@@ -188,7 +188,13 @@ function CustomersPage() {
       <button
         type="button"
         className="inline-flex items-center gap-1 uppercase"
-        onClick={() => setSearch({ sort: key, dir: active && dir === 'asc' ? 'desc' : 'asc' })}
+        onClick={() =>
+          setSearch({
+            sort: key,
+            // The most recent contact first on the first click; names and states A to Z.
+            dir: active ? (dir === 'asc' ? 'desc' : 'asc') : key === 'lastContact' ? 'desc' : 'asc',
+          })
+        }
       >
         {label}
         {active ? <Arrow className="size-3" aria-hidden /> : null}
@@ -342,7 +348,7 @@ function CustomersPage() {
             sortHeader('status', t.columns.status),
             t.columns.owner,
             t.columns.tags,
-            t.columns.lastContact,
+            sortHeader('lastContact', t.columns.lastContact),
           ]}
           columnClassNames={[
             'w-10',
@@ -353,7 +359,15 @@ function CustomersPage() {
             'hidden 2xl:table-cell',
             'hidden xl:table-cell',
           ]}
-          columnSort={[undefined, sortState('name'), undefined, sortState('status')]}
+          columnSort={[
+            undefined,
+            sortState('name'),
+            undefined,
+            sortState('status'),
+            undefined,
+            undefined,
+            sortState('lastContact'),
+          ]}
           loading={list.isPending}
           refreshing={list.isPlaceholderData}
           message={

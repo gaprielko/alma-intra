@@ -145,7 +145,7 @@ export type UpdateCustomerInput = z.infer<typeof updateCustomerSchema>;
 
 export const customerIdSchema = z.object({ id: idSchema });
 
-export const CUSTOMER_SORTS = ['name', 'status', 'createdAt', 'updatedAt'] as const;
+export const CUSTOMER_SORTS = ['name', 'status', 'createdAt', 'updatedAt', 'lastContact'] as const;
 export type CustomerSort = (typeof CUSTOMER_SORTS)[number];
 
 /** The filters of the list; also what a CSV export and (later) a saved segment are made of. */

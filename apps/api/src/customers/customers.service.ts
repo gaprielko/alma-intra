@@ -112,11 +112,18 @@ const primaryContactJson = sql<{
     where p.customer_id = ${CUSTOMER_ID} and p.is_primary and p.deleted_at is null)
   end`;
 
+/** The last activity or e-mail sent to the customer; replies join it with E6. */
+const LAST_CONTACT = sql`greatest(
+  (select max(a.occurred_at) from activities a
+    where a.customer_id = ${CUSTOMER_ID} and a.deleted_at is null),
+  (select max(m.sent_at) from campaign_messages m where m.customer_id = ${CUSTOMER_ID}))`;
+
 const SORTS = {
   name: collated(customers.name),
   status: sql`${customers.status}`,
   createdAt: sql`${customers.createdAt}`,
   updatedAt: sql`${customers.updatedAt}`,
+  lastContact: LAST_CONTACT,
 };
 
 /**
@@ -127,7 +134,13 @@ export async function listCustomers(db: Db | Tx, raw: CustomerListInput) {
   const input = customerListSchema.parse(raw);
   const base = filterWhere(input);
   const where = input.status ? [...base, eq(customers.status, input.status)] : base;
-  const order = input.dir === 'desc' ? desc(SORTS[input.sort]) : asc(SORTS[input.sort]);
+  // Customers never contacted go last whichever way the list is sorted.
+  const order =
+    input.sort === 'lastContact'
+      ? sql`${LAST_CONTACT} ${sql.raw(input.dir === 'desc' ? 'desc' : 'asc')} nulls last`
+      : input.dir === 'desc'
+        ? desc(SORTS[input.sort])
+        : asc(SORTS[input.sort]);
 
   const [items, statusCounts] = await Promise.all([
     db
@@ -142,11 +155,7 @@ export async function listCustomers(db: Db | Tx, raw: CustomerListInput) {
           else json_build_object('id', ${users.id}, 'name', ${users.name}) end`,
         tags: tagsJson,
         primaryContact: primaryContactJson,
-        /** The last activity or e-mail sent; replies join it with E6. */
-        lastContactAt: sql<string | null>`greatest(
-          (select max(a.occurred_at) from activities a
-            where a.customer_id = ${CUSTOMER_ID} and a.deleted_at is null),
-          (select max(m.sent_at) from campaign_messages m where m.customer_id = ${CUSTOMER_ID}))`,
+        lastContactAt: sql<string | null>`${LAST_CONTACT}`,
         total: sql<number>`count(*) over ()`.mapWith(Number),
       })
       .from(customers)
