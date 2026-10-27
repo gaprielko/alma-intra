@@ -3,6 +3,7 @@ import { createFileRoute, Link, Outlet } from '@tanstack/react-router';
 import { LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { AppSidebar, SidebarLink } from '@/components/app-sidebar';
+import { UploadPanel } from '@/components/files/file-bits';
 import { Avatar } from '@/components/avatar';
 import { IdleWarning } from '@/components/idle-warning';
 import {
@@ -82,6 +83,8 @@ function AppShell() {
           <Outlet />
         </RouteFade>
       </div>
+      {/* Uploads keep going while somebody moves on to another screen. */}
+      <UploadPanel />
       <IdleWarning open={idleWarning} />
     </div>
   );

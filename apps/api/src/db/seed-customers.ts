@@ -1,6 +1,14 @@
 import { sql } from 'drizzle-orm';
 import type { Tx } from './db.module.js';
-import { contacts, customers, customerSources, customerTags, tags } from './schema/index.js';
+import { COMPANY_ROOT_FOLDER_ID } from '@intra/shared/schemas';
+import {
+  contacts,
+  customers,
+  customerSources,
+  customerTags,
+  folders,
+  tags,
+} from './schema/index.js';
 
 /** The type `0003_customer_type_ados` installs. */
 export const ADOS_TYPE_ID = '00000000-0000-4000-8000-0000000000a1';
@@ -317,6 +325,7 @@ export async function seedCustomers(
       .insert(customers)
       .values(values)
       .onConflictDoUpdate({ target: customers.id, set: { ...values, updatedAt: sql`now()` } });
+    await tx.insert(folders).values({ customerId }).onConflictDoNothing();
     await tx.delete(customerTags).where(sql`${customerTags.customerId} = ${customerId}`);
     for (const tag of c.tags ?? []) {
       await tx.insert(customerTags).values({ customerId, tagId: id('c', tag + 1) });
@@ -345,4 +354,29 @@ export async function seedCustomers(
         .onConflictDoUpdate({ target: contacts.id, set: { ...contact, updatedAt: sql`now()` } });
     }
   }
+}
+
+/** The company's folders of the designs, under „Firemné dokumenty“ (installed by a migration). */
+export async function seedFolders(tx: Tx, createdBy: string) {
+  const top = ['Zmluvy', 'Cenníky', 'Marketing', 'Šablóny dokumentov', 'Interné'];
+  for (const [i, name] of top.entries()) {
+    await tx
+      .insert(folders)
+      .values({
+        id: id('f', i + 1),
+        parentId: COMPANY_ROOT_FOLDER_ID,
+        name,
+        createdByUserId: createdBy,
+      })
+      .onConflictDoNothing();
+  }
+  await tx
+    .insert(folders)
+    .values({
+      id: id('f', 10),
+      parentId: id('f', 3),
+      name: 'Prezentácie',
+      createdByUserId: createdBy,
+    })
+    .onConflictDoNothing();
 }

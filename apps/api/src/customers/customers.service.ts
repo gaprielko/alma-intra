@@ -31,6 +31,7 @@ import {
   tags,
   users,
 } from '../db/schema/index.js';
+import { createCustomerFolder } from '../files/files.service.js';
 
 /** The object without one key, for a row that must not leave the server whole. */
 function omit<T extends object, K extends keyof T>(value: T, key: K): Omit<T, K> {
@@ -351,6 +352,7 @@ export async function createCustomer(db: Db, userId: string, input: CreateCustom
         .values({ ...values, ...unsubscribed, createdByUserId: userId })
         .returning({ id: customers.id });
       await setTags(tx, created!.id, input.customer.tags);
+      await createCustomerFolder(tx, created!.id);
       if (input.firstContact && input.customer.kind === 'organization') {
         await tx.insert(contacts).values({
           ...contactColumns(input.firstContact),

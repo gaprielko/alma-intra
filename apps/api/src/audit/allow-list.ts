@@ -2,6 +2,7 @@ import {
   CODE_LISTS,
   CUSTOMER_KINDS,
   CUSTOMER_STATUSES,
+  FILE_GROUPS,
   SECOND_STEPS,
   USER_STATUSES,
 } from '@intra/shared/schemas';
@@ -148,6 +149,30 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     list: oneOf([...CODE_LISTS, 'tag']),
     fields: subsetOf(['name', 'active']),
     active: flag,
+  },
+  /**
+   * A file: its folder, the version and its group, what changed. Never a file's or a folder's
+   * name, a description or a note: people type those.
+   */
+  file: {
+    folderId: uuid,
+    customerId: uuid,
+    versionId: uuid,
+    version: number,
+    restoredFrom: number,
+    group: oneOf(FILE_GROUPS),
+    size: number,
+    fields: subsetOf(['name', 'description', 'folderId']),
+    trashed: flag,
+    restored: flag,
+    inline: flag,
+    uploadRefused: oneOf(['UPLOAD_MISSING', 'UPLOAD_MISMATCH']),
+  },
+  folder: {
+    parentId: uuid,
+    customerId: uuid,
+    fields: subsetOf(['name', 'parentId']),
+    deleted: flag,
   },
 };
 

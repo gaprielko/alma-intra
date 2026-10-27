@@ -2,11 +2,13 @@ import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
 import { DbModule } from './db/db.module.js';
+import { FilesModule } from './files/files.module.js';
 import { HealthController } from './health/health.controller.js';
 import { loggerOptions } from './logging/logger-options.js';
 import { NoEchoExceptionFilter } from './logging/no-echo-exception.filter.js';
 import { MailModule } from './mail/mail.module.js';
 import { BreachCheckModule } from './security/breach-check.module.js';
+import { StorageModule } from './storage/storage.module.js';
 import { TrpcModule } from './trpc/trpc.module.js';
 
 @Module({
@@ -15,6 +17,8 @@ import { TrpcModule } from './trpc/trpc.module.js';
     DbModule,
     MailModule,
     BreachCheckModule,
+    StorageModule,
+    FilesModule,
     TrpcModule,
   ],
   controllers: [HealthController],

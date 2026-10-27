@@ -29,6 +29,27 @@
       "when": 1793077758527,
       "tag": "0003_customer_type_ados",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793086151863,
+      "tag": "0004_files",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793086155909,
+      "tag": "0005_file_roots",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793086217426,
+      "tag": "0006_file_version_restored",
+      "breakpoints": true
     }
   ]
 }

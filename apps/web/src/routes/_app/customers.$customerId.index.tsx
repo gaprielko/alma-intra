@@ -7,6 +7,7 @@ import { type ReactNode, useState } from 'react';
 import { ContactDialog, type Contact } from '@/components/customers/contact-dialog';
 import { CustomerAvatar, CustomerStatusBadge, TagChip } from '@/components/customers/customer-bits';
 import { ErrorState } from '@/components/empty-state';
+import { CustomerFilesCard } from '@/components/files/customer-files-card';
 import { PageHeader } from '@/components/page-header';
 import { CardSkeleton } from '@/components/skeletons';
 import { Badge } from '@/components/ui/badge';
@@ -114,6 +115,7 @@ function CustomerDetailPage() {
             <PersonCard customer={c} />
           )}
           <ClassificationCard customer={c} />
+          <CustomerFilesCard customerId={customerId} />
         </div>
       </main>
 

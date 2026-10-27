@@ -3,7 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module.js';
-import { loadEnv } from './config/env.js';
+import { loadEnv, storageEnvOf } from './config/env.js';
 import { securityHeaders } from './security-headers.js';
 import { serveWeb } from './spa-shell.js';
 
@@ -12,7 +12,9 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
   // A nonce-based strict CSP and Referrer-Policy; what each allows and why is in security-headers.ts.
-  app.use(securityHeaders());
+  // The browser uploads files straight to object storage via signed URLs.
+  const storageOrigin = storageEnvOf(env) ? [new URL(env.S3_ENDPOINT!).origin] : [];
+  app.use(securityHeaders(storageOrigin));
   // Production runs behind exactly one proxy (Coolify's Traefik). Without this every client shares
   // the proxy's IP, which breaks rate limiting and the audit trail.
   if (env.NODE_ENV === 'production') app.set('trust proxy', 1);

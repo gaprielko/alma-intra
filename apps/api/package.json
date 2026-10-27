@@ -18,6 +18,8 @@
     "users:create-first": "node --env-file-if-exists=../../.env --import tsx src/db/create-first-user.cli.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1157.0",
+    "@aws-sdk/s3-request-presigner": "^3.1157.0",
     "@intra/shared": "workspace:*",
     "@nestjs/common": "^11.1.0",
     "@nestjs/core": "^11.1.0",
