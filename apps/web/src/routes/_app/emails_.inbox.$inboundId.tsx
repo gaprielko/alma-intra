@@ -233,9 +233,10 @@ function AssignDialog({
   const people = customer.data?.kind === 'organization' ? customer.data.contacts : [];
   // The person with the sender's address, once the customer is loaded.
   useEffect(() => {
-    const writer = people.find((p) => p.email?.toLowerCase() === fromEmail);
+    const loaded = customer.data?.kind === 'organization' ? customer.data.contacts : [];
+    const writer = loaded.find((p) => p.email?.toLowerCase() === fromEmail);
     setContactId(writer?.id ?? null);
-  }, [customer.data]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [customer.data, fromEmail]);
   const assign = useMutation(
     trpc.inbound.assign.mutationOptions({
       onSuccess: async () => {
