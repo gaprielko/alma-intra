@@ -5,26 +5,59 @@ export const idSchema = z.string().uuid();
 /** A malformed address says so under the field (`invalid_email`), not „Neplatná hodnota“. */
 export const emailSchema = z.string().trim().toLowerCase().email('invalid_email');
 
+/** Slovak numbers in the one shape the app keeps: `+421 911 115 502`. */
+const SLOVAK_PHONE = /^\+421 \d{3} \d{3} \d{3}$/;
+/** A foreign number: `+` and its country code, then groups of digits; 8 to 15 digits in all. */
+const FOREIGN_PHONE = /^\+(?!421)\d{1,3}(?: \d{1,4})+$/;
+
+const groupsOf3 = (digits: string) => digits.match(/\d{1,3}/g) ?? [];
+
 /**
- * Phone number as people write it: `+421 905 111 222`, `0905111222`, a landline `+421 52 432 1111`
- * or a foreign number with its country code. A prefix (`+` or `00` and a country code, or `0`),
- * then the number in any grouping of spaces. A Slovak number has exactly nine digits after the
- * prefix; a foreign one is checked against E.164, 8 to 15 digits with the country code.
+ * A phone number in the app's shape, from however it was typed: `0911115502`, `00421 911115502`
+ * and `+421911115502` all become `+421 911 115 502`. A foreign number keeps the person's own
+ * grouping after its `+`. Partial input is grouped as far as it goes, so the field can format
+ * while somebody types.
  */
-function phoneDigitsValid(value: string): boolean {
-  const digits = value.replace(/\D/g, '');
-  if (value.startsWith('+') || value.startsWith('00')) {
-    const international = value.startsWith('+') ? digits : digits.slice(2);
-    if (international.startsWith('421')) return international.length === 3 + 9;
-    return international.length >= 8 && international.length <= 15;
+export function formatPhone(raw: string): string {
+  const typed = raw.trim();
+  if (!typed) return typed;
+  const international = typed.startsWith('+') || typed.startsWith('00');
+  let digits = typed.replace(/\D/g, '');
+  if (typed.startsWith('00')) digits = digits.slice(2);
+  if (!international) {
+    // A Slovak number written the domestic way: the leading 0 becomes +421.
+    if (!digits.startsWith('0')) return typed;
+    digits = `421${digits.slice(1)}`;
   }
-  return digits.length === 1 + 9;
+  if (digits.startsWith('421')) return ['+421', ...groupsOf3(digits.slice(3))].join(' ');
+  if ('421'.startsWith(digits)) return `+${digits}`;
+  return `+${typed
+    .replace(/^(\+|00)/, '')
+    .replace(/[^\d ]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()}`;
 }
+
+/**
+ * A phone number, stored as `+421 911 115 502` (a foreign one as `+<code> <digits>`). Whatever
+ * the person typed is formatted first; what still does not fit is refused (`invalid_phone`).
+ */
 export const phoneSchema = z
   .string()
   .trim()
-  .regex(/^(\+\d{1,3}|0)(?: ?\d)+$/, 'invalid_phone')
-  .refine(phoneDigitsValid, 'invalid_phone');
+  .transform(formatPhone)
+  .pipe(
+    z
+      .string()
+      .refine(
+        (value) =>
+          SLOVAK_PHONE.test(value) ||
+          (FOREIGN_PHONE.test(value) &&
+            value.replace(/\D/g, '').length >= 8 &&
+            value.replace(/\D/g, '').length <= 15),
+        'invalid_phone',
+      ),
+  );
 
 /** Rows per page of every paged list, on the web and as the API's default. */
 export const PAGE_SIZE = 20;

@@ -58,7 +58,7 @@ export const sk = {
     required: 'Povinné pole',
     invalid: 'Neplatná hodnota',
     invalid_email: 'Neplatný e-mail',
-    invalid_phone: 'Neplatné telefónne číslo',
+    invalid_phone: 'Zadajte číslo v tvare +421 911 115 502',
     invalid_totp_code: 'Zadajte 6 číslic z aplikácie',
     too_short: 'Príliš krátke',
     too_long: 'Príliš dlhé',

@@ -46,6 +46,7 @@ import { formatDate, formatRecent } from '@/lib/format';
 import { loadFailed } from '@/lib/query-view';
 import { useSession } from '@/lib/session';
 import { trpc, type RouterOutputs } from '@/lib/trpc';
+import { PhoneInput } from '@/components/phone-input';
 
 const t = sk.users;
 type Filter = 'all' | UserStatus;
@@ -369,7 +370,7 @@ function PersonDialog({ user, onClose }: { user?: UserRow; onClose: () => void }
                   <FormItem>
                     <FormLabel>{d.phone}</FormLabel>
                     <FormControl>
-                      <Input type="tel" autoComplete="off" {...field} />
+                      <PhoneInput autoComplete="off" {...field} value={field.value ?? ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
