@@ -7,6 +7,8 @@ import { DB, type Db } from '../db/db.module.js';
 import { describeError } from '../logging/describe-error.js';
 import { BREACH_CHECK } from '../security/breach-check.module.js';
 import type { BreachCheck } from '../security/breached-password.js';
+import { STORAGE } from '../storage/storage.module.js';
+import type { Storage } from '../storage/storage.js';
 import { appRouter } from './app.router.js';
 import { createContextFactory } from './context.js';
 
@@ -24,6 +26,7 @@ export class TrpcModule implements NestModule {
   constructor(
     @Inject(DB) private readonly db: Db,
     @Inject(BREACH_CHECK) private readonly breachCheck: BreachCheck | null,
+    @Inject(STORAGE) private readonly storage: Storage | null,
   ) {}
 
   configure(consumer: MiddlewareConsumer) {
@@ -40,7 +43,7 @@ export class TrpcModule implements NestModule {
           router: appRouter,
           // The client sends queries as POST, so that inputs never travel in a URL.
           allowMethodOverride: true,
-          createContext: createContextFactory(this.db, env, this.breachCheck),
+          createContext: createContextFactory(this.db, env, this.breachCheck, this.storage),
           maxBatchSize: MAX_BATCH_SIZE,
           onError: ({ error, path, ctx }) => {
             if (error.code !== 'INTERNAL_SERVER_ERROR') return;

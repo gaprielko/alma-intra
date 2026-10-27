@@ -8,6 +8,7 @@ import { verifyAccessToken } from '../auth/tokens.js';
 import type { Env } from '../config/env.js';
 import type { Db } from '../db/db.module.js';
 import type { BreachCheck } from '../security/breached-password.js';
+import type { Storage } from '../storage/storage.js';
 
 export interface Context {
   db: Db;
@@ -24,6 +25,8 @@ export interface Context {
    * Fail-open: never throws, an unreachable HIBP answers `false`.
    */
   breachCheck: BreachCheck | null;
+  /** Object storage for the Files module; `null` when no S3 variables are set. */
+  storage: Storage | null;
   requestId: string;
   /**
    * Lets a procedure add what only it knows to its audit event (acting user, entity, diff).
@@ -47,7 +50,12 @@ async function sessionFrom(db: Db, env: Env, req: Request): Promise<Context['ses
   return user ? { ...claims, actor: { userId: claims.userId, role: user.role } } : null;
 }
 
-export function createContextFactory(db: Db, env: Env, breachCheck: BreachCheck | null) {
+export function createContextFactory(
+  db: Db,
+  env: Env,
+  breachCheck: BreachCheck | null,
+  storage: Storage | null,
+) {
   return async ({ req, res }: CreateExpressContextOptions): Promise<Context> => {
     return {
       db,
@@ -56,6 +64,7 @@ export function createContextFactory(db: Db, env: Env, breachCheck: BreachCheck 
       res,
       session: await sessionFrom(db, env, req),
       breachCheck,
+      storage,
       // Assigned by the request logger, so log lines and the context share one id.
       requestId: String((req as { id?: unknown }).id),
       audit: new AuditTrail(),

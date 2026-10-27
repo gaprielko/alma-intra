@@ -11,7 +11,7 @@ activities and replies. Web only, in Slovak.
 
 ```bash
 pnpm install
-docker compose up -d postgres
+docker compose up -d postgres s3
 cp .env.example .env    # set DATA_ENCRYPTION_KEY: openssl rand -base64 32
 pnpm --filter @intra/shared build
 pnpm db:migrate && pnpm db:seed
@@ -25,7 +25,9 @@ Web: http://localhost:5180 · API: http://localhost:3100
 One image (`apps/api/Dockerfile`): the API serves the built web. On start it runs the migrations
 as `intra_admin`, then the server as `intra_app`. Required in production: `DATABASE_URL`,
 `DATABASE_ADMIN_URL`, `AUTH_ACCESS_SECRET`, `DATA_ENCRYPTION_KEY`, `RESEND_API_KEY`, `MAIL_FROM`,
-`WEB_URL` (see `.env.example`). After the first deploy, create the first user:
+`WEB_URL`, and the five `S3_*` variables of the files bucket (see `.env.example`). Once per
+environment, let the web's origin use the bucket: `node dist/storage/bucket-cors.cli.js`. After the
+first deploy, create the first user:
 
 ```bash
 node dist/db/create-first-user.cli.js --email <e-mail> --name "<name>"

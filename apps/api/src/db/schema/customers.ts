@@ -33,7 +33,7 @@ export const unsubscribeSource = pgEnum('unsubscribe_source', ['manual', 'link']
  * A code list of Settings › Číselníky: a name, an order and whether new customers are offered it.
  * An item somebody uses is never deleted, only switched off.
  */
-const codeListColumns = () => ({
+export const codeListColumns = () => ({
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
   active: boolean('active').notNull().default(true),

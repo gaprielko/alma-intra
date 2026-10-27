@@ -1,7 +1,10 @@
 import { accountRouter } from './account.router.js';
+import { activityRouter } from './activity.router.js';
 import { authRouter } from './auth.router.js';
 import { codeListRouter } from './code-list.router.js';
 import { customerRouter } from './customer.router.js';
+import { fileRouter } from './file.router.js';
+import { templateRouter } from './template.router.js';
 import { router } from './trpc.js';
 import { userRouter } from './user.router.js';
 
@@ -11,6 +14,9 @@ export const appRouter = router({
   user: userRouter,
   customer: customerRouter,
   codeList: codeListRouter,
+  file: fileRouter,
+  activity: activityRouter,
+  template: templateRouter,
 });
 
 /** The web client's type: procedures, inputs and outputs, nothing of the server's internals. */

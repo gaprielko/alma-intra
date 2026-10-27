@@ -1,13 +1,26 @@
 import { sk } from '@intra/shared/i18n';
-import { CUSTOMER_STATUSES, type CustomerStatus, personName } from '@intra/shared/schemas';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  CUSTOMER_STATUSES,
+  type CustomerStatus,
+  personName,
+  type RichText,
+  TIMELINE_FILTERS,
+  type TimelineFilter,
+} from '@intra/shared/schemas';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { MoreHorizontal, Pencil, Plus } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
+import { formatDay, KindMark } from '@/components/activities/activity-bits';
+import { ActivityDialog } from '@/components/activities/activity-dialog';
+import { ActivitySheet } from '@/components/activities/activity-sheet';
+import { Avatar } from '@/components/avatar';
 import { ContactDialog, type Contact } from '@/components/customers/contact-dialog';
 import { CustomerAvatar, CustomerStatusBadge, TagChip } from '@/components/customers/customer-bits';
 import { ErrorState } from '@/components/empty-state';
+import { CustomerFilesCard } from '@/components/files/customer-files-card';
 import { PageHeader } from '@/components/page-header';
+import { RichTextEditor } from '@/components/rich-text';
 import { CardSkeleton } from '@/components/skeletons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,7 +37,9 @@ import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
 import { formatDate, formatRecent } from '@/lib/format';
 import { loadFailed } from '@/lib/query-view';
+import { useCan, useSession } from '@/lib/session';
 import { type RouterOutputs, trpc } from '@/lib/trpc';
+import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_app/customers/$customerId/')({
   component: CustomerDetailPage,
@@ -38,6 +53,8 @@ function CustomerDetailPage() {
   const { customerId } = Route.useParams();
   const customer = useQuery(trpc.customer.get.queryOptions({ id: customerId }));
   const [deleting, setDeleting] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const canRecord = useCan('activity.write');
 
   if (customer.isPending) {
     return (
@@ -82,6 +99,12 @@ function CustomerDetailPage() {
         back={{ to: '/customers', label: t.back }}
         badge={<CustomerStatusBadge status={c.status} />}
       >
+        {canRecord ? (
+          <Button onClick={() => setRecording(true)}>
+            <Plus className="size-4" aria-hidden />
+            {a.record}
+          </Button>
+        ) : null}
         <Button variant="secondary" asChild>
           <Link to="/customers/$customerId/edit" params={{ customerId }}>
             <Pencil className="size-4" aria-hidden />
@@ -105,7 +128,7 @@ function CustomerDetailPage() {
       <main className="grid max-w-[1400px] items-start gap-5 px-7 pt-5 pb-10 xl:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
         <div className="min-w-0 space-y-5">
           {c.kind === 'organization' ? <ContactsCard customer={c} /> : null}
-          <HistoryCard customerId={customerId} />
+          <TimelineCard customer={c} />
         </div>
         <div className="min-w-0 space-y-5">
           {c.kind === 'organization' ? (
@@ -114,10 +137,18 @@ function CustomerDetailPage() {
             <PersonCard customer={c} />
           )}
           <ClassificationCard customer={c} />
+          <CustomerFilesCard customerId={customerId} />
         </div>
       </main>
 
       {deleting ? <DeleteCustomer customer={c} onClose={() => setDeleting(false)} /> : null}
+      {recording ? (
+        <ActivityDialog
+          customerId={customerId}
+          customerName={c.name}
+          onClose={() => setRecording(false)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -443,6 +474,8 @@ function ContactsCard({ customer: c }: { customer: Customer }) {
 
 type HistoryEvent = RouterOutputs['customer']['history'][number];
 
+const a = sk.activities;
+
 const isStatus = (value: unknown): value is CustomerStatus =>
   typeof value === 'string' && (CUSTOMER_STATUSES as readonly string[]).includes(value);
 
@@ -508,40 +541,230 @@ function describe(event: HistoryEvent): ReactNode {
   }
 }
 
-/** Who changed what and when: the customer's audit trail, newest first. */
-function HistoryCard({ customerId }: { customerId: string }) {
-  const history = useQuery(trpc.customer.history.queryOptions({ id: customerId }));
+/**
+ * The customer's timeline: activities and notes with the changes from the audit trail, newest
+ * first, filtered by kind; a note is written right at its top. Sent e-mails join it with E5.
+ */
+function TimelineCard({ customer }: { customer: Customer }) {
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const canWrite = useCan('activity.write');
+  const me = useSession((state) => state.user);
+  const [filter, setFilter] = useState<TimelineFilter>('all');
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [note, setNote] = useState<RichText | null>(null);
+  const [noteKey, setNoteKey] = useState(0);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [recording, setRecording] = useState(false);
+  const timeline = useQuery({
+    ...trpc.activity.timeline.queryOptions({ customerId: customer.id, filter }),
+    placeholderData: keepPreviousData,
+  });
+  const saveNote = useMutation(
+    trpc.activity.create.mutationOptions({
+      onSuccess: async () => {
+        toast('success', a.timeline.quickNoteSaved);
+        setNote(null);
+        setNoteOpen(false);
+        setNoteKey((key) => key + 1);
+        await Promise.all([
+          queryClient.invalidateQueries(trpc.activity.pathFilter()),
+          queryClient.invalidateQueries(trpc.customer.list.pathFilter()),
+        ]);
+      },
+      onError: (error) => toast('error', errorMessage(error, a.errors)),
+    }),
+  );
+
   return (
     <Card>
-      <CardHeader title={t.history.title} />
-      <div className="px-5 pt-2 pb-4">
-        {history.isPending ? (
-          <p className="text-sm text-muted">{sk.common.loading}</p>
-        ) : loadFailed(history) ? (
-          <ErrorState onRetry={() => void history.refetch()} />
-        ) : history.data.length === 0 ? (
-          <p className="text-sm text-muted">{t.history.empty}</p>
-        ) : (
-          <ol className="relative space-y-4 border-l border-border-subtle pl-5">
-            {history.data.map((event) => (
-              <li key={event.id} className="relative">
-                <span
-                  aria-hidden
-                  className="absolute top-1.5 -left-[25px] size-2 rounded-full bg-primary ring-4 ring-white"
+      <CardHeader
+        title={a.timeline.title}
+        action={
+          canWrite ? (
+            <Button variant="secondary" size="sm" onClick={() => setRecording(true)}>
+              <Plus className="size-3.5" aria-hidden />
+              {a.record}
+            </Button>
+          ) : null
+        }
+      />
+      <div className="px-5 pt-3 pb-4">
+        <div
+          role="tablist"
+          aria-label={a.timeline.filters.label}
+          className="flex flex-wrap gap-1.5"
+        >
+          {TIMELINE_FILTERS.map((key) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={filter === key}
+              onClick={() => setFilter(key)}
+              className={cn(
+                'h-8 rounded-full border px-3 text-[13px] font-semibold transition-colors',
+                filter === key
+                  ? 'border-primary bg-primary-soft text-primary-text'
+                  : 'border-border bg-white text-muted hover:bg-hover',
+              )}
+            >
+              {a.timeline.filters[key]}
+            </button>
+          ))}
+        </div>
+
+        {canWrite && (filter === 'all' || filter === 'notes') ? (
+          <div className="mt-4 flex items-start gap-3">
+            <Avatar name={me?.name ?? ''} size={32} />
+            {noteOpen ? (
+              <div className="min-w-0 flex-1 space-y-2">
+                <RichTextEditor
+                  key={noteKey}
+                  value={note}
+                  onChange={setNote}
+                  placeholder={a.timeline.quickNote}
                 />
-                <div className="text-sm">{describe(event)}</div>
-                <p className="text-xs text-muted">
-                  {t.history.by(event.userName ?? sk.common.none, formatRecent(event.at))}
-                </p>
-              </li>
-            ))}
-          </ol>
-        )}
-        <p className="mt-4 rounded-xl bg-surface px-4 py-3 text-xs text-muted">
-          {t.comingSoon.timeline}
-        </p>
+                <div className="flex justify-end gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setNoteOpen(false)}>
+                    {sk.common.cancel}
+                  </Button>
+                  <Button
+                    size="sm"
+                    disabled={!note || saveNote.isPending}
+                    onClick={() =>
+                      note &&
+                      saveNote.mutate({
+                        customerId: customer.id,
+                        activity: { kind: 'note', occurredAt: new Date(), body: note },
+                      })
+                    }
+                  >
+                    {a.timeline.quickNoteSave}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setNoteOpen(true)}
+                className="h-9 min-w-0 flex-1 rounded-[10px] border border-border px-3 text-left text-sm text-tertiary hover:border-primary"
+              >
+                {a.timeline.quickNote}
+              </button>
+            )}
+          </div>
+        ) : null}
+
+        <div className="mt-4">
+          {timeline.isPending ? (
+            <p className="text-sm text-muted">{sk.common.loading}</p>
+          ) : loadFailed(timeline) ? (
+            <ErrorState compact onRetry={() => void timeline.refetch()} />
+          ) : timeline.data.length === 0 ? (
+            <p className="py-2 text-sm text-muted">
+              {filter === 'emails' ? a.timeline.emptyEmails : a.timeline.empty}
+            </p>
+          ) : (
+            <ol
+              className={cn(
+                'relative space-y-5 border-l border-border-subtle pl-6',
+                timeline.isPlaceholderData && 'opacity-60',
+              )}
+            >
+              {timeline.data.map((item) =>
+                item.type === 'activity' ? (
+                  <ActivityItem
+                    key={item.activity.id}
+                    item={item.activity}
+                    onOpen={() => setOpenId(item.activity.id)}
+                  />
+                ) : (
+                  <li key={item.change.id} className="relative">
+                    <span
+                      aria-hidden
+                      className="absolute top-1.5 -left-[29px] size-2 rounded-full bg-border ring-4 ring-white"
+                    />
+                    <div className="text-sm">{describe(item.change)}</div>
+                    <p className="text-xs text-muted">
+                      {t.history.by(
+                        item.change.userName ?? sk.common.none,
+                        formatRecent(item.change.at),
+                      )}
+                    </p>
+                  </li>
+                ),
+              )}
+            </ol>
+          )}
+        </div>
       </div>
+      {openId ? <ActivitySheet activityId={openId} onClose={() => setOpenId(null)} /> : null}
+      {recording ? (
+        <ActivityDialog
+          customerId={customer.id}
+          customerName={customer.name}
+          onClose={() => setRecording(false)}
+        />
+      ) : null}
     </Card>
+  );
+}
+
+type TimelineActivity = Extract<
+  RouterOutputs['activity']['timeline'][number],
+  { type: 'activity' }
+>['activity'];
+
+/** One activity in the timeline: its mark, a heading, who and when, the start of the notes. */
+function ActivityItem({ item, onOpen }: { item: TimelineActivity; onOpen: () => void }) {
+  const contacts = item.participants.filter((p) => p.kind === 'contact').map((p) => p.name);
+  const heading = [
+    item.subject ?? a.kinds[item.kind],
+    item.kind === 'note' || contacts.length === 0 ? null : a.timeline.with(contacts.join(', ')),
+    item.durationMin ? a.duration.format(item.durationMin) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  return (
+    <li className="relative">
+      <span className="absolute -left-[41px] top-0">
+        <KindMark kind={item.kind} size="sm" />
+      </span>
+      <button
+        type="button"
+        onClick={onOpen}
+        className="block w-full rounded-lg text-left hover:bg-hover/60 focus-visible:outline-2 focus-visible:outline-primary"
+      >
+        <p className="text-sm font-semibold">
+          {item.subject ? `${a.kinds[item.kind]}: ` : ''}
+          {heading}
+        </p>
+        <p className="text-xs text-muted">
+          {a.timeline.by(item.author ?? sk.common.none, formatRecent(item.occurredAt))}
+        </p>
+        {item.bodyText ? (
+          <p className="mt-1 line-clamp-3 text-sm whitespace-pre-line text-foreground/90">
+            {item.bodyText}
+          </p>
+        ) : null}
+        {item.nextStepText ? (
+          <p
+            className={cn(
+              'mt-1 text-[13px] font-medium',
+              item.nextStepDoneAt ? 'text-muted line-through' : 'text-primary-text',
+            )}
+          >
+            {item.nextStepDue
+              ? a.timeline.nextStepDue(item.nextStepText, formatDay(item.nextStepDue))
+              : a.timeline.nextStep(item.nextStepText)}
+          </p>
+        ) : null}
+        {item.attachmentCount > 0 ? (
+          <p className="mt-1 text-xs text-muted">{a.timeline.attachments(item.attachmentCount)}</p>
+        ) : null}
+      </button>
+    </li>
   );
 }
 

@@ -24,7 +24,7 @@ export const newCspNonce = (): string => randomBytes(16).toString('base64');
  * switch 'unsafe-inline' off. `base-uri 'none'`: the page has no `<base>`, and an injected one
  * could otherwise re-point relative script URLs.
  */
-export function securityHeaders() {
+export function securityHeaders(storageOrigin: string[] = []) {
   const app = helmet({
     contentSecurityPolicy: {
       directives: {
@@ -36,8 +36,9 @@ export function securityHeaders() {
         ],
         'object-src': ["'none'"],
         'base-uri': ["'none'"],
-        'connect-src': ["'self'"],
-        'img-src': ["'self'", 'data:', 'blob:'],
+        // storageOrigin: the browser uploads files straight to object storage via signed URLs.
+        'connect-src': ["'self'", ...storageOrigin],
+        'img-src': ["'self'", 'data:', 'blob:', ...storageOrigin],
       },
     },
     // The origin only, never the path: no customer id in a URL leaves the page.

@@ -23,7 +23,12 @@ const envSchema = z.object({
   RESEND_API_KEY: optionalString(z.string().min(1)),
   MAIL_FROM: z.string().default('Alma Intra <onboarding@resend.dev>'),
   /** Where an answer to a system e-mail goes. Empty sends no Reply-To. Checked at boot. */
-  MAIL_REPLY_TO: z.union([z.literal(''), z.string().email()]).default('info@adosalma.sk'),
+  MAIL_REPLY_TO: z.union([z.literal(''), z.string().email()]).default('info@alma-care.eu'),
+  /**
+   * The shared sending address of e-mails to customers (D-17a): the From shows the colleague's
+   * name with it. Its domain must be verified in Resend.
+   */
+  CAMPAIGN_FROM_ADDRESS: z.string().email().default('info@mail.alma-care.eu'),
   /** Built `apps/web` served by the API (staging/production image). Unset in dev: Vite serves it. */
   WEB_DIST_DIR: optionalString(z.string().min(1)),
   /**
@@ -32,12 +37,51 @@ const envSchema = z.object({
    * everywhere else. Fail-open either way: HIBP down lets the password through.
    */
   PASSWORD_BREACH_CHECK: optionalString(z.enum(['off', 'hibp'])),
+  /**
+   * S3-compatible object storage for the Files module (Hetzner Object Storage in production,
+   * SeaweedFS locally). All five or none: unset, the file procedures answer PRECONDITION_FAILED
+   * and the web says the files are not set up. Required in production.
+   */
+  S3_ENDPOINT: optionalString(z.string().url()),
+  S3_REGION: optionalString(z.string().min(1)),
+  S3_BUCKET: optionalString(z.string().min(1)),
+  S3_ACCESS_KEY_ID: optionalString(z.string().min(1)),
+  S3_SECRET_ACCESS_KEY: optionalString(z.string().min(1)),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error']).default('info'),
   /** The git commit being served; Coolify sets it at runtime. Reported by /health. */
   SOURCE_COMMIT: optionalString(z.string().min(1)),
 });
 
 export type Env = z.infer<typeof envSchema>;
+
+/** The S3 variables, or `null` when none is set. */
+export type StorageEnv = {
+  endpoint: string;
+  region: string;
+  bucket: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+};
+
+export function storageEnvOf(env: Env): StorageEnv | null {
+  const values = {
+    endpoint: env.S3_ENDPOINT,
+    region: env.S3_REGION,
+    bucket: env.S3_BUCKET,
+    accessKeyId: env.S3_ACCESS_KEY_ID,
+    secretAccessKey: env.S3_SECRET_ACCESS_KEY,
+  };
+  const missing = Object.entries(values)
+    .filter(([, value]) => value === undefined)
+    .map(([key]) => key);
+  if (missing.length === Object.keys(values).length) return null;
+  if (missing.length > 0) {
+    throw new Error(
+      `Invalid environment: S3 storage is half configured, missing ${missing.join(', ')}`,
+    );
+  }
+  return values as StorageEnv;
+}
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   const parsed = envSchema.safeParse(source);
@@ -51,6 +95,16 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     throw new Error(
       'Invalid environment: AUTH_ACCESS_SECRET is a placeholder, generate a real one',
     );
+  }
+  // Half a storage configuration is a typo, not a choice: fail at startup, not at the first upload.
+  const storage = storageEnvOf(parsed.data);
+  if (parsed.data.NODE_ENV === 'production' && storage) {
+    if (!storage.endpoint.startsWith('https:')) {
+      throw new Error('Invalid environment: S3_ENDPOINT must use https in production');
+    }
+    if (isWeakSecret(storage.secretAccessKey)) {
+      throw new Error('Invalid environment: S3_SECRET_ACCESS_KEY is a placeholder, use a real key');
+    }
   }
   return parsed.data;
 }

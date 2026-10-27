@@ -1,7 +1,10 @@
 import {
+  ACTIVITY_KINDS,
   CODE_LISTS,
   CUSTOMER_KINDS,
   CUSTOMER_STATUSES,
+  FILE_GROUPS,
+  HEADER_STYLES,
   SECOND_STEPS,
   USER_STATUSES,
 } from '@intra/shared/schemas';
@@ -148,6 +151,84 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     list: oneOf([...CODE_LISTS, 'tag']),
     fields: subsetOf(['name', 'active']),
     active: flag,
+  },
+  /**
+   * A file: its folder, the version and its group, what changed. Never a file's or a folder's
+   * name, a description or a note: people type those.
+   */
+  file: {
+    folderId: uuid,
+    customerId: uuid,
+    versionId: uuid,
+    version: number,
+    restoredFrom: number,
+    group: oneOf(FILE_GROUPS),
+    size: number,
+    fields: subsetOf(['name', 'description', 'folderId']),
+    trashed: flag,
+    restored: flag,
+    inline: flag,
+    uploadRefused: oneOf(['UPLOAD_MISSING', 'UPLOAD_MISMATCH']),
+  },
+  /**
+   * An activity: its customer and kind, which fields changed, how many people and files. Never a
+   * subject, the notes or a next step's text: people type those.
+   */
+  activity: {
+    customerId: uuid,
+    kind: oneOf(ACTIVITY_KINDS),
+    fields: subsetOf([
+      'kind',
+      'occurredAt',
+      'durationMin',
+      'subject',
+      'body',
+      'nextStepText',
+      'nextStepDue',
+      'nextStepUserId',
+    ]),
+    contacts: number,
+    attachments: number,
+    nextStep: flag,
+    nextStepDone: flag,
+    deleted: flag,
+  },
+  /** An e-mail template: which fields changed, its category, switched on or off; never its text. */
+  email_template: {
+    categoryId: uuid,
+    active: flag,
+    duplicatedFrom: uuid,
+    fields: subsetOf([
+      'name',
+      'categoryId',
+      'language',
+      'subject',
+      'body',
+      'customFields',
+      'active',
+    ]),
+  },
+  /** Settings › Vzhľad e-mailov: which settings changed. */
+  email_look: {
+    fields: subsetOf([
+      'logoKey',
+      'headerStyle',
+      'brandName',
+      'headerText',
+      'accent',
+      'footerCompany',
+      'footerIco',
+      'footerWeb',
+      'footerEmail',
+    ]),
+    headerStyle: oneOf(HEADER_STYLES),
+  },
+  email_image: { size: number },
+  folder: {
+    parentId: uuid,
+    customerId: uuid,
+    fields: subsetOf(['name', 'parentId']),
+    deleted: flag,
   },
 };
 

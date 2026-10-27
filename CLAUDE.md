@@ -45,7 +45,7 @@ for every AI agent and human working in this repo. What the app does is in
 
 ```bash
 pnpm install
-docker compose up -d postgres        # Postgres 16 on localhost:5434
+docker compose up -d postgres s3     # Postgres 16 on :5434, S3 (SeaweedFS) on :8333
 cp .env.example .env                 # then set DATA_ENCRYPTION_KEY
 pnpm --filter @intra/shared build
 pnpm db:migrate && pnpm db:seed

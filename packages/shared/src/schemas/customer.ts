@@ -190,7 +190,7 @@ export const updateContactSchema = z.object({
 export const contactIdSchema = z.object({ id: idSchema });
 
 /** Customer types and sources: a name each, offered in the forms while active. */
-export const CODE_LISTS = ['customer_type', 'source'] as const;
+export const CODE_LISTS = ['customer_type', 'source', 'template_category'] as const;
 export type CodeList = (typeof CODE_LISTS)[number];
 
 export const codeListSchema = z.object({ list: z.enum(CODE_LISTS) });
