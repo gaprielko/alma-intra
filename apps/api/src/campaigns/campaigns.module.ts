@@ -25,6 +25,7 @@ import { transportFor } from '../mail/mailer.js';
 import type { MailTransport } from '../mail/transport.js';
 import { STORAGE } from '../storage/storage.module.js';
 import type { Storage } from '../storage/storage.js';
+import { type InboundSource, receiveInbound, resendInboundSource } from '../inbound/inbound.js';
 import {
   dropForUnsubscribed,
   drainCampaigns,
@@ -34,6 +35,8 @@ import {
 } from './delivery.js';
 
 export const CAMPAIGN_TRANSPORT = Symbol('CAMPAIGN_TRANSPORT');
+/** Where received e-mails are fetched; null without a Resend key (dev, tests). */
+export const INBOUND_SOURCE = Symbol('INBOUND_SOURCE');
 const POLL_INTERVAL_MS = 5_000;
 
 /** Sends the queued e-mails to customers inside the API process. Tests drain by hand. */
@@ -73,7 +76,8 @@ export class CampaignWorker implements OnModuleInit, OnApplicationShutdown {
 }
 
 /**
- * Resend's delivery reports (`POST /webhooks/resend`), signed and verified, and the one-click
+ * Resend's delivery reports and received e-mails (`POST /webhooks/resend`), signed and verified,
+ * and the one-click
  * unsubscribe of the `List-Unsubscribe-Post` header (`POST /u/<token>`). Both are public: the
  * signature and the token are the authentication.
  */
@@ -81,7 +85,10 @@ export class CampaignWorker implements OnModuleInit, OnApplicationShutdown {
 export class CampaignWebhookController {
   private readonly logger = new Logger('resend-webhook');
 
-  constructor(@Inject(DB) private readonly db: Db) {}
+  constructor(
+    @Inject(DB) private readonly db: Db,
+    @Inject(INBOUND_SOURCE) private readonly inbound: InboundSource | null,
+  ) {}
 
   @Post('webhooks/resend')
   @HttpCode(200)
@@ -101,13 +108,28 @@ export class CampaignWebhookController {
         req.rawBody,
       );
     if (!ok || !id) throw new UnauthorizedException();
+    const event = req.body as Parameters<typeof handleResendEvent>[2];
     try {
-      await handleResendEvent(this.db, id, req.body as Parameters<typeof handleResendEvent>[2]);
+      if (event.type === 'email.received') await this.received(event.data?.email_id);
+      else await handleResendEvent(this.db, id, event);
     } catch (error) {
       this.logger.error({ msg: 'webhook event not handled', ...describeError(error) });
       throw error;
     }
     return { ok: true };
+  }
+
+  /**
+   * A received e-mail: fetched from Resend (the event carries no body) and filed. Without a key
+   * nothing can be fetched; the 503 makes Resend keep it and try again later.
+   */
+  private async received(providerEmailId: string | undefined) {
+    if (!providerEmailId) return;
+    if (!this.inbound) throw new ServiceUnavailableException();
+    const email = await this.inbound.get(providerEmailId);
+    if (!email) return;
+    const filed = await receiveInbound(this.db, loadEnv(), email);
+    this.logger.log({ msg: 'e-mail received', inboundId: filed.id, matched: filed.matched });
   }
 
   @Post('u/:token')
@@ -145,6 +167,13 @@ export class CampaignWebhookController {
 @Module({
   providers: [
     { provide: CAMPAIGN_TRANSPORT, useFactory: () => transportFor(loadEnv()) },
+    {
+      provide: INBOUND_SOURCE,
+      useFactory: () => {
+        const key = loadEnv().RESEND_API_KEY;
+        return key ? resendInboundSource(key) : null;
+      },
+    },
     CampaignWorker,
   ],
   controllers: [CampaignWebhookController],

@@ -97,6 +97,8 @@ export const campaignMessages = pgTable(
     text: text('text'),
     totalBytes: integer('total_bytes'),
     unsubscribeTokenHash: text('unsubscribe_token_hash'),
+    /** The token of its Reply-To (`r+<token>@…`, spec 6.6): a reply carries it back. */
+    replyToken: text('reply_token'),
     attempts: integer('attempts').notNull().default(0),
     nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }),
     leasedUntil: timestamp('leased_until', { withTimezone: true }),
@@ -127,6 +129,9 @@ export const campaignMessages = pgTable(
     uniqueIndex('campaign_messages_unsubscribe_unique')
       .on(t.unsubscribeTokenHash)
       .where(sql`${t.unsubscribeTokenHash} is not null`),
+    uniqueIndex('campaign_messages_reply_token_unique')
+      .on(t.replyToken)
+      .where(sql`${t.replyToken} is not null`),
   ],
 );
 

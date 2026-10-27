@@ -132,6 +132,27 @@ account, so the first user's invitation would not arrive.
 5. Replies to system mails go to `MAIL_REPLY_TO` (default `info@alma-care.eu`, D-17b). That
    mailbox must exist (a mailbox at Websupport, or a forward), or every answer bounces.
 
+### 5a. Replies in the app (E6)
+
+Customers' replies come back to Intra when Resend receives mail for the sending subdomain. Every
+e-mail to a customer then carries the Reply-To `r+<token>@mail.alma-care.eu`; without this setup
+the Reply-To is the colleague's own mailbox, as before.
+
+1. Resend → Domains → `mail.alma-care.eu` → **Receiving** → enable. Resend shows one MX record
+   for `mail.alma-care.eu` itself (not the `send.` bounce subdomain). Add it in Websupport with
+   the priority shown; `mail.alma-care.eu` must have no other MX record.
+2. Wait until the receiving record shows **Verified**. Any address `@mail.alma-care.eu` is then
+   received, `info@mail.alma-care.eu` (the From) included: a reply that drops the Reply-To still
+   arrives and is matched by the sender's address.
+3. Resend → Webhooks → the existing endpoint `https://intra.alma-care.eu/webhooks/resend` → add
+   the event **`email.received`** (same signing secret).
+4. The API key must be allowed to read received mail: a **Full access** key (a „Sending access“
+   key cannot). Replace `RESEND_API_KEY` with it.
+5. Coolify → Environment: `INBOUND_REPLY_DOMAIN=mail.alma-care.eu`, redeploy.
+6. Check: send an e-mail from Intra to your own address, answer it, and the answer appears in
+   Intra (Resend → Emails → Receiving shows it too). Received mail counts against the Resend
+   quota like sent mail; Resend keeps it even while the webhook is down and retries the call.
+
 ## 6. Secrets
 
 Generate and store in the password manager:
@@ -291,5 +312,5 @@ The files are not in the database dump: the bucket's versioning (step 4) is thei
 - Staging: none for Intra. A second Coolify application with its own database, bucket and Resend
   subdomain would be one.
 - Error reporting (Sentry): Intra has none yet; the logs (pino JSON on stdout, in Coolify) are all.
-- E-mail campaigns (E5) and inbound replies (E6) will add their own Resend setup (webhooks,
-  inbound domain) here.
+- Inbound mail to `info@alma-care.eu` (the general mailbox) does not reach Intra; forwarding it
+  to an address `@mail.alma-care.eu` would (spec 6.2).

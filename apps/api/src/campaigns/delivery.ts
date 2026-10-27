@@ -15,6 +15,7 @@ import {
   users,
 } from '../db/schema/index.js';
 import { getLook } from '../email/templates.service.js';
+import { replyAddress, replyToken } from '../inbound/inbound.js';
 import { describeError } from '../logging/describe-error.js';
 import { MailProviderError, type MailTransport } from '../mail/transport.js';
 import type { Storage } from '../storage/storage.js';
@@ -105,6 +106,8 @@ export async function drainCampaigns(
         })),
       );
       const oneClick = `${env.WEB_URL}/u/${unsubscribeToken(env, id)}`;
+      // The reply comes back to Intra when an inbound domain is set, else to the sender's mailbox.
+      const replyTo = replyAddress(env, id);
       const sent = await transport.send(
         {
           to: m.to,
@@ -112,7 +115,7 @@ export async function drainCampaigns(
           html: m.html,
           text: m.text ?? '',
           from: `${m.senderName} | ${look.brandName} <${env.CAMPAIGN_FROM_ADDRESS}>`,
-          replyTo: m.senderEmail,
+          replyTo: replyTo ?? m.senderEmail,
           headers: {
             'List-Unsubscribe': `<${oneClick}>`,
             'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
@@ -130,6 +133,7 @@ export async function drainCampaigns(
                 status: 'sent',
                 sentAt: new Date(),
                 providerMessageId: sent.providerMessageId,
+                replyToken: replyTo ? replyToken(env, id) : null,
                 leasedUntil: null,
               },
         )
