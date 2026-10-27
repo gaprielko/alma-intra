@@ -23,7 +23,7 @@ const envSchema = z.object({
   RESEND_API_KEY: optionalString(z.string().min(1)),
   MAIL_FROM: z.string().default('Alma Intra <onboarding@resend.dev>'),
   /** Where an answer to a system e-mail goes. Empty sends no Reply-To. Checked at boot. */
-  MAIL_REPLY_TO: z.union([z.literal(''), z.string().email()]).default('info@adosalma.sk'),
+  MAIL_REPLY_TO: z.union([z.literal(''), z.string().email()]).default('info@alma-care.eu'),
   /** Built `apps/web` served by the API (staging/production image). Unset in dev: Vite serves it. */
   WEB_DIST_DIR: optionalString(z.string().min(1)),
   /**

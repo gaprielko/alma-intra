@@ -172,8 +172,8 @@ describe('the Resend transport', () => {
     expect(calls.map((call) => call.payload.to)).toEqual(['eva@notexample.com']);
   });
 
-  it('reads the reply-to from the environment, info@adosalma.sk unless set', () => {
-    expect(loadEnv(baseEnv).MAIL_REPLY_TO).toBe('info@adosalma.sk');
+  it('reads the reply-to from the environment, info@alma-care.eu unless set', () => {
+    expect(loadEnv(baseEnv).MAIL_REPLY_TO).toBe('info@alma-care.eu');
     expect(loadEnv({ ...baseEnv, MAIL_REPLY_TO: '' }).MAIL_REPLY_TO).toBe('');
   });
 });

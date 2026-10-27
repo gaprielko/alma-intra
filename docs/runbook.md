@@ -5,14 +5,14 @@ back. It follows Alma ADOS's runbook (`alma-ados/docs/runbook.md`): same hosting
 same image shape, same backup job. Keep this file in step with what is actually configured.
 
 Everything here is done by a person with access to Hetzner, Coolify, Resend and the DNS of
-`adosalma.sk`. No secret is ever written into the repository or into a chat.
+`alma-care.eu` (at Websupport). No secret is ever written into the repository or into a chat.
 
 ## 0. What you need before you start
 
 | What                        | Why                                                                     |
 | --------------------------- | ----------------------------------------------------------------------- |
 | Hetzner Cloud account       | the server, the files bucket, the backup bucket                         |
-| DNS of `adosalma.sk`        | `intra.adosalma.sk` (the app, D-18) and `mail.adosalma.sk` (sending, D-17a) |
+| DNS of `alma-care.eu`       | `intra.alma-care.eu` (the app, D-18) and `mail.alma-care.eu` (sending, D-17a) |
 | Resend account              | system e-mails (invitations, password resets); later campaigns         |
 | GitHub `gaprielko/alma-intra` | Coolify builds the image from it                                      |
 | A password manager          | every secret generated below goes there first                          |
@@ -42,17 +42,18 @@ apart.
      then `systemctl reload ssh`.
    - Coolify: `curl -fsSL https://cdn.coollabs.io/coolify/install.sh | bash`.
 4. Open the Coolify panel (`http://<ip>:8000` the first time), create the admin account, then give
-   the panel a https domain (e.g. `coolify.intra.adosalma.sk`, with its DNS A record) and close
+   the panel a https domain (e.g. `coolify.alma-care.eu`, with its DNS A record) and close
    port 8000 again (it is not in the firewall above).
 5. Coolify → Servers → localhost → Advanced → **Concurrent builds: 1**.
 
 ## 2. DNS
 
-At the registrar of `adosalma.sk`:
+At Websupport → `alma-care.eu` → DNS (a DNS record, not „Presmerovanie“: a redirect sends the
+browser to the bare IP, without https, and Coolify cannot tell which app is meant):
 
 | Type | Name                | Value           |
 | ---- | ------------------- | --------------- |
-| A    | `intra.adosalma.sk` | the server's IP |
+| A    | `intra` (`intra.alma-care.eu`) | the server's IP |
 
 The records of the sending domain come in step 5 (Resend shows them).
 
@@ -118,18 +119,18 @@ System e-mails (the invitation of the first user, every later invitation, passwo
 through Resend. Without a verified domain Resend delivers only to the address that owns the Resend
 account, so the first user's invitation would not arrive.
 
-1. Resend → Domains → Add domain → **`mail.adosalma.sk`** (the sending subdomain, D-17a), region
+1. Resend → Domains → Add domain → **`mail.alma-care.eu`** (the sending subdomain, D-17a), region
    **Ireland (`eu-west-1`)**. The region cannot be changed later.
-2. Resend shows the DNS records. Add them at the registrar exactly as shown: a DKIM TXT
-   (`resend._domainkey.mail.adosalma.sk`), an MX and an SPF TXT on the bounce subdomain
-   (`send.mail.adosalma.sk`). A name carries one SPF record only: merge, never add a second.
-   DMARC: if `_dmarc.adosalma.sk` exists (ADOS added one), it covers the subdomain; otherwise add
-   `v=DMARC1; p=none; rua=mailto:info@adosalma.sk`.
+2. Resend shows the DNS records. Add them in Websupport's DNS exactly as shown: a DKIM TXT
+   (`resend._domainkey.mail.alma-care.eu`), an MX and an SPF TXT on the bounce subdomain
+   (`send.mail.alma-care.eu`). A name carries one SPF record only: merge, never add a second.
+   DMARC: a TXT `_dmarc` on `alma-care.eu` (it covers the subdomains) with
+   `v=DMARC1; p=none; rua=mailto:info@alma-care.eu`, unless one exists already.
 3. Wait for **Verified** in Resend.
-4. Resend → API keys → Create, permission **Sending access**, domain `mail.adosalma.sk`, name
+4. Resend → API keys → Create, permission **Sending access**, domain `mail.alma-care.eu`, name
    `alma-intra-production`. Store it.
-5. Replies to system mails go to `MAIL_REPLY_TO` (default `info@adosalma.sk`, D-17b): that
-   mailbox exists already.
+5. Replies to system mails go to `MAIL_REPLY_TO` (default `info@alma-care.eu`, D-17b). That
+   mailbox must exist (a mailbox at Websupport, or a forward), or every answer bounces.
 
 ## 6. Secrets
 
@@ -147,7 +148,7 @@ first time, with access to `gaprielko/alma-intra` only):
 
 - Branch: `main` (or `feature/INTRA-1` until it is merged).
 - Build pack **Dockerfile**, base directory `/`, Dockerfile location `/apps/api/Dockerfile`.
-- Port **3100**. Domain `https://intra.adosalma.sk` (Coolify gets the certificate from Let's
+- Port **3100**. Domain `https://intra.alma-care.eu` (Coolify gets the certificate from Let's
   Encrypt once the DNS record of step 2 resolves).
 - No fixed host port mapping and no custom container name (both block rolling updates).
 - **Healthcheck:** on, path `/health`, port 3100, `GET`, expect `200`, start period **40 s** (the
@@ -162,10 +163,10 @@ Environment variables (all **runtime**, none a build variable; the web needs no 
 | `DATABASE_ADMIN_URL`   | `postgres://intra_admin:<admin password>@<postgres host>:5432/alma_intra` |
 | `AUTH_ACCESS_SECRET`   | from step 6                                                              |
 | `DATA_ENCRYPTION_KEY`  | from step 6                                                              |
-| `WEB_URL`              | `https://intra.adosalma.sk` (links in e-mails, the bucket's CORS)        |
+| `WEB_URL`              | `https://intra.alma-care.eu` (links in e-mails, the bucket's CORS)       |
 | `RESEND_API_KEY`       | from step 5                                                              |
-| `MAIL_FROM`            | `Alma Intra <info@mail.adosalma.sk>`                                     |
-| `MAIL_REPLY_TO`        | unset (default `info@adosalma.sk`)                                       |
+| `MAIL_FROM`            | `Alma Intra <info@mail.alma-care.eu>`                                    |
+| `MAIL_REPLY_TO`        | unset (default `info@alma-care.eu`)                                      |
 | `S3_ENDPOINT`          | `https://nbg1.your-objectstorage.com`                                    |
 | `S3_REGION`            | `nbg1`                                                                   |
 | `S3_BUCKET`            | `alma-intra-files`                                                       |
@@ -185,8 +186,8 @@ passwords against Have I Been Pwned (5 hex characters of a SHA-1 leave the serve
 ## 8. First deploy
 
 1. Deploy. The log shows the build, then `migrated`, then the API starting.
-2. `curl https://intra.adosalma.sk/health` → `{"status":"ok","commit":"…"}`.
-3. Open `https://intra.adosalma.sk`: the sign-in page.
+2. `curl https://intra.alma-care.eu/health` → `{"status":"ok","commit":"…"}`.
+3. Open `https://intra.alma-care.eu`: the sign-in page.
 
 If the container exits: Coolify → Logs. A missing or weak variable is named; `password
 authentication failed` is a URL; `role "intra_app" does not exist` means step 3 was skipped.
@@ -200,7 +201,7 @@ Coolify → the application → Terminal (or `docker exec` on the server):
 node dist/storage/bucket-cors.cli.js
 ```
 
-It prints `CORS set on alma-intra-files for https://intra.adosalma.sk`. Run it again whenever
+It prints `CORS set on alma-intra-files for https://intra.alma-care.eu`. Run it again whenever
 `WEB_URL` changes.
 
 ## 10. The first user
@@ -282,7 +283,7 @@ The files are not in the database dump: the bucket's versioning (step 4) is thei
 ## Access
 
 - SSH by key only; Postgres never on a public port; Coolify's panel only over https.
-- Uptime: a monitor (e.g. UptimeRobot) on `GET https://intra.adosalma.sk/health` every 5 minutes.
+- Uptime: a monitor (e.g. UptimeRobot) on `GET https://intra.alma-care.eu/health` every 5 minutes.
 
 ## Not covered yet
 

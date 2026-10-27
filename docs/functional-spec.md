@@ -243,13 +243,13 @@ delete (soft), filter in the timeline. Each edit is audited. A due next step not
 
 ### 6.2 Sending domain and addresses **[D-17]**
 
-- Outgoing mail is sent through Resend from a **subdomain** (proposal `mail.adosalma.sk`), so its
+- Outgoing mail is sent through Resend from a **subdomain** (`mail.alma-care.eu`), so its
   reputation is separate from the main domain and from Alma ADOS's system mail.
-- **From**: the user's name with the shared address **`info@mail.adosalma.sk`** **[D-17a]**, e.g.
-  `Ján Novák | Alma <info@mail.adosalma.sk>`.
+- **From**: the user's name with the shared address **`info@mail.alma-care.eu`** **[D-17a]**, e.g.
+  `Ján Novák | Alma <info@mail.alma-care.eu>`.
 - **Reply-To**: a per-message reply address on the inbound subdomain (section 6.6), so replies come
   back to Intra.
-- `info@adosalma.sk` stays the company's general mailbox outside Intra and is shown in the e-mail
+- `info@alma-care.eu` is the company's general mailbox outside Intra and is shown in the e-mail
   footer as the general contact **[D-17b]**. Bringing mail sent to it into Intra (forwarding to the
   inbound address) is a later extension, not part of the stages below.
 
@@ -323,7 +323,7 @@ The draft is saved as it goes and can be finished later.
 The owner wants to see customers' replies in Intra.
 
 - Each message's Reply-To is a unique address on an inbound subdomain, e.g.
-  `r+<message-token>@reply.adosalma.sk`. Resend's inbound mail receives it and calls Intra's
+  `r+<message-token>@reply.alma-care.eu`. Resend's inbound mail receives it and calls Intra's
   webhook; Intra fetches the message and its attachments. (**Spike first**: verify Resend inbound's
   current capabilities, limits and pricing; the fallback is a forwarding mailbox read over IMAP.)
 - A reply is matched by its token to the original message, hence to the customer, contact and user.
@@ -470,7 +470,7 @@ part of stage E7.
   - **E-mailový vzhľad**: layout colours, logo, footer text (with a preview).
 - **Audit**: every change, send, file access by Claude; shown in a customer's history, a file's
   history and a global „Záznam aktivít“ **[D-16]**.
-- **Domain and access [D-18]**: the app runs on its own subdomain (e.g. `intra.adosalma.sk`),
+- **Domain and access [D-18]**: the app runs on its own subdomain (`intra.alma-care.eu`),
   without an IP or VPN restriction; mandatory 2FA (D-2) is the protection.
 
 ### Navigation (proposed sidebar)
@@ -577,9 +577,9 @@ both attach files.
 | D-14  | Unsubscribe link in every marketing e-mail; replies go even to unsubscribed contacts; lawyer confirms basis and wording before production |
 | D-15  | A simple dashboard (E8)                                                                                                   |
 | D-16  | A global activity log in the UI (E8)                                                                                      |
-| D-17a | Sending address `info@mail.adosalma.sk` (subdomain), From shows the user's name                                           |
-| D-17b | `info@adosalma.sk` stays the general mailbox, shown in the footer; importing its mail into Intra is a later extension      |
-| D-18  | Own subdomain (e.g. `intra.adosalma.sk`), no IP / VPN restriction                                                         |
+| D-17a | Sending address `info@mail.alma-care.eu` (subdomain), From shows the user's name                                           |
+| D-17b | `info@alma-care.eu` is the general mailbox, shown in the footer; importing its mail into Intra is a later extension      |
+| D-18  | Own subdomain `intra.alma-care.eu`, no IP / VPN restriction                                                         |
 | D-19  | Jira project **INTRA**; tickets are created once the Jira connector is reconfigured                                       |
 | D-20  | UI in Slovak; code, docs and Jira in English                                                                              |
 | D-20b | Templates have a language field, only Slovak offered at first                                                             |
