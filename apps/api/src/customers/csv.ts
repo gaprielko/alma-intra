@@ -65,7 +65,7 @@ export function toCsv(rows: Row[]): string {
       sk.customers.kind[r.kind],
       r.contactType,
       r.type,
-      sk.customers.status[r.status],
+      r.status ? sk.customers.status[r.status] : null,
       r.ico,
       r.dic,
       r.icDph,

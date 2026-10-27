@@ -108,7 +108,7 @@ function CustomerDetailPage() {
         title={c.name}
         subtitle={meta}
         back={{ to: '/customers', label: t.back }}
-        badge={<CustomerStatusBadge status={c.status} />}
+        badge={c.status ? <CustomerStatusBadge status={c.status} /> : undefined}
       >
         {canSend ? (
           <Button
@@ -522,8 +522,9 @@ function describe(event: HistoryEvent): ReactNode {
   const removed = namesOf(diff.tagsRemoved);
   const tagDetail = [...added.map((n) => `+ ${n}`), ...removed.map((n) => `− ${n}`)].join(', ');
   const status = diff.status as { before?: unknown; after?: unknown } | undefined;
+  // Set, changed or cleared (the type is no longer „Zákazník“, or „Bez zaradenia“ was picked).
   const statusChange =
-    status && isStatus(status.after) ? (
+    status && (isStatus(status.after) || isStatus(status.before)) ? (
       <>
         {h.status}
         {isStatus(status.before) ? (
@@ -532,7 +533,7 @@ function describe(event: HistoryEvent): ReactNode {
             <CustomerStatusBadge status={status.before} /> →
           </>
         ) : null}{' '}
-        <CustomerStatusBadge status={status.after} />
+        {isStatus(status.after) ? <CustomerStatusBadge status={status.after} /> : h.none}
       </>
     ) : null;
   const fieldList = Array.isArray(diff.fields)

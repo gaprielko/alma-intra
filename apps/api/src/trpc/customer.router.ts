@@ -76,7 +76,9 @@ export const customerRouter = router({
       const created = await run(() => customers.createCustomer(ctx.db, ctx.session.userId, input));
       auditCustomer(ctx, created.id, {
         kind: input.customer.kind,
-        status: input.customer.status,
+        // As stored: a type other than „Zákazník“ has none.
+        ...(created.status ? { status: created.status } : {}),
+        contactTypeId: input.customer.contactTypeId,
         firstContact: input.firstContact !== undefined,
         ...(created.tagsAdded.length > 0 ? { tagsAdded: created.tagsAdded } : {}),
       });

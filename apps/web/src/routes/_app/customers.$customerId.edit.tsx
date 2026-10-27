@@ -39,7 +39,7 @@ function valuesOf(c: Customer): CustomerFormValues {
       email: c.email ?? '',
       phone: c.phone ?? '',
       typeId: c.typeId ?? '',
-      status: c.status,
+      status: c.status ?? '',
       street: c.street ?? '',
       postalCode: c.postalCode ?? '',
       city: c.city ?? '',

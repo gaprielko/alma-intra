@@ -444,6 +444,7 @@ export const sk = {
       customer: 'Zákazníci',
       former_customer: 'Bývalí',
       not_interested: 'Bez záujmu',
+      none: 'Bez stavu',
     },
     region: {
       bratislava: 'Bratislavský',
@@ -592,6 +593,7 @@ export const sk = {
         newContactType: 'Nový typ kontaktu',
         newContactTypePlaceholder: 'Napríklad Konzultant',
         status: 'Stav',
+        noStatus: 'Bez zaradenia',
         owner: 'Zodpovedá',
         noOwner: 'Nikto',
         source: 'Zdroj',

@@ -90,7 +90,8 @@ const classificationFields = {
   /** Zákazník, Partner, Dodávateľ, …: every record has one. */
   contactTypeId: idSchema,
   typeId: idSchema.optional().nullable(),
-  status: z.enum(CUSTOMER_STATUSES),
+  /** Only a „Zákazník“ keeps it (the server drops it for other types); empty until set. */
+  status: z.enum(CUSTOMER_STATUSES).optional().nullable(),
   street: optionalText(160),
   postalCode: optionalText(12),
   city: optionalText(80),
@@ -156,7 +157,8 @@ export type CustomerSort = (typeof CUSTOMER_SORTS)[number];
 /** The filters of the list; also what a CSV export and (later) a saved segment are made of. */
 export const customerFilterSchema = z.object({
   search: z.string().trim().max(100).optional(),
-  status: z.enum(CUSTOMER_STATUSES).optional(),
+  /** A status, or `none` for the records without one. */
+  status: z.enum(CUSTOMER_STATUSES).or(z.literal('none')).optional(),
   kind: z.enum(CUSTOMER_KINDS).optional(),
   contactTypeId: idSchema.optional(),
   /** A type, or `none` for the customers without one. */

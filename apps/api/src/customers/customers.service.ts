@@ -45,7 +45,12 @@ function omit<T extends object, K extends keyof T>(value: T, key: K): Omit<T, K>
 export class CustomerError extends Error {
   constructor(
     readonly code:
-      'NOT_FOUND' | 'ICO_TAKEN' | 'KIND_CHANGED' | 'CONTACT_EMAIL_TAKEN' | 'NOT_ORGANIZATION',
+      | 'NOT_FOUND'
+      | 'ICO_TAKEN'
+      | 'KIND_CHANGED'
+      | 'CONTACT_EMAIL_TAKEN'
+      | 'NOT_ORGANIZATION'
+      | 'CONTACT_TYPE_UNKNOWN',
   ) {
     super(code);
   }
@@ -64,6 +69,10 @@ const CUSTOMER_ID = sql.raw('"customers"."id"');
 
 /** `%text%` for ILIKE, with the wildcards somebody typed taken literally. */
 const likePattern = (text: string) => `%${text.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+
+/** The status filter: one status, or the records without one. */
+const statusWhere = (status: CustomerFilter['status']) =>
+  status === 'none' ? [isNull(customers.status)] : status ? [eq(customers.status, status)] : [];
 
 /** The filters of the list as a WHERE clause; `status` is left to the caller (the chips count without it). */
 function filterWhere(filter: CustomerFilter): SQL[] {
@@ -135,11 +144,11 @@ const SORTS = {
 export async function listCustomers(db: Db | Tx, raw: CustomerListInput) {
   const input = customerListSchema.parse(raw);
   const base = filterWhere(input);
-  const where = input.status ? [...base, eq(customers.status, input.status)] : base;
-  // Customers never contacted go last whichever way the list is sorted.
+  const where = [...base, ...statusWhere(input.status)];
+  // Customers never contacted, and records without a status, go last whichever way it is sorted.
   const order =
-    input.sort === 'lastContact'
-      ? sql`${LAST_CONTACT} ${sql.raw(input.dir === 'desc' ? 'desc' : 'asc')} nulls last`
+    input.sort === 'lastContact' || input.sort === 'status'
+      ? sql`${SORTS[input.sort]} ${sql.raw(input.dir === 'desc' ? 'desc' : 'asc')} nulls last`
       : input.dir === 'desc'
         ? desc(SORTS[input.sort])
         : asc(SORTS[input.sort]);
@@ -176,8 +185,9 @@ export async function listCustomers(db: Db | Tx, raw: CustomerListInput) {
       .groupBy(customers.status),
   ]);
 
-  const counts: Record<'all' | CustomerStatus, number> = {
+  const counts: Record<'all' | 'none' | CustomerStatus, number> = {
     all: 0,
+    none: 0,
     lead: 0,
     contacted: 0,
     interested: 0,
@@ -186,7 +196,7 @@ export async function listCustomers(db: Db | Tx, raw: CustomerListInput) {
     not_interested: 0,
   };
   for (const row of statusCounts) {
-    counts[row.status] = row.count;
+    counts[row.status ?? 'none'] = row.count;
     counts.all += row.count;
   }
   // A page past the end has no rows to carry the window count: the counts say how many there are.
@@ -286,12 +296,22 @@ async function assertIcoFree(tx: Tx, ico: string | undefined, except?: string) {
   if (taken && taken.id !== except) throw new CustomerError('ICO_TAKEN');
 }
 
-/** The columns of a customer from the form. */
-function columnsOf(input: CustomerInput) {
+/** Whether the contact type is „Zákazník“, the one type with a sales status. */
+async function hasSalesStatus(tx: Tx, contactTypeId: string) {
+  const [type] = await tx
+    .select({ systemKey: contactTypes.systemKey })
+    .from(contactTypes)
+    .where(eq(contactTypes.id, contactTypeId));
+  if (!type) throw new CustomerError('CONTACT_TYPE_UNKNOWN');
+  return type.systemKey === 'customer';
+}
+
+/** The columns of a customer from the form; the status only for a „Zákazník“. */
+function columnsOf(input: CustomerInput, salesStatus: boolean) {
   const common = {
     contactTypeId: input.contactTypeId,
     typeId: input.typeId ?? null,
-    status: input.status,
+    status: salesStatus ? (input.status ?? null) : null,
     street: input.street ?? null,
     postalCode: input.postalCode ?? null,
     city: input.city ?? null,
@@ -368,7 +388,10 @@ async function mapUnique<T>(fn: () => Promise<T>): Promise<T> {
 export async function createCustomer(db: Db, userId: string, input: CreateCustomerInput) {
   return mapUnique(() =>
     db.transaction(async (tx) => {
-      const values = columnsOf(input.customer);
+      const values = columnsOf(
+        input.customer,
+        await hasSalesStatus(tx, input.customer.contactTypeId),
+      );
       await assertIcoFree(
         tx,
         input.customer.kind === 'organization' ? input.customer.ico : undefined,
@@ -390,7 +413,7 @@ export async function createCustomer(db: Db, userId: string, input: CreateCustom
           isPrimary: true,
         });
       }
-      return { id: created!.id, tagsAdded: added };
+      return { id: created!.id, status: values.status, tagsAdded: added };
     }),
   );
 }
@@ -419,7 +442,7 @@ export async function updateCustomer(db: Db, id: string, input: CustomerInput) {
       if (!current) throw new CustomerError('NOT_FOUND');
       if (current.kind !== input.kind) throw new CustomerError('KIND_CHANGED');
       await assertIcoFree(tx, input.kind === 'organization' ? input.ico : undefined, id);
-      const values = columnsOf(input);
+      const values = columnsOf(input, await hasSalesStatus(tx, input.contactTypeId));
       const fields = changedFields(current, values).filter((f) => f !== 'kind');
       const unsubscribe =
         input.kind === 'individual'
@@ -437,7 +460,7 @@ export async function updateCustomer(db: Db, id: string, input: CustomerInput) {
       if (tagChange.added.length + tagChange.removed.length > 0) fields.push('tags');
       return {
         fields: fields.sort(),
-        status: { before: current.status, after: input.status },
+        status: { before: current.status, after: values.status },
         ownerUserId: { before: current.ownerUserId, after: values.ownerUserId },
         contactTypeId: { before: current.contactTypeId, after: values.contactTypeId },
         typeId: { before: current.typeId, after: values.typeId },
@@ -476,11 +499,18 @@ export async function bulkAddTag(db: Db, ids: string[], name: string) {
   });
 }
 
+/** The status of the picked records that are a „Zákazník“; the others have none and are left. */
 export async function bulkSetStatus(db: Db, ids: string[], status: CustomerStatus) {
   const rows = await db
     .update(customers)
     .set({ status, updatedAt: new Date() })
-    .where(and(inArray(customers.id, ids), alive))
+    .where(
+      and(
+        inArray(customers.id, ids),
+        alive,
+        sql`${customers.contactTypeId} in (select id from contact_types where system_key = 'customer')`,
+      ),
+    )
     .returning({ id: customers.id });
   return rows.map((r) => r.id);
 }
@@ -492,7 +522,7 @@ export async function exportRows(
 ) {
   const where = filter.ids
     ? [alive, inArray(customers.id, filter.ids)]
-    : [...filterWhere(filter), ...(filter.status ? [eq(customers.status, filter.status)] : [])];
+    : [...filterWhere(filter), ...statusWhere(filter.status)];
   const primary = sql<{
     name: string;
     email: string | null;

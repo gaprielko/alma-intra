@@ -85,6 +85,13 @@
       "when": 1793136644125,
       "tag": "0011_contact_types",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793137067692,
+      "tag": "0012_status_customers_only",
+      "breakpoints": true
     }
   ]
 }

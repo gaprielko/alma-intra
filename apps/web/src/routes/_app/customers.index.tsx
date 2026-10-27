@@ -51,7 +51,7 @@ const PAGE_SIZES = [20, 50, 100] as const;
 
 const search = z.object({
   q: z.string().optional(),
-  status: z.enum(CUSTOMER_STATUSES).optional(),
+  status: z.enum([...CUSTOMER_STATUSES, 'none']).optional(),
   kind: z.enum(CUSTOMER_KINDS).optional(),
   contactType: z.string().optional(),
   type: z.string().optional(),
@@ -301,7 +301,7 @@ function CustomersPage() {
                 role="group"
                 aria-label={t.columns.status}
               >
-                {(['all', ...CUSTOMER_STATUSES] as const).map((key) => {
+                {(['all', ...CUSTOMER_STATUSES, 'none'] as const).map((key) => {
                   const on = (params.status ?? 'all') === key;
                   return (
                     <button
@@ -356,7 +356,6 @@ function CustomersPage() {
             />,
             sortHeader('name', t.columns.customer),
             t.columns.primaryContact,
-            sortHeader('status', t.columns.status),
             t.columns.owner,
             t.columns.tags,
             sortHeader('lastContact', t.columns.lastContact),
@@ -365,7 +364,6 @@ function CustomersPage() {
             'w-10',
             undefined,
             'hidden lg:table-cell',
-            undefined,
             'hidden xl:table-cell',
             'hidden 2xl:table-cell',
             'hidden xl:table-cell',
@@ -374,7 +372,6 @@ function CustomersPage() {
             undefined,
             sortState('name'),
             undefined,
-            sortState('status'),
             undefined,
             undefined,
             sortState('lastContact'),
@@ -484,12 +481,16 @@ function CustomerRow({
             <RowLink href={href} className="block truncate font-semibold">
               {row.name}
             </RowLink>
-            <p className="truncate text-xs text-muted">{meta}</p>
+            <div className="mt-0.5 flex min-w-0 items-center gap-2">
+              {row.status ? <CustomerStatusBadge status={row.status} /> : null}
+              <p className="truncate text-xs text-muted">{meta}</p>
+            </div>
           </div>
         </div>
       </TableCell>
       <TableCell className="hidden lg:table-cell">
-        {row.primaryContact ? (
+        {/* A private person is their own contact: nothing to repeat here. */}
+        {row.kind === 'individual' ? null : row.primaryContact ? (
           <>
             <p className="truncate">{row.primaryContact.name}</p>
             <p className="truncate text-xs text-muted">{row.primaryContact.email}</p>
@@ -500,9 +501,6 @@ function CustomerRow({
             <p className="text-xs font-semibold text-warning">{t.addContactHint}</p>
           </>
         )}
-      </TableCell>
-      <TableCell>
-        <CustomerStatusBadge status={row.status} />
       </TableCell>
       <TableCell className="hidden text-muted xl:table-cell">
         {row.owner?.name ?? sk.common.none}

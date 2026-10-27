@@ -61,7 +61,8 @@ export interface CustomerFormValues {
     icDph: string;
     web: string;
     typeId: string;
-    status: (typeof CUSTOMER_STATUSES)[number];
+    /** Empty: „Bez zaradenia“. */
+    status: (typeof CUSTOMER_STATUSES)[number] | '';
     street: string;
     postalCode: string;
     city: string;
@@ -90,7 +91,7 @@ export function emptyCustomer(ownerUserId: string): CustomerFormValues {
       icDph: '',
       web: '',
       typeId: '',
-      status: 'lead',
+      status: '',
       street: '',
       postalCode: '',
       city: '',
@@ -114,6 +115,7 @@ function toInput(values: CustomerFormValues) {
     customer: {
       ...c,
       typeId: c.typeId || null,
+      status: c.status || null,
       region: c.region || null,
       ownerUserId: c.ownerUserId || null,
       sourceId: c.sourceId || null,
@@ -648,18 +650,25 @@ function Classification() {
   const { control } = useFormContext<CustomerFormValues>();
   const options = useQuery(trpc.customer.options.queryOptions());
   const kind = useWatch({ control, name: 'customer.kind' });
+  const contactTypeId = useWatch({ control, name: 'customer.contactTypeId' });
+  // The sales status belongs to a „Zákazník“ only; another type has none.
+  const salesStatus =
+    options.data?.contactTypes.find((type) => type.id === contactTypeId)?.systemKey === 'customer';
   const c = t.classification;
   return (
     <Section title={c.title} lead={c.lead}>
       <div className="grid gap-4 @md:grid-cols-3">
         <ContactTypeField />
-        <SelectField name="customer.status" label={c.status}>
-          {CUSTOMER_STATUSES.map((s) => (
-            <SelectItem key={s} value={s}>
-              {sk.customers.status[s]}
-            </SelectItem>
-          ))}
-        </SelectField>
+        {salesStatus ? (
+          <SelectField name="customer.status" label={c.status}>
+            <SelectItem value="">{c.noStatus}</SelectItem>
+            {CUSTOMER_STATUSES.map((s) => (
+              <SelectItem key={s} value={s}>
+                {sk.customers.status[s]}
+              </SelectItem>
+            ))}
+          </SelectField>
+        ) : null}
         <SelectField name="customer.ownerUserId" label={c.owner}>
           <SelectItem value="">{c.noOwner}</SelectItem>
           {(options.data?.users ?? []).map((u) => (

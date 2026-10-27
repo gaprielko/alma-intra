@@ -95,7 +95,8 @@ export const customers = pgTable(
     ico: text('ico'),
     dic: text('dic'),
     icDph: text('ic_dph'),
-    status: customerStatus('status').notNull().default('lead'),
+    /** The sales pipeline: a „Zákazník“ only, empty until somebody sets it; null for any other type. */
+    status: customerStatus('status'),
     street: text('street'),
     postalCode: text('postal_code'),
     city: text('city'),
