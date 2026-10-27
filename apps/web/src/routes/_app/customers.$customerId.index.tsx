@@ -9,7 +9,7 @@ import {
 } from '@intra/shared/schemas';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { MoreHorizontal, Pencil, Plus } from 'lucide-react';
+import { Mail, MoreHorizontal, Pencil, Plus } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { formatDay, KindMark } from '@/components/activities/activity-bits';
 import { ActivityDialog } from '@/components/activities/activity-dialog';
@@ -55,6 +55,16 @@ function CustomerDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [recording, setRecording] = useState(false);
   const canRecord = useCan('activity.write');
+  const canSend = useCan('email.send');
+  const navigateTo = useNavigate();
+  const composeToast = useToast();
+  const compose = useMutation(
+    trpc.campaign.create.mutationOptions({
+      onSuccess: (created) =>
+        navigateTo({ to: '/emails/compose/$campaignId', params: { campaignId: created.id } }),
+      onError: (error) => composeToast('error', errorMessage(error, sk.campaigns.errors)),
+    }),
+  );
 
   if (customer.isPending) {
     return (
@@ -99,6 +109,16 @@ function CustomerDetailPage() {
         back={{ to: '/customers', label: t.back }}
         badge={<CustomerStatusBadge status={c.status} />}
       >
+        {canSend ? (
+          <Button
+            variant="secondary"
+            disabled={compose.isPending}
+            onClick={() => compose.mutate({ customerIds: [customerId] })}
+          >
+            <Mail className="size-4" aria-hidden />
+            {sk.campaigns.sendEmail}
+          </Button>
+        ) : null}
         {canRecord ? (
           <Button onClick={() => setRecording(true)}>
             <Plus className="size-4" aria-hidden />
@@ -679,6 +699,8 @@ function TimelineCard({ customer }: { customer: Customer }) {
                     item={item.activity}
                     onOpen={() => setOpenId(item.activity.id)}
                   />
+                ) : item.type === 'email' ? (
+                  <EmailItem key={item.email.id} item={item.email} />
                 ) : (
                   <li key={item.change.id} className="relative">
                     <span
@@ -715,6 +737,51 @@ type TimelineActivity = Extract<
   RouterOutputs['activity']['timeline'][number],
   { type: 'activity' }
 >['activity'];
+
+type TimelineEmail = Extract<
+  RouterOutputs['activity']['timeline'][number],
+  { type: 'email' }
+>['email'];
+
+/** A sent e-mail in the timeline: the subject, to whom, its delivery; opens the campaign. */
+function EmailItem({ item }: { item: TimelineEmail }) {
+  return (
+    <li className="relative">
+      <span
+        aria-hidden
+        className="absolute top-0 -left-[41px] inline-flex size-7 items-center justify-center rounded-full bg-[#e9eef6] text-[#334e7b]"
+      >
+        <Mail className="size-3.5" />
+      </span>
+      <Link
+        to="/emails/sent/$campaignId"
+        params={{ campaignId: item.campaignId }}
+        className="block rounded-lg hover:bg-hover/60"
+      >
+        <p className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+          {a.timeline.email(item.subject ?? '')}
+          <Badge tone={EMAIL_TONE[item.status]} dot>
+            {sk.campaigns.status[item.status]}
+          </Badge>
+        </p>
+        <p className="text-xs text-muted">
+          {a.timeline.emailBy(item.sender, item.toName ?? sk.common.none, formatRecent(item.at))}
+        </p>
+      </Link>
+    </li>
+  );
+}
+
+const EMAIL_TONE = {
+  draft: 'neutral',
+  skipped: 'neutral',
+  queued: 'info',
+  sent: 'info',
+  delivered: 'success',
+  bounced: 'danger',
+  complained: 'danger',
+  failed: 'danger',
+} as const;
 
 /** One activity in the timeline: its mark, a heading, who and when, the start of the notes. */
 function ActivityItem({ item, onOpen }: { item: TimelineActivity; onOpen: () => void }) {

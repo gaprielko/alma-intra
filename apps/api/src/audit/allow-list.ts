@@ -136,7 +136,8 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     firstContact: flag,
     fields: subsetOf(CUSTOMER_FIELDS),
     deleted: flag,
-    contact: oneOf(['created', 'updated', 'primary', 'deleted']),
+    contact: oneOf(['created', 'updated', 'primary', 'deleted', 'unsubscribed', 'resubscribed']),
+    reason: oneOf(['too_many', 'not_interested', 'left_position', 'other']),
     contactId: uuid,
     ids: uuidList,
     count: number,
@@ -224,6 +225,17 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     headerStyle: oneOf(HEADER_STYLES),
   },
   email_image: { size: number },
+  /** An e-mail to customers: how many recipients, the template; never a text or an address. */
+  campaign: {
+    count: number,
+    skipped: number,
+    templateId: uuid,
+    messageId: uuid,
+    edited: flag,
+    deleted: flag,
+    test: flag,
+    fields: subsetOf(['content']),
+  },
   folder: {
     parentId: uuid,
     customerId: uuid,

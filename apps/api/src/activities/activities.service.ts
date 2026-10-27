@@ -13,6 +13,8 @@ import {
   activityAttachments,
   activityParticipants,
   auditEvents,
+  campaignMessages,
+  campaigns,
   contacts,
   customers,
   files,
@@ -419,6 +421,31 @@ export async function timeline(db: Db, customerId: string, filter: TimelineFilte
         participants: participants.get(row.id) ?? [],
       },
     })),
+    ...(filter === 'all' || filter === 'emails'
+      ? (
+          await db
+            .select({
+              id: campaignMessages.id,
+              campaignId: campaignMessages.campaignId,
+              subject: campaignMessages.subject,
+              status: campaignMessages.status,
+              toName: campaignMessages.toName,
+              at: sql<Date>`coalesce(${campaignMessages.sentAt}, ${campaignMessages.queuedAt})`,
+              sender: users.name,
+            })
+            .from(campaignMessages)
+            .innerJoin(campaigns, eq(campaigns.id, campaignMessages.campaignId))
+            .innerJoin(users, eq(users.id, campaigns.senderUserId))
+            .where(
+              and(
+                eq(campaignMessages.customerId, customerId),
+                isNotNull(campaignMessages.queuedAt),
+              ),
+            )
+            .orderBy(desc(campaignMessages.queuedAt))
+            .limit(TIMELINE_LIMIT)
+        ).map((email) => ({ type: 'email' as const, at: email.at, email }))
+      : []),
     ...(filter === 'all' || filter === 'changes'
       ? (await customerHistory(db, customerId))
           // A download of the CSV is not news about the customer.

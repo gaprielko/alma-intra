@@ -8,6 +8,7 @@ import { verifyAccessToken } from '../auth/tokens.js';
 import type { Env } from '../config/env.js';
 import type { Db } from '../db/db.module.js';
 import type { BreachCheck } from '../security/breached-password.js';
+import type { MailTransport } from '../mail/transport.js';
 import type { Storage } from '../storage/storage.js';
 
 export interface Context {
@@ -27,6 +28,8 @@ export interface Context {
   breachCheck: BreachCheck | null;
   /** Object storage for the Files module; `null` when no S3 variables are set. */
   storage: Storage | null;
+  /** The provider e-mails to customers go through (the test e-mail is sent at once). */
+  campaignTransport: MailTransport;
   requestId: string;
   /**
    * Lets a procedure add what only it knows to its audit event (acting user, entity, diff).
@@ -55,6 +58,7 @@ export function createContextFactory(
   env: Env,
   breachCheck: BreachCheck | null,
   storage: Storage | null,
+  campaignTransport: MailTransport,
 ) {
   return async ({ req, res }: CreateExpressContextOptions): Promise<Context> => {
     return {
@@ -65,6 +69,7 @@ export function createContextFactory(
       session: await sessionFrom(db, env, req),
       breachCheck,
       storage,
+      campaignTransport,
       // Assigned by the request logger, so log lines and the context share one id.
       requestId: String((req as { id?: unknown }).id),
       audit: new AuditTrail(),

@@ -14,6 +14,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as ActivateRouteImport } from './routes/activate'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as OdhlasenieRouteImport } from './routes/odhlasenie'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AppAccountRouteImport } from './routes/_app/account'
 import { Route as AppEmailsRouteImport } from './routes/_app/emails'
@@ -22,13 +23,17 @@ import { Route as AppOverviewRouteImport } from './routes/_app/overview'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppCustomersIndexRouteImport } from './routes/_app/customers.index'
 import { Route as AppCustomersNewRouteImport } from './routes/_app/customers.new'
+import { Route as AppEmailsDraftsRouteImport } from './routes/_app/emails.drafts'
 import { Route as AppSettingsCodeListsRouteImport } from './routes/_app/settings.code-lists'
 import { Route as AppSettingsEmailLookRouteImport } from './routes/_app/settings.email-look'
 import { Route as AppSettingsUsersRouteImport } from './routes/_app/settings.users'
 import { Route as AppCustomersCustomerIdIndexRouteImport } from './routes/_app/customers.$customerId.index'
 import { Route as AppCustomersCustomerIdEditRouteImport } from './routes/_app/customers.$customerId.edit'
+import { Route as AppEmailsSentIndexRouteImport } from './routes/_app/emails.sent.index'
 import { Route as AppEmailsTemplatesIndexRouteImport } from './routes/_app/emails.templates.index'
-import { Route as AppEmailsTemplatesTemplateIdRouteImport } from './routes/_app/emails.templates.$templateId'
+import { Route as AppEmailsComposeCampaignIdRouteImport } from './routes/_app/emails_.compose.$campaignId'
+import { Route as AppEmailsSentCampaignIdRouteImport } from './routes/_app/emails_.sent.$campaignId'
+import { Route as AppEmailsTemplatesTemplateIdRouteImport } from './routes/_app/emails_.templates.$templateId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -52,6 +57,11 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OdhlasenieRoute = OdhlasenieRouteImport.update({
+  id: '/odhlasenie',
+  path: '/odhlasenie',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -94,6 +104,11 @@ const AppCustomersNewRoute = AppCustomersNewRouteImport.update({
   path: '/customers/new',
   getParentRoute: () => AppRoute,
 } as any)
+const AppEmailsDraftsRoute = AppEmailsDraftsRouteImport.update({
+  id: '/drafts',
+  path: '/drafts',
+  getParentRoute: () => AppEmailsRoute,
+} as any)
 const AppSettingsCodeListsRoute = AppSettingsCodeListsRouteImport.update({
   id: '/code-lists',
   path: '/code-lists',
@@ -121,16 +136,32 @@ const AppCustomersCustomerIdEditRoute =
     path: '/customers/$customerId/edit',
     getParentRoute: () => AppRoute,
   } as any)
+const AppEmailsSentIndexRoute = AppEmailsSentIndexRouteImport.update({
+  id: '/sent/',
+  path: '/sent/',
+  getParentRoute: () => AppEmailsRoute,
+} as any)
 const AppEmailsTemplatesIndexRoute = AppEmailsTemplatesIndexRouteImport.update({
   id: '/templates/',
   path: '/templates/',
   getParentRoute: () => AppEmailsRoute,
 } as any)
+const AppEmailsComposeCampaignIdRoute =
+  AppEmailsComposeCampaignIdRouteImport.update({
+    id: '/emails_/compose/$campaignId',
+    path: '/emails/compose/$campaignId',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppEmailsSentCampaignIdRoute = AppEmailsSentCampaignIdRouteImport.update({
+  id: '/emails_/sent/$campaignId',
+  path: '/emails/sent/$campaignId',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppEmailsTemplatesTemplateIdRoute =
   AppEmailsTemplatesTemplateIdRouteImport.update({
-    id: '/templates/$templateId',
-    path: '/templates/$templateId',
-    getParentRoute: () => AppEmailsRoute,
+    id: '/emails_/templates/$templateId',
+    path: '/emails/templates/$templateId',
+    getParentRoute: () => AppRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -138,6 +169,7 @@ export interface FileRoutesByFullPath {
   '/activate': typeof ActivateRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/odhlasenie': typeof OdhlasenieRoute
   '/reset-password': typeof ResetPasswordRoute
   '/account': typeof AppAccountRoute
   '/emails': typeof AppEmailsRouteWithChildren
@@ -145,13 +177,17 @@ export interface FileRoutesByFullPath {
   '/overview': typeof AppOverviewRoute
   '/settings': typeof AppSettingsRouteWithChildren
   '/customers/new': typeof AppCustomersNewRoute
+  '/emails/drafts': typeof AppEmailsDraftsRoute
   '/settings/code-lists': typeof AppSettingsCodeListsRoute
   '/settings/email-look': typeof AppSettingsEmailLookRoute
   '/settings/users': typeof AppSettingsUsersRoute
   '/customers/': typeof AppCustomersIndexRoute
   '/customers/$customerId/edit': typeof AppCustomersCustomerIdEditRoute
+  '/emails/compose/$campaignId': typeof AppEmailsComposeCampaignIdRoute
+  '/emails/sent/$campaignId': typeof AppEmailsSentCampaignIdRoute
   '/emails/templates/$templateId': typeof AppEmailsTemplatesTemplateIdRoute
   '/customers/$customerId/': typeof AppCustomersCustomerIdIndexRoute
+  '/emails/sent/': typeof AppEmailsSentIndexRoute
   '/emails/templates/': typeof AppEmailsTemplatesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -159,6 +195,7 @@ export interface FileRoutesByTo {
   '/activate': typeof ActivateRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/odhlasenie': typeof OdhlasenieRoute
   '/reset-password': typeof ResetPasswordRoute
   '/account': typeof AppAccountRoute
   '/emails': typeof AppEmailsRouteWithChildren
@@ -166,13 +203,17 @@ export interface FileRoutesByTo {
   '/overview': typeof AppOverviewRoute
   '/settings': typeof AppSettingsRouteWithChildren
   '/customers/new': typeof AppCustomersNewRoute
+  '/emails/drafts': typeof AppEmailsDraftsRoute
   '/settings/code-lists': typeof AppSettingsCodeListsRoute
   '/settings/email-look': typeof AppSettingsEmailLookRoute
   '/settings/users': typeof AppSettingsUsersRoute
   '/customers': typeof AppCustomersIndexRoute
   '/customers/$customerId/edit': typeof AppCustomersCustomerIdEditRoute
+  '/emails/compose/$campaignId': typeof AppEmailsComposeCampaignIdRoute
+  '/emails/sent/$campaignId': typeof AppEmailsSentCampaignIdRoute
   '/emails/templates/$templateId': typeof AppEmailsTemplatesTemplateIdRoute
   '/customers/$customerId': typeof AppCustomersCustomerIdIndexRoute
+  '/emails/sent': typeof AppEmailsSentIndexRoute
   '/emails/templates': typeof AppEmailsTemplatesIndexRoute
 }
 export interface FileRoutesById {
@@ -182,6 +223,7 @@ export interface FileRoutesById {
   '/activate': typeof ActivateRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/odhlasenie': typeof OdhlasenieRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_app/account': typeof AppAccountRoute
   '/_app/emails': typeof AppEmailsRouteWithChildren
@@ -189,13 +231,17 @@ export interface FileRoutesById {
   '/_app/overview': typeof AppOverviewRoute
   '/_app/settings': typeof AppSettingsRouteWithChildren
   '/_app/customers/new': typeof AppCustomersNewRoute
+  '/_app/emails/drafts': typeof AppEmailsDraftsRoute
   '/_app/settings/code-lists': typeof AppSettingsCodeListsRoute
   '/_app/settings/email-look': typeof AppSettingsEmailLookRoute
   '/_app/settings/users': typeof AppSettingsUsersRoute
   '/_app/customers/': typeof AppCustomersIndexRoute
   '/_app/customers/$customerId/edit': typeof AppCustomersCustomerIdEditRoute
-  '/_app/emails/templates/$templateId': typeof AppEmailsTemplatesTemplateIdRoute
+  '/_app/emails_/compose/$campaignId': typeof AppEmailsComposeCampaignIdRoute
+  '/_app/emails_/sent/$campaignId': typeof AppEmailsSentCampaignIdRoute
+  '/_app/emails_/templates/$templateId': typeof AppEmailsTemplatesTemplateIdRoute
   '/_app/customers/$customerId/': typeof AppCustomersCustomerIdIndexRoute
+  '/_app/emails/sent/': typeof AppEmailsSentIndexRoute
   '/_app/emails/templates/': typeof AppEmailsTemplatesIndexRoute
 }
 export interface FileRouteTypes {
@@ -205,6 +251,7 @@ export interface FileRouteTypes {
     | '/activate'
     | '/forgot-password'
     | '/login'
+    | '/odhlasenie'
     | '/reset-password'
     | '/account'
     | '/emails'
@@ -212,13 +259,17 @@ export interface FileRouteTypes {
     | '/overview'
     | '/settings'
     | '/customers/new'
+    | '/emails/drafts'
     | '/settings/code-lists'
     | '/settings/email-look'
     | '/settings/users'
     | '/customers/'
     | '/customers/$customerId/edit'
+    | '/emails/compose/$campaignId'
+    | '/emails/sent/$campaignId'
     | '/emails/templates/$templateId'
     | '/customers/$customerId/'
+    | '/emails/sent/'
     | '/emails/templates/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -226,6 +277,7 @@ export interface FileRouteTypes {
     | '/activate'
     | '/forgot-password'
     | '/login'
+    | '/odhlasenie'
     | '/reset-password'
     | '/account'
     | '/emails'
@@ -233,13 +285,17 @@ export interface FileRouteTypes {
     | '/overview'
     | '/settings'
     | '/customers/new'
+    | '/emails/drafts'
     | '/settings/code-lists'
     | '/settings/email-look'
     | '/settings/users'
     | '/customers'
     | '/customers/$customerId/edit'
+    | '/emails/compose/$campaignId'
+    | '/emails/sent/$campaignId'
     | '/emails/templates/$templateId'
     | '/customers/$customerId'
+    | '/emails/sent'
     | '/emails/templates'
   id:
     | '__root__'
@@ -248,6 +304,7 @@ export interface FileRouteTypes {
     | '/activate'
     | '/forgot-password'
     | '/login'
+    | '/odhlasenie'
     | '/reset-password'
     | '/_app/account'
     | '/_app/emails'
@@ -255,13 +312,17 @@ export interface FileRouteTypes {
     | '/_app/overview'
     | '/_app/settings'
     | '/_app/customers/new'
+    | '/_app/emails/drafts'
     | '/_app/settings/code-lists'
     | '/_app/settings/email-look'
     | '/_app/settings/users'
     | '/_app/customers/'
     | '/_app/customers/$customerId/edit'
-    | '/_app/emails/templates/$templateId'
+    | '/_app/emails_/compose/$campaignId'
+    | '/_app/emails_/sent/$campaignId'
+    | '/_app/emails_/templates/$templateId'
     | '/_app/customers/$customerId/'
+    | '/_app/emails/sent/'
     | '/_app/emails/templates/'
   fileRoutesById: FileRoutesById
 }
@@ -271,6 +332,7 @@ export interface RootRouteChildren {
   ActivateRoute: typeof ActivateRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
+  OdhlasenieRoute: typeof OdhlasenieRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
@@ -309,6 +371,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/odhlasenie': {
+      id: '/odhlasenie'
+      path: '/odhlasenie'
+      fullPath: '/odhlasenie'
+      preLoaderRoute: typeof OdhlasenieRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -367,6 +436,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCustomersNewRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/emails/drafts': {
+      id: '/_app/emails/drafts'
+      path: '/drafts'
+      fullPath: '/emails/drafts'
+      preLoaderRoute: typeof AppEmailsDraftsRouteImport
+      parentRoute: typeof AppEmailsRoute
+    }
     '/_app/settings/code-lists': {
       id: '/_app/settings/code-lists'
       path: '/code-lists'
@@ -402,6 +478,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCustomersCustomerIdEditRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/emails/sent/': {
+      id: '/_app/emails/sent/'
+      path: '/sent'
+      fullPath: '/emails/sent/'
+      preLoaderRoute: typeof AppEmailsSentIndexRouteImport
+      parentRoute: typeof AppEmailsRoute
+    }
     '/_app/emails/templates/': {
       id: '/_app/emails/templates/'
       path: '/templates'
@@ -409,23 +492,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppEmailsTemplatesIndexRouteImport
       parentRoute: typeof AppEmailsRoute
     }
-    '/_app/emails/templates/$templateId': {
-      id: '/_app/emails/templates/$templateId'
-      path: '/templates/$templateId'
+    '/_app/emails_/compose/$campaignId': {
+      id: '/_app/emails_/compose/$campaignId'
+      path: '/emails/compose/$campaignId'
+      fullPath: '/emails/compose/$campaignId'
+      preLoaderRoute: typeof AppEmailsComposeCampaignIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/emails_/sent/$campaignId': {
+      id: '/_app/emails_/sent/$campaignId'
+      path: '/emails/sent/$campaignId'
+      fullPath: '/emails/sent/$campaignId'
+      preLoaderRoute: typeof AppEmailsSentCampaignIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/emails_/templates/$templateId': {
+      id: '/_app/emails_/templates/$templateId'
+      path: '/emails/templates/$templateId'
       fullPath: '/emails/templates/$templateId'
       preLoaderRoute: typeof AppEmailsTemplatesTemplateIdRouteImport
-      parentRoute: typeof AppEmailsRoute
+      parentRoute: typeof AppRoute
     }
   }
 }
 
 interface AppEmailsRouteChildren {
-  AppEmailsTemplatesTemplateIdRoute: typeof AppEmailsTemplatesTemplateIdRoute
+  AppEmailsDraftsRoute: typeof AppEmailsDraftsRoute
+  AppEmailsSentIndexRoute: typeof AppEmailsSentIndexRoute
   AppEmailsTemplatesIndexRoute: typeof AppEmailsTemplatesIndexRoute
 }
 
 const AppEmailsRouteChildren: AppEmailsRouteChildren = {
-  AppEmailsTemplatesTemplateIdRoute: AppEmailsTemplatesTemplateIdRoute,
+  AppEmailsDraftsRoute: AppEmailsDraftsRoute,
+  AppEmailsSentIndexRoute: AppEmailsSentIndexRoute,
   AppEmailsTemplatesIndexRoute: AppEmailsTemplatesIndexRoute,
 }
 
@@ -458,6 +557,9 @@ interface AppRouteChildren {
   AppCustomersNewRoute: typeof AppCustomersNewRoute
   AppCustomersIndexRoute: typeof AppCustomersIndexRoute
   AppCustomersCustomerIdEditRoute: typeof AppCustomersCustomerIdEditRoute
+  AppEmailsComposeCampaignIdRoute: typeof AppEmailsComposeCampaignIdRoute
+  AppEmailsSentCampaignIdRoute: typeof AppEmailsSentCampaignIdRoute
+  AppEmailsTemplatesTemplateIdRoute: typeof AppEmailsTemplatesTemplateIdRoute
   AppCustomersCustomerIdIndexRoute: typeof AppCustomersCustomerIdIndexRoute
 }
 
@@ -470,6 +572,9 @@ const AppRouteChildren: AppRouteChildren = {
   AppCustomersNewRoute: AppCustomersNewRoute,
   AppCustomersIndexRoute: AppCustomersIndexRoute,
   AppCustomersCustomerIdEditRoute: AppCustomersCustomerIdEditRoute,
+  AppEmailsComposeCampaignIdRoute: AppEmailsComposeCampaignIdRoute,
+  AppEmailsSentCampaignIdRoute: AppEmailsSentCampaignIdRoute,
+  AppEmailsTemplatesTemplateIdRoute: AppEmailsTemplatesTemplateIdRoute,
   AppCustomersCustomerIdIndexRoute: AppCustomersCustomerIdIndexRoute,
 }
 
@@ -481,6 +586,7 @@ const rootRouteChildren: RootRouteChildren = {
   ActivateRoute: ActivateRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
+  OdhlasenieRoute: OdhlasenieRoute,
   ResetPasswordRoute: ResetPasswordRoute,
 }
 export const routeTree = rootRouteImport

@@ -6,3 +6,4 @@ export * from './customer.js';
 export * from './file.js';
 export * from './activity.js';
 export * from './email-template.js';
+export * from './campaign.js';

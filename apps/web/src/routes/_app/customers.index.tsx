@@ -40,6 +40,7 @@ import { datedFilename, downloadText } from '@/lib/download';
 import { errorMessage } from '@/lib/errors';
 import { formatDate } from '@/lib/format';
 import { loadFailed } from '@/lib/query-view';
+import { useCan } from '@/lib/session';
 import { type RouterOutputs, trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 
@@ -125,6 +126,14 @@ function CustomersPage() {
     placeholderData: keepPreviousData,
   });
   const options = useQuery(trpc.customer.options.queryOptions());
+  const canSend = useCan('email.send');
+  const compose = useMutation(
+    trpc.campaign.create.mutationOptions({
+      onSuccess: (created) =>
+        navigate({ to: '/emails/compose/$campaignId', params: { campaignId: created.id } }),
+      onError: (error) => toast('error', errorMessage(error, sk.campaigns.errors)),
+    }),
+  );
 
   const exportCsv = useMutation(
     trpc.customer.exportCsv.mutationOptions({
@@ -298,6 +307,11 @@ function CustomersPage() {
                   <span className="mr-auto text-sm font-semibold">
                     {t.bulk.selected(selected.size)}
                   </span>
+                  {canSend ? (
+                    <BarButton onClick={() => compose.mutate({ customerIds: [...selected] })}>
+                      {sk.campaigns.sendEmail}
+                    </BarButton>
+                  ) : null}
                   <BarButton onClick={() => setDialog('tag')}>{t.bulk.addTag}</BarButton>
                   <BarButton onClick={() => setDialog('status')}>{t.bulk.changeStatus}</BarButton>
                   <BarButton

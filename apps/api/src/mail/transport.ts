@@ -7,6 +7,13 @@ export interface OutgoingMail {
   subject: string;
   html: string;
   text: string;
+  /** E-mails to customers name their sender; system mail uses `MAIL_FROM`. */
+  from?: string;
+  replyTo?: string;
+  /** `List-Unsubscribe` and `List-Unsubscribe-Post` of an e-mail to customers. */
+  headers?: Record<string, string>;
+  /** Fetched by the provider from a short-lived signed link: the bytes never pass the API. */
+  attachments?: { filename: string; path: string }[];
 }
 
 /** What the provider tells us about an accepted message; `null` when nothing left the process. */

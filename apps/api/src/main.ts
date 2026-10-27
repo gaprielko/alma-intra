@@ -9,7 +9,11 @@ import { serveWeb } from './spa-shell.js';
 
 async function bootstrap() {
   const env = loadEnv();
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
+  // `rawBody`: the Resend webhook's signature is over the exact bytes it sent.
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+    rawBody: true,
+  });
   app.useLogger(app.get(Logger));
   // A nonce-based strict CSP and Referrer-Policy; what each allows and why is in security-headers.ts.
   // The browser uploads files straight to object storage via signed URLs.

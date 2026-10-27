@@ -28,6 +28,11 @@ const envSchema = z.object({
    * The shared sending address of e-mails to customers (D-17a): the From shows the colleague's
    * name with it. Its domain must be verified in Resend.
    */
+  /**
+   * The signing secret of the Resend webhook (`whsec_…`) that reports delivery, bounces and
+   * complaints. Unset, the webhook answers 503 and messages stay „Odoslaný“.
+   */
+  RESEND_WEBHOOK_SECRET: optionalString(z.string().min(10)),
   CAMPAIGN_FROM_ADDRESS: z.string().email().default('info@mail.alma-care.eu'),
   /** Built `apps/web` served by the API (staging/production image). Unset in dev: Vite serves it. */
   WEB_DIST_DIR: optionalString(z.string().min(1)),

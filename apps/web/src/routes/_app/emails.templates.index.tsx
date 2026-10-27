@@ -5,7 +5,6 @@ import { Mail, Plus, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
 import { EmptyState, ErrorState } from '@/components/empty-state';
-import { PageHeader } from '@/components/page-header';
 import { CardSkeleton } from '@/components/skeletons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -49,7 +48,6 @@ function TemplatesPage() {
   const canWrite = useCan('template.write');
   const [typed, setTyped] = useState(params.q ?? '');
   const search = useDebounced(typed.trim(), 300);
-  const look = useQuery(trpc.template.look.queryOptions());
   const list = useQuery({
     ...trpc.template.list.queryOptions({
       ...(params.category ? { categoryId: params.category } : {}),
@@ -82,21 +80,16 @@ function TemplatesPage() {
 
   return (
     <div className="min-w-0">
-      <PageHeader
-        title={t.title}
-        subtitle={look.data ? sk.emails.subtitle(look.data.senderAddress) : undefined}
-      >
-        {canWrite ? (
-          <Button asChild>
-            <Link to="/emails/templates/$templateId" params={{ templateId: 'new' }}>
-              <Plus className="size-4" aria-hidden />
-              {t.new}
-            </Link>
-          </Button>
-        ) : null}
-      </PageHeader>
       <main className="max-w-[1440px] space-y-4 px-7 pt-5 pb-10">
         <div className="flex flex-wrap items-center gap-3">
+          {canWrite ? (
+            <Button asChild variant="secondary" className="order-last">
+              <Link to="/emails/templates/$templateId" params={{ templateId: 'new' }}>
+                <Plus className="size-4" aria-hidden />
+                {t.new}
+              </Link>
+            </Button>
+          ) : null}
           <div role="tablist" aria-label={t.filters.label} className="flex flex-wrap gap-1.5">
             {chips.map((chip) => (
               <button
