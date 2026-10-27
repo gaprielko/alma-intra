@@ -8,240 +8,244 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root';
-import { Route as IndexRouteImport } from './routes/index';
-import { Route as AppRouteImport } from './routes/_app';
-import { Route as ActivateRouteImport } from './routes/activate';
-import { Route as ForgotPasswordRouteImport } from './routes/forgot-password';
-import { Route as LoginRouteImport } from './routes/login';
-import { Route as OdhlasenieRouteImport } from './routes/odhlasenie';
-import { Route as ResetPasswordRouteImport } from './routes/reset-password';
-import { Route as AppAccountRouteImport } from './routes/_app/account';
-import { Route as AppEmailsRouteImport } from './routes/_app/emails';
-import { Route as AppFilesRouteImport } from './routes/_app/files';
-import { Route as AppOverviewRouteImport } from './routes/_app/overview';
-import { Route as AppSettingsRouteImport } from './routes/_app/settings';
-import { Route as AppCustomersIndexRouteImport } from './routes/_app/customers.index';
-import { Route as AppCustomersNewRouteImport } from './routes/_app/customers.new';
-import { Route as AppEmailsDraftsRouteImport } from './routes/_app/emails.drafts';
-import { Route as AppSettingsCodeListsRouteImport } from './routes/_app/settings.code-lists';
-import { Route as AppSettingsEmailLookRouteImport } from './routes/_app/settings.email-look';
-import { Route as AppSettingsUsersRouteImport } from './routes/_app/settings.users';
-import { Route as AppCustomersCustomerIdIndexRouteImport } from './routes/_app/customers.$customerId.index';
-import { Route as AppCustomersCustomerIdEditRouteImport } from './routes/_app/customers.$customerId.edit';
-import { Route as AppEmailsSentIndexRouteImport } from './routes/_app/emails.sent.index';
-import { Route as AppEmailsTemplatesIndexRouteImport } from './routes/_app/emails.templates.index';
-import { Route as AppEmailsComposeCampaignIdRouteImport } from './routes/_app/emails_.compose.$campaignId';
-import { Route as AppEmailsSentCampaignIdRouteImport } from './routes/_app/emails_.sent.$campaignId';
-import { Route as AppEmailsTemplatesTemplateIdRouteImport } from './routes/_app/emails_.templates.$templateId';
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as ActivateRouteImport } from './routes/activate'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as OdhlasenieRouteImport } from './routes/odhlasenie'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as AppAccountRouteImport } from './routes/_app/account'
+import { Route as AppEmailsRouteImport } from './routes/_app/emails'
+import { Route as AppFilesRouteImport } from './routes/_app/files'
+import { Route as AppOverviewRouteImport } from './routes/_app/overview'
+import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as AppCustomersIndexRouteImport } from './routes/_app/customers.index'
+import { Route as AppCustomersNewRouteImport } from './routes/_app/customers.new'
+import { Route as AppEmailsDraftsRouteImport } from './routes/_app/emails.drafts'
+import { Route as AppSettingsCodeListsRouteImport } from './routes/_app/settings.code-lists'
+import { Route as AppSettingsEmailLookRouteImport } from './routes/_app/settings.email-look'
+import { Route as AppSettingsUsersRouteImport } from './routes/_app/settings.users'
+import { Route as AppCustomersCustomerIdIndexRouteImport } from './routes/_app/customers.$customerId.index'
+import { Route as AppCustomersCustomerIdEditRouteImport } from './routes/_app/customers.$customerId.edit'
+import { Route as AppEmailsSentIndexRouteImport } from './routes/_app/emails.sent.index'
+import { Route as AppEmailsTemplatesIndexRouteImport } from './routes/_app/emails.templates.index'
+import { Route as AppEmailsComposeCampaignIdRouteImport } from './routes/_app/emails_.compose.$campaignId'
+import { Route as AppEmailsSentCampaignIdRouteImport } from './routes/_app/emails_.sent.$campaignId'
+import { Route as AppEmailsTemplatesTemplateIdRouteImport } from './routes/_app/emails_.templates.$templateId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ActivateRoute = ActivateRouteImport.update({
   id: '/activate',
   path: '/activate',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const OdhlasenieRoute = OdhlasenieRouteImport.update({
   id: '/odhlasenie',
   path: '/odhlasenie',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const AppAccountRoute = AppAccountRouteImport.update({
   id: '/account',
   path: '/account',
   getParentRoute: () => AppRoute,
-} as any);
+} as any)
 const AppEmailsRoute = AppEmailsRouteImport.update({
   id: '/emails',
   path: '/emails',
   getParentRoute: () => AppRoute,
-} as any);
+} as any)
 const AppFilesRoute = AppFilesRouteImport.update({
   id: '/files',
   path: '/files',
   getParentRoute: () => AppRoute,
-} as any);
+} as any)
 const AppOverviewRoute = AppOverviewRouteImport.update({
   id: '/overview',
   path: '/overview',
   getParentRoute: () => AppRoute,
-} as any);
+} as any)
 const AppSettingsRoute = AppSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => AppRoute,
-} as any);
+} as any)
 const AppCustomersIndexRoute = AppCustomersIndexRouteImport.update({
   id: '/customers/',
   path: '/customers/',
   getParentRoute: () => AppRoute,
-} as any);
+} as any)
 const AppCustomersNewRoute = AppCustomersNewRouteImport.update({
   id: '/customers/new',
   path: '/customers/new',
   getParentRoute: () => AppRoute,
-} as any);
+} as any)
 const AppEmailsDraftsRoute = AppEmailsDraftsRouteImport.update({
   id: '/drafts',
   path: '/drafts',
   getParentRoute: () => AppEmailsRoute,
-} as any);
+} as any)
 const AppSettingsCodeListsRoute = AppSettingsCodeListsRouteImport.update({
   id: '/code-lists',
   path: '/code-lists',
   getParentRoute: () => AppSettingsRoute,
-} as any);
+} as any)
 const AppSettingsEmailLookRoute = AppSettingsEmailLookRouteImport.update({
   id: '/email-look',
   path: '/email-look',
   getParentRoute: () => AppSettingsRoute,
-} as any);
+} as any)
 const AppSettingsUsersRoute = AppSettingsUsersRouteImport.update({
   id: '/users',
   path: '/users',
   getParentRoute: () => AppSettingsRoute,
-} as any);
-const AppCustomersCustomerIdIndexRoute = AppCustomersCustomerIdIndexRouteImport.update({
-  id: '/customers/$customerId/',
-  path: '/customers/$customerId/',
-  getParentRoute: () => AppRoute,
-} as any);
-const AppCustomersCustomerIdEditRoute = AppCustomersCustomerIdEditRouteImport.update({
-  id: '/customers/$customerId/edit',
-  path: '/customers/$customerId/edit',
-  getParentRoute: () => AppRoute,
-} as any);
+} as any)
+const AppCustomersCustomerIdIndexRoute =
+  AppCustomersCustomerIdIndexRouteImport.update({
+    id: '/customers/$customerId/',
+    path: '/customers/$customerId/',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppCustomersCustomerIdEditRoute =
+  AppCustomersCustomerIdEditRouteImport.update({
+    id: '/customers/$customerId/edit',
+    path: '/customers/$customerId/edit',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppEmailsSentIndexRoute = AppEmailsSentIndexRouteImport.update({
   id: '/sent/',
   path: '/sent/',
   getParentRoute: () => AppEmailsRoute,
-} as any);
+} as any)
 const AppEmailsTemplatesIndexRoute = AppEmailsTemplatesIndexRouteImport.update({
   id: '/templates/',
   path: '/templates/',
   getParentRoute: () => AppEmailsRoute,
-} as any);
-const AppEmailsComposeCampaignIdRoute = AppEmailsComposeCampaignIdRouteImport.update({
-  id: '/emails_/compose/$campaignId',
-  path: '/emails/compose/$campaignId',
-  getParentRoute: () => AppRoute,
-} as any);
+} as any)
+const AppEmailsComposeCampaignIdRoute =
+  AppEmailsComposeCampaignIdRouteImport.update({
+    id: '/emails_/compose/$campaignId',
+    path: '/emails/compose/$campaignId',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppEmailsSentCampaignIdRoute = AppEmailsSentCampaignIdRouteImport.update({
   id: '/emails_/sent/$campaignId',
   path: '/emails/sent/$campaignId',
   getParentRoute: () => AppRoute,
-} as any);
-const AppEmailsTemplatesTemplateIdRoute = AppEmailsTemplatesTemplateIdRouteImport.update({
-  id: '/emails_/templates/$templateId',
-  path: '/emails/templates/$templateId',
-  getParentRoute: () => AppRoute,
-} as any);
+} as any)
+const AppEmailsTemplatesTemplateIdRoute =
+  AppEmailsTemplatesTemplateIdRouteImport.update({
+    id: '/emails_/templates/$templateId',
+    path: '/emails/templates/$templateId',
+    getParentRoute: () => AppRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute;
-  '/activate': typeof ActivateRoute;
-  '/forgot-password': typeof ForgotPasswordRoute;
-  '/login': typeof LoginRoute;
-  '/odhlasenie': typeof OdhlasenieRoute;
-  '/reset-password': typeof ResetPasswordRoute;
-  '/account': typeof AppAccountRoute;
-  '/emails': typeof AppEmailsRouteWithChildren;
-  '/files': typeof AppFilesRoute;
-  '/overview': typeof AppOverviewRoute;
-  '/settings': typeof AppSettingsRouteWithChildren;
-  '/customers/new': typeof AppCustomersNewRoute;
-  '/emails/drafts': typeof AppEmailsDraftsRoute;
-  '/settings/code-lists': typeof AppSettingsCodeListsRoute;
-  '/settings/email-look': typeof AppSettingsEmailLookRoute;
-  '/settings/users': typeof AppSettingsUsersRoute;
-  '/customers/': typeof AppCustomersIndexRoute;
-  '/customers/$customerId/edit': typeof AppCustomersCustomerIdEditRoute;
-  '/emails/compose/$campaignId': typeof AppEmailsComposeCampaignIdRoute;
-  '/emails/sent/$campaignId': typeof AppEmailsSentCampaignIdRoute;
-  '/emails/templates/$templateId': typeof AppEmailsTemplatesTemplateIdRoute;
-  '/customers/$customerId/': typeof AppCustomersCustomerIdIndexRoute;
-  '/emails/sent/': typeof AppEmailsSentIndexRoute;
-  '/emails/templates/': typeof AppEmailsTemplatesIndexRoute;
+  '/': typeof IndexRoute
+  '/activate': typeof ActivateRoute
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/login': typeof LoginRoute
+  '/odhlasenie': typeof OdhlasenieRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/account': typeof AppAccountRoute
+  '/emails': typeof AppEmailsRouteWithChildren
+  '/files': typeof AppFilesRoute
+  '/overview': typeof AppOverviewRoute
+  '/settings': typeof AppSettingsRouteWithChildren
+  '/customers/new': typeof AppCustomersNewRoute
+  '/emails/drafts': typeof AppEmailsDraftsRoute
+  '/settings/code-lists': typeof AppSettingsCodeListsRoute
+  '/settings/email-look': typeof AppSettingsEmailLookRoute
+  '/settings/users': typeof AppSettingsUsersRoute
+  '/customers/': typeof AppCustomersIndexRoute
+  '/customers/$customerId/edit': typeof AppCustomersCustomerIdEditRoute
+  '/emails/compose/$campaignId': typeof AppEmailsComposeCampaignIdRoute
+  '/emails/sent/$campaignId': typeof AppEmailsSentCampaignIdRoute
+  '/emails/templates/$templateId': typeof AppEmailsTemplatesTemplateIdRoute
+  '/customers/$customerId/': typeof AppCustomersCustomerIdIndexRoute
+  '/emails/sent/': typeof AppEmailsSentIndexRoute
+  '/emails/templates/': typeof AppEmailsTemplatesIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute;
-  '/activate': typeof ActivateRoute;
-  '/forgot-password': typeof ForgotPasswordRoute;
-  '/login': typeof LoginRoute;
-  '/odhlasenie': typeof OdhlasenieRoute;
-  '/reset-password': typeof ResetPasswordRoute;
-  '/account': typeof AppAccountRoute;
-  '/emails': typeof AppEmailsRouteWithChildren;
-  '/files': typeof AppFilesRoute;
-  '/overview': typeof AppOverviewRoute;
-  '/settings': typeof AppSettingsRouteWithChildren;
-  '/customers/new': typeof AppCustomersNewRoute;
-  '/emails/drafts': typeof AppEmailsDraftsRoute;
-  '/settings/code-lists': typeof AppSettingsCodeListsRoute;
-  '/settings/email-look': typeof AppSettingsEmailLookRoute;
-  '/settings/users': typeof AppSettingsUsersRoute;
-  '/customers': typeof AppCustomersIndexRoute;
-  '/customers/$customerId/edit': typeof AppCustomersCustomerIdEditRoute;
-  '/emails/compose/$campaignId': typeof AppEmailsComposeCampaignIdRoute;
-  '/emails/sent/$campaignId': typeof AppEmailsSentCampaignIdRoute;
-  '/emails/templates/$templateId': typeof AppEmailsTemplatesTemplateIdRoute;
-  '/customers/$customerId': typeof AppCustomersCustomerIdIndexRoute;
-  '/emails/sent': typeof AppEmailsSentIndexRoute;
-  '/emails/templates': typeof AppEmailsTemplatesIndexRoute;
+  '/': typeof IndexRoute
+  '/activate': typeof ActivateRoute
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/login': typeof LoginRoute
+  '/odhlasenie': typeof OdhlasenieRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/account': typeof AppAccountRoute
+  '/emails': typeof AppEmailsRouteWithChildren
+  '/files': typeof AppFilesRoute
+  '/overview': typeof AppOverviewRoute
+  '/settings': typeof AppSettingsRouteWithChildren
+  '/customers/new': typeof AppCustomersNewRoute
+  '/emails/drafts': typeof AppEmailsDraftsRoute
+  '/settings/code-lists': typeof AppSettingsCodeListsRoute
+  '/settings/email-look': typeof AppSettingsEmailLookRoute
+  '/settings/users': typeof AppSettingsUsersRoute
+  '/customers': typeof AppCustomersIndexRoute
+  '/customers/$customerId/edit': typeof AppCustomersCustomerIdEditRoute
+  '/emails/compose/$campaignId': typeof AppEmailsComposeCampaignIdRoute
+  '/emails/sent/$campaignId': typeof AppEmailsSentCampaignIdRoute
+  '/emails/templates/$templateId': typeof AppEmailsTemplatesTemplateIdRoute
+  '/customers/$customerId': typeof AppCustomersCustomerIdIndexRoute
+  '/emails/sent': typeof AppEmailsSentIndexRoute
+  '/emails/templates': typeof AppEmailsTemplatesIndexRoute
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport;
-  '/': typeof IndexRoute;
-  '/_app': typeof AppRouteWithChildren;
-  '/activate': typeof ActivateRoute;
-  '/forgot-password': typeof ForgotPasswordRoute;
-  '/login': typeof LoginRoute;
-  '/odhlasenie': typeof OdhlasenieRoute;
-  '/reset-password': typeof ResetPasswordRoute;
-  '/_app/account': typeof AppAccountRoute;
-  '/_app/emails': typeof AppEmailsRouteWithChildren;
-  '/_app/files': typeof AppFilesRoute;
-  '/_app/overview': typeof AppOverviewRoute;
-  '/_app/settings': typeof AppSettingsRouteWithChildren;
-  '/_app/customers/new': typeof AppCustomersNewRoute;
-  '/_app/emails/drafts': typeof AppEmailsDraftsRoute;
-  '/_app/settings/code-lists': typeof AppSettingsCodeListsRoute;
-  '/_app/settings/email-look': typeof AppSettingsEmailLookRoute;
-  '/_app/settings/users': typeof AppSettingsUsersRoute;
-  '/_app/customers/': typeof AppCustomersIndexRoute;
-  '/_app/customers/$customerId/edit': typeof AppCustomersCustomerIdEditRoute;
-  '/_app/emails_/compose/$campaignId': typeof AppEmailsComposeCampaignIdRoute;
-  '/_app/emails_/sent/$campaignId': typeof AppEmailsSentCampaignIdRoute;
-  '/_app/emails_/templates/$templateId': typeof AppEmailsTemplatesTemplateIdRoute;
-  '/_app/customers/$customerId/': typeof AppCustomersCustomerIdIndexRoute;
-  '/_app/emails/sent/': typeof AppEmailsSentIndexRoute;
-  '/_app/emails/templates/': typeof AppEmailsTemplatesIndexRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/activate': typeof ActivateRoute
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/login': typeof LoginRoute
+  '/odhlasenie': typeof OdhlasenieRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/_app/account': typeof AppAccountRoute
+  '/_app/emails': typeof AppEmailsRouteWithChildren
+  '/_app/files': typeof AppFilesRoute
+  '/_app/overview': typeof AppOverviewRoute
+  '/_app/settings': typeof AppSettingsRouteWithChildren
+  '/_app/customers/new': typeof AppCustomersNewRoute
+  '/_app/emails/drafts': typeof AppEmailsDraftsRoute
+  '/_app/settings/code-lists': typeof AppSettingsCodeListsRoute
+  '/_app/settings/email-look': typeof AppSettingsEmailLookRoute
+  '/_app/settings/users': typeof AppSettingsUsersRoute
+  '/_app/customers/': typeof AppCustomersIndexRoute
+  '/_app/customers/$customerId/edit': typeof AppCustomersCustomerIdEditRoute
+  '/_app/emails_/compose/$campaignId': typeof AppEmailsComposeCampaignIdRoute
+  '/_app/emails_/sent/$campaignId': typeof AppEmailsSentCampaignIdRoute
+  '/_app/emails_/templates/$templateId': typeof AppEmailsTemplatesTemplateIdRoute
+  '/_app/customers/$customerId/': typeof AppCustomersCustomerIdIndexRoute
+  '/_app/emails/sent/': typeof AppEmailsSentIndexRoute
+  '/_app/emails/templates/': typeof AppEmailsTemplatesIndexRoute
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
+  fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/activate'
@@ -266,8 +270,8 @@ export interface FileRouteTypes {
     | '/emails/templates/$templateId'
     | '/customers/$customerId/'
     | '/emails/sent/'
-    | '/emails/templates/';
-  fileRoutesByTo: FileRoutesByTo;
+    | '/emails/templates/'
+  fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/activate'
@@ -292,7 +296,7 @@ export interface FileRouteTypes {
     | '/emails/templates/$templateId'
     | '/customers/$customerId'
     | '/emails/sent'
-    | '/emails/templates';
+    | '/emails/templates'
   id:
     | '__root__'
     | '/'
@@ -319,240 +323,244 @@ export interface FileRouteTypes {
     | '/_app/emails_/templates/$templateId'
     | '/_app/customers/$customerId/'
     | '/_app/emails/sent/'
-    | '/_app/emails/templates/';
-  fileRoutesById: FileRoutesById;
+    | '/_app/emails/templates/'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  AppRoute: typeof AppRouteWithChildren;
-  ActivateRoute: typeof ActivateRoute;
-  ForgotPasswordRoute: typeof ForgotPasswordRoute;
-  LoginRoute: typeof LoginRoute;
-  OdhlasenieRoute: typeof OdhlasenieRoute;
-  ResetPasswordRoute: typeof ResetPasswordRoute;
+  IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
+  ActivateRoute: typeof ActivateRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
+  LoginRoute: typeof LoginRoute
+  OdhlasenieRoute: typeof OdhlasenieRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/': {
-      id: '/';
-      path: '/';
-      fullPath: '/';
-      preLoaderRoute: typeof IndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app': {
-      id: '/_app';
-      path: '';
-      fullPath: '/';
-      preLoaderRoute: typeof AppRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/activate': {
-      id: '/activate';
-      path: '/activate';
-      fullPath: '/activate';
-      preLoaderRoute: typeof ActivateRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/activate'
+      path: '/activate'
+      fullPath: '/activate'
+      preLoaderRoute: typeof ActivateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/forgot-password': {
-      id: '/forgot-password';
-      path: '/forgot-password';
-      fullPath: '/forgot-password';
-      preLoaderRoute: typeof ForgotPasswordRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
-      id: '/login';
-      path: '/login';
-      fullPath: '/login';
-      preLoaderRoute: typeof LoginRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/odhlasenie': {
-      id: '/odhlasenie';
-      path: '/odhlasenie';
-      fullPath: '/odhlasenie';
-      preLoaderRoute: typeof OdhlasenieRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/odhlasenie'
+      path: '/odhlasenie'
+      fullPath: '/odhlasenie'
+      preLoaderRoute: typeof OdhlasenieRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
-      id: '/reset-password';
-      path: '/reset-password';
-      fullPath: '/reset-password';
-      preLoaderRoute: typeof ResetPasswordRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/account': {
-      id: '/_app/account';
-      path: '/account';
-      fullPath: '/account';
-      preLoaderRoute: typeof AppAccountRouteImport;
-      parentRoute: typeof AppRoute;
-    };
+      id: '/_app/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AppAccountRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/emails': {
-      id: '/_app/emails';
-      path: '/emails';
-      fullPath: '/emails';
-      preLoaderRoute: typeof AppEmailsRouteImport;
-      parentRoute: typeof AppRoute;
-    };
+      id: '/_app/emails'
+      path: '/emails'
+      fullPath: '/emails'
+      preLoaderRoute: typeof AppEmailsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/files': {
-      id: '/_app/files';
-      path: '/files';
-      fullPath: '/files';
-      preLoaderRoute: typeof AppFilesRouteImport;
-      parentRoute: typeof AppRoute;
-    };
+      id: '/_app/files'
+      path: '/files'
+      fullPath: '/files'
+      preLoaderRoute: typeof AppFilesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/overview': {
-      id: '/_app/overview';
-      path: '/overview';
-      fullPath: '/overview';
-      preLoaderRoute: typeof AppOverviewRouteImport;
-      parentRoute: typeof AppRoute;
-    };
+      id: '/_app/overview'
+      path: '/overview'
+      fullPath: '/overview'
+      preLoaderRoute: typeof AppOverviewRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/settings': {
-      id: '/_app/settings';
-      path: '/settings';
-      fullPath: '/settings';
-      preLoaderRoute: typeof AppSettingsRouteImport;
-      parentRoute: typeof AppRoute;
-    };
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/customers/': {
-      id: '/_app/customers/';
-      path: '/customers';
-      fullPath: '/customers/';
-      preLoaderRoute: typeof AppCustomersIndexRouteImport;
-      parentRoute: typeof AppRoute;
-    };
+      id: '/_app/customers/'
+      path: '/customers'
+      fullPath: '/customers/'
+      preLoaderRoute: typeof AppCustomersIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/customers/new': {
-      id: '/_app/customers/new';
-      path: '/customers/new';
-      fullPath: '/customers/new';
-      preLoaderRoute: typeof AppCustomersNewRouteImport;
-      parentRoute: typeof AppRoute;
-    };
+      id: '/_app/customers/new'
+      path: '/customers/new'
+      fullPath: '/customers/new'
+      preLoaderRoute: typeof AppCustomersNewRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/emails/drafts': {
-      id: '/_app/emails/drafts';
-      path: '/drafts';
-      fullPath: '/emails/drafts';
-      preLoaderRoute: typeof AppEmailsDraftsRouteImport;
-      parentRoute: typeof AppEmailsRoute;
-    };
+      id: '/_app/emails/drafts'
+      path: '/drafts'
+      fullPath: '/emails/drafts'
+      preLoaderRoute: typeof AppEmailsDraftsRouteImport
+      parentRoute: typeof AppEmailsRoute
+    }
     '/_app/settings/code-lists': {
-      id: '/_app/settings/code-lists';
-      path: '/code-lists';
-      fullPath: '/settings/code-lists';
-      preLoaderRoute: typeof AppSettingsCodeListsRouteImport;
-      parentRoute: typeof AppSettingsRoute;
-    };
+      id: '/_app/settings/code-lists'
+      path: '/code-lists'
+      fullPath: '/settings/code-lists'
+      preLoaderRoute: typeof AppSettingsCodeListsRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
     '/_app/settings/email-look': {
-      id: '/_app/settings/email-look';
-      path: '/email-look';
-      fullPath: '/settings/email-look';
-      preLoaderRoute: typeof AppSettingsEmailLookRouteImport;
-      parentRoute: typeof AppSettingsRoute;
-    };
+      id: '/_app/settings/email-look'
+      path: '/email-look'
+      fullPath: '/settings/email-look'
+      preLoaderRoute: typeof AppSettingsEmailLookRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
     '/_app/settings/users': {
-      id: '/_app/settings/users';
-      path: '/users';
-      fullPath: '/settings/users';
-      preLoaderRoute: typeof AppSettingsUsersRouteImport;
-      parentRoute: typeof AppSettingsRoute;
-    };
+      id: '/_app/settings/users'
+      path: '/users'
+      fullPath: '/settings/users'
+      preLoaderRoute: typeof AppSettingsUsersRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
     '/_app/customers/$customerId/': {
-      id: '/_app/customers/$customerId/';
-      path: '/customers/$customerId';
-      fullPath: '/customers/$customerId/';
-      preLoaderRoute: typeof AppCustomersCustomerIdIndexRouteImport;
-      parentRoute: typeof AppRoute;
-    };
+      id: '/_app/customers/$customerId/'
+      path: '/customers/$customerId'
+      fullPath: '/customers/$customerId/'
+      preLoaderRoute: typeof AppCustomersCustomerIdIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/customers/$customerId/edit': {
-      id: '/_app/customers/$customerId/edit';
-      path: '/customers/$customerId/edit';
-      fullPath: '/customers/$customerId/edit';
-      preLoaderRoute: typeof AppCustomersCustomerIdEditRouteImport;
-      parentRoute: typeof AppRoute;
-    };
+      id: '/_app/customers/$customerId/edit'
+      path: '/customers/$customerId/edit'
+      fullPath: '/customers/$customerId/edit'
+      preLoaderRoute: typeof AppCustomersCustomerIdEditRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/emails/sent/': {
-      id: '/_app/emails/sent/';
-      path: '/sent';
-      fullPath: '/emails/sent/';
-      preLoaderRoute: typeof AppEmailsSentIndexRouteImport;
-      parentRoute: typeof AppEmailsRoute;
-    };
+      id: '/_app/emails/sent/'
+      path: '/sent'
+      fullPath: '/emails/sent/'
+      preLoaderRoute: typeof AppEmailsSentIndexRouteImport
+      parentRoute: typeof AppEmailsRoute
+    }
     '/_app/emails/templates/': {
-      id: '/_app/emails/templates/';
-      path: '/templates';
-      fullPath: '/emails/templates/';
-      preLoaderRoute: typeof AppEmailsTemplatesIndexRouteImport;
-      parentRoute: typeof AppEmailsRoute;
-    };
+      id: '/_app/emails/templates/'
+      path: '/templates'
+      fullPath: '/emails/templates/'
+      preLoaderRoute: typeof AppEmailsTemplatesIndexRouteImport
+      parentRoute: typeof AppEmailsRoute
+    }
     '/_app/emails_/compose/$campaignId': {
-      id: '/_app/emails_/compose/$campaignId';
-      path: '/emails/compose/$campaignId';
-      fullPath: '/emails/compose/$campaignId';
-      preLoaderRoute: typeof AppEmailsComposeCampaignIdRouteImport;
-      parentRoute: typeof AppRoute;
-    };
+      id: '/_app/emails_/compose/$campaignId'
+      path: '/emails/compose/$campaignId'
+      fullPath: '/emails/compose/$campaignId'
+      preLoaderRoute: typeof AppEmailsComposeCampaignIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/emails_/sent/$campaignId': {
-      id: '/_app/emails_/sent/$campaignId';
-      path: '/emails/sent/$campaignId';
-      fullPath: '/emails/sent/$campaignId';
-      preLoaderRoute: typeof AppEmailsSentCampaignIdRouteImport;
-      parentRoute: typeof AppRoute;
-    };
+      id: '/_app/emails_/sent/$campaignId'
+      path: '/emails/sent/$campaignId'
+      fullPath: '/emails/sent/$campaignId'
+      preLoaderRoute: typeof AppEmailsSentCampaignIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/emails_/templates/$templateId': {
-      id: '/_app/emails_/templates/$templateId';
-      path: '/emails/templates/$templateId';
-      fullPath: '/emails/templates/$templateId';
-      preLoaderRoute: typeof AppEmailsTemplatesTemplateIdRouteImport;
-      parentRoute: typeof AppRoute;
-    };
+      id: '/_app/emails_/templates/$templateId'
+      path: '/emails/templates/$templateId'
+      fullPath: '/emails/templates/$templateId'
+      preLoaderRoute: typeof AppEmailsTemplatesTemplateIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppEmailsRouteChildren {
-  AppEmailsDraftsRoute: typeof AppEmailsDraftsRoute;
-  AppEmailsSentIndexRoute: typeof AppEmailsSentIndexRoute;
-  AppEmailsTemplatesIndexRoute: typeof AppEmailsTemplatesIndexRoute;
+  AppEmailsDraftsRoute: typeof AppEmailsDraftsRoute
+  AppEmailsSentIndexRoute: typeof AppEmailsSentIndexRoute
+  AppEmailsTemplatesIndexRoute: typeof AppEmailsTemplatesIndexRoute
 }
 
 const AppEmailsRouteChildren: AppEmailsRouteChildren = {
   AppEmailsDraftsRoute: AppEmailsDraftsRoute,
   AppEmailsSentIndexRoute: AppEmailsSentIndexRoute,
   AppEmailsTemplatesIndexRoute: AppEmailsTemplatesIndexRoute,
-};
+}
 
-const AppEmailsRouteWithChildren = AppEmailsRoute._addFileChildren(AppEmailsRouteChildren);
+const AppEmailsRouteWithChildren = AppEmailsRoute._addFileChildren(
+  AppEmailsRouteChildren,
+)
 
 interface AppSettingsRouteChildren {
-  AppSettingsCodeListsRoute: typeof AppSettingsCodeListsRoute;
-  AppSettingsEmailLookRoute: typeof AppSettingsEmailLookRoute;
-  AppSettingsUsersRoute: typeof AppSettingsUsersRoute;
+  AppSettingsCodeListsRoute: typeof AppSettingsCodeListsRoute
+  AppSettingsEmailLookRoute: typeof AppSettingsEmailLookRoute
+  AppSettingsUsersRoute: typeof AppSettingsUsersRoute
 }
 
 const AppSettingsRouteChildren: AppSettingsRouteChildren = {
   AppSettingsCodeListsRoute: AppSettingsCodeListsRoute,
   AppSettingsEmailLookRoute: AppSettingsEmailLookRoute,
   AppSettingsUsersRoute: AppSettingsUsersRoute,
-};
+}
 
-const AppSettingsRouteWithChildren = AppSettingsRoute._addFileChildren(AppSettingsRouteChildren);
+const AppSettingsRouteWithChildren = AppSettingsRoute._addFileChildren(
+  AppSettingsRouteChildren,
+)
 
 interface AppRouteChildren {
-  AppAccountRoute: typeof AppAccountRoute;
-  AppEmailsRoute: typeof AppEmailsRouteWithChildren;
-  AppFilesRoute: typeof AppFilesRoute;
-  AppOverviewRoute: typeof AppOverviewRoute;
-  AppSettingsRoute: typeof AppSettingsRouteWithChildren;
-  AppCustomersNewRoute: typeof AppCustomersNewRoute;
-  AppCustomersIndexRoute: typeof AppCustomersIndexRoute;
-  AppCustomersCustomerIdEditRoute: typeof AppCustomersCustomerIdEditRoute;
-  AppEmailsComposeCampaignIdRoute: typeof AppEmailsComposeCampaignIdRoute;
-  AppEmailsSentCampaignIdRoute: typeof AppEmailsSentCampaignIdRoute;
-  AppEmailsTemplatesTemplateIdRoute: typeof AppEmailsTemplatesTemplateIdRoute;
-  AppCustomersCustomerIdIndexRoute: typeof AppCustomersCustomerIdIndexRoute;
+  AppAccountRoute: typeof AppAccountRoute
+  AppEmailsRoute: typeof AppEmailsRouteWithChildren
+  AppFilesRoute: typeof AppFilesRoute
+  AppOverviewRoute: typeof AppOverviewRoute
+  AppSettingsRoute: typeof AppSettingsRouteWithChildren
+  AppCustomersNewRoute: typeof AppCustomersNewRoute
+  AppCustomersIndexRoute: typeof AppCustomersIndexRoute
+  AppCustomersCustomerIdEditRoute: typeof AppCustomersCustomerIdEditRoute
+  AppEmailsComposeCampaignIdRoute: typeof AppEmailsComposeCampaignIdRoute
+  AppEmailsSentCampaignIdRoute: typeof AppEmailsSentCampaignIdRoute
+  AppEmailsTemplatesTemplateIdRoute: typeof AppEmailsTemplatesTemplateIdRoute
+  AppCustomersCustomerIdIndexRoute: typeof AppCustomersCustomerIdIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -568,9 +576,9 @@ const AppRouteChildren: AppRouteChildren = {
   AppEmailsSentCampaignIdRoute: AppEmailsSentCampaignIdRoute,
   AppEmailsTemplatesTemplateIdRoute: AppEmailsTemplatesTemplateIdRoute,
   AppCustomersCustomerIdIndexRoute: AppCustomersCustomerIdIndexRoute,
-};
+}
 
-const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren);
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -580,7 +588,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   OdhlasenieRoute: OdhlasenieRoute,
   ResetPasswordRoute: ResetPasswordRoute,
-};
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()
