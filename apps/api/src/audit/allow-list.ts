@@ -1,4 +1,5 @@
 import {
+  ACTIVITY_KINDS,
   CODE_LISTS,
   CUSTOMER_KINDS,
   CUSTOMER_STATUSES,
@@ -167,6 +168,29 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     restored: flag,
     inline: flag,
     uploadRefused: oneOf(['UPLOAD_MISSING', 'UPLOAD_MISMATCH']),
+  },
+  /**
+   * An activity: its customer and kind, which fields changed, how many people and files. Never a
+   * subject, the notes or a next step's text: people type those.
+   */
+  activity: {
+    customerId: uuid,
+    kind: oneOf(ACTIVITY_KINDS),
+    fields: subsetOf([
+      'kind',
+      'occurredAt',
+      'durationMin',
+      'subject',
+      'body',
+      'nextStepText',
+      'nextStepDue',
+      'nextStepUserId',
+    ]),
+    contacts: number,
+    attachments: number,
+    nextStep: flag,
+    nextStepDone: flag,
+    deleted: flag,
   },
   folder: {
     parentId: uuid,

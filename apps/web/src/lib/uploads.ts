@@ -74,7 +74,8 @@ function failure(error: unknown): string {
   return errorMessage(error, sk.files.errors, t.failed);
 }
 
-async function uploadOne(id: number, file: File, folderId: string) {
+/** The new file's id, or `null` when it failed (the panel says why). */
+async function uploadOne(id: number, file: File, folderId: string): Promise<string | null> {
   update(id, { status: 'uploading' });
   try {
     const request = await trpcClient.file.requestUpload.mutate({
@@ -86,16 +87,22 @@ async function uploadOne(id: number, file: File, folderId: string) {
     await trpcClient.file.confirmUpload.mutate({ versionId: request.versionId });
     update(id, { status: 'done', progress: 1 });
     await refresh();
+    return request.fileId;
   } catch (error) {
     update(id, { status: 'failed', error: failure(error) });
+    return null;
   }
 }
 
 /**
  * Uploads files into a folder, shown in the panel at the bottom right. A file the API would refuse
- * (type, size) fails at once with the reason, without a request.
+ * (type, size) fails at once with the reason, without a request. Answers the files that arrived,
+ * once all of them are through.
  */
-export function uploadFiles(files: Iterable<File>, folderId: string) {
+export function uploadFiles(
+  files: Iterable<File>,
+  folderId: string,
+): Promise<{ fileId: string; name: string; size: number }[]> {
   const added: { item: UploadItem; file: File }[] = [];
   for (const file of files) {
     const refusal = uploadRefusal(file);
@@ -110,7 +117,7 @@ export function uploadFiles(files: Iterable<File>, folderId: string) {
       },
     });
   }
-  if (added.length === 0) return;
+  if (added.length === 0) return Promise.resolve([]);
   useUploads.setState((state) => ({
     // A panel that only shows finished uploads starts over.
     items: [
@@ -119,10 +126,16 @@ export function uploadFiles(files: Iterable<File>, folderId: string) {
     ],
     collapsed: false,
   }));
+  const uploaded: { fileId: string; name: string; size: number }[] = [];
   for (const { item, file } of added) {
     if (item.status !== 'waiting') continue;
-    queue = queue.then(() => uploadOne(item.id, file, folderId));
+    queue = queue.then(async () => {
+      const fileId = await uploadOne(item.id, file, folderId);
+      if (fileId) uploaded.push({ fileId, name: file.name, size: file.size });
+    });
   }
+  // Callers that only start uploads ignore it; the file picker attaches what arrived.
+  return queue.then(() => uploaded);
 }
 
 /** A new version of a file: the same pipeline, answering the new version's number. */

@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { Download, Eye, MoreHorizontal, Upload } from 'lucide-react';
 import { useState } from 'react';
+import { KindMark } from '@/components/activities/activity-bits';
 import { ChangedBy, FileBadge } from '@/components/files/file-bits';
 import { type FilesDialog, FilesDialogs } from '@/components/files/file-dialogs';
 import { ErrorState } from '@/components/empty-state';
@@ -66,7 +67,8 @@ function SheetBody({ file, onClose }: { file: Detail; onClose: () => void }) {
   const queryClient = useQueryClient();
   const canWrite = useCan('file.write');
   const canDelete = useCan('file.delete');
-  const [tab, setTab] = useState<'versions' | 'history'>('versions');
+  const [tab, setTab] = useState<'versions' | 'usage' | 'history'>('versions');
+  const usage = useQuery(trpc.activity.fileUsage.queryOptions({ fileId: file.id }));
   const [dialog, setDialog] = useState<FilesDialog | null>(null);
   const current = file.versions[0];
   const ref = {
@@ -213,7 +215,7 @@ function SheetBody({ file, onClose }: { file: Detail; onClose: () => void }) {
         aria-label={d.tabs.label}
         className="mt-5 flex gap-5 border-b border-border-subtle px-6"
       >
-        {(['versions', 'history'] as const).map((key) => (
+        {(['versions', 'usage', 'history'] as const).map((key) => (
           <button
             key={key}
             type="button"
@@ -227,7 +229,11 @@ function SheetBody({ file, onClose }: { file: Detail; onClose: () => void }) {
                 : 'border-transparent text-muted hover:text-foreground',
             )}
           >
-            {key === 'versions' ? d.tabs.versions(file.versions.length) : d.tabs.history}
+            {key === 'versions'
+              ? d.tabs.versions(file.versions.length)
+              : key === 'usage'
+                ? d.tabs.usage(usage.data?.length ?? 0)
+                : d.tabs.history}
           </button>
         ))}
       </div>
@@ -235,6 +241,8 @@ function SheetBody({ file, onClose }: { file: Detail; onClose: () => void }) {
       <div role="tabpanel" className="px-6 pt-1 pb-6">
         {tab === 'versions' ? (
           <Versions file={file} canWrite={canWrite} onDownload={download} onPreview={preview} />
+        ) : tab === 'usage' ? (
+          <Usage rows={usage.data ?? []} />
         ) : (
           <History fileId={file.id} />
         )}
@@ -354,6 +362,34 @@ function describeEvent(action: string, diff: Record<string, unknown> | null): st
     default:
       return h.other;
   }
+}
+
+/** „Kde je použitý“: the activities that keep a version of this file. */
+function Usage({ rows }: { rows: RouterOutputs['activity']['fileUsage'] }) {
+  if (rows.length === 0) return <p className="py-6 text-sm text-muted">{d.usageEmpty}</p>;
+  return (
+    <ul className="space-y-2 pt-3">
+      {rows.map((row) => (
+        <li key={row.activityId}>
+          <Link
+            to="/customers/$customerId"
+            params={{ customerId: row.customerId }}
+            className="flex items-center gap-3 rounded-xl border border-border-subtle px-3.5 py-3 hover:bg-hover"
+          >
+            <KindMark kind={row.kind} />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold">
+                {d.usageItem(sk.activities.kinds[row.kind], row.subject ?? '')}
+              </span>
+              <span className="block truncate text-[13px] text-muted">
+                {d.usageMeta(row.customerName, row.version, formatDate(row.occurredAt))}
+              </span>
+            </span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 function History({ fileId }: { fileId: string }) {

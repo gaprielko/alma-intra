@@ -111,7 +111,13 @@ export async function companyTree(db: Db) {
   const [trash] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(files)
-    .where(and(isNotNull(files.deletedAt), isNotNull(files.currentVersionId)));
+    .where(
+      and(
+        isNotNull(files.deletedAt),
+        isNotNull(files.currentVersionId),
+        sql`${files.deletedAt} > now() - make_interval(days => ${TRASH_DAYS})`,
+      ),
+    );
   return {
     rootId: COMPANY_ROOT_FOLDER_ID,
     folders: rows.map((row) => ({ ...row, name: row.name ?? '' })),
@@ -779,7 +785,13 @@ export async function trashList(db: Db) {
     .innerJoin(folders, eq(folders.id, files.folderId))
     .leftJoin(customers, eq(customers.id, folders.customerId))
     .leftJoin(remover, eq(remover.id, files.deletedByUserId))
-    .where(isNotNull(files.deletedAt))
+    .where(
+      and(
+        isNotNull(files.deletedAt),
+        // Past its 30 days a file is gone for the user, even when an activity keeps it.
+        sql`${files.deletedAt} > now() - make_interval(days => ${TRASH_DAYS})`,
+      ),
+    )
     .orderBy(desc(files.deletedAt))
     .limit(200);
 }
@@ -792,14 +804,21 @@ const STALE_PENDING_HOURS = 24;
  * confirmed: the objects first, then the rows. An object that cannot be deleted keeps its row,
  * and the next run tries again.
  *
- * Once e-mails and activities point at versions (E3, E5), a file one of them uses must be kept
- * here: hidden, never destroyed (spec 7.2).
+ * A file an activity keeps a version of stays (spec 7.2): it leaves the trash's list after
+ * `TRASH_DAYS` but is never destroyed. Sent e-mails (E5) will be kept the same way.
  */
 export async function purgeFiles(db: Db, storage: Storage) {
   const expired = await db
     .select({ id: files.id })
     .from(files)
-    .where(lt(files.deletedAt, sql`now() - make_interval(days => ${TRASH_DAYS})`));
+    .where(
+      and(
+        lt(files.deletedAt, sql`now() - make_interval(days => ${TRASH_DAYS})`),
+        // A version an activity keeps stays: hidden from the trash, never destroyed.
+        sql`not exists (select 1 from file_versions v join activity_attachments aa
+          on aa.file_version_id = v.id where v.file_id = ${files.id})`,
+      ),
+    );
   const stale = await db
     .select({ id: fileVersions.id, key: fileVersions.storageKey, fileId: fileVersions.fileId })
     .from(fileVersions)

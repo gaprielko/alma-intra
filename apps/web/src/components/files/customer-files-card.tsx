@@ -42,7 +42,7 @@ export function CustomerFilesCard({ customerId }: { customerId: string }) {
                 hidden
                 accept={FILE_ACCEPT}
                 onChange={(event) => {
-                  if (event.target.files) uploadFiles([...event.target.files], rootId);
+                  if (event.target.files) void uploadFiles([...event.target.files], rootId);
                   event.target.value = '';
                 }}
               />

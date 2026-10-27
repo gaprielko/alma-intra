@@ -20,6 +20,11 @@ export const ACTIONS = [
   'file.read',
   'file.write',
   'file.delete',
+  // Activities: calls, meetings and notes with a customer; anyone may edit one, and every edit is
+  // audited.
+  'activity.read',
+  'activity.write',
+  'activity.delete',
 ] as const;
 export type Action = (typeof ACTIONS)[number];
 
@@ -45,6 +50,9 @@ const POLICY: Record<Action, readonly Role[]> = {
   'file.read': ['admin'],
   'file.write': ['admin'],
   'file.delete': ['admin'],
+  'activity.read': ['admin'],
+  'activity.write': ['admin'],
+  'activity.delete': ['admin'],
 };
 
 /**

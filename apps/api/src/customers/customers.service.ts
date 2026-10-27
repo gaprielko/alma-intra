@@ -142,8 +142,9 @@ export async function listCustomers(db: Db | Tx, raw: CustomerListInput) {
           else json_build_object('id', ${users.id}, 'name', ${users.name}) end`,
         tags: tagsJson,
         primaryContact: primaryContactJson,
-        /** The last e-mail, reply or activity; none of those exist yet. */
-        lastContactAt: sql<string | null>`null`,
+        /** The last activity; sent e-mails and replies join it with E5 and E6. */
+        lastContactAt: sql<string | null>`(select max(a.occurred_at) from activities a
+          where a.customer_id = ${CUSTOMER_ID} and a.deleted_at is null)`,
         total: sql<number>`count(*) over ()`.mapWith(Number),
       })
       .from(customers)

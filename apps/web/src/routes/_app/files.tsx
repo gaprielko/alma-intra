@@ -113,7 +113,7 @@ function FilesPage() {
               hidden
               accept={FILE_ACCEPT}
               onChange={(event) => {
-                if (event.target.files) uploadFiles([...event.target.files], folderId);
+                if (event.target.files) void uploadFiles([...event.target.files], folderId);
                 event.target.value = '';
               }}
             />
@@ -401,7 +401,7 @@ function ContentsSection({
     depth.current = 0;
     setDragging(false);
     if (canUpload && event.dataTransfer.files.length > 0) {
-      uploadFiles([...event.dataTransfer.files], folderId);
+      void uploadFiles([...event.dataTransfer.files], folderId);
     }
   };
   const dropHandlers = canUpload
