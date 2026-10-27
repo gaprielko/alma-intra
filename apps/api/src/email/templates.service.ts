@@ -287,12 +287,37 @@ export async function previewContacts(db: Db) {
  */
 export async function valuesFor(
   db: Db | Tx,
-  contactId: string | undefined,
+  /** A contact; or, for a private person, the customer alone (no `contactId`). */
+  recipient: { contactId?: string | undefined; customerId?: string | undefined },
   senderUserId: string,
   custom: Readonly<Record<string, string>>,
 ): Promise<{ values: Values; customerName: string | undefined }> {
   const values: Record<string, string | undefined> = {};
   let customerName: string | undefined;
+  const contactId = recipient.contactId;
+  if (!contactId && recipient.customerId) {
+    const [row] = await db
+      .select({
+        titleBefore: customers.titleBefore,
+        firstName: customers.firstName,
+        lastName: customers.lastName,
+        titleAfter: customers.titleAfter,
+        salutation: customers.salutation,
+        name: customers.name,
+        city: customers.city,
+      })
+      .from(customers)
+      .where(eq(customers.id, recipient.customerId));
+    if (row) {
+      values.salutation = row.salutation ?? undefined;
+      values['contact.firstName'] = row.firstName ?? undefined;
+      values['contact.lastName'] = row.lastName ?? undefined;
+      values['contact.fullName'] = row.name;
+      values['customer.name'] = row.name;
+      values['customer.city'] = row.city ?? undefined;
+      customerName = row.name;
+    }
+  }
   if (contactId) {
     const [row] = await db
       .select({
@@ -347,7 +372,7 @@ export async function previewTemplate(
 ) {
   const [look, filled] = await Promise.all([
     getLook(db),
-    valuesFor(db, input.contactId, senderUserId, input.values),
+    valuesFor(db, { contactId: input.contactId }, senderUserId, input.values),
   ]);
   const rendered = await renderEmail({
     look,
@@ -365,7 +390,7 @@ export async function previewTemplate(
 
 /** The look alone, with a sample body: Settings › Vzhľad e-mailov. */
 export async function previewLook(db: Db, baseUrl: string, senderUserId: string, look: EmailLook) {
-  const filled = await valuesFor(db, undefined, senderUserId, {});
+  const filled = await valuesFor(db, {}, senderUserId, {});
   const body: EmailNode = {
     type: 'doc',
     content: [

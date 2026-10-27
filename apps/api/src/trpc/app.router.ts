@@ -4,6 +4,7 @@ import { authRouter } from './auth.router.js';
 import { codeListRouter } from './code-list.router.js';
 import { customerRouter } from './customer.router.js';
 import { fileRouter } from './file.router.js';
+import { campaignRouter, unsubscribeRouter } from './campaign.router.js';
 import { templateRouter } from './template.router.js';
 import { router } from './trpc.js';
 import { userRouter } from './user.router.js';
@@ -17,6 +18,8 @@ export const appRouter = router({
   file: fileRouter,
   activity: activityRouter,
   template: templateRouter,
+  campaign: campaignRouter,
+  unsubscribe: unsubscribeRouter,
 });
 
 /** The web client's type: procedures, inputs and outputs, nothing of the server's internals. */

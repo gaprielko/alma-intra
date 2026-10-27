@@ -43,7 +43,7 @@ const link = (env: Env, path: string, token: string) =>
   `${env.WEB_URL}${path}#${encodeURIComponent(token)}`;
 
 /** Resend with a key; without one the in-memory outbox, which production refuses. */
-function transportFor(env: Env): MailTransport {
+export function transportFor(env: Env): MailTransport {
   if (!env.RESEND_API_KEY && env.NODE_ENV === 'production') {
     throw new Error('RESEND_API_KEY is required in production');
   }

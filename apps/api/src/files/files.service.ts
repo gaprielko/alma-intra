@@ -817,6 +817,9 @@ export async function purgeFiles(db: Db, storage: Storage) {
         // A version an activity keeps stays: hidden from the trash, never destroyed.
         sql`not exists (select 1 from file_versions v join activity_attachments aa
           on aa.file_version_id = v.id where v.file_id = ${files.id})`,
+        // Nor one a sent e-mail carried (spec 7.2).
+        sql`not exists (select 1 from file_versions v join message_attachments ma
+          on ma.file_version_id = v.id where v.file_id = ${files.id})`,
       ),
     );
   const stale = await db

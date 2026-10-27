@@ -40,7 +40,7 @@ import { cn } from '@/lib/utils';
 
 const t = sk.templates;
 
-export const Route = createFileRoute('/_app/emails/templates/$templateId')({
+export const Route = createFileRoute('/_app/emails_/templates/$templateId')({
   component: TemplateEditorPage,
 });
 
