@@ -611,6 +611,12 @@ function describe(event: HistoryEvent): ReactNode {
         h.updatedPlain
       );
     }
+    // The public unsubscribe page and the one-click header: the person, by the link in an e-mail.
+    case 'unsubscribe.confirm':
+    case 'unsubscribe.oneClick':
+      return withContact(h.unsubscribed);
+    case 'unsubscribe.undo':
+      return withContact(h.resubscribed);
     default:
       return event.action;
   }

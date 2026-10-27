@@ -670,6 +670,8 @@ export const sk = {
         contactUpdated: 'Upravená kontaktná osoba',
         contactPrimary: 'Zmenený hlavný kontakt',
         contactDeleted: 'Odstránená kontaktná osoba',
+        unsubscribed: 'Odhlásenie z ponúk cez odkaz v e-maile',
+        resubscribed: 'Prihlásenie späť k ponukám cez odkaz v e-maile',
         exported: 'Exportovaný do CSV',
         none: 'nezadané',
         by: (name: string, when: string) => `${name} · ${when}`,
