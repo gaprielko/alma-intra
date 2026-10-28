@@ -4,10 +4,14 @@ import { AppModule } from '../../src/app.module.js';
 import { base32Decode, totpAt } from '../../src/auth/totp.js';
 import { DB, type Db } from '../../src/db/db.module.js';
 import { SEED_PASSWORD, SEED_TOTP_SECRET } from '../../src/db/seed.js';
+import { STORAGE } from '../../src/storage/storage.module.js';
+import type { Storage } from '../../src/storage/storage.js';
 
-/** The API of this file's database, on a free port. */
-export async function startApi() {
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+/** The API of this file's database, on a free port; `storage` stands in for the bucket. */
+export async function startApi(options: { storage?: Storage } = {}) {
+  const builder = Test.createTestingModule({ imports: [AppModule] });
+  if (options.storage) builder.overrideProvider(STORAGE).useValue(options.storage);
+  const moduleRef = await builder.compile();
   const app: INestApplication = moduleRef.createNestApplication({ logger: false, rawBody: true });
   await app.listen(0);
   const baseUrl = await app.getUrl();
