@@ -329,8 +329,8 @@ The draft is saved as it goes and can be finished later.
 
 The owner wants to see customers' replies in Intra.
 
-- Each message's Reply-To is a unique address on an inbound subdomain, e.g.
-  `r+<message-token>@reply.alma-care.eu`. Resend's inbound mail receives it and calls Intra's
+- Each message's Reply-To is a unique address on the sending subdomain, which also receives,
+  `r+<message-token>@mail.alma-care.eu`. Resend's inbound mail receives it and calls Intra's
   webhook; Intra fetches the message and its attachments. (**Spike first**: verify Resend inbound's
   current capabilities, limits and pricing; the fallback is a forwarding mailbox read over IMAP.)
 - A reply is matched by its token to the original message, hence to the customer, contact and user.
@@ -606,7 +606,13 @@ both attach files.
 
 ### Still to verify (not decisions)
 
-- Resend inbound: capabilities, limits and pricing (spike before E6; fallback IMAP).
+- Resend inbound: **settled 2026-10-28**. Receiving works on a verified domain with one MX record,
+  catches every address on it, and calls the webhook with `email.received` (metadata only; body,
+  headers and attachments come from the API, attachment links valid 1 hour). Received mail counts
+  against the same quota as sent mail; Resend keeps it while the webhook is down. Replies use the
+  sending subdomain itself (`r+<token>@mail.alma-care.eu`), so no second domain is needed. The
+  HTML of received mail is shown only in a sandboxed frame (no scripts, no forms, no remote
+  content) instead of being sanitised by a new library.
 - Business register API (RPO / ORSR) for D-5: availability and terms.
 - New libraries to approve when their stage starts: TipTap (E4), `docxtemplater` (E7), an MCP /
   OAuth server library (E7).

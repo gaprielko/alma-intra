@@ -8,3 +8,5 @@ export * from './files.js';
 export * from './activities.js';
 export * from './email.js';
 export * from './campaigns.js';
+export * from './inbound.js';
+export * from './notifications.js';

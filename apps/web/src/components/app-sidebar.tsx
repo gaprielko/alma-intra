@@ -1,7 +1,7 @@
 import { sk } from '@intra/shared/i18n';
 import { Link, type LinkProps } from '@tanstack/react-router';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
-import type { ComponentType, ReactNode } from 'react';
+import type { ComponentProps, ComponentType, ReactNode } from 'react';
 import { BrandMark } from '@/components/brand-mark';
 import { Tooltip } from '@/components/ui/tooltip';
 import { toggleSidebar, useSidebarCollapsed } from '@/lib/sidebar-state';
@@ -163,6 +163,47 @@ export function SidebarLink({
         <Icon className="size-5 shrink-0" aria-hidden />
         {collapsed ? null : <span className="truncate">{label}</span>}
       </Link>
+    </RailTooltip>
+  );
+}
+
+/**
+ * A navigation item that is a button (the bell): looks like a link, may carry a count. Props pass
+ * through, so it can be a popover's trigger.
+ */
+export function SidebarButton({
+  icon: Icon,
+  label,
+  collapsed,
+  count = 0,
+  ...props
+}: ComponentProps<'button'> & {
+  icon: NavIcon;
+  label: string;
+  collapsed: boolean;
+  count?: number;
+}) {
+  return (
+    <RailTooltip collapsed={collapsed} label={label}>
+      <button
+        type="button"
+        className={cn(itemClass(collapsed), idleClass, 'w-full')}
+        aria-label={count > 0 ? `${label} · ${count}` : label}
+        {...props}
+      >
+        <Icon className="size-5 shrink-0" aria-hidden />
+        {collapsed ? null : <span className="truncate">{label}</span>}
+        {count > 0 ? (
+          <span
+            className={cn(
+              'rounded-full bg-[#f59e0b] px-1.5 text-[11px] leading-[18px] font-semibold text-[#1b1f1f]',
+              collapsed ? 'absolute -top-1 -right-1' : 'ml-auto',
+            )}
+          >
+            {count > 99 ? '99+' : count}
+          </span>
+        ) : null}
+      </button>
     </RailTooltip>
   );
 }

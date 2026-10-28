@@ -1,0 +1,1 @@
+ALTER TABLE "campaign_messages" ADD COLUMN "in_reply_to_inbound_id" uuid;

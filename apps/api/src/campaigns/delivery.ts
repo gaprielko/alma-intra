@@ -15,7 +15,9 @@ import {
   users,
 } from '../db/schema/index.js';
 import { getLook } from '../email/templates.service.js';
+import { replyAddress, replyToken } from '../inbound/inbound.js';
 import { describeError } from '../logging/describe-error.js';
+import { notify } from '../notifications/notifications.service.js';
 import { MailProviderError, type MailTransport } from '../mail/transport.js';
 import type { Storage } from '../storage/storage.js';
 import { settleCampaigns, tokenHash, unsubscribeToken } from './campaigns.service.js';
@@ -77,6 +79,10 @@ export async function drainCampaigns(
         attempts: campaignMessages.attempts,
         senderName: users.name,
         senderEmail: users.email,
+        // An answer from the app: the e-mail it answers, to thread it in the customer's client.
+        answers: sql<{ messageId: string | null; references: string | null } | null>`(
+          select json_build_object('messageId', i.header_message_id, 'references', i.references)
+          from inbound_messages i where i.id = ${campaignMessages.inReplyToInboundId})`,
       })
       .from(campaignMessages)
       .innerJoin(campaigns, eq(campaigns.id, campaignMessages.campaignId))
@@ -105,6 +111,8 @@ export async function drainCampaigns(
         })),
       );
       const oneClick = `${env.WEB_URL}/u/${unsubscribeToken(env, id)}`;
+      // The reply comes back to Intra when an inbound domain is set, else to the sender's mailbox.
+      const replyTo = replyAddress(env, id);
       const sent = await transport.send(
         {
           to: m.to,
@@ -112,11 +120,23 @@ export async function drainCampaigns(
           html: m.html,
           text: m.text ?? '',
           from: `${m.senderName} | ${look.brandName} <${env.CAMPAIGN_FROM_ADDRESS}>`,
-          replyTo: m.senderEmail,
-          headers: {
-            'List-Unsubscribe': `<${oneClick}>`,
-            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-          },
+          replyTo: replyTo ?? m.senderEmail,
+          headers: m.answers
+            ? {
+                // Correspondence (D-14): threaded, without an unsubscribe link.
+                ...(m.answers.messageId
+                  ? {
+                      'In-Reply-To': m.answers.messageId,
+                      References: [m.answers.references, m.answers.messageId]
+                        .filter(Boolean)
+                        .join(' '),
+                    }
+                  : {}),
+              }
+            : {
+                'List-Unsubscribe': `<${oneClick}>`,
+                'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+              },
           ...(attachments.length > 0 ? { attachments } : {}),
         },
         `campaign-message/${id}`,
@@ -130,6 +150,7 @@ export async function drainCampaigns(
                 status: 'sent',
                 sentAt: new Date(),
                 providerMessageId: sent.providerMessageId,
+                replyToken: replyTo ? replyToken(env, id) : null,
                 leasedUntil: null,
               },
         )
@@ -219,8 +240,12 @@ export async function handleResendEvent(db: Db, eventId: string, event: ResendEv
       status: campaignMessages.status,
       contactId: campaignMessages.contactId,
       customerId: campaignMessages.customerId,
+      campaignId: campaignMessages.campaignId,
+      subject: campaignMessages.subject,
+      senderUserId: campaigns.senderUserId,
     })
     .from(campaignMessages)
+    .innerJoin(campaigns, eq(campaigns.id, campaignMessages.campaignId))
     .where(eq(campaignMessages.providerMessageId, providerId));
   const at = event.created_at ? new Date(event.created_at) : new Date();
   const kind = event.type.replace(/^email\./, '');
@@ -257,6 +282,16 @@ export async function handleResendEvent(db: Db, eventId: string, event: ResendEv
         ...(next === 'complained' ? { complainedAt: at } : {}),
       })
       .where(eq(campaignMessages.id, message.id));
+    // The sender hears of an e-mail that did not arrive, once: when it first turns „bounced“.
+    if (next === 'bounced') {
+      await notify(db, {
+        userId: message.senderUserId,
+        kind: 'bounce',
+        refId: message.campaignId,
+        customerId: message.customerId,
+        subject: message.subject?.slice(0, 200) ?? null,
+      });
+    }
   }
   if (next === 'bounced' || next === 'complained') {
     const emailStatus = next === 'bounced' ? 'bounced' : 'complained';

@@ -15,6 +15,7 @@ import {
   auditEvents,
   campaignMessages,
   campaigns,
+  inboundMessages,
   contacts,
   customers,
   files,
@@ -373,8 +374,8 @@ export async function activityHistory(db: Db, id: string) {
 const TIMELINE_LIMIT = 100;
 
 /**
- * The customer's timeline, newest first: activities and notes, and the changes from the audit
- * trail. Sent e-mails and replies join it with E5 and E6.
+ * The customer's timeline, newest first: activities and notes, the e-mails sent and received,
+ * and the changes from the audit trail.
  */
 export async function timeline(db: Db, customerId: string, filter: TimelineFilter) {
   await liveCustomer(db, customerId);
@@ -445,6 +446,30 @@ export async function timeline(db: Db, customerId: string, filter: TimelineFilte
             .orderBy(desc(campaignMessages.queuedAt))
             .limit(TIMELINE_LIMIT)
         ).map((email) => ({ type: 'email' as const, at: email.at, email }))
+      : []),
+    ...(filter === 'all' || filter === 'emails'
+      ? (
+          await db
+            .select({
+              id: inboundMessages.id,
+              fromName: inboundMessages.fromName,
+              fromEmail: inboundMessages.fromEmail,
+              subject: inboundMessages.subject,
+              preview: sql<string>`left(regexp_replace(coalesce(${inboundMessages.text}, ''),
+                '\\s+', ' ', 'g'), 200)`,
+              at: inboundMessages.receivedAt,
+              attachmentCount: sql<number>`jsonb_array_length(${inboundMessages.attachments})`,
+            })
+            .from(inboundMessages)
+            .where(
+              and(
+                eq(inboundMessages.customerId, customerId),
+                eq(inboundMessages.status, 'assigned'),
+              ),
+            )
+            .orderBy(desc(inboundMessages.receivedAt))
+            .limit(TIMELINE_LIMIT)
+        ).map((reply) => ({ type: 'reply' as const, at: reply.at, reply }))
       : []),
     ...(filter === 'all' || filter === 'changes'
       ? (await customerHistory(db, customerId))

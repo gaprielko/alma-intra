@@ -9,7 +9,7 @@ import {
 } from '@intra/shared/schemas';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { Mail, MoreHorizontal, Pencil, Plus } from 'lucide-react';
+import { Mail, MoreHorizontal, Pencil, Plus, Reply } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { formatDay, KindMark } from '@/components/activities/activity-bits';
 import { ActivityDialog } from '@/components/activities/activity-dialog';
@@ -611,6 +611,12 @@ function describe(event: HistoryEvent): ReactNode {
         h.updatedPlain
       );
     }
+    // The public unsubscribe page and the one-click header: the person, by the link in an e-mail.
+    case 'unsubscribe.confirm':
+    case 'unsubscribe.oneClick':
+      return withContact(h.unsubscribed);
+    case 'unsubscribe.undo':
+      return withContact(h.resubscribed);
     default:
       return event.action;
   }
@@ -756,6 +762,8 @@ function TimelineCard({ customer }: { customer: Customer }) {
                   />
                 ) : item.type === 'email' ? (
                   <EmailItem key={item.email.id} item={item.email} />
+                ) : item.type === 'reply' ? (
+                  <ReplyItem key={item.reply.id} item={item.reply} />
                 ) : (
                   <li key={item.change.id} className="relative">
                     <span
@@ -822,6 +830,41 @@ function EmailItem({ item }: { item: TimelineEmail }) {
         <p className="text-xs text-muted">
           {a.timeline.emailBy(item.sender, item.toName ?? sk.common.none, formatRecent(item.at))}
         </p>
+      </Link>
+    </li>
+  );
+}
+
+type TimelineReply = Extract<
+  RouterOutputs['activity']['timeline'][number],
+  { type: 'reply' }
+>['reply'];
+
+/** A received e-mail in the timeline: the subject, who wrote, the first words; opens it. */
+function ReplyItem({ item }: { item: TimelineReply }) {
+  return (
+    <li className="relative">
+      <span
+        aria-hidden
+        className="absolute top-0 -left-[41px] inline-flex size-7 items-center justify-center rounded-full bg-[#e6f4ef] text-[#1d6b52]"
+      >
+        <Reply className="size-3.5" />
+      </span>
+      <Link
+        to="/emails/inbox/$inboundId"
+        params={{ inboundId: item.id }}
+        className="block rounded-lg hover:bg-hover/60"
+      >
+        <p className="text-sm font-semibold">
+          {a.timeline.reply(item.subject || sk.inbound.noSubject)}
+        </p>
+        <p className="text-xs text-muted">
+          {a.timeline.replyFrom(item.fromName ?? item.fromEmail, formatRecent(item.at))}
+          {item.attachmentCount > 0 ? ` · ${sk.inbound.attachments(item.attachmentCount)}` : ''}
+        </p>
+        {item.preview ? (
+          <p className="mt-1 line-clamp-2 text-sm text-muted">{item.preview}</p>
+        ) : null}
       </Link>
     </li>
   );

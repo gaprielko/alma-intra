@@ -16,15 +16,19 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
+import { eq } from 'drizzle-orm';
 import type { Request } from 'express';
 import { AuditTrail, writeAuditEvent } from '../audit/audit.js';
 import { loadEnv } from '../config/env.js';
 import { DB, type Db } from '../db/db.module.js';
+import { users } from '../db/schema/index.js';
 import { describeError } from '../logging/describe-error.js';
 import { transportFor } from '../mail/mailer.js';
 import type { MailTransport } from '../mail/transport.js';
 import { STORAGE } from '../storage/storage.module.js';
 import type { Storage } from '../storage/storage.js';
+import { saveInboundAttachments } from '../inbound/attachments.js';
+import { type InboundSource, inboundSource, receiveInbound } from '../inbound/inbound.js';
 import {
   dropForUnsubscribed,
   drainCampaigns,
@@ -34,6 +38,8 @@ import {
 } from './delivery.js';
 
 export const CAMPAIGN_TRANSPORT = Symbol('CAMPAIGN_TRANSPORT');
+/** Where received e-mails are fetched; null without a Resend key (dev, tests). */
+export const INBOUND_SOURCE = Symbol('INBOUND_SOURCE');
 const POLL_INTERVAL_MS = 5_000;
 
 /** Sends the queued e-mails to customers inside the API process. Tests drain by hand. */
@@ -73,7 +79,8 @@ export class CampaignWorker implements OnModuleInit, OnApplicationShutdown {
 }
 
 /**
- * Resend's delivery reports (`POST /webhooks/resend`), signed and verified, and the one-click
+ * Resend's delivery reports and received e-mails (`POST /webhooks/resend`), signed and verified,
+ * and the one-click
  * unsubscribe of the `List-Unsubscribe-Post` header (`POST /u/<token>`). Both are public: the
  * signature and the token are the authentication.
  */
@@ -81,7 +88,11 @@ export class CampaignWorker implements OnModuleInit, OnApplicationShutdown {
 export class CampaignWebhookController {
   private readonly logger = new Logger('resend-webhook');
 
-  constructor(@Inject(DB) private readonly db: Db) {}
+  constructor(
+    @Inject(DB) private readonly db: Db,
+    @Inject(INBOUND_SOURCE) private readonly inbound: InboundSource | null,
+    @Inject(STORAGE) private readonly storage: Storage | null,
+  ) {}
 
   @Post('webhooks/resend')
   @HttpCode(200)
@@ -101,13 +112,63 @@ export class CampaignWebhookController {
         req.rawBody,
       );
     if (!ok || !id) throw new UnauthorizedException();
+    const event = req.body as Parameters<typeof handleResendEvent>[2];
     try {
-      await handleResendEvent(this.db, id, req.body as Parameters<typeof handleResendEvent>[2]);
+      if (event.type === 'email.received') await this.received(event.data?.email_id);
+      else await handleResendEvent(this.db, id, event);
     } catch (error) {
       this.logger.error({ msg: 'webhook event not handled', ...describeError(error) });
       throw error;
     }
     return { ok: true };
+  }
+
+  /**
+   * A received e-mail: fetched from Resend (the event carries no body) and filed. Without a key
+   * nothing can be fetched; the 503 makes Resend keep it and try again later.
+   */
+  private async received(providerEmailId: string | undefined) {
+    if (!providerEmailId) return;
+    if (!this.inbound) throw new ServiceUnavailableException();
+    const email = await this.inbound.get(providerEmailId);
+    if (!email) return;
+    const filed = await receiveInbound(this.db, loadEnv(), email);
+    this.logger.log({ msg: 'e-mail received', inboundId: filed.id, matched: filed.matched });
+    // A copy into the colleague's own mailbox (D-27), so nothing is missed outside Intra.
+    if (filed.id && filed.userId) {
+      await this.forwardCopy(providerEmailId, filed.id, filed.userId).catch((error: unknown) =>
+        this.logger.warn({
+          msg: 'copy of a received e-mail not forwarded',
+          inboundId: filed.id,
+          ...describeError(error),
+        }),
+      );
+    }
+    // The e-mail is kept whatever happens to its attachments; a failure is retried on assigning.
+    if (filed.id && filed.matched) {
+      await saveInboundAttachments(this.db, this.storage, this.inbound, filed.id).catch(
+        (error: unknown) =>
+          this.logger.warn({
+            msg: 'attachments of a received e-mail not saved',
+            inboundId: filed.id,
+            ...describeError(error),
+          }),
+      );
+    }
+  }
+
+  private async forwardCopy(providerEmailId: string, inboundId: string, userId: string) {
+    const [user] = await this.db
+      .select({ email: users.email, status: users.status })
+      .from(users)
+      .where(eq(users.id, userId));
+    if (!user || user.status !== 'active' || !this.inbound) return;
+    const env = loadEnv();
+    await this.inbound.forward(
+      providerEmailId,
+      { to: user.email, from: `Alma Intra <${env.CAMPAIGN_FROM_ADDRESS}>` },
+      `inbound-copy/${inboundId}`,
+    );
   }
 
   @Post('u/:token')
@@ -145,6 +206,7 @@ export class CampaignWebhookController {
 @Module({
   providers: [
     { provide: CAMPAIGN_TRANSPORT, useFactory: () => transportFor(loadEnv()) },
+    { provide: INBOUND_SOURCE, useFactory: () => inboundSource(loadEnv()) },
     CampaignWorker,
   ],
   controllers: [CampaignWebhookController],

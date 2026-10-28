@@ -34,6 +34,12 @@ const envSchema = z.object({
    */
   RESEND_WEBHOOK_SECRET: optionalString(z.string().min(10)),
   CAMPAIGN_FROM_ADDRESS: z.string().email().default('info@mail.alma-care.eu'),
+  /**
+   * The domain Resend receives mail for (spec 6.6): each e-mail to a customer gets the Reply-To
+   * `r+<token>@<domain>`, and the reply comes back through the webhook. Unset, the Reply-To is
+   * the sender's own mailbox and no reply reaches Intra.
+   */
+  INBOUND_REPLY_DOMAIN: optionalString(z.string().regex(/^[a-z0-9.-]+\.[a-z]{2,}$/)),
   /** Built `apps/web` served by the API (staging/production image). Unset in dev: Vite serves it. */
   WEB_DIST_DIR: optionalString(z.string().min(1)),
   /**

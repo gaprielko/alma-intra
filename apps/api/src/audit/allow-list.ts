@@ -5,6 +5,7 @@ import {
   CUSTOMER_STATUSES,
   FILE_GROUPS,
   HEADER_STYLES,
+  INBOUND_STATUSES,
   SECOND_STEPS,
   USER_STATUSES,
 } from '@intra/shared/schemas';
@@ -252,6 +253,17 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     deleted: flag,
     test: flag,
     fields: subsetOf(['content']),
+  },
+  /** Notifications marked read: how many. */
+  notification: {
+    count: number,
+  },
+  /** Received e-mail: whom it was filed under, and its state. Never its sender or content. */
+  inbound: {
+    campaignId: uuid,
+    customerId: uuid,
+    contactId: uuid,
+    status: oneOf(INBOUND_STATUSES),
   },
   folder: {
     parentId: uuid,

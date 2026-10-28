@@ -6,6 +6,7 @@ import { AppSidebar, SidebarLink } from '@/components/app-sidebar';
 import { UploadPanel } from '@/components/files/file-bits';
 import { Avatar } from '@/components/avatar';
 import { IdleWarning } from '@/components/idle-warning';
+import { NotificationBell } from '@/components/notification-bell';
 import {
   CustomersMark,
   EmailsMark,
@@ -60,6 +61,7 @@ function AppShell() {
         )}
         footer={(collapsed) => (
           <div className="space-y-2">
+            <NotificationBell collapsed={collapsed} />
             <SidebarLink
               to="/settings"
               icon={SettingsMark}
