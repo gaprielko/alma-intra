@@ -5,9 +5,7 @@ import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module.js';
 import { loadEnv, storageEnvOf } from './config/env.js';
 import { securityHeaders } from './security-headers.js';
-import { DB, type Db } from './db/db.module.js';
-import { oauthProvider } from './mcp/oauth.js';
-import { mcpAuthRouter } from '@modelcontextprotocol/sdk/server/auth/router.js';
+import { mountOAuth } from './mcp/oauth.js';
 import { serveWeb } from './spa-shell.js';
 
 async function bootstrap() {
@@ -31,14 +29,7 @@ async function bootstrap() {
 
   // Intra is the OAuth server of its MCP endpoint (D-31): metadata, client registration,
   // /authorize (on to the consent page), /token and /revoke, from the MCP SDK.
-  app.use(
-    mcpAuthRouter({
-      provider: oauthProvider(app.get<Db>(DB), env),
-      issuerUrl: new URL(env.WEB_URL),
-      resourceServerUrl: new URL(`${env.WEB_URL}/mcp`),
-      resourceName: 'Alma Intra',
-    }),
-  );
+  mountOAuth(app, env);
 
   // The image serves the built web app from the same origin as the API, its shell with the CSP
   // nonce of each response (spa-shell.ts). Unset in dev, where Vite serves it.

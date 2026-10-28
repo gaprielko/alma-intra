@@ -2,7 +2,9 @@ import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module.js';
 import { base32Decode, totpAt } from '../../src/auth/totp.js';
+import { loadEnv } from '../../src/config/env.js';
 import { DB, type Db } from '../../src/db/db.module.js';
+import { mountOAuth } from '../../src/mcp/oauth.js';
 import { SEED_PASSWORD, SEED_TOTP_SECRET } from '../../src/db/seed.js';
 import { STORAGE } from '../../src/storage/storage.module.js';
 import type { Storage } from '../../src/storage/storage.js';
@@ -13,6 +15,8 @@ export async function startApi(options: { storage?: Storage } = {}) {
   if (options.storage) builder.overrideProvider(STORAGE).useValue(options.storage);
   const moduleRef = await builder.compile();
   const app: INestApplication = moduleRef.createNestApplication({ logger: false, rawBody: true });
+  // What main.ts adds outside the modules: the OAuth endpoints of the MCP server.
+  mountOAuth(app, loadEnv());
   await app.listen(0);
   const baseUrl = await app.getUrl();
   return {

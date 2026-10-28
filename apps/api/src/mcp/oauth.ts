@@ -15,10 +15,12 @@ import type {
   OAuthTokens,
 } from '@modelcontextprotocol/sdk/shared/auth.js';
 import { and, desc, eq, gt, isNull, lt, or } from 'drizzle-orm';
+import type { INestApplication } from '@nestjs/common';
+import { mcpAuthRouter } from '@modelcontextprotocol/sdk/server/auth/router.js';
 import type { Response } from 'express';
 import type { Env } from '../config/env.js';
 import { decryptField, encryptField } from '../crypto/field-encryption.js';
-import type { Db } from '../db/db.module.js';
+import { DB, type Db } from '../db/db.module.js';
 import { oauthClients, oauthGrants, users } from '../db/schema/index.js';
 
 /**
@@ -339,4 +341,22 @@ export async function revokeConnection(db: Db, userId: string, id: string) {
     .where(and(eq(oauthGrants.id, id), eq(oauthGrants.userId, userId)))
     .returning({ id: oauthGrants.id });
   return rows.length > 0;
+}
+
+/**
+ * Mounts Intra's OAuth endpoints (the MCP SDK's router) on the app: metadata, registration,
+ * /authorize, /token and /revoke. Called by `main.ts`, and by the integration tests' app.
+ */
+export function mountOAuth(
+  app: INestApplication,
+  env: Pick<Env, 'WEB_URL' | 'DATA_ENCRYPTION_KEY'>,
+) {
+  app.use(
+    mcpAuthRouter({
+      provider: oauthProvider(app.get<Db>(DB), env),
+      issuerUrl: new URL(env.WEB_URL),
+      resourceServerUrl: new URL(`${env.WEB_URL}/mcp`),
+      resourceName: 'Alma Intra',
+    }),
+  );
 }
