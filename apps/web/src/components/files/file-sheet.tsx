@@ -2,7 +2,7 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { sk } from '@intra/shared/i18n';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { Download, Eye, MoreHorizontal, Upload } from 'lucide-react';
+import { Download, Eye, Mail, MoreHorizontal, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { KindMark } from '@/components/activities/activity-bits';
 import { ChangedBy, FileBadge } from '@/components/files/file-bits';
@@ -364,30 +364,50 @@ function describeEvent(action: string, diff: Record<string, unknown> | null): st
   }
 }
 
-/** „Kde je použitý“: the activities that keep a version of this file. */
+/** „Kde je použitý“: the activities that keep a version of this file and the e-mails that carried one. */
 function Usage({ rows }: { rows: RouterOutputs['activity']['fileUsage'] }) {
   if (rows.length === 0) return <p className="py-6 text-sm text-muted">{d.usageEmpty}</p>;
   return (
     <ul className="space-y-2 pt-3">
-      {rows.map((row) => (
-        <li key={row.activityId}>
-          <Link
-            to="/customers/$customerId"
-            params={{ customerId: row.customerId }}
-            className="flex items-center gap-3 rounded-xl border border-border-subtle px-3.5 py-3 hover:bg-hover"
-          >
-            <KindMark kind={row.kind} />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold">
-                {d.usageItem(sk.activities.kinds[row.kind], row.subject ?? '')}
+      {rows.map((row) =>
+        row.type === 'email' ? (
+          <li key={`e-${row.campaignId}`}>
+            <Link
+              to="/emails/sent/$campaignId"
+              params={{ campaignId: row.campaignId }}
+              className="flex items-center gap-3 rounded-xl border border-border-subtle px-3.5 py-3 hover:bg-hover"
+            >
+              <Mail className="size-4 shrink-0 text-muted" aria-hidden />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold">
+                  {d.usageEmail(row.subject ?? '')}
+                </span>
+                <span className="block truncate text-[13px] text-muted">
+                  {d.usageEmailMeta(row.recipients, row.version, formatDate(row.sentAt))}
+                </span>
               </span>
-              <span className="block truncate text-[13px] text-muted">
-                {d.usageMeta(row.customerName, row.version, formatDate(row.occurredAt))}
+            </Link>
+          </li>
+        ) : (
+          <li key={row.activityId}>
+            <Link
+              to="/customers/$customerId"
+              params={{ customerId: row.customerId }}
+              className="flex items-center gap-3 rounded-xl border border-border-subtle px-3.5 py-3 hover:bg-hover"
+            >
+              <KindMark kind={row.kind} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold">
+                  {d.usageItem(sk.activities.kinds[row.kind], row.subject ?? '')}
+                </span>
+                <span className="block truncate text-[13px] text-muted">
+                  {d.usageMeta(row.customerName, row.version, formatDate(row.occurredAt))}
+                </span>
               </span>
-            </span>
-          </Link>
-        </li>
-      ))}
+            </Link>
+          </li>
+        ),
+      )}
     </ul>
   );
 }

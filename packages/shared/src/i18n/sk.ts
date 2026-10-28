@@ -1107,7 +1107,10 @@ export const sk = {
         usage: (n: number) => `Kde je použitý · ${n}`,
         history: 'História',
       },
-      usageEmpty: 'Súbor zatiaľ nie je priložený k žiadnej aktivite.',
+      usageEmpty: 'Súbor zatiaľ nie je priložený k žiadnej aktivite ani e-mailu.',
+      usageEmail: (subject: string) => `E-mail „${subject}“`,
+      usageEmailMeta: (recipients: number, version: number, date: string) =>
+        `${plural(recipients, 'adresát', 'adresáti', 'adresátov')} · v${version} · ${date}`,
       usageItem: (kind: string, subject: string) => (subject ? `${kind} „${subject}“` : kind),
       usageMeta: (customer: string, version: number, date: string) =>
         `${customer} · verzia ${version} · ${date}`,

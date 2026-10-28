@@ -15,6 +15,7 @@ import {
   auditEvents,
   campaignMessages,
   campaigns,
+  messageAttachments,
   inboundMessages,
   contacts,
   customers,
@@ -624,8 +625,39 @@ export async function attachmentUrl(
   return { url: signed.url, fileId: row.fileId };
 }
 
-/** „Kde je použitý“: the activities that keep a version of the file. */
+/**
+ * „Kde je použitý“: the activities that keep a version of the file and the e-mails that carried
+ * one (one row per e-mail, with how many it went to), newest first.
+ */
 export async function fileUsage(db: Db, fileId: string) {
+  const [used, sent] = await Promise.all([activityUsage(db, fileId), emailUsage(db, fileId)]);
+  return [
+    ...used.map((row) => ({ type: 'activity' as const, at: row.occurredAt, ...row })),
+    ...sent.map((row) => ({ type: 'email' as const, at: row.sentAt, ...row })),
+  ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+}
+
+/** The e-mails that carried a version of the file, one row each. */
+function emailUsage(db: Db, fileId: string) {
+  return db
+    .select({
+      campaignId: campaigns.id,
+      subject: campaigns.subjectText,
+      sentAt: sql<Date>`max(${campaignMessages.sentAt})`,
+      recipients: sql<number>`count(distinct ${campaignMessages.id})`.mapWith(Number),
+      version: sql<number>`max(${fileVersions.number})`,
+    })
+    .from(messageAttachments)
+    .innerJoin(fileVersions, eq(fileVersions.id, messageAttachments.fileVersionId))
+    .innerJoin(campaignMessages, eq(campaignMessages.id, messageAttachments.messageId))
+    .innerJoin(campaigns, eq(campaigns.id, campaignMessages.campaignId))
+    .where(and(eq(fileVersions.fileId, fileId), isNotNull(campaignMessages.sentAt)))
+    .groupBy(campaigns.id)
+    .orderBy(desc(sql`max(${campaignMessages.sentAt})`))
+    .limit(50);
+}
+
+function activityUsage(db: Db, fileId: string) {
   return db
     .select({
       activityId: activities.id,
