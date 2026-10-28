@@ -41,7 +41,7 @@ CSV import (**[D-10]**: not needed).
 | ------------- | ------------------------------------------------------------------------- | ------------------------------------------- |
 | Monorepo      | pnpm 10 + Turborepo, Node 22, TypeScript                                  | same                                        |
 | API           | NestJS modular monolith, tRPC, Drizzle ORM, PostgreSQL 16                 | same                                        |
-| Jobs          | pg-boss (installed by a migration)                                        | same (sending, scheduling, inbound mail)    |
+| Jobs          | pg-boss (installed by a migration)                                        | none: polled tables in the API process **[D-32]** |
 | E-mail        | Resend + React Email, transactional outbox (ADR-015)                      | same + campaigns, delivery webhooks, inbound |
 | Files         | S3 API (Hetzner Object Storage, MinIO locally), signed URLs (ADR-007)     | same, extended into the Files module        |
 | Web           | Vite + React 19, TanStack Router/Query/Table, RHF + Zod, shadcn/ui, TW 4  | same + a WYSIWYG editor (TipTap, **[D-11]**) |
@@ -316,7 +316,7 @@ The draft is saved as it goes and can be finished later.
 - Each message keeps its **exact rendered copy** (subject, HTML, text) and **the exact versions of
   its attachments**, so it is always clear what the customer received. (Unlike Alma ADOS, which
   stores no mail body: this is business correspondence, not health data.)
-- Sending runs as **pg-boss jobs** with a rate limit (Resend's limits), retries on temporary errors,
+- Sending runs from a **queue table polled in the API process** **[D-32]** with a rate limit (Resend's limits), retries on temporary errors,
   idempotency per message.
 - Message states: `queued` → `sent` → `delivered` / `bounced` / `complained`, from **Resend
   webhooks** (signed, verified).
@@ -556,7 +556,7 @@ saved_filters           id, user_id, name, values (rules), shared
 | E2    | Files: storage, folders, customer folders, versions, preview, trash                                                                     |
 | E3    | Activities with notes and attachments; customer timeline                                                                                 |
 | E4    | E-mail templates: TipTap editor in the real layout, variables, images, company look settings                                            |
-| E5    | Sending: wizard, per-recipient edits, attachments, test to self, pg-boss sending, delivery webhooks, unsubscribe, sent overview         |
+| E5    | Sending: wizard, per-recipient edits, attachments, test to self, queued sending, delivery webhooks, unsubscribe, sent overview         |
 | E6    | Replies in the app (after the Resend inbound spike), answering from the app, notifications                                              |
 | E7    | Claude access (MCP with OAuth for claude.ai / Desktop and personal tokens for Claude Code), document templates (DOCX generation)        |
 | E8    | Dashboard, scheduled sending, saved segments, global activity log                                                                       |
@@ -603,6 +603,7 @@ both attach files.
 | D-29  | Max 50 MB per file; allowed types as in 7.2                                                                               |
 | D-30  | No PDF renditions of Office files                                                                                         |
 | D-31  | MCP for all Claude clients: OAuth (claude.ai, Desktop, Code) and personal access tokens (Code), both in E7                |
+| D-32  | No job library: e-mails wait in `campaign_messages` (and system mail in `mail_outbox`), drained every few seconds by a worker in the API process with leases, retries and scheduled times; one process, no extra service. pg-boss only if several API instances run |
 
 ### Still to verify (not decisions)
 
