@@ -134,7 +134,9 @@ export async function customerFolders(db: Db, search: string | undefined, limit:
   const fileCount = sql<number>`(select count(*)::int from files f join folders fo on fo.id = f.folder_id
     where fo.customer_id = "customers"."id" and f.deleted_at is null and f.current_version_id is not null)`;
   const where = [isNull(customers.deletedAt)];
-  if (search) where.push(sql`${customers.name} ilike ${likePattern(search)}`);
+  if (search) {
+    where.push(sql`unaccent(${customers.name}) ilike unaccent(${likePattern(search)})`);
+  }
   const rows = await db
     .select({
       folderId: folders.id,
@@ -303,7 +305,7 @@ export async function folderContents(db: Db, input: FolderContentsInput) {
 
   if (input.search) {
     where.push(
-      sql`${files.name} ilike ${likePattern(input.search)}`,
+      sql`unaccent(${files.name}) ilike unaccent(${likePattern(input.search)})`,
       or(isNull(folders.customerId), isNull(customers.deletedAt))!,
     );
     const rows = await fileRows(db, where)

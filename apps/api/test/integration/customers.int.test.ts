@@ -106,6 +106,12 @@ describe('contacts (customers)', () => {
     expect(again.message).toBe('CONTACT_EMAIL_TAKEN');
   });
 
+  it('finds a contact without its diacritics', async () => {
+    await jana.call('customer.create', organization('Šťastná Ďumbierska, s.r.o.'));
+    const page = await jana.call<Page>('customer.list', { search: 'stastna dumb' });
+    expect(page.data.items.map((c) => c.name)).toContain('Šťastná Ďumbierska, s.r.o.');
+  });
+
   it('exports CSV with formulas defused', async () => {
     await jana.call('customer.create', organization('=HYPERLINK("x")'));
     const out = await jana.call<{ csv: string; count: number }>('customer.exportCsv', {
