@@ -259,6 +259,11 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     days: number,
     revoked: flag,
   },
+  /** A document made from a template: which template, for whom. Never the fields typed. */
+  document: {
+    templateId: uuid,
+    customerId: uuid,
+  },
   /** Claude's OAuth sign-in: approved or refused, a connection revoked. */
   oauth: {
     approved: flag,

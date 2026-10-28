@@ -1235,6 +1235,26 @@ export const sk = {
       templates: 'Šablóny',
     },
   },
+  documents: {
+    menu: 'Vytvoriť dokument',
+    title: 'Vytvoriť dokument',
+    lead: 'Šablóna z priečinka Šablóny dokumentov sa vyplní údajmi kontaktu a uloží do jeho priečinka ako DOCX.',
+    template: 'Šablóna',
+    pickTemplate: 'Vyberte šablónu',
+    noTemplates:
+      'Zatiaľ žiadne šablóny. Nahrajte DOCX so značkami ako {customer.name} do priečinka Šablóny dokumentov v Súboroch.',
+    contact: 'Pre koho',
+    noContact: 'Bez kontaktnej osoby',
+    name: 'Názov súboru',
+    create: 'Vytvoriť',
+    created: 'Dokument je uložený v priečinku kontaktu.',
+    errors: {
+      NOT_FOUND: 'Šablóna alebo kontakt sa nenašli.',
+      TEMPLATE_INVALID: 'Šablóna sa nedá vyplniť. Skontrolujte značky v zložených zátvorkách.',
+      NOT_A_TEMPLATE: 'Súbor nie je v priečinku Šablóny dokumentov.',
+      STORAGE_NOT_CONFIGURED: 'Súbory nie sú na tomto serveri nastavené.',
+    },
+  },
   oauth: {
     title: (client: string) => `${client} žiada o prístup k Alma Intra`,
     unnamed: 'Aplikácia',

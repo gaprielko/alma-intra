@@ -3,6 +3,7 @@ import { activityRouter } from './activity.router.js';
 import { authRouter } from './auth.router.js';
 import { codeListRouter } from './code-list.router.js';
 import { customerRouter } from './customer.router.js';
+import { documentRouter } from './document.router.js';
 import { fileRouter } from './file.router.js';
 import { inboundRouter } from './inbound.router.js';
 import { notificationRouter } from './notification.router.js';
@@ -19,6 +20,7 @@ export const appRouter = router({
   customer: customerRouter,
   codeList: codeListRouter,
   file: fileRouter,
+  document: documentRouter,
   activity: activityRouter,
   template: templateRouter,
   campaign: campaignRouter,

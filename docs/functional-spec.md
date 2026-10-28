@@ -524,7 +524,7 @@ files                   id, folder_id, name, description, current_version_id, de
 file_versions           id, file_id, storage_key, mime, size, sha256, created_by,
                         created_via (web | mcp | generated | inbound), created_at
 public_images           id, file_version_id, public_key   (images used in e-mails)
-document_templates      id, file_id, custom_fields
+(document templates: the DOCX files of the company folder „Šablóny dokumentov“; their fields are read from the placeholders, no table)
 
 email_templates         id, name, category_id, language, subject, body (TipTap JSON),
                         custom_fields, default_attachments, active, position

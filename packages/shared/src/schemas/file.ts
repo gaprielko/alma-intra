@@ -147,3 +147,12 @@ export const downloadFileSchema = z.object({
   inline: z.boolean().default(false),
 });
 export const restoreVersionSchema = z.object({ versionId: idSchema });
+
+/** „Vytvoriť dokument“: a template filled for a customer, saved into its folder. */
+export const createDocumentSchema = z.object({
+  templateId: idSchema,
+  customerId: idSchema,
+  contactId: idSchema.nullable().optional(),
+  name: z.string().trim().min(1).max(190),
+  fields: z.record(z.string().max(200), z.string().max(5000)).default({}),
+});
