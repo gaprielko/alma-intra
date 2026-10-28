@@ -7,6 +7,13 @@ import type { Request, Response } from 'express';
 import { loadEnv } from '../config/env.js';
 import { DB, type Db } from '../db/db.module.js';
 import { describeError } from '../logging/describe-error.js';
+import {
+  type Hit,
+  hit,
+  ipSubject,
+  RATE_LIMITS,
+  type RateLimitRule,
+} from '../security/rate-limit.js';
 import { STORAGE } from '../storage/storage.module.js';
 import type { Storage } from '../storage/storage.js';
 import { userOfAccessToken } from './access-tokens.js';
@@ -35,12 +42,25 @@ export class McpController {
       ? ((await userOfAccessToken(this.db, token)) ?? (await userOfOAuthToken(this.db, token)))
       : null;
     if (!user) {
+      if (token) {
+        const counted = await hit(this.db, RATE_LIMITS.mcpBadTokenPerIp, ipSubject(req.ip));
+        if (counted.count > RATE_LIMITS.mcpBadTokenPerIp.limit) {
+          this.tooMany(res, RATE_LIMITS.mcpBadTokenPerIp, counted);
+          return;
+        }
+      }
       // Where a client learns how to get a token: Intra's OAuth (main.ts mounts it).
       const metadata = getOAuthProtectedResourceMetadataUrl(new URL(`${loadEnv().WEB_URL}/mcp`));
       res
         .status(401)
         .setHeader('WWW-Authenticate', `Bearer resource_metadata="${metadata}"`)
         .json({ error: 'invalid_token' });
+      return;
+    }
+    const counted = await hit(this.db, RATE_LIMITS.mcpPerUser, user.userId);
+    if (counted.count > RATE_LIMITS.mcpPerUser.limit) {
+      this.logger.warn({ msg: 'mcp rate limited', userId: user.userId });
+      this.tooMany(res, RATE_LIMITS.mcpPerUser, counted);
       return;
     }
     const server = buildMcpServer({
@@ -67,6 +87,15 @@ export class McpController {
       this.logger.error({ msg: 'mcp request failed', ...describeError(error) });
       if (!res.headersSent) res.status(500).json({ error: 'server_error' });
     }
+  }
+
+  /** 429 with when the window ends, so a client waits instead of hammering. */
+  private tooMany(res: Response, rule: RateLimitRule, counted: Hit) {
+    const retryAfter = Math.max(
+      1,
+      Math.ceil((counted.windowStart.getTime() + rule.windowMs - Date.now()) / 1000),
+    );
+    res.status(429).setHeader('Retry-After', String(retryAfter)).json({ error: 'rate_limited' });
   }
 }
 

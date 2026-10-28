@@ -1,5 +1,7 @@
+import { createHash } from 'node:crypto';
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { SEED_USERS } from '../../src/db/seed.js';
 import { browser, JANA, startApi } from './client.js';
 import { memoryStorage } from './memory-storage.js';
 
@@ -89,6 +91,23 @@ describe('Claude through MCP', () => {
       sql`select count(*)::int as n from audit_events where action like 'mcp.%' and actor_kind = 'claude'`,
     );
     expect(rows.rows[0]!.n).toBeGreaterThanOrEqual(4);
+  });
+
+  it('slows down a runaway: past the limit per user it answers 429 with Retry-After', async () => {
+    const key = createHash('sha256').update(`mcp:user:${SEED_USERS.jana}`).digest('hex');
+    await api.db.execute(sql`update rate_limits set count = 600 where key = ${key}`);
+    const res = await fetch(`${api.baseUrl}/mcp`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+        accept: 'application/json, text/event-stream',
+      },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+    });
+    expect(res.status).toBe(429);
+    expect(Number(res.headers.get('retry-after'))).toBeGreaterThan(0);
+    await api.db.execute(sql`delete from rate_limits where key = ${key}`);
   });
 
   it('stops working once the token is revoked', async () => {
