@@ -1521,6 +1521,8 @@ export const sk = {
     noCategory: 'Bez kategórie',
     meta: (name: string, date: string) => `Upravené ${date} · ${name}`,
     metaPlain: (date: string) => `Upravené ${date}`,
+    sentCount: (n: number) =>
+      n === 0 ? 'Zatiaľ neodoslaná' : n === 1 ? 'Odoslaná raz' : `Odoslaná ${n}-krát`,
     untitled: 'Nová šablóna',
     created: 'Šablóna je vytvorená.',
     saved: 'Šablóna je uložená.',

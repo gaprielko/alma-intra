@@ -61,6 +61,9 @@ export async function listTemplates(
         categoryName: templateCategories.name,
         updatedAt: emailTemplates.updatedAt,
         updatedBy: editor.name,
+        // E-mails that left with it (drafts not counted).
+        sentCount: sql<number>`(select count(*)::int from campaigns c
+          where c.template_id = ${emailTemplates.id} and c.status in ('sending', 'sent'))`,
       })
       .from(emailTemplates)
       .leftJoin(templateCategories, eq(templateCategories.id, emailTemplates.categoryId))
