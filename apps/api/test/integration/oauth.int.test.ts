@@ -1,5 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
+import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { purgeStaleGrants } from '../../src/mcp/oauth.js';
 import { browser, JANA, startApi } from './client.js';
 
 const REDIRECT = 'http://localhost:9999/callback';
@@ -125,5 +127,36 @@ describe('OAuth for Claude (claude.ai, Desktop, Code)', () => {
     });
     expect(new URL(decided.data.redirectTo).searchParams.get('error')).toBe('access_denied');
     expect((await jana.call('oauth.request', { request })).code).toBe('NOT_FOUND');
+  });
+
+  it('purges requests nobody answered a day after they expired, and keeps the rest', async () => {
+    const registered = (await (
+      await fetch(`${api.baseUrl}/register`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ redirect_uris: [REDIRECT], token_endpoint_auth_method: 'none' }),
+      })
+    ).json()) as { client_id: string };
+    const authorize = new URL(`${api.baseUrl}/authorize`);
+    authorize.search = new URLSearchParams({
+      response_type: 'code',
+      client_id: registered.client_id,
+      redirect_uri: REDIRECT,
+      code_challenge: createHash('sha256').update('w'.repeat(43)).digest('base64url'),
+      code_challenge_method: 'S256',
+    }).toString();
+    const toConsent = await fetch(authorize, { redirect: 'manual' });
+    const request = new URL(toConsent.headers.get('location')!).searchParams.get('request')!;
+    expect(await purgeStaleGrants(api.db)).toBe(0);
+    const later = new Date(Date.now() + 2 * 24 * 60 * 60_000);
+    expect(await purgeStaleGrants(api.db, later)).toBeGreaterThanOrEqual(1);
+    const left = await api.db.execute<{ status: string }>(
+      sql`select status from oauth_grants where id = ${request}`,
+    );
+    expect(left.rows).toEqual([]);
+    const active = await api.db.execute<{ n: number }>(
+      sql`select count(*)::int as n from oauth_grants where status in ('active', 'revoked')`,
+    );
+    expect(active.rows[0]!.n).toBeGreaterThan(0);
   });
 });
