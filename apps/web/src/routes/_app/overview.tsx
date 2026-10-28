@@ -1,7 +1,8 @@
 import { sk } from '@intra/shared/i18n';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { Check } from 'lucide-react';
+import { CUSTOMER_STATUSES } from '@intra/shared/schemas';
+import { Check, Inbox } from 'lucide-react';
 import { useState } from 'react';
 import { formatDay, KindMark, todayIso } from '@/components/activities/activity-bits';
 import { ActivitySheet } from '@/components/activities/activity-sheet';
@@ -11,9 +12,9 @@ import { CardSkeleton } from '@/components/skeletons';
 import { Card, CardHeader } from '@/components/ui/card';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatRecent } from '@/lib/format';
 import { loadFailed } from '@/lib/query-view';
-import { trpc } from '@/lib/trpc';
+import { type RouterOutputs, trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_app/overview')({
@@ -22,13 +23,22 @@ export const Route = createFileRoute('/_app/overview')({
 
 const t = sk.activities.myNextSteps;
 
-/** Prehľad: for now the person's open next steps; the dashboard (D-15) joins it in E8. */
+/**
+ * Prehľad (D-15): customers by status and the latest e-mails sent on the left; received e-mails
+ * waiting for a contact, my next steps and my contacts without recent contact on the right.
+ */
 function OverviewPage() {
   return (
     <div className="min-w-0">
       <PageHeader title={sk.overview.title} subtitle={formatDate(new Date())} />
-      <main className="grid max-w-[1400px] gap-5 px-7 pt-5 pb-10 xl:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
-        <NextStepsCard />
+      <main className="grid max-w-[1400px] items-start gap-5 px-7 pt-5 pb-10 xl:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
+        <div className="min-w-0 space-y-5">
+          <SummaryCards column="main" />
+        </div>
+        <div className="min-w-0 space-y-5">
+          <SummaryCards column="side" />
+          <NextStepsCard />
+        </div>
       </main>
     </div>
   );
@@ -117,5 +127,146 @@ function NextStepsCard() {
       </div>
       {openId ? <ActivitySheet activityId={openId} onClose={() => setOpenId(null)} /> : null}
     </Card>
+  );
+}
+
+const o = sk.overview;
+
+/** The customers in each sales status, and those without one; each opens the filtered list. */
+function StatusCard({ statuses }: { statuses: Record<string, number> }) {
+  const keys = [...CUSTOMER_STATUSES, 'none'] as const;
+  return (
+    <Card>
+      <CardHeader title={o.statuses} />
+      <div className="grid grid-cols-2 gap-3 px-5 pt-1 pb-5 sm:grid-cols-4 xl:grid-cols-7">
+        {keys.map((key) => (
+          <Link
+            key={key}
+            to="/customers"
+            search={{ status: key }}
+            className="rounded-xl border border-border-subtle p-3 transition-colors hover:bg-hover"
+          >
+            <p className="text-[22px] leading-7 font-bold tabular-nums">{statuses[key] ?? 0}</p>
+            <p className="truncate text-xs text-muted">{sk.customers.chips[key]}</p>
+          </Link>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+type Summary = RouterOutputs['overview']['summary'];
+
+/** The latest e-mails sent, with how many arrived, bounced and were answered. */
+function CampaignsCard({ campaigns }: { campaigns: Summary['recentCampaigns'] }) {
+  return (
+    <Card>
+      <CardHeader
+        title={o.campaigns}
+        action={
+          <Link
+            to="/emails/sent"
+            className="text-[13px] font-medium text-primary-text hover:underline"
+          >
+            {o.allSent}
+          </Link>
+        }
+      />
+      <div className="px-5 pt-1 pb-4">
+        {campaigns.length === 0 ? (
+          <p className="py-2 text-sm text-muted">{o.noCampaigns}</p>
+        ) : (
+          <ul className="divide-y divide-border-subtle">
+            {campaigns.map((campaign) => (
+              <li key={campaign.id} className="py-3">
+                <Link
+                  to="/emails/sent/$campaignId"
+                  params={{ campaignId: campaign.id }}
+                  className="block truncate text-sm font-semibold hover:text-primary-text hover:underline"
+                >
+                  {campaign.subject || sk.campaigns.list.noSubject}
+                </Link>
+                <p className="mt-0.5 text-xs text-muted">
+                  {[
+                    campaign.sentAt ? formatDate(campaign.sentAt) : null,
+                    o.counts(campaign.recipients, campaign.delivered, campaign.replies),
+                    campaign.bounced > 0 ? o.bounced(campaign.bounced) : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+/** Received e-mails nobody filed yet: one line and a way there. */
+function UnassignedCard({ count }: { count: number }) {
+  if (count === 0) return null;
+  return (
+    <Link
+      to="/emails/inbox"
+      className="flex items-center gap-3 rounded-2xl border border-[#f3d9b0] bg-warning-soft px-5 py-4 text-sm font-semibold text-warning hover:brightness-[0.98]"
+    >
+      <Inbox className="size-4 shrink-0" aria-hidden />
+      <span className="mr-auto">{o.unassigned(count)}</span>
+      <span className="text-xs font-medium">{o.open}</span>
+    </Link>
+  );
+}
+
+/** My contacts nobody has been in touch with for a while, the longest first. */
+function StaleCard({ contacts, days }: { contacts: Summary['staleContacts']; days: number }) {
+  return (
+    <Card>
+      <CardHeader title={o.stale(days)} />
+      <div className="px-5 pt-1 pb-4">
+        {contacts.length === 0 ? (
+          <p className="py-2 text-sm text-muted">{o.noStale}</p>
+        ) : (
+          <ul className="divide-y divide-border-subtle">
+            {contacts.map((contact) => (
+              <li key={contact.id} className="flex items-center gap-3 py-2.5">
+                <Link
+                  to="/customers/$customerId"
+                  params={{ customerId: contact.id }}
+                  className="mr-auto truncate text-sm font-medium hover:text-primary-text hover:underline"
+                >
+                  {contact.name}
+                </Link>
+                <span className="shrink-0 text-xs text-muted">
+                  {contact.lastContactAt ? formatRecent(contact.lastContactAt) : o.never}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+/** The dashboard's own cards, from one query. */
+function SummaryCards({ column }: { column: 'main' | 'side' }) {
+  const summary = useQuery(trpc.overview.summary.queryOptions());
+  if (summary.isPending) return column === 'main' ? <CardSkeleton lines={4} /> : null;
+  if (loadFailed(summary)) {
+    return column === 'main' ? <ErrorState compact onRetry={() => void summary.refetch()} /> : null;
+  }
+  const s = summary.data;
+  return column === 'main' ? (
+    <>
+      <StatusCard statuses={s.statuses} />
+      <CampaignsCard campaigns={s.recentCampaigns} />
+    </>
+  ) : (
+    <>
+      <UnassignedCard count={s.unassignedReplies} />
+      <StaleCard contacts={s.staleContacts} days={s.staleDays} />
+    </>
   );
 }

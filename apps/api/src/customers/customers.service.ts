@@ -138,11 +138,13 @@ const primaryContactJson = sql<{
     where p.customer_id = ${CUSTOMER_ID} and p.is_primary and p.deleted_at is null)
   end`;
 
-/** The last activity or e-mail sent to the customer; replies join it with E6. */
-const LAST_CONTACT = sql`greatest(
+/** The last activity, e-mail sent to the customer or reply received from it. */
+export const LAST_CONTACT = sql`greatest(
   (select max(a.occurred_at) from activities a
     where a.customer_id = ${CUSTOMER_ID} and a.deleted_at is null),
-  (select max(m.sent_at) from campaign_messages m where m.customer_id = ${CUSTOMER_ID}))`;
+  (select max(m.sent_at) from campaign_messages m where m.customer_id = ${CUSTOMER_ID}),
+  (select max(i.received_at) from inbound_messages i
+    where i.customer_id = ${CUSTOMER_ID} and i.status = 'assigned'))`;
 
 const SORTS = {
   name: collated(customers.name),

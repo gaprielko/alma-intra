@@ -1222,6 +1222,19 @@ export const sk = {
   },
   overview: {
     title: 'Prehľad',
+    statuses: 'Zákazníci podľa stavu',
+    campaigns: 'Posledné odoslané e-maily',
+    allSent: 'Všetky odoslané',
+    noCampaigns: 'Zatiaľ žiadne odoslané e-maily.',
+    counts: (recipients: number, delivered: number, replies: number) =>
+      `${plural(recipients, 'adresát', 'adresáti', 'adresátov')}, doručené ${delivered}, odpovede ${replies}`,
+    bounced: (n: number) => `nedoručené ${n}`,
+    unassigned: (n: number) =>
+      `${plural(n, 'prijatý e-mail čaká', 'prijaté e-maily čakajú', 'prijatých e-mailov čaká')} na priradenie`,
+    open: 'Otvoriť',
+    stale: (days: number) => `Moje kontakty bez kontaktu viac ako ${days} dní`,
+    noStale: 'Všetky vaše kontakty majú nedávny kontakt.',
+    never: 'ešte nikdy',
   },
   emails: {
     title: 'E-maily',
