@@ -16,7 +16,17 @@ export const CSP_NONCE_PLACEHOLDER = 'INTRA_CSP_NONCE';
 const NONCE_ATTRIBUTE = `nonce="${CSP_NONCE_PLACEHOLDER}"`;
 
 /** Served by Nest, never the shell. */
-const API_PREFIXES = ['/trpc', '/health'];
+const API_PREFIXES = [
+  '/trpc',
+  '/health',
+  '/mcp',
+  '/.well-known',
+  // The OAuth endpoints of the MCP SDK (main.ts).
+  '/authorize',
+  '/token',
+  '/register',
+  '/revoke',
+];
 
 /**
  * The one file served from the root of dist: apps/web/public/favicon.ico, which Vite copies

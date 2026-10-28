@@ -1,8 +1,10 @@
 import {
+  accessTokenIdSchema,
   accountRecoveryCodesSchema,
   accountSecondFactorConfirmSchema,
   accountSecondFactorSetupSchema,
   changePasswordSchema,
+  createAccessTokenSchema,
   endSessionSchema,
   updateProfileSchema,
 } from '@intra/shared/schemas';
@@ -11,6 +13,7 @@ import * as account from '../auth/account.service.js';
 import * as auth from '../auth/auth.service.js';
 import * as secondFactor from '../auth/second-factor.service.js';
 import { enqueueMail } from '../mail/mail-outbox.js';
+import { createAccessToken, listAccessTokens, revokeAccessToken } from '../mcp/access-tokens.js';
 import { hit, RATE_LIMITS, refund } from '../security/rate-limit.js';
 import type { Context } from './context.js';
 import { countCodeAttempt } from './second-factor-attempt.js';
@@ -99,6 +102,37 @@ export const accountRouter = router({
       }
       await refund(ctx.db, RATE_LIMITS.passwordChangePerUser, userId, counted);
       ctx.audit.set({ diff: { otherSessionsEnded: true } });
+      return { ok: true as const };
+    }),
+
+  /** „Prístup pre Claude“: her personal access tokens, never their values. */
+  accessTokens: protectedProcedure.query(({ ctx }) => listAccessTokens(ctx.db, ctx.session.userId)),
+
+  /** A new token for Claude Code; its value is in this answer only. */
+  createAccessToken: protectedProcedure
+    .input(createAccessTokenSchema)
+    .mutation(async ({ ctx, input }) => {
+      const created = await createAccessToken(ctx.db, ctx.session.userId, input);
+      ctx.audit.set({
+        userId: ctx.session.userId,
+        entityType: 'access_token',
+        entityId: created.id,
+        diff: { days: input.days },
+      });
+      return created;
+    }),
+
+  revokeAccessToken: protectedProcedure
+    .input(accessTokenIdSchema)
+    .mutation(async ({ ctx, input }) => {
+      const revoked = await revokeAccessToken(ctx.db, ctx.session.userId, input.id);
+      if (!revoked) throw new TRPCError({ code: 'NOT_FOUND' });
+      ctx.audit.set({
+        userId: ctx.session.userId,
+        entityType: 'access_token',
+        entityId: input.id,
+        diff: { revoked: true },
+      });
       return { ok: true as const };
     }),
 

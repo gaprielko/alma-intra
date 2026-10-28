@@ -11,6 +11,10 @@ export const auditEvents = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     at: timestamp('at', { withTimezone: true }).notNull().defaultNow(),
     userId: uuid('user_id').references(() => users.id),
+    /** Who acted for the user: the user in the web, or Claude through MCP on their behalf (D-31). */
+    actorKind: text('actor_kind', { enum: ['user', 'claude'] })
+      .notNull()
+      .default('user'),
     /** tRPC procedure path, e.g. `user.invite`. */
     action: text('action').notNull(),
     kind: text('kind', { enum: ['mutation', 'read'] }).notNull(),

@@ -46,3 +46,15 @@ export const accountRecoveryCodesSchema = z.object({ password: z.string().min(1)
 
 /** One of her own sessions, ended from „Aktívne prihlásenia“. */
 export const endSessionSchema = z.object({ sessionId: z.string().uuid() });
+
+/** How long a personal access token for Claude Code lives, in days. */
+export const ACCESS_TOKEN_DAYS = [30, 90, 365] as const;
+export const createAccessTokenSchema = z.object({
+  name: z.string().trim().min(1).max(60),
+  days: z.union([z.literal(30), z.literal(90), z.literal(365)]),
+});
+export const accessTokenIdSchema = z.object({ id: z.string().uuid() });
+
+/** The consent page: the pending OAuth request it answers. */
+export const oauthRequestSchema = z.object({ request: z.string().uuid() });
+export const oauthDecisionSchema = z.object({ request: z.string().uuid(), approve: z.boolean() });

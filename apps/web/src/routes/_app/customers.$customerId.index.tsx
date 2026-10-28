@@ -22,6 +22,7 @@ import {
   ProductChip,
   TagChip,
 } from '@/components/customers/customer-bits';
+import { CreateDocumentDialog } from '@/components/documents/create-document-dialog';
 import { ErrorState } from '@/components/empty-state';
 import { CustomerFilesCard } from '@/components/files/customer-files-card';
 import { PageHeader } from '@/components/page-header';
@@ -58,6 +59,7 @@ function CustomerDetailPage() {
   const { customerId } = Route.useParams();
   const customer = useQuery(trpc.customer.get.queryOptions({ id: customerId }));
   const [deleting, setDeleting] = useState(false);
+  const [documenting, setDocumenting] = useState(false);
   const [recording, setRecording] = useState(false);
   const canRecord = useCan('activity.write');
   const canSend = useCan('email.send');
@@ -142,6 +144,9 @@ function CustomerDetailPage() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => setDocumenting(true)}>
+              {sk.documents.menu}
+            </DropdownMenuItem>
             <DropdownMenuItem destructive onSelect={() => setDeleting(true)}>
               {t.delete}
             </DropdownMenuItem>
@@ -166,6 +171,9 @@ function CustomerDetailPage() {
       </main>
 
       {deleting ? <DeleteCustomer customer={c} onClose={() => setDeleting(false)} /> : null}
+      {documenting ? (
+        <CreateDocumentDialog customer={c} onClose={() => setDocumenting(false)} />
+      ) : null}
       {recording ? (
         <ActivityDialog
           customerId={customerId}

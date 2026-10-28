@@ -254,6 +254,29 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     test: flag,
     fields: subsetOf(['content']),
   },
+  /** Personal access tokens for Claude: how long one lives, that one was revoked. Never a value. */
+  access_token: {
+    days: number,
+    revoked: flag,
+  },
+  /** A document made from a template: which template, for whom. Never the fields typed. */
+  document: {
+    templateId: uuid,
+    customerId: uuid,
+  },
+  /** Claude's OAuth sign-in: approved or refused, a connection revoked. */
+  oauth: {
+    approved: flag,
+    revoked: flag,
+  },
+  /** What Claude did through MCP for a user: the tool's ids and counts, never its text. */
+  mcp: {
+    customerId: uuid,
+    fileId: uuid,
+    folderId: uuid,
+    versionId: uuid,
+    count: number,
+  },
   /** Notifications marked read: how many. */
   notification: {
     count: number,

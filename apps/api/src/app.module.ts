@@ -12,6 +12,7 @@ import { MailModule } from './mail/mail.module.js';
 import { BreachCheckModule } from './security/breach-check.module.js';
 import { StorageModule } from './storage/storage.module.js';
 import { TrpcModule } from './trpc/trpc.module.js';
+import { McpModule } from './mcp/mcp.module.js';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { TrpcModule } from './trpc/trpc.module.js';
     FilesModule,
     EmailModule,
     CampaignsModule,
+    McpModule,
     TrpcModule,
   ],
   controllers: [HealthController],

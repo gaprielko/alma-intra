@@ -1,5 +1,9 @@
 import { sk } from '@intra/shared/i18n';
-import { changePasswordSchema, updateProfileSchema } from '@intra/shared/schemas';
+import {
+  ACCESS_TOKEN_DAYS,
+  changePasswordSchema,
+  updateProfileSchema,
+} from '@intra/shared/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
@@ -31,10 +35,11 @@ import {
 } from '@/components/ui/form';
 import { Input, readOnlyFieldClass, Textarea } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectItem } from '@/components/ui/select';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
 import { applyServerFieldErrors } from '@/lib/form-errors';
-import { formatRecent } from '@/lib/format';
+import { formatDate, formatRecent } from '@/lib/format';
 import { loadFailed } from '@/lib/query-view';
 import { useSession } from '@/lib/session';
 import { trpc } from '@/lib/trpc';
@@ -59,6 +64,7 @@ function AccountPage() {
         <div className="min-w-0 space-y-5">
           <SecurityCard />
           <SessionsCard />
+          <ClaudeAccessCard />
         </div>
       </main>
     </div>
@@ -725,5 +731,271 @@ function SessionsCard() {
         </ul>
       )}
     </SectionCard>
+  );
+}
+
+/**
+ * „Prístup pre Claude“: the MCP address, and her personal access tokens for Claude Code (made,
+ * shown once, revoked); claude.ai and Claude Desktop sign in through the connector instead.
+ */
+function ClaudeAccessCard() {
+  const c = t.claude;
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const [creating, setCreating] = useState(false);
+  const tokens = useQuery(trpc.account.accessTokens.queryOptions());
+  const revoke = useMutation(
+    trpc.account.revokeAccessToken.mutationOptions({
+      onSuccess: async () => {
+        toast('success', c.revokedDone);
+        await queryClient.invalidateQueries(trpc.account.accessTokens.pathFilter());
+      },
+      onError: (error) => toast('error', errorMessage(error)),
+    }),
+  );
+  const connections = useQuery(trpc.oauth.connections.queryOptions());
+  const disconnect = useMutation(
+    trpc.oauth.revokeConnection.mutationOptions({
+      onSuccess: async () => {
+        toast('success', c.disconnected);
+        await queryClient.invalidateQueries(trpc.oauth.connections.pathFilter());
+      },
+      onError: (error) => toast('error', errorMessage(error)),
+    }),
+  );
+  const address = `${window.location.origin}/mcp`;
+  const now = Date.now();
+  return (
+    <SectionCard
+      title={c.title}
+      lead={c.lead}
+      action={
+        <Button variant="secondary" size="sm" onClick={() => setCreating(true)}>
+          <KeyRound className="size-4" aria-hidden />
+          {c.newToken}
+        </Button>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="mcp-address">{c.address}</Label>
+          <CopyField id="mcp-address" value={address} />
+        </div>
+        <div>
+          <p className="mb-2 text-sm font-medium">{c.connections}</p>
+          {(connections.data ?? []).length === 0 ? (
+            <p className="text-sm text-muted">{c.noConnections}</p>
+          ) : (
+            <ul>
+              {connections.data!.map((connection) => (
+                <li
+                  key={connection.id}
+                  className="flex items-center gap-3 border-t border-border-subtle py-3 first:border-t-0 first:pt-0 last:pb-0"
+                >
+                  <div className="mr-auto min-w-0">
+                    <p className="truncate text-sm font-medium">
+                      {connection.clientName ?? sk.oauth.unnamed}
+                    </p>
+                    <p className="text-xs text-muted">
+                      {[
+                        c.connected(formatDate(connection.createdAt)),
+                        connection.lastUsedAt
+                          ? c.lastUsed(formatRecent(connection.lastUsedAt))
+                          : c.neverUsed,
+                      ].join(' · ')}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={disconnect.isPending}
+                    onClick={() => disconnect.mutate({ id: connection.id })}
+                  >
+                    {c.disconnect}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div>
+          <p className="mb-2 text-sm font-medium">{c.tokens}</p>
+          {tokens.isPending ? (
+            <p className="text-sm text-muted">{sk.common.loading}</p>
+          ) : loadFailed(tokens) ? (
+            <ErrorState onRetry={() => void tokens.refetch()} />
+          ) : tokens.data.length === 0 ? (
+            <p className="text-sm text-muted">{c.noTokens}</p>
+          ) : (
+            <ul>
+              {tokens.data.map((token) => {
+                const dead = token.revokedAt
+                  ? c.revoked
+                  : new Date(token.expiresAt).getTime() < now
+                    ? c.expired
+                    : null;
+                return (
+                  <li
+                    key={token.id}
+                    className="flex items-center gap-3 border-t border-border-subtle py-3 first:border-t-0 first:pt-0 last:pb-0"
+                  >
+                    <div className="mr-auto min-w-0">
+                      <p className={cn('truncate text-sm font-medium', dead && 'text-muted')}>
+                        {token.name}
+                      </p>
+                      <p className="text-xs text-muted">
+                        {[
+                          dead ?? c.expires(formatDate(token.expiresAt)),
+                          token.lastUsedAt
+                            ? c.lastUsed(formatRecent(token.lastUsedAt))
+                            : c.neverUsed,
+                        ].join(' · ')}
+                      </p>
+                    </div>
+                    {dead ? null : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={revoke.isPending}
+                        onClick={() => revoke.mutate({ id: token.id })}
+                      >
+                        {c.revoke}
+                      </Button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
+      {creating ? (
+        <NewAccessTokenDialog address={address} onClose={() => setCreating(false)} />
+      ) : null}
+    </SectionCard>
+  );
+}
+
+/** A value to copy as it is: read-only, with a button. */
+function CopyField({
+  id,
+  value,
+  multiline = false,
+}: {
+  id: string;
+  value: string;
+  multiline?: boolean;
+}) {
+  const toast = useToast();
+  const copy = () =>
+    void navigator.clipboard.writeText(value).then(
+      () => toast('success', t.claude.copied),
+      () => undefined,
+    );
+  return (
+    <div className="mt-1.5 flex gap-2">
+      {multiline ? (
+        <Textarea
+          id={id}
+          readOnly
+          rows={3}
+          value={value}
+          className={cn(readOnlyFieldClass, 'font-mono text-xs')}
+        />
+      ) : (
+        <Input
+          id={id}
+          readOnly
+          value={value}
+          className={cn(readOnlyFieldClass, 'font-mono text-sm')}
+        />
+      )}
+      <Button variant="secondary" className="shrink-0" onClick={copy}>
+        {t.claude.copy}
+      </Button>
+    </div>
+  );
+}
+
+type TokenDays = (typeof ACCESS_TOKEN_DAYS)[number];
+
+function NewAccessTokenDialog({ address, onClose }: { address: string; onClose: () => void }) {
+  const d = t.claude.dialog;
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const [name, setName] = useState('');
+  const [days, setDays] = useState<TokenDays>(90);
+  const create = useMutation(
+    trpc.account.createAccessToken.mutationOptions({
+      onSuccess: () => queryClient.invalidateQueries(trpc.account.accessTokens.pathFilter()),
+      onError: (error) => toast('error', errorMessage(error)),
+    }),
+  );
+  const token = create.data?.token;
+  const command = `claude mcp add --transport http alma-intra ${address} --header "Authorization: Bearer ${token ?? ''}"`;
+  return (
+    <Dialog open onOpenChange={(open) => (open ? null : onClose())}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{d.title}</DialogTitle>
+          {token ? <DialogDescription>{d.shownOnce}</DialogDescription> : null}
+        </DialogHeader>
+        {token ? (
+          <div className="space-y-4">
+            <CopyField id="new-token" value={token} />
+            <div>
+              <Label htmlFor="claude-command">{d.command}</Label>
+              <CopyField id="claude-command" multiline value={command} />
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="token-name">{d.name}</Label>
+              <Input
+                id="token-name"
+                className="mt-1.5"
+                maxLength={60}
+                placeholder={d.namePlaceholder}
+                value={name}
+                autoFocus
+                onChange={(event) => setName(event.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="token-days">{d.days}</Label>
+              <Select
+                id="token-days"
+                value={String(days)}
+                onChange={(value) => setDays(Number(value) as TokenDays)}
+              >
+                {ACCESS_TOKEN_DAYS.map((option) => (
+                  <SelectItem key={option} value={String(option)}>
+                    {d.daysOption(option)}
+                  </SelectItem>
+                ))}
+              </Select>
+            </div>
+          </div>
+        )}
+        <DialogFooter>
+          {token ? (
+            <Button onClick={onClose}>{d.done}</Button>
+          ) : (
+            <>
+              <Button variant="ghost" onClick={onClose}>
+                {sk.common.cancel}
+              </Button>
+              <Button
+                disabled={!name.trim() || create.isPending}
+                onClick={() => create.mutate({ name: name.trim(), days })}
+              >
+                {d.create}
+              </Button>
+            </>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -4,6 +4,7 @@ import {
   type FileGroup,
   fileExtension,
   type FolderContentsInput,
+  MAX_FILE_BYTES,
   TRASH_DAYS,
 } from '@intra/shared/schemas';
 import { and, asc, desc, eq, inArray, isNotNull, isNull, lt, or, type SQL, sql } from 'drizzle-orm';
@@ -868,4 +869,111 @@ export async function purgeFiles(db: Db, storage: Storage) {
     purgedUploads += 1;
   }
   return { purgedFiles, purgedUploads };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Bytes the server has in hand (Claude through MCP, an e-mail's attachment, a generated document)
+
+type ServerSource = 'mcp' | 'generated' | 'inbound';
+
+/**
+ * The checks of an upload, for bytes the server got: an allowed extension, at most the size
+ * limit, and a beginning that matches the extension. Answers the type to store.
+ */
+function checkedMime(name: string, bytes: Uint8Array) {
+  const ext = fileExtension(name);
+  if (ext === null) throw new FileError('TYPE_MISMATCH');
+  if (bytes.byteLength === 0 || bytes.byteLength > MAX_FILE_BYTES) {
+    throw new FileError('UPLOAD_MISMATCH');
+  }
+  if (!hasSignature(bytes, name)) throw new FileError('UPLOAD_MISMATCH');
+  return FILE_TYPES[ext].mime;
+}
+
+/** A new file in a folder from bytes in hand: written to the bucket, version 1 at once. */
+export async function createFileFromBytes(
+  db: Db,
+  storage: Storage | null,
+  input: {
+    folderId: string;
+    name: string;
+    bytes: Uint8Array;
+    userId: string | null;
+    via: ServerSource;
+    note?: string | undefined;
+  },
+) {
+  const bucket = requireStorage(storage);
+  await folderPath(db, input.folderId);
+  const mime = checkedMime(input.name, input.bytes);
+  const fileId = randomUUID();
+  const versionId = randomUUID();
+  const key = storageKey(fileId, versionId);
+  await bucket.put(key, input.bytes, mime);
+  await db.transaction(async (tx) => {
+    await tx.insert(files).values({
+      id: fileId,
+      folderId: input.folderId,
+      name: input.name,
+      currentVersionId: versionId,
+      createdByUserId: input.userId,
+    });
+    await tx.insert(fileVersions).values({
+      id: versionId,
+      fileId,
+      number: 1,
+      status: 'uploaded',
+      storageKey: key,
+      mime,
+      size: input.bytes.byteLength,
+      note: input.note || null,
+      createdVia: input.via,
+      createdByUserId: input.userId,
+    });
+  });
+  return { fileId, versionId, number: 1 };
+}
+
+/**
+ * A new version of a file from bytes in hand: the same extension, never an overwrite, the next
+ * number and the file's current version.
+ */
+export async function addVersionFromBytes(
+  db: Db,
+  storage: Storage | null,
+  input: {
+    fileId: string;
+    bytes: Uint8Array;
+    userId: string | null;
+    via: ServerSource;
+    note?: string | undefined;
+  },
+) {
+  const bucket = requireStorage(storage);
+  const file = await liveFile(db, input.fileId);
+  const mime = checkedMime(file.name, input.bytes);
+  const versionId = randomUUID();
+  const key = storageKey(file.id, versionId);
+  await bucket.put(key, input.bytes, mime);
+  return db.transaction(async (tx) => {
+    await tx.select({ id: files.id }).from(files).where(eq(files.id, file.id)).for('update');
+    const number = await nextNumber(tx, file.id);
+    await tx.insert(fileVersions).values({
+      id: versionId,
+      fileId: file.id,
+      number,
+      status: 'uploaded',
+      storageKey: key,
+      mime,
+      size: input.bytes.byteLength,
+      note: input.note || null,
+      createdVia: input.via,
+      createdByUserId: input.userId,
+    });
+    await tx
+      .update(files)
+      .set({ currentVersionId: versionId, updatedAt: new Date() })
+      .where(eq(files.id, file.id));
+    return { fileId: file.id, versionId, number };
+  });
 }

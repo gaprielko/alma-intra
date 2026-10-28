@@ -1,10 +1,9 @@
-import { randomUUID } from 'node:crypto';
-import { FILE_TYPES, fileExtension, MAX_FILE_BYTES } from '@intra/shared/schemas';
+import { fileExtension, MAX_FILE_BYTES } from '@intra/shared/schemas';
 import { eq } from 'drizzle-orm';
 import type { Db } from '../db/db.module.js';
-import { files, fileVersions, inboundMessages } from '../db/schema/index.js';
-import { customerRootFolderId, hasSignature } from '../files/files.service.js';
-import { type Storage, storageKey } from '../storage/storage.js';
+import { inboundMessages } from '../db/schema/index.js';
+import { createFileFromBytes, customerRootFolderId, FileError } from '../files/files.service.js';
+import type { Storage } from '../storage/storage.js';
 import type { InboundSource } from './inbound.js';
 
 const FETCH_TIMEOUT_MS = 30_000;
@@ -58,34 +57,21 @@ export async function saveInboundAttachments(
     const response = await fetchImpl(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
     if (!response.ok) throw new Error(`attachment download answered ${response.status}`);
     const bytes = new Uint8Array(await response.arrayBuffer());
-    if (bytes.byteLength > MAX_FILE_BYTES || !hasSignature(bytes, attachment.filename)) {
-      done.set(attachment.id, { skipped: bytes.byteLength > MAX_FILE_BYTES ? 'size' : 'content' });
-      continue;
-    }
-    const mime = FILE_TYPES[fileExtension(attachment.filename)!].mime;
-    const fileId = randomUUID();
-    const versionId = randomUUID();
-    const key = storageKey(fileId, versionId);
-    await storage.put(key, bytes, mime);
-    await db.transaction(async (tx) => {
-      await tx.insert(files).values({
-        id: fileId,
+    try {
+      const { fileId } = await createFileFromBytes(db, storage, {
         folderId,
         name: attachment.filename.slice(0, 200),
-        currentVersionId: versionId,
+        bytes,
+        userId: null,
+        via: 'inbound',
       });
-      await tx.insert(fileVersions).values({
-        id: versionId,
-        fileId,
-        number: 1,
-        status: 'uploaded',
-        storageKey: key,
-        mime,
-        size: bytes.byteLength,
-        createdVia: 'inbound',
+      done.set(attachment.id, { fileId });
+    } catch (error) {
+      if (!(error instanceof FileError)) throw error;
+      done.set(attachment.id, {
+        skipped: bytes.byteLength > MAX_FILE_BYTES ? 'size' : 'content',
       });
-    });
-    done.set(attachment.id, { fileId });
+    }
   }
   // Read again: two deliveries of the webhook may have run side by side; the first answer wins.
   await db.transaction(async (tx) => {
