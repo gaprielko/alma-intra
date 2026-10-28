@@ -1,6 +1,5 @@
 import { COMPANY_ROOT_FOLDER_ID, fileExtension, SYSTEM_VARIABLES } from '@intra/shared/schemas';
-import Docxtemplater, { type DXT } from 'docxtemplater';
-import inspectModuleExport from 'docxtemplater/js/inspect-module.js';
+import Docxtemplater from 'docxtemplater';
 import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 import PizZip from 'pizzip';
 import type { Db } from '../db/db.module.js';
@@ -21,14 +20,6 @@ export const TEMPLATES_FOLDER_NAME = 'Šablóny dokumentov';
 
 const SYSTEM = new Set<string>(SYSTEM_VARIABLES);
 
-/**
- * The CommonJS module exports a factory (`module.exports = () => new InspectModule()`), while its
- * typings declare a class as default export.
- */
-const newInspectModule = inspectModuleExport as unknown as () => DXT.Module & {
-  getAllTags(): Record<string, unknown>;
-};
-
 /** A refusal the web words for itself (`sk.documents.errors`). */
 export class DocumentError extends Error {
   constructor(readonly code: 'NOT_FOUND' | 'TEMPLATE_INVALID' | 'NOT_A_TEMPLATE') {
@@ -41,13 +32,19 @@ const flatParser = (tag: string) => ({
   get: (scope: Record<string, unknown>) => (tag === '.' ? scope : scope[tag]),
 });
 
-/** The placeholders of a template, in the order of the document. */
+/**
+ * The placeholders of a template, in the order of the document. Compiling calls the parser once
+ * per placeholder, which is where they are collected: docxtemplater's inspect module would need
+ * lodash, which it does not declare (the production image has none).
+ */
 export function templateTags(bytes: Uint8Array): string[] {
-  const inspect = newInspectModule();
+  const tags = new Set<string>();
   try {
     new Docxtemplater(new PizZip(bytes), {
-      modules: [inspect],
-      parser: flatParser,
+      parser: (tag: string) => {
+        tags.add(tag);
+        return flatParser(tag);
+      },
       paragraphLoop: true,
       linebreaks: true,
       // Its own log would carry the template's text; the refusal is ours to report.
@@ -56,7 +53,7 @@ export function templateTags(bytes: Uint8Array): string[] {
   } catch {
     throw new DocumentError('TEMPLATE_INVALID');
   }
-  return Object.keys(inspect.getAllTags());
+  return [...tags];
 }
 
 /** The template filled in: a missing value leaves its place empty. */
