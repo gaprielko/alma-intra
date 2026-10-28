@@ -48,7 +48,11 @@ export const campaignRouter = router({
 
   get: authorizedProcedure('email.read')
     .input(campaignIdSchema)
-    .query(({ ctx, input }) => run(() => campaigns.getCampaign(ctx.db, input.id))),
+    .query(async ({ ctx, input }) => ({
+      ...(await run(() => campaigns.getCampaign(ctx.db, input.id))),
+      // With an inbound domain every e-mail's Reply-To is Intra's own (spec 6.6).
+      repliesToIntra: Boolean(ctx.env.INBOUND_REPLY_DOMAIN),
+    })),
 
   candidates: authorizedProcedure('email.send')
     .input(recipientCandidatesSchema)

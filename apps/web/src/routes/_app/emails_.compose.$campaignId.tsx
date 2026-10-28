@@ -1169,7 +1169,11 @@ function ReviewStep({ campaign, onBack }: { campaign: Campaign; onBack: () => vo
         <dl className="divide-y divide-border-subtle">
           <Row label={r.subject}>{preview.data?.subject ?? sk.common.loading}</Row>
           <Row label={r.sender}>{preview.data?.from ?? sk.common.loading}</Row>
-          <Row label={r.replies}>{r.repliesText(campaign.sender.email)}</Row>
+          <Row label={r.replies}>
+            {campaign.repliesToIntra
+              ? r.repliesIntra(campaign.sender.email)
+              : r.repliesText(campaign.sender.email)}
+          </Row>
           <Row label={r.recipients}>{r.recipientsText(sendable.length, names)}</Row>
           {skipped.length > 0 ? (
             <Row label={r.skipped}>

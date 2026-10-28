@@ -1782,6 +1782,7 @@ export const sk = {
       sender: 'Odosielateľ',
       replies: 'Odpovede',
       repliesText: (email: string) => `Prídu na ${email}.`,
+      repliesIntra: (email: string) => `Prídu do Intra, do Prijatých, a kópia aj na ${email}.`,
       recipients: 'Adresáti',
       recipientsText: (n: number, names: string) =>
         `${plural(n, 'e-mail', 'e-maily', 'e-mailov')}, každý zvlášť: ${names}`,
