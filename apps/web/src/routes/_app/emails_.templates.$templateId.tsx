@@ -15,6 +15,7 @@ import { EmailBodyEditor, EmailSubjectEditor } from '@/components/emails/email-e
 import { ErrorState } from '@/components/empty-state';
 import { FileBadge } from '@/components/files/file-bits';
 import { FilePicker } from '@/components/files/file-picker';
+import { LeaveGuard } from '@/components/leave-guard';
 import { PageHeader } from '@/components/page-header';
 import { CardSkeleton } from '@/components/skeletons';
 import { Button } from '@/components/ui/button';
@@ -218,6 +219,7 @@ function Editor({ template, look }: { template: Template | null; look: EmailLook
 
   return (
     <div className="min-w-0">
+      <LeaveGuard dirty={dirty} saving={pending} />
       <PageHeader
         title={name.trim() || t.untitled}
         subtitle={status}
