@@ -69,6 +69,18 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     expect(copy.data.messages.map((m) => m.contactId)).toEqual([EVA]);
   });
 
+  it('sends a template as it stands as a test to oneself', async () => {
+    const before = outbox.length;
+    const sent = await jana.call<{ sentTo: string }>('template.sendTest', {
+      subject: doc('Ponuka'),
+      body: doc('Dobrý deň.'),
+      contactId: EVA,
+    });
+    expect(sent.data.sentTo).toBe(JANA);
+    const mail = outbox.slice(before).find((m) => m.to === JANA)!;
+    expect(mail.subject).toBe('TEST: Ponuka');
+  });
+
   it('schedules: refuses a time too close, waits, and goes back to a draft when cancelled', async () => {
     const id = await draft();
     const soon = new Date(Date.now() + 60_000).toISOString();
