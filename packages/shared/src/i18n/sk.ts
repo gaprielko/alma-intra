@@ -1038,6 +1038,7 @@ export const sk = {
       rename: 'Premenovať',
       move: 'Presunúť',
       describe: 'Upraviť popis',
+      attachToEmail: 'Priložiť k e-mailu',
       trash: 'Presunúť do koša',
       renameFolder: 'Premenovať priečinok',
       moveFolder: 'Presunúť priečinok',

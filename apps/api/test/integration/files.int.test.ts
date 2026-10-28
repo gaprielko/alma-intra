@@ -85,6 +85,21 @@ describe('files', () => {
     );
   });
 
+  it('starts an e-mail with a file attached („Priložiť k e-mailu“), never a trashed one', async () => {
+    const file = await upload('Cenník.pdf', PDF, 'application/pdf');
+    const draft = await jana.call<{ id: string }>('campaign.create', {
+      customerIds: [],
+      fileIds: [file.fileId],
+    });
+    const got = await jana.call<{ attachments: { id: string }[] }>('campaign.get', {
+      id: draft.data.id,
+    });
+    expect(got.data.attachments.map((a) => a.id)).toEqual([file.fileId]);
+    await jana.call('file.trashFile', { id: file.fileId });
+    const refused = await jana.call('campaign.create', { customerIds: [], fileIds: [file.fileId] });
+    expect(refused.message).toBe('FILE_NOT_FOUND');
+  });
+
   it('moves a file to the trash and back', async () => {
     const file = await upload('Kôš.txt', text('x'), 'text/plain');
     await jana.call('file.trashFile', { id: file.fileId });

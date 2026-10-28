@@ -1,7 +1,7 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { sk } from '@intra/shared/i18n';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { Download, Eye, Mail, MoreHorizontal, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { KindMark } from '@/components/activities/activity-bits';
@@ -67,6 +67,15 @@ function SheetBody({ file, onClose }: { file: Detail; onClose: () => void }) {
   const queryClient = useQueryClient();
   const canWrite = useCan('file.write');
   const canDelete = useCan('file.delete');
+  const canSend = useCan('email.send');
+  const navigate = useNavigate();
+  const compose = useMutation(
+    trpc.campaign.create.mutationOptions({
+      onSuccess: (created) =>
+        navigate({ to: '/emails/compose/$campaignId', params: { campaignId: created.id } }),
+      onError: (error) => toast('error', errorMessage(error, sk.campaigns.errors)),
+    }),
+  );
   const [tab, setTab] = useState<'versions' | 'usage' | 'history'>('versions');
   const usage = useQuery(trpc.activity.fileUsage.queryOptions({ fileId: file.id }));
   const [dialog, setDialog] = useState<FilesDialog | null>(null);
@@ -153,7 +162,7 @@ function SheetBody({ file, onClose }: { file: Detail; onClose: () => void }) {
             {t.menu.newVersion}
           </Button>
         ) : null}
-        {canWrite || canDelete ? (
+        {canWrite || canDelete || canSend ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="icon" className="size-10" aria-label={t.actionsFor(file.name)}>
@@ -173,6 +182,19 @@ function SheetBody({ file, onClose }: { file: Detail; onClose: () => void }) {
                     {t.menu.describe}
                   </DropdownMenuItem>
                 </>
+              ) : null}
+              {canSend ? (
+                <DropdownMenuItem
+                  onSelect={() =>
+                    compose.mutate({
+                      // A contact's file goes to that contact; a company file to whoever is picked.
+                      customerIds: file.path[0]?.customerId ? [file.path[0].customerId] : [],
+                      fileIds: [file.id],
+                    })
+                  }
+                >
+                  {t.menu.attachToEmail}
+                </DropdownMenuItem>
               ) : null}
               {canDelete ? (
                 <>

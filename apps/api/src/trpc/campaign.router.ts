@@ -68,7 +68,7 @@ export const campaignRouter = router({
     .input(createCampaignSchema)
     .mutation(async ({ ctx, input }) => {
       const created = await run(() =>
-        campaigns.createCampaign(ctx.db, ctx.session.userId, input.customerIds),
+        campaigns.createCampaign(ctx.db, ctx.session.userId, input.customerIds, input.fileIds),
       );
       ctx.audit.set({
         entityType: 'campaign',

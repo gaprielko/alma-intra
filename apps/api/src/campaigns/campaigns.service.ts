@@ -164,8 +164,14 @@ function defaultRecipients(
   });
 }
 
-export async function createCampaign(db: Db, userId: string, customerIds: string[]) {
+export async function createCampaign(
+  db: Db,
+  userId: string,
+  customerIds: string[],
+  fileIds: string[] = [],
+) {
   return db.transaction(async (tx) => {
+    await liveFiles(tx, fileIds);
     const [created] = await tx
       .insert(campaigns)
       .values({
@@ -176,6 +182,7 @@ export async function createCampaign(db: Db, userId: string, customerIds: string
       .returning({ id: campaigns.id });
     const candidates = await recipientCandidates(tx, [...new Set(customerIds)]);
     await writeRecipients(tx, created!.id, defaultRecipients(candidates));
+    await writeCommonAttachments(tx, created!.id, fileIds);
     return { id: created!.id };
   });
 }
