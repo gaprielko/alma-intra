@@ -39,6 +39,8 @@ export interface Storage {
   ): Promise<SignedUrl>;
   /** What the bucket holds under the key (the truth about an upload), or `null` when nothing. */
   head(key: string): Promise<{ contentType: string | null; contentLength: number | null } | null>;
+  /** The whole object, for the server to read (a document's text for Claude). */
+  read(key: string): Promise<Uint8Array>;
   /** The first `length` bytes of the object (a ranged GET), for a look at the file signature. */
   readPrefix(key: string, length: number): Promise<Uint8Array>;
   /**
@@ -151,6 +153,11 @@ export function createStorageClient(config: StorageEnv): Storage {
         if (isNotFound(error)) return null;
         throw error;
       }
+    },
+
+    async read(key) {
+      const result = await client.send(new GetObjectCommand({ Bucket, Key: key }));
+      return (await result.Body?.transformToByteArray()) ?? new Uint8Array();
     },
 
     async readPrefix(key, length) {

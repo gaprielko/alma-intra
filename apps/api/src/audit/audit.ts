@@ -58,6 +58,8 @@ export interface AuditWrite {
   sessionUserId: string | null;
   /** The call was refused (`<path>.denied`): the diff is the reason code and nothing else. */
   denied?: { reason: DeniedReason };
+  /** Claude through MCP on the user's behalf (D-31); the web is the user. */
+  actorKind?: 'user' | 'claude';
 }
 
 /**
@@ -81,6 +83,7 @@ export async function writeAuditEvent(w: AuditWrite) {
     : (d.entityId ?? idOf(w.input) ?? idOf(w.result) ?? null);
   await w.db.insert(auditEvents).values({
     userId: d.userId ?? w.sessionUserId,
+    actorKind: w.actorKind ?? 'user',
     action: w.path,
     kind: w.kind,
     entityType,

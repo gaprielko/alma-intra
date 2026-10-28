@@ -127,6 +127,13 @@
       "when": 1793140977570,
       "tag": "0017_reply_from_app",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793216726462,
+      "tag": "0018_access_tokens",
+      "breakpoints": true
     }
   ]
 }
