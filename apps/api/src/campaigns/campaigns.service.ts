@@ -64,6 +64,25 @@ const EMPTY_BODY: EmailNode = {
 const labelsOf = (fields: CustomField[]) =>
   Object.fromEntries(fields.map((field) => [field.key, field.label]));
 
+/**
+ * The subject the lists show: values everybody shares (the common custom fields) filled in, the
+ * per-recipient ones by their label („Ponuka pre [Názov kontaktu]“).
+ */
+const listSubject = (
+  subject: EmailNode,
+  fields: CustomField[],
+  commonValues: Record<string, string>,
+) =>
+  plainOf(
+    subject,
+    Object.fromEntries(
+      Object.entries(commonValues)
+        .filter(([, value]) => value.trim())
+        .map(([key, value]) => [`custom.${key}`, value.trim()]),
+    ),
+    labelsOf(fields),
+  );
+
 async function draft(tx: Db | Tx, id: string, lock = false) {
   const query = tx.select().from(campaigns).where(eq(campaigns.id, id));
   const [row] = await (lock ? query.for('update') : query);
@@ -626,6 +645,7 @@ export async function listCampaigns(db: Db, status: 'sent' | 'draft', page: numb
       subjectText: campaigns.subjectText,
       subject: campaigns.subject,
       customFields: campaigns.customFields,
+      commonValues: campaigns.commonValues,
       updatedAt: campaigns.updatedAt,
       sentAt: campaigns.sentAt,
       senderName: users.name,
@@ -645,9 +665,10 @@ export async function listCampaigns(db: Db, status: 'sent' | 'draft', page: numb
     .offset((page - 1) * PAGE);
   return {
     total: rows[0]?.total ?? 0,
-    items: rows.map(({ subject, customFields, ...row }) => ({
+    items: rows.map(({ subject, customFields, commonValues, ...row }) => ({
       ...row,
-      subjectText: row.subjectText ?? (subject ? plainOf(subject, {}, labelsOf(customFields)) : ''),
+      subjectText:
+        row.subjectText ?? (subject ? listSubject(subject, customFields, commonValues) : ''),
     })),
   };
 }
@@ -849,7 +870,11 @@ export async function queueCampaign(db: Db, env: Env, id: string, at?: Date) {
         status: at ? 'scheduled' : 'sending',
         sentAt: leaves,
         scheduledAt: at ?? null,
-        subjectText: plainOf(campaign.subject, {}, labelsOf(campaign.customFields)),
+        // One recipient: their own subject, as sent.
+        subjectText:
+          sendable.length === 1
+            ? rendered.get(sendable[0]!.id)!.subject
+            : listSubject(campaign.subject, campaign.customFields, campaign.commonValues),
         updatedAt: now,
       })
       .where(eq(campaigns.id, id));

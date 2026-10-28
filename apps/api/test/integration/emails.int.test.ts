@@ -69,6 +69,41 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     expect(copy.data.messages.map((m) => m.contactId)).toEqual([EVA]);
   });
 
+  it('lists a one-recipient e-mail under its own subject, not the variable names', async () => {
+    const id = await draft();
+    const subject = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: 'Ponuka pre ' },
+            { type: 'variable', attrs: { name: 'customer.name' } },
+          ],
+        },
+      ],
+    };
+    await api.db.execute(
+      sql`update campaigns set subject = ${JSON.stringify(subject)}::jsonb where id = ${id}`,
+    );
+    const drafts = await jana.call<{ items: { id: string; subjectText: string }[] }>(
+      'campaign.list',
+      { status: 'draft', page: 1 },
+    );
+    expect(drafts.data.items.find((c) => c.id === id)?.subjectText).toBe(
+      'Ponuka pre [Názov kontaktu]',
+    );
+    await jana.call('campaign.send', { id });
+    await drainCampaigns(api.db, memoryTransport({ quiet: true }), null, loadEnv());
+    const sent = await jana.call<{ items: { id: string; subjectText: string }[] }>(
+      'campaign.list',
+      { status: 'sent', page: 1 },
+    );
+    expect(sent.data.items.find((c) => c.id === id)?.subjectText).toBe(
+      'Ponuka pre ADOS Harmónia, s.r.o.',
+    );
+  });
+
   it('sends a template as it stands as a test to oneself', async () => {
     const before = outbox.length;
     const sent = await jana.call<{ sentTo: string }>('template.sendTest', {
