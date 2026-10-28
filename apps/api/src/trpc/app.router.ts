@@ -1,5 +1,6 @@
 import { accountRouter } from './account.router.js';
 import { activityRouter } from './activity.router.js';
+import { auditRouter } from './audit.router.js';
 import { authRouter } from './auth.router.js';
 import { codeListRouter } from './code-list.router.js';
 import { customerRouter } from './customer.router.js';
@@ -17,6 +18,7 @@ import { userRouter } from './user.router.js';
 
 export const appRouter = router({
   auth: authRouter,
+  audit: auditRouter,
   account: accountRouter,
   user: userRouter,
   customer: customerRouter,

@@ -61,3 +61,27 @@ export const phoneSchema = z
 
 /** Rows per page of every paged list, on the web and as the API's default. */
 export const PAGE_SIZE = 20;
+
+/** The areas of the activity log's filter (D-16), as the audit trail names them. */
+export const AUDIT_AREAS = [
+  'customer',
+  'activity',
+  'file',
+  'folder',
+  'campaign',
+  'inbound',
+  'template',
+  'user',
+  'mcp',
+] as const;
+export type AuditArea = (typeof AUDIT_AREAS)[number];
+
+/** Nastavenia › Záznam aktivít: a page of the audit trail, newest first. */
+export const auditListSchema = z.object({
+  page: z.number().int().min(1).max(10_000).default(1),
+  userId: idSchema.optional(),
+  area: z.enum(AUDIT_AREAS).optional(),
+  /** Only what Claude did through MCP. */
+  claudeOnly: z.boolean().default(false),
+});
+export type AuditListInput = z.input<typeof auditListSchema>;

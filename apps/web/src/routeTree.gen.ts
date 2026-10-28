@@ -26,6 +26,7 @@ import { Route as AppCustomersIndexRouteImport } from './routes/_app/customers.i
 import { Route as AppCustomersNewRouteImport } from './routes/_app/customers.new'
 import { Route as AppEmailsDraftsRouteImport } from './routes/_app/emails.drafts'
 import { Route as AppEmailsInboxRouteImport } from './routes/_app/emails.inbox'
+import { Route as AppSettingsActivityLogRouteImport } from './routes/_app/settings.activity-log'
 import { Route as AppSettingsCodeListsRouteImport } from './routes/_app/settings.code-lists'
 import { Route as AppSettingsEmailLookRouteImport } from './routes/_app/settings.email-look'
 import { Route as AppSettingsUsersRouteImport } from './routes/_app/settings.users'
@@ -122,6 +123,11 @@ const AppEmailsInboxRoute = AppEmailsInboxRouteImport.update({
   path: '/inbox',
   getParentRoute: () => AppEmailsRoute,
 } as any)
+const AppSettingsActivityLogRoute = AppSettingsActivityLogRouteImport.update({
+  id: '/activity-log',
+  path: '/activity-log',
+  getParentRoute: () => AppSettingsRoute,
+} as any)
 const AppSettingsCodeListsRoute = AppSettingsCodeListsRouteImport.update({
   id: '/code-lists',
   path: '/code-lists',
@@ -198,6 +204,7 @@ export interface FileRoutesByFullPath {
   '/customers/new': typeof AppCustomersNewRoute
   '/emails/drafts': typeof AppEmailsDraftsRoute
   '/emails/inbox': typeof AppEmailsInboxRoute
+  '/settings/activity-log': typeof AppSettingsActivityLogRoute
   '/settings/code-lists': typeof AppSettingsCodeListsRoute
   '/settings/email-look': typeof AppSettingsEmailLookRoute
   '/settings/users': typeof AppSettingsUsersRoute
@@ -227,6 +234,7 @@ export interface FileRoutesByTo {
   '/customers/new': typeof AppCustomersNewRoute
   '/emails/drafts': typeof AppEmailsDraftsRoute
   '/emails/inbox': typeof AppEmailsInboxRoute
+  '/settings/activity-log': typeof AppSettingsActivityLogRoute
   '/settings/code-lists': typeof AppSettingsCodeListsRoute
   '/settings/email-look': typeof AppSettingsEmailLookRoute
   '/settings/users': typeof AppSettingsUsersRoute
@@ -258,6 +266,7 @@ export interface FileRoutesById {
   '/_app/customers/new': typeof AppCustomersNewRoute
   '/_app/emails/drafts': typeof AppEmailsDraftsRoute
   '/_app/emails/inbox': typeof AppEmailsInboxRoute
+  '/_app/settings/activity-log': typeof AppSettingsActivityLogRoute
   '/_app/settings/code-lists': typeof AppSettingsCodeListsRoute
   '/_app/settings/email-look': typeof AppSettingsEmailLookRoute
   '/_app/settings/users': typeof AppSettingsUsersRoute
@@ -289,6 +298,7 @@ export interface FileRouteTypes {
     | '/customers/new'
     | '/emails/drafts'
     | '/emails/inbox'
+    | '/settings/activity-log'
     | '/settings/code-lists'
     | '/settings/email-look'
     | '/settings/users'
@@ -318,6 +328,7 @@ export interface FileRouteTypes {
     | '/customers/new'
     | '/emails/drafts'
     | '/emails/inbox'
+    | '/settings/activity-log'
     | '/settings/code-lists'
     | '/settings/email-look'
     | '/settings/users'
@@ -348,6 +359,7 @@ export interface FileRouteTypes {
     | '/_app/customers/new'
     | '/_app/emails/drafts'
     | '/_app/emails/inbox'
+    | '/_app/settings/activity-log'
     | '/_app/settings/code-lists'
     | '/_app/settings/email-look'
     | '/_app/settings/users'
@@ -494,6 +506,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppEmailsInboxRouteImport
       parentRoute: typeof AppEmailsRoute
     }
+    '/_app/settings/activity-log': {
+      id: '/_app/settings/activity-log'
+      path: '/activity-log'
+      fullPath: '/settings/activity-log'
+      preLoaderRoute: typeof AppSettingsActivityLogRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
     '/_app/settings/code-lists': {
       id: '/_app/settings/code-lists'
       path: '/code-lists'
@@ -593,12 +612,14 @@ const AppEmailsRouteWithChildren = AppEmailsRoute._addFileChildren(
 )
 
 interface AppSettingsRouteChildren {
+  AppSettingsActivityLogRoute: typeof AppSettingsActivityLogRoute
   AppSettingsCodeListsRoute: typeof AppSettingsCodeListsRoute
   AppSettingsEmailLookRoute: typeof AppSettingsEmailLookRoute
   AppSettingsUsersRoute: typeof AppSettingsUsersRoute
 }
 
 const AppSettingsRouteChildren: AppSettingsRouteChildren = {
+  AppSettingsActivityLogRoute: AppSettingsActivityLogRoute,
   AppSettingsCodeListsRoute: AppSettingsCodeListsRoute,
   AppSettingsEmailLookRoute: AppSettingsEmailLookRoute,
   AppSettingsUsersRoute: AppSettingsUsersRoute,
