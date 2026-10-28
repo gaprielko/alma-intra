@@ -78,6 +78,17 @@ export const campaignRouter = router({
       return created;
     }),
 
+  /** „Použiť znova“: a new draft from a sent campaign. */
+  reuse: authorizedProcedure('email.send')
+    .input(campaignIdSchema)
+    .mutation(async ({ ctx, input }) => {
+      const created = await run(() =>
+        campaigns.reuseCampaign(ctx.db, ctx.session.userId, input.id),
+      );
+      ctx.audit.set({ entityType: 'campaign', entityId: created.id, diff: { from: input.id } });
+      return created;
+    }),
+
   setRecipients: authorizedProcedure('email.send')
     .input(setRecipientsSchema)
     .mutation(async ({ ctx, input }) => {

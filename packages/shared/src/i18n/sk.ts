@@ -1845,6 +1845,11 @@ export const sk = {
       back: 'Odoslané',
       unschedule: 'Zrušiť naplánovanie',
       unscheduled: 'Naplánovanie je zrušené, e-mail je znova koncept.',
+      reuse: 'Použiť znova',
+      reused: (left: number) =>
+        left
+          ? `Nový koncept je pripravený. ${plural(left, 'adresát vypadol', 'adresáti vypadli', 'adresátov vypadlo')}, lebo ich medzičasom niekto vymazal.`
+          : 'Nový koncept je pripravený.',
       meta: (sender: string, when: string, template: string | null) =>
         [sender, when, template ? `šablóna ${template}` : null].filter(Boolean).join(' · '),
       stats: {

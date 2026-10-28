@@ -187,6 +187,80 @@ export async function createCampaign(
   });
 }
 
+/**
+ * „Použiť znova“: a new draft of a campaign (usually a sent one) with its content, common files and
+ * recipients, each with their values, own files and own text. Contacts deleted since and files in
+ * the trash are left out. The copy is a new e-mail, never an answer to a received one.
+ */
+export async function reuseCampaign(db: Db, userId: string, id: string) {
+  return db.transaction(async (tx) => {
+    const [source] = await tx.select().from(campaigns).where(eq(campaigns.id, id));
+    if (!source) throw new CampaignError('NOT_FOUND');
+    const [created] = await tx
+      .insert(campaigns)
+      .values({
+        senderUserId: userId,
+        templateId: source.templateId,
+        subject: source.subject,
+        body: source.body,
+        customFields: source.customFields,
+        commonValues: source.commonValues,
+      })
+      .returning({ id: campaigns.id });
+    const common = await tx
+      .select({ fileId: campaignAttachments.fileId })
+      .from(campaignAttachments)
+      .innerJoin(files, eq(files.id, campaignAttachments.fileId))
+      .where(and(eq(campaignAttachments.campaignId, id), isNull(files.deletedAt)))
+      .orderBy(asc(campaignAttachments.position));
+    await writeCommonAttachments(
+      tx,
+      created!.id,
+      common.map((row) => row.fileId),
+    );
+    const messages = await tx
+      .select()
+      .from(campaignMessages)
+      .where(eq(campaignMessages.campaignId, id))
+      .orderBy(asc(campaignMessages.position));
+    const candidates = await recipientCandidates(tx, [
+      ...new Set(messages.map((m) => m.customerId)),
+    ]);
+    const kept = messages.filter((m) => {
+      const customer = candidates.find((c) => c.id === m.customerId);
+      if (!customer) return false;
+      return m.contactId
+        ? customer.contacts.some((c) => c.id === m.contactId)
+        : customer.self !== null;
+    });
+    const ownIds = [...new Set(kept.flatMap((m) => m.ownFileIds))];
+    const live = new Set(
+      ownIds.length === 0
+        ? []
+        : (
+            await tx
+              .select({ id: files.id })
+              .from(files)
+              .where(and(inArray(files.id, ownIds), isNull(files.deletedAt)))
+          ).map((row) => row.id),
+    );
+    if (kept.length > 0) {
+      await tx.insert(campaignMessages).values(
+        kept.map((m, position) => ({
+          campaignId: created!.id,
+          customerId: m.customerId,
+          contactId: m.contactId,
+          position,
+          values: m.values,
+          ownFileIds: m.ownFileIds.filter((fileId) => live.has(fileId)),
+          bodyOverride: m.bodyOverride,
+        })),
+      );
+    }
+    return { id: created!.id, left: messages.length - kept.length };
+  });
+}
+
 async function writeRecipients(
   tx: Tx,
   campaignId: string,

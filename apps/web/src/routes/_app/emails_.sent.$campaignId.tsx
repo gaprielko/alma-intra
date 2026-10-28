@@ -16,6 +16,7 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import { errorMessage } from '@/lib/errors';
 import { formatDateTime } from '@/lib/format';
 import { loadFailed } from '@/lib/query-view';
+import { useCan } from '@/lib/session';
 import { trpc } from '@/lib/trpc';
 
 const t = sk.campaigns;
@@ -85,6 +86,17 @@ function CampaignPage() {
       onError: (error) => toast('error', errorMessage(error, t.errors)),
     }),
   );
+  const canSend = useCan('email.send');
+  const reuse = useMutation(
+    trpc.campaign.reuse.mutationOptions({
+      onSuccess: async (created) => {
+        toast(created.left ? 'warning' : 'success', t.detail.reused(created.left));
+        await queryClient.invalidateQueries(trpc.campaign.pathFilter());
+        await navigate({ to: '/emails/compose/$campaignId', params: { campaignId: created.id } });
+      },
+      onError: (error) => toast('error', errorMessage(error, t.errors)),
+    }),
+  );
   if (campaign.isPending) {
     return (
       <div className="min-w-0">
@@ -138,6 +150,15 @@ function CampaignPage() {
             onClick={() => unschedule.mutate({ id: c.id })}
           >
             {d.unschedule}
+          </Button>
+        ) : null}
+        {canSend ? (
+          <Button
+            variant="secondary"
+            disabled={reuse.isPending}
+            onClick={() => reuse.mutate({ id: c.id })}
+          >
+            {d.reuse}
           </Button>
         ) : null}
       </PageHeader>

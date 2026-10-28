@@ -53,6 +53,22 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     expect(await statusOf(id)).toBe('sent');
   });
 
+  it('„Použiť znova“ makes a new draft with the same text and recipients', async () => {
+    const id = await draft();
+    await jana.call('campaign.send', { id });
+    await drainCampaigns(api.db, memoryTransport({ quiet: true }), null, loadEnv());
+    const reused = await jana.call<{ id: string; left: number }>('campaign.reuse', { id });
+    expect(reused.data.left).toBe(0);
+    const copy = await jana.call<{
+      status: string;
+      subject: unknown;
+      messages: { contactId: string | null }[];
+    }>('campaign.get', { id: reused.data.id });
+    expect(copy.data.status).toBe('draft');
+    expect(copy.data.subject).toEqual(doc('Test'));
+    expect(copy.data.messages.map((m) => m.contactId)).toEqual([EVA]);
+  });
+
   it('schedules: refuses a time too close, waits, and goes back to a draft when cancelled', async () => {
     const id = await draft();
     const soon = new Date(Date.now() + 60_000).toISOString();
