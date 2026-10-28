@@ -12,7 +12,7 @@ import { CardSkeleton } from '@/components/skeletons';
 import { Card, CardHeader } from '@/components/ui/card';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
-import { formatDate, formatRecent } from '@/lib/format';
+import { formatDate, formatDateTime, formatRecent } from '@/lib/format';
 import { loadFailed } from '@/lib/query-view';
 import { type RouterOutputs, trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
@@ -250,6 +250,35 @@ function StaleCard({ contacts, days }: { contacts: Summary['staleContacts']; day
   );
 }
 
+/** The e-mails waiting for their time, the next one first; nothing when none is. */
+function ScheduledCard({ campaigns }: { campaigns: Summary['scheduled'] }) {
+  if (campaigns.length === 0) return null;
+  return (
+    <Card>
+      <CardHeader title={o.scheduled} />
+      <ul className="divide-y divide-border-subtle px-5 pt-1 pb-4">
+        {campaigns.map((campaign) => (
+          <li key={campaign.id} className="py-2.5">
+            <Link
+              to="/emails/sent/$campaignId"
+              params={{ campaignId: campaign.id }}
+              className="block truncate text-sm font-medium hover:text-primary-text hover:underline"
+            >
+              {campaign.subject || sk.campaigns.list.noSubject}
+            </Link>
+            <p className="text-xs text-muted">
+              {o.scheduledLine(
+                campaign.scheduledAt ? formatDateTime(campaign.scheduledAt) : '',
+                campaign.recipients,
+              )}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
 /** The dashboard's own cards, from one query. */
 function SummaryCards({ column }: { column: 'main' | 'side' }) {
   const summary = useQuery(trpc.overview.summary.queryOptions());
@@ -266,6 +295,7 @@ function SummaryCards({ column }: { column: 'main' | 'side' }) {
   ) : (
     <>
       <UnassignedCard count={s.unassignedReplies} />
+      <ScheduledCard campaigns={s.scheduled} />
       <StaleCard contacts={s.staleContacts} days={s.staleDays} />
     </>
   );

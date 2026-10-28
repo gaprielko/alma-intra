@@ -32,6 +32,7 @@ import { Select, SelectItem } from '@/components/ui/select';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
 import { formatSize } from '@/lib/files';
+import { formatDateTime } from '@/lib/format';
 import { loadFailed } from '@/lib/query-view';
 import { useSession } from '@/lib/session';
 import { type RouterOutputs, trpc } from '@/lib/trpc';
@@ -1113,6 +1114,14 @@ function ReviewStep({ campaign, onBack }: { campaign: Campaign; onBack: () => vo
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [testAt, setTestAt] = useState<string | null>(null);
+  const [when, setWhen] = useState<'now' | 'later'>('now');
+  // Tomorrow at 8:00 is the usual answer to „when“.
+  const [day, setDay] = useState(() => {
+    const tomorrow = new Date(Date.now() + 86_400_000);
+    return `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+  });
+  const [time, setTime] = useState('08:00');
+  const scheduledAt = day && time ? new Date(`${day}T${time}`) : null;
   const first = campaign.messages.find((m) => !m.skipReason);
   const preview = useQuery({
     ...trpc.campaign.preview.queryOptions({ messageId: first?.id ?? '' }),
@@ -1133,7 +1142,12 @@ function ReviewStep({ campaign, onBack }: { campaign: Campaign; onBack: () => vo
   const send = useMutation(
     trpc.campaign.send.mutationOptions({
       onSuccess: async (result) => {
-        toast('success', t.review.sent(result.queued));
+        toast(
+          'success',
+          result.scheduledAt
+            ? t.review.scheduled(formatDateTime(result.scheduledAt))
+            : t.review.sent(result.queued),
+        );
         await queryClient.invalidateQueries(trpc.campaign.pathFilter());
         await navigate({ to: '/emails/sent/$campaignId', params: { campaignId: campaign.id } });
       },
@@ -1203,10 +1217,51 @@ function ReviewStep({ campaign, onBack }: { campaign: Campaign; onBack: () => vo
         </section>
         <section className="rounded-2xl border border-border-subtle bg-white p-5 shadow-rest">
           <h2 className="text-[15px] font-semibold">{r.when}</h2>
-          <div className="mt-2 rounded-xl border border-primary bg-[#f0f8f7] px-3 py-2.5">
-            <p className="text-sm font-semibold">{r.now}</p>
-            <p className="text-[13px] text-muted">{r.nowHint}</p>
+          <div role="radiogroup" aria-label={r.when} className="mt-2 space-y-2">
+            {(['now', 'later'] as const).map((choice) => (
+              <button
+                key={choice}
+                type="button"
+                role="radio"
+                aria-checked={when === choice}
+                onClick={() => setWhen(choice)}
+                className={cn(
+                  'block w-full rounded-xl border px-3 py-2.5 text-left',
+                  when === choice ? 'border-primary bg-[#f0f8f7]' : 'border-border hover:bg-hover',
+                )}
+              >
+                <span className="block text-sm font-semibold">{r[choice]}</span>
+                <span className="block text-[13px] text-muted">
+                  {choice === 'now' ? r.nowHint : r.laterHint}
+                </span>
+              </button>
+            ))}
           </div>
+          {when === 'later' ? (
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <div>
+                <Label htmlFor="schedule-date">{r.date}</Label>
+                <Input
+                  id="schedule-date"
+                  type="date"
+                  className="mt-1.5"
+                  value={day}
+                  onChange={(event) => setDay(event.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="schedule-time">{r.time}</Label>
+                <Input
+                  id="schedule-time"
+                  type="time"
+                  step={300}
+                  className="mt-1.5"
+                  value={time}
+                  onChange={(event) => setTime(event.target.value)}
+                />
+              </div>
+            </div>
+          ) : null}
         </section>
         <div className="flex gap-2">
           <Button variant="ghost" onClick={onBack}>
@@ -1214,11 +1269,22 @@ function ReviewStep({ campaign, onBack }: { campaign: Campaign; onBack: () => vo
           </Button>
           <Button
             className="flex-1"
-            disabled={send.isPending || missing > 0 || sendable.length === 0}
-            onClick={() => send.mutate({ id: campaign.id })}
+            disabled={
+              send.isPending ||
+              missing > 0 ||
+              sendable.length === 0 ||
+              (when === 'later' && !scheduledAt)
+            }
+            onClick={() =>
+              send.mutate(
+                when === 'later' && scheduledAt
+                  ? { id: campaign.id, at: scheduledAt.toISOString() }
+                  : { id: campaign.id },
+              )
+            }
           >
             <Send className="size-4" aria-hidden />
-            {r.send(sendable.length)}
+            {when === 'later' ? r.schedule(sendable.length) : r.send(sendable.length)}
           </Button>
         </div>
       </div>

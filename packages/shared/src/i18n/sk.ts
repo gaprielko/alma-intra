@@ -1223,6 +1223,9 @@ export const sk = {
   overview: {
     title: 'Prehľad',
     statuses: 'Zákazníci podľa stavu',
+    scheduled: 'Naplánované e-maily',
+    scheduledLine: (when: string, recipients: number) =>
+      `${when} · ${plural(recipients, 'adresát', 'adresáti', 'adresátov')}`,
     campaigns: 'Posledné odoslané e-maily',
     allSent: 'Všetky odoslané',
     noCampaigns: 'Zatiaľ žiadne odoslané e-maily.',
@@ -1696,7 +1699,13 @@ export const sk = {
       when: 'Kedy odoslať',
       now: 'Hneď',
       nowHint: 'Odošle sa do niekoľkých minút.',
+      later: 'Naplánovať',
+      laterHint: 'Odošle sa v zvolený deň a čas. Dovtedy sa dá zrušiť.',
+      date: 'Deň',
+      time: 'Čas',
       send: (n: number) => `Odoslať ${plural(n, 'e-mail', 'e-maily', 'e-mailov')}`,
+      schedule: (n: number) => `Naplánovať ${plural(n, 'e-mail', 'e-maily', 'e-mailov')}`,
+      scheduled: (when: string) => `E-mail je naplánovaný na ${when}.`,
       sent: (n: number) => `Odosiela sa ${plural(n, 'e-mail', 'e-maily', 'e-mailov')}.`,
     },
     list: {
@@ -1715,10 +1724,13 @@ export const sk = {
       },
       noSubject: 'Bez predmetu',
       sending: 'Odosiela sa',
+      scheduled: (when: string) => `Naplánované na ${when}`,
       continue: 'Pokračovať',
     },
     detail: {
       back: 'Odoslané',
+      unschedule: 'Zrušiť naplánovanie',
+      unscheduled: 'Naplánovanie je zrušené, e-mail je znova koncept.',
       meta: (sender: string, when: string, template: string | null) =>
         [sender, when, template ? `šablóna ${template}` : null].filter(Boolean).join(' · '),
       stats: {
@@ -1759,6 +1771,8 @@ export const sk = {
     errors: {
       NOT_FOUND: 'E-mail sa nenašiel.',
       NOT_DRAFT: 'E-mail už bol odoslaný.',
+      NOT_SCHEDULED: 'E-mail už nie je naplánovaný: odosiela sa alebo bol odoslaný.',
+      BAD_SCHEDULE: 'Čas odoslania musí byť aspoň 5 minút dopredu a najviac 90 dní.',
       CUSTOMER_NOT_FOUND: 'Kontakt sa nenašiel.',
       CONTACT_NOT_OF_CUSTOMER: 'Kontaktná osoba nepatrí k tomuto kontaktu.',
       TEMPLATE_NOT_FOUND: 'Šablóna sa nenašla alebo je neaktívna.',

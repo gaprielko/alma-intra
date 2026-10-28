@@ -1,7 +1,7 @@
 import { sk } from '@intra/shared/i18n';
 import type { MessageStatus } from '@intra/shared/schemas';
-import { useQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { ErrorState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
@@ -11,6 +11,7 @@ import { Badge, type BadgeTone } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { StatusBanner } from '@/components/ui/status-banner';
+import { useToast } from '@/components/ui/toast';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { errorMessage } from '@/lib/errors';
 import { formatDateTime } from '@/lib/format';
@@ -71,6 +72,19 @@ function CampaignPage() {
     refetchInterval: (query) => (query.state.data?.status === 'sending' ? 5000 : false),
   });
   const [shown, setShown] = useState<string | null>(null);
+  const toast = useToast();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const unschedule = useMutation(
+    trpc.campaign.unschedule.mutationOptions({
+      onSuccess: async () => {
+        toast('success', t.detail.unscheduled);
+        await queryClient.invalidateQueries(trpc.campaign.pathFilter());
+        await navigate({ to: '/emails/compose/$campaignId', params: { campaignId } });
+      },
+      onError: (error) => toast('error', errorMessage(error, t.errors)),
+    }),
+  );
   if (campaign.isPending) {
     return (
       <div className="min-w-0">
@@ -110,9 +124,23 @@ function CampaignPage() {
             <Badge tone="info" dot>
               {t.list.sending}
             </Badge>
+          ) : c.status === 'scheduled' && c.scheduledAt ? (
+            <Badge tone="info" dot>
+              {t.list.scheduled(formatDateTime(c.scheduledAt))}
+            </Badge>
           ) : undefined
         }
-      />
+      >
+        {c.status === 'scheduled' ? (
+          <Button
+            variant="secondary"
+            disabled={unschedule.isPending}
+            onClick={() => unschedule.mutate({ id: c.id })}
+          >
+            {d.unschedule}
+          </Button>
+        ) : null}
+      </PageHeader>
       <main className="max-w-[1440px] space-y-5 px-7 pt-5 pb-10">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Stat label={d.stats.sent} value={sent.length} hint={d.stats.sentHint(skipped)} />

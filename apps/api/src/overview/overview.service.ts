@@ -2,18 +2,23 @@ import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 import { listCampaigns } from '../campaigns/campaigns.service.js';
 import { LAST_CONTACT } from '../customers/customers.service.js';
 import type { Db } from '../db/db.module.js';
-import { contactTypes, customers, inboundMessages } from '../db/schema/index.js';
+import {
+  campaigns as campaignsTable,
+  contactTypes,
+  customers,
+  inboundMessages,
+} from '../db/schema/index.js';
 
 /** A contact of mine with no contact for this long shows on the dashboard. */
 export const STALE_DAYS = 30;
 
 /**
  * Prehľad (D-15): the customers by sales status, the latest e-mails sent and how they did, the
- * received e-mails waiting for a contact, and my contacts nobody has been in touch with lately.
- * „Moje ďalšie kroky“ and the scheduled sends come from their own queries.
+ * received e-mails waiting for a contact, the e-mails scheduled to leave, and my contacts nobody
+ * has been in touch with lately. „Moje ďalšie kroky“ come from their own query.
  */
 export async function overviewSummary(db: Db, userId: string) {
-  const [statusRows, [unassigned], campaigns, stale] = await Promise.all([
+  const [statusRows, [unassigned], campaigns, stale, scheduled] = await Promise.all([
     db
       .select({ status: customers.status, count: sql<number>`count(*)`.mapWith(Number) })
       .from(customers)
@@ -42,6 +47,18 @@ export async function overviewSummary(db: Db, userId: string) {
       )
       .orderBy(sql`${LAST_CONTACT} asc nulls first`, asc(customers.name))
       .limit(8),
+    db
+      .select({
+        id: campaignsTable.id,
+        subject: campaignsTable.subjectText,
+        scheduledAt: campaignsTable.scheduledAt,
+        recipients: sql<number>`(select count(*)::int from campaign_messages m
+          where m.campaign_id = ${campaignsTable.id} and m.status = 'queued')`,
+      })
+      .from(campaignsTable)
+      .where(eq(campaignsTable.status, 'scheduled'))
+      .orderBy(asc(campaignsTable.scheduledAt))
+      .limit(5),
   ]);
   const recent = campaigns.items.slice(0, 5);
   const replies = recent.length
@@ -81,6 +98,7 @@ export async function overviewSummary(db: Db, userId: string) {
       replies: repliesOf.get(c.id) ?? 0,
     })),
     staleContacts: stale,
+    scheduled,
     staleDays: STALE_DAYS,
   };
 }

@@ -252,6 +252,8 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     edited: flag,
     deleted: flag,
     test: flag,
+    scheduled: flag,
+    unscheduled: flag,
     fields: subsetOf(['content']),
   },
   /** Personal access tokens for Claude: how long one lives, that one was revoked. Never a value. */

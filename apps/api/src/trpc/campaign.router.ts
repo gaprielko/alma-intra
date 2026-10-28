@@ -7,6 +7,7 @@ import {
   messagePreviewSchema,
   recipientCandidatesSchema,
   recipientContentSchema,
+  sendCampaignSchema,
   setRecipientsSchema,
   unsubscribeSchema,
   unsubscribeTokenSchema,
@@ -27,7 +28,7 @@ async function run<T>(fn: () => Promise<T>): Promise<T> {
     const code =
       error.code === 'NOT_FOUND'
         ? 'NOT_FOUND'
-        : error.code === 'NOT_DRAFT'
+        : error.code === 'NOT_DRAFT' || error.code === 'NOT_SCHEDULED'
           ? 'CONFLICT'
           : error.code === 'STORAGE_NOT_CONFIGURED'
             ? 'PRECONDITION_FAILED'
@@ -150,17 +151,37 @@ export const campaignRouter = router({
       return { sentTo: mail.to, missing: mail.missing };
     }),
 
-  /** „Odoslať“: every e-mail rendered, stored and queued; the worker sends them. */
+  /** „Odoslať“: every e-mail rendered, stored and queued, now or at a time; the worker sends them. */
   send: authorizedProcedure('email.send')
-    .input(campaignIdSchema)
+    .input(sendCampaignSchema)
     .mutation(async ({ ctx, input }) => {
-      const result = await run(() => campaigns.queueCampaign(ctx.db, ctx.env, input.id));
+      const result = await run(() =>
+        campaigns.queueCampaign(
+          ctx.db,
+          ctx.env,
+          input.id,
+          input.at ? new Date(input.at) : undefined,
+        ),
+      );
       ctx.audit.set({
         entityType: 'campaign',
         entityId: input.id,
-        diff: { count: result.queued, skipped: result.skipped },
+        diff: {
+          count: result.queued,
+          skipped: result.skipped,
+          ...(result.scheduledAt ? { scheduled: true } : {}),
+        },
       });
       return result;
+    }),
+
+  /** „Zrušiť naplánovanie“: back to a draft before it starts. */
+  unschedule: authorizedProcedure('email.send')
+    .input(campaignIdSchema)
+    .mutation(async ({ ctx, input }) => {
+      await run(() => campaigns.unscheduleCampaign(ctx.db, input.id));
+      ctx.audit.set({ entityType: 'campaign', entityId: input.id, diff: { unscheduled: true } });
+      return { ok: true as const };
     }),
 });
 

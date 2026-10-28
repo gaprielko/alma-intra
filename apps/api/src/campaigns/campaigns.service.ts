@@ -1,5 +1,6 @@
 import { sk } from '@intra/shared/i18n';
 import {
+  MAX_SCHEDULE_DAYS,
   type CustomField,
   type EmailNode,
   MAX_MESSAGE_BYTES,
@@ -39,7 +40,9 @@ export class CampaignError extends Error {
       | 'NO_CONTENT'
       | 'MISSING_VALUES'
       | 'TOO_LARGE'
-      | 'STORAGE_NOT_CONFIGURED',
+      | 'STORAGE_NOT_CONFIGURED'
+      | 'BAD_SCHEDULE'
+      | 'NOT_SCHEDULED',
     readonly count?: number,
   ) {
     super(code);
@@ -474,6 +477,7 @@ export async function getCampaign(db: Db, id: string) {
     createdAt: c.createdAt,
     updatedAt: c.updatedAt,
     sentAt: c.sentAt,
+    scheduledAt: c.scheduledAt,
     attachments,
     messages: messages.map((m) => {
       const person = m.contactId
@@ -666,7 +670,21 @@ async function versionsOf(tx: Tx, fileIds: string[]) {
  * or a message would exceed 40 MB (D-26). Recipients who unsubscribed or whose address bounced
  * since the draft was made are left out now.
  */
-export async function queueCampaign(db: Db, env: Env, id: string) {
+/** A scheduled time must be at least this far ahead: the worker needs a moment, and so do we. */
+const MIN_SCHEDULE_MS = 5 * 60_000;
+
+/**
+ * „Odoslať“: every e-mail rendered, stored and queued. With `at` (D-12) the campaign is
+ * „scheduled“: its messages wait in the queue until then, and it can be called back until it starts.
+ */
+export async function queueCampaign(db: Db, env: Env, id: string, at?: Date) {
+  if (
+    at &&
+    (at.getTime() < Date.now() + MIN_SCHEDULE_MS ||
+      at.getTime() > Date.now() + MAX_SCHEDULE_DAYS * 86_400_000)
+  ) {
+    throw new CampaignError('BAD_SCHEDULE');
+  }
   const campaign = await getCampaign(db, id);
   if (campaign.status !== 'draft') throw new CampaignError('NOT_DRAFT');
   const bodyText = JSON.stringify(campaign.body);
@@ -693,6 +711,7 @@ export async function queueCampaign(db: Db, env: Env, id: string) {
       campaign.attachments.map((a) => a.id),
     );
     const now = new Date();
+    const leaves = at ?? now;
     for (const message of campaign.messages) {
       if (message.skipReason) {
         await tx
@@ -730,7 +749,7 @@ export async function queueCampaign(db: Db, env: Env, id: string) {
           totalBytes,
           unsubscribeTokenHash: tokenHash(out.token),
           queuedAt: now,
-          nextAttemptAt: now,
+          nextAttemptAt: leaves,
         })
         .where(eq(campaignMessages.id, message.id));
       if (versions.length > 0) {
@@ -746,13 +765,61 @@ export async function queueCampaign(db: Db, env: Env, id: string) {
     await tx
       .update(campaigns)
       .set({
-        status: 'sending',
-        sentAt: now,
+        status: at ? 'scheduled' : 'sending',
+        sentAt: leaves,
+        scheduledAt: at ?? null,
         subjectText: plainOf(campaign.subject, {}, labelsOf(campaign.customFields)),
         updatedAt: now,
       })
       .where(eq(campaigns.id, id));
-    return { queued: sendable.length, skipped: campaign.messages.length - sendable.length };
+    return {
+      queued: sendable.length,
+      skipped: campaign.messages.length - sendable.length,
+      scheduledAt: at ?? null,
+    };
+  });
+}
+
+/**
+ * „Zrušiť naplánovanie“: a scheduled campaign that has not started goes back to a draft, its
+ * messages to the recipients' list as they were (the rendered copies and attachments forgotten).
+ */
+export async function unscheduleCampaign(db: Db, id: string) {
+  return db.transaction(async (tx) => {
+    const [campaign] = await tx
+      .select({ status: campaigns.status, scheduledAt: campaigns.scheduledAt })
+      .from(campaigns)
+      .where(eq(campaigns.id, id))
+      .for('update');
+    if (!campaign) throw new CampaignError('NOT_FOUND');
+    if (campaign.status !== 'scheduled') throw new CampaignError('NOT_SCHEDULED');
+    const messageIds = (
+      await tx
+        .select({ id: campaignMessages.id })
+        .from(campaignMessages)
+        .where(eq(campaignMessages.campaignId, id))
+    ).map((m) => m.id);
+    if (messageIds.length > 0) {
+      await tx.delete(messageAttachments).where(inArray(messageAttachments.messageId, messageIds));
+    }
+    await tx
+      .update(campaignMessages)
+      .set({
+        status: 'draft',
+        skipReason: null,
+        subject: null,
+        html: null,
+        text: null,
+        totalBytes: null,
+        unsubscribeTokenHash: null,
+        queuedAt: null,
+        nextAttemptAt: null,
+      })
+      .where(eq(campaignMessages.campaignId, id));
+    await tx
+      .update(campaigns)
+      .set({ status: 'draft', scheduledAt: null, sentAt: null, updatedAt: new Date() })
+      .where(eq(campaigns.id, id));
   });
 }
 
@@ -773,8 +840,14 @@ export async function testMessage(db: Db, env: Env, id: string) {
   };
 }
 
-/** A campaign whose messages all left the queue is sent. */
+/**
+ * A scheduled campaign whose time came is sending; a campaign whose messages all left the queue
+ * is sent.
+ */
 export async function settleCampaigns(db: Db | Tx) {
+  await db.execute(sql`
+    update campaigns set status = 'sending', updated_at = now()
+    where status = 'scheduled' and scheduled_at <= now()`);
   await db.execute(sql`
     update campaigns set status = 'sent', updated_at = now()
     where status = 'sending' and not exists (

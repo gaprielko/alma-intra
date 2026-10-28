@@ -48,6 +48,8 @@ export const campaigns = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     sentAt: timestamp('sent_at', { withTimezone: true }),
+    /** When a scheduled campaign leaves (D-12); its messages wait in the queue until then. */
+    scheduledAt: timestamp('scheduled_at', { withTimezone: true }),
   },
   (t) => [index('campaigns_status_idx').on(t.status, t.updatedAt)],
 );

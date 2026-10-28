@@ -62,6 +62,10 @@ export function CampaignList({ status }: { status: 'sent' | 'draft' }) {
                   <Badge tone="info" dot>
                     {t.sending}
                   </Badge>
+                ) : row.status === 'scheduled' && row.sentAt ? (
+                  <Badge tone="info" dot>
+                    {t.scheduled(formatDateTime(row.sentAt))}
+                  </Badge>
                 ) : row.sentAt ? (
                   formatDateTime(row.sentAt)
                 ) : (
