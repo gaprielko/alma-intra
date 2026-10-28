@@ -26,6 +26,7 @@ import {
 } from '../db/schema/index.js';
 import { missingOf, plainOf, renderEmail } from '../email/render.js';
 import { getLook, valuesFor } from '../email/templates.service.js';
+import { DOWNLOAD_LINK_DAYS, downloadToken } from './download-link.js';
 
 export class CampaignError extends Error {
   constructor(
@@ -224,6 +225,7 @@ export async function reuseCampaign(db: Db, userId: string, id: string) {
         body: source.body,
         customFields: source.customFields,
         commonValues: source.commonValues,
+        attachmentsAsLinks: source.attachmentsAsLinks,
       })
       .returning({ id: campaigns.id });
     const common = await tx
@@ -409,6 +411,17 @@ async function writeCommonAttachments(tx: Tx, campaignId: string, fileIds: strin
   }
 }
 
+/** Review step: the files go as download links valid 30 days instead of attachments (D-26). */
+export async function setAttachmentsAsLinks(db: Db, id: string, asLinks: boolean) {
+  return db.transaction(async (tx) => {
+    await draft(tx, id, true);
+    await tx
+      .update(campaigns)
+      .set({ attachmentsAsLinks: asLinks, updatedAt: new Date() })
+      .where(eq(campaigns.id, id));
+  });
+}
+
 /** Step 3: what everybody gets. */
 export async function saveContent(
   db: Db,
@@ -578,6 +591,7 @@ export async function getCampaign(db: Db, id: string) {
     updatedAt: c.updatedAt,
     sentAt: c.sentAt,
     scheduledAt: c.scheduledAt,
+    attachmentsAsLinks: c.attachmentsAsLinks,
     attachments,
     messages: messages.map((m) => {
       const person = m.contactId
@@ -691,12 +705,42 @@ type Campaign = Awaited<ReturnType<typeof getCampaign>>;
 type Message = Campaign['messages'][number];
 
 /** One recipient's e-mail as they would get it: values, their own text, the company look. */
+/**
+ * The files of one recipient's e-mail as download links (D-26): the common ones and the
+ * recipient's own, each to its current version, valid 30 days from when the e-mail leaves.
+ */
+async function downloadsFor(
+  db: Db | Tx,
+  env: Env,
+  campaign: Campaign,
+  message: Message,
+  leaves: Date,
+) {
+  const named = [
+    ...campaign.attachments,
+    ...message.ownFiles.filter((f) => !campaign.attachments.some((a) => a.id === f.id)),
+  ];
+  const versions = await versionsOf(
+    db,
+    named.map((f) => f.id),
+  );
+  const expiresAt = new Date(leaves.getTime() + DOWNLOAD_LINK_DAYS * 86_400_000);
+  return {
+    expiresAt,
+    files: versions.map((v, i) => ({
+      name: named[i]!.name,
+      url: `${env.WEB_URL}/d/${downloadToken(env, v.versionId, expiresAt)}`,
+    })),
+  };
+}
+
 async function renderFor(
   db: Db | Tx,
   env: Env,
   campaign: Campaign,
   message: Message,
   unsubscribeUrl: string,
+  leaves = new Date(),
 ) {
   const { values, customerName } = await valuesFor(
     db,
@@ -715,6 +759,9 @@ async function renderFor(
     signature: true,
     customerName,
     unsubscribeUrl,
+    ...(campaign.attachmentsAsLinks
+      ? { downloads: await downloadsFor(db, env, campaign, message, leaves) }
+      : {}),
   });
   return { ...rendered, missing: missingOf([campaign.subject, body], values) };
 }
@@ -751,7 +798,7 @@ export async function previewMessage(db: Db, env: Env, messageId: string) {
 // Sending
 
 /** The versions an e-mail would carry today: the common files and the recipient's own. */
-async function versionsOf(tx: Tx, fileIds: string[]) {
+async function versionsOf(tx: Db | Tx, fileIds: string[]) {
   if (fileIds.length === 0) return [];
   const rows = await tx
     .select({
@@ -800,7 +847,14 @@ export async function queueCampaign(db: Db, env: Env, id: string, at?: Date) {
   let missing = 0;
   for (const message of sendable) {
     const token = unsubscribeToken(env, message.id);
-    const out = await renderFor(db, env, campaign, message, `${env.WEB_URL}/odhlasenie#${token}`);
+    const out = await renderFor(
+      db,
+      env,
+      campaign,
+      message,
+      `${env.WEB_URL}/odhlasenie#${token}`,
+      at ?? new Date(),
+    );
     if (out.missing.length > 0) missing += 1;
     rendered.set(message.id, { ...out, token });
   }
@@ -835,9 +889,12 @@ export async function queueCampaign(db: Db, env: Env, id: string, at?: Date) {
           .filter((fileId) => !campaign.attachments.some((a) => a.id === fileId)),
       );
       const versions = [...common, ...own];
+      // Links weigh nothing; attachments travel base64-encoded, a third bigger.
       const totalBytes =
         Buffer.byteLength(out.html) +
-        versions.reduce((sum, v) => sum + Math.ceil((v.size * 4) / 3), 0);
+        (campaign.attachmentsAsLinks
+          ? 0
+          : versions.reduce((sum, v) => sum + Math.ceil((v.size * 4) / 3), 0));
       if (totalBytes > MAX_MESSAGE_BYTES) throw new CampaignError('TOO_LARGE');
       await tx
         .update(campaignMessages)
@@ -860,6 +917,7 @@ export async function queueCampaign(db: Db, env: Env, id: string, at?: Date) {
             messageId: message.id,
             fileVersionId: v.versionId,
             position,
+            asLink: campaign.attachmentsAsLinks,
           })),
         );
       }

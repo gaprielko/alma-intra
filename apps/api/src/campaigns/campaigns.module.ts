@@ -36,6 +36,7 @@ import {
   setUnsubscribed,
   verifyWebhook,
 } from './delivery.js';
+import { DownloadController } from './download.controller.js';
 
 export const CAMPAIGN_TRANSPORT = Symbol('CAMPAIGN_TRANSPORT');
 /** Where received e-mails are fetched; null without a Resend key (dev, tests). */
@@ -209,7 +210,7 @@ export class CampaignWebhookController {
     { provide: INBOUND_SOURCE, useFactory: () => inboundSource(loadEnv()) },
     CampaignWorker,
   ],
-  controllers: [CampaignWebhookController],
+  controllers: [CampaignWebhookController, DownloadController],
   exports: [CAMPAIGN_TRANSPORT],
 })
 export class CampaignsModule {}

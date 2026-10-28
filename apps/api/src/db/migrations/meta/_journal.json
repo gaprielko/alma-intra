@@ -162,6 +162,13 @@
       "when": 1793227669852,
       "tag": "0022_unaccent",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793228844495,
+      "tag": "0023_attachments_as_links",
+      "breakpoints": true
     }
   ]
 }

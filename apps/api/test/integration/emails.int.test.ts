@@ -1,10 +1,13 @@
+import { COMPANY_ROOT_FOLDER_ID } from '@intra/shared/schemas';
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { drainCampaigns } from '../../src/campaigns/delivery.js';
 import { loadEnv } from '../../src/config/env.js';
 import { receiveInbound } from '../../src/inbound/inbound.js';
 import { memoryTransport, outbox } from '../../src/mail/transport.js';
+import { storageKey } from '../../src/storage/storage.js';
 import { browser, JANA, startApi } from './client.js';
+import { memoryStorage } from './memory-storage.js';
 
 const HARMONIA = '00000000-0000-4000-8000-d00000000001';
 const EVA = '00000000-0000-4000-8000-e00000000010';
@@ -14,11 +17,12 @@ const doc = (text: string) => ({
 });
 
 describe('e-mails: sending, scheduling, segments, replies', () => {
+  const bucket = memoryStorage();
   let api: Awaited<ReturnType<typeof startApi>>;
   let jana: ReturnType<typeof browser>;
 
   beforeAll(async () => {
-    api = await startApi();
+    api = await startApi({ storage: bucket.storage });
     jana = browser(api.baseUrl);
     await jana.signIn(JANA);
   });
@@ -102,6 +106,41 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     expect(sent.data.items.find((c) => c.id === id)?.subjectText).toBe(
       'Ponuka pre ADOS Harmónia, s.r.o.',
     );
+  });
+
+  it('sends files as download links valid 30 days instead of attachments (D-26)', async () => {
+    const id = await draft();
+    const pdf = new TextEncoder().encode('%PDF-1.4\n%%EOF\n');
+    const asked = await jana.call<{ fileId: string; versionId: string }>('file.requestUpload', {
+      folderId: COMPANY_ROOT_FOLDER_ID,
+      name: 'Cennik.pdf',
+      size: pdf.byteLength,
+    });
+    await bucket.storage.put(
+      storageKey(asked.data.fileId, asked.data.versionId),
+      pdf,
+      'application/pdf',
+    );
+    await jana.call('file.confirmUpload', { versionId: asked.data.versionId });
+    await api.db.execute(
+      sql`insert into campaign_attachments (campaign_id, file_id, position)
+        values (${id}, ${asked.data.fileId}, 0)`,
+    );
+    await jana.call('campaign.setAttachmentsAsLinks', { id, asLinks: true });
+    await jana.call('campaign.send', { id });
+    const before = outbox.length;
+    await drainCampaigns(api.db, memoryTransport({ quiet: true }), bucket.storage, loadEnv());
+    const mail = outbox.slice(before).find((m) => m.subject === 'Test')!;
+    expect(mail.attachments).toBeUndefined();
+    const link = /\/d\/([0-9a-f]{32}\.[0-9a-z]+\.[A-Za-z0-9_-]{32})/.exec(mail.html)![1]!;
+    const opened = await fetch(`${api.baseUrl}/d/${link}`, { redirect: 'manual' });
+    expect(opened.status).toBe(302);
+    expect(opened.headers.get('location')).toContain(asked.data.versionId);
+    const forged = await fetch(
+      `${api.baseUrl}/d/${link.slice(0, -1)}${link.endsWith('A') ? 'B' : 'A'}`,
+      { redirect: 'manual' },
+    );
+    expect(forged.status).toBe(404);
   });
 
   it('sends a template as it stands as a test to oneself', async () => {

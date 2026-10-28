@@ -324,6 +324,7 @@ export const sk = {
       'campaign.sendTest': 'Testovací e-mail',
       'campaign.unschedule': 'Zrušené naplánovanie',
       'campaign.reuse': 'Koncept z odoslaného e-mailu',
+      'campaign.setAttachmentsAsLinks': 'Prílohy e-mailu ako odkazy',
       'inbound.assign': 'Priradenie prijatého e-mailu',
       'inbound.discard': 'Zahodenie prijatého e-mailu',
       'inbound.reply': 'Odpoveď z aplikácie',
@@ -1633,6 +1634,10 @@ export const sk = {
     signature: {
       greeting: 'S pozdravom',
     },
+    downloads: {
+      title: 'Súbory na stiahnutie',
+      valid: (until: string) => `Odkazy platia do ${until}.`,
+    },
     footer: {
       reason: (customer: string) => `Tento e-mail ste dostali ako kontakt spoločnosti ${customer}.`,
       unsubscribe: 'Odhlásiť sa z odberu',
@@ -1680,6 +1685,10 @@ export const sk = {
     sampleBody: 'ďakujeme za stretnutie a za záujem o Almu. Posielame vám sľúbené informácie.',
   },
   campaigns: {
+    download: {
+      expired: 'Platnosť odkazu na stiahnutie vypršala. Požiadajte odosielateľa o nový.',
+      notFound: 'Súbor sa nenašiel.',
+    },
     newEmail: 'Nový e-mail',
     sendEmail: 'Poslať e-mail',
     title: 'Nový e-mail',
@@ -1814,6 +1823,10 @@ export const sk = {
       testSend: (email: string) => `Poslať test na ${email}`,
       testSent: (time: string) => `Test odoslaný o ${time}`,
       testPrefix: 'TEST:',
+      asLinks: 'Poslať súbory ako odkazy na stiahnutie',
+      asLinksHint: 'Súbory sa nepriložia. V e-maile budú odkazy, ktoré platia 30 dní.',
+      tooLarge:
+        'Prílohy majú spolu viac ako 40 MB, toľko e-mail neprenesie. Pošlite ich ako odkazy.',
       when: 'Kedy odoslať',
       now: 'Hneď',
       nowHint: 'Odošle sa do niekoľkých minút.',

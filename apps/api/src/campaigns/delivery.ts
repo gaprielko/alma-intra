@@ -95,7 +95,7 @@ export async function drainCampaigns(
         .from(messageAttachments)
         .innerJoin(fileVersions, eq(fileVersions.id, messageAttachments.fileVersionId))
         .innerJoin(files, eq(files.id, fileVersions.fileId))
-        .where(eq(messageAttachments.messageId, id))
+        .where(and(eq(messageAttachments.messageId, id), eq(messageAttachments.asLink, false)))
         .orderBy(asc(messageAttachments.position));
       if (attached.length > 0 && !storage) throw new MailProviderError('storage_not_configured');
       const attachments = await Promise.all(

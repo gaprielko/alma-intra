@@ -1,5 +1,10 @@
 import { sk } from '@intra/shared/i18n';
-import type { CustomField, EmailNode, SkipReason } from '@intra/shared/schemas';
+import {
+  type CustomField,
+  type EmailNode,
+  MAX_MESSAGE_BYTES,
+  type SkipReason,
+} from '@intra/shared/schemas';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Navigate, useNavigate } from '@tanstack/react-router';
 import {
@@ -29,6 +34,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectItem } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
 import { formatSize } from '@/lib/files';
@@ -1132,6 +1138,23 @@ function ReviewStep({ campaign, onBack }: { campaign: Campaign; onBack: () => vo
   const edited = sendable.filter((m) => m.edited);
   const missing = sendable.filter((m) => m.missing.length > 0).length;
   const ownCount = sendable.filter((m) => m.ownFiles.length > 0).length;
+  // The heaviest e-mail: the common files and one recipient's own, base64-encoded (D-26).
+  const commonBytes = campaign.attachments.reduce((sum, a) => sum + a.size, 0);
+  const ownBytes = Math.max(
+    0,
+    ...sendable.map((m) =>
+      m.ownFiles
+        .filter((f) => !campaign.attachments.some((a) => a.id === f.id))
+        .reduce((sum, f) => sum + f.size, 0),
+    ),
+  );
+  const tooLarge = ((commonBytes + ownBytes) * 4) / 3 > MAX_MESSAGE_BYTES;
+  const asLinks = useMutation(
+    trpc.campaign.setAttachmentsAsLinks.mutationOptions({
+      onSuccess: () => queryClient.invalidateQueries(trpc.campaign.get.pathFilter()),
+      onError: (error) => toast('error', errorMessage(error, t.errors)),
+    }),
+  );
   const test = useMutation(
     trpc.campaign.sendTest.mutationOptions({
       onSuccess: () =>
@@ -1187,6 +1210,25 @@ function ReviewStep({ campaign, onBack }: { campaign: Campaign; onBack: () => vo
           ) : null}
           <Row label={r.attachments}>
             {r.attachmentsText(campaign.attachments.length, ownCount)}
+            {campaign.attachments.length > 0 || ownCount > 0 ? (
+              <div className="mt-2 flex items-start gap-2.5">
+                <Switch
+                  checked={campaign.attachmentsAsLinks}
+                  label={r.asLinks}
+                  disabled={asLinks.isPending}
+                  onChange={() =>
+                    asLinks.mutate({ id: campaign.id, asLinks: !campaign.attachmentsAsLinks })
+                  }
+                />
+                <div className="space-y-0.5">
+                  <p className="font-medium">{r.asLinks}</p>
+                  <p className="text-[13px] text-muted">{r.asLinksHint}</p>
+                  {tooLarge && !campaign.attachmentsAsLinks ? (
+                    <p className="text-[13px] text-danger">{r.tooLarge}</p>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
           </Row>
           <Row label={r.check}>
             {missing > 0 ? (

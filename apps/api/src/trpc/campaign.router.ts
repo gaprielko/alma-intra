@@ -1,4 +1,5 @@
 import {
+  attachmentsAsLinksSchema,
   campaignContentSchema,
   campaignIdSchema,
   campaignListSchema,
@@ -118,6 +119,18 @@ export const campaignRouter = router({
     .mutation(async ({ ctx, input }) => {
       await run(() => campaigns.saveContent(ctx.db, input));
       ctx.audit.set({ entityType: 'campaign', entityId: input.id, diff: { fields: ['content'] } });
+      return { ok: true as const };
+    }),
+
+  setAttachmentsAsLinks: authorizedProcedure('email.send')
+    .input(attachmentsAsLinksSchema)
+    .mutation(async ({ ctx, input }) => {
+      await run(() => campaigns.setAttachmentsAsLinks(ctx.db, input.id, input.asLinks));
+      ctx.audit.set({
+        entityType: 'campaign',
+        entityId: input.id,
+        diff: { asLinks: input.asLinks },
+      });
       return { ok: true as const };
     }),
 

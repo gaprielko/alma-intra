@@ -41,6 +41,8 @@ export interface RenderInput {
   /** The customer the recipient belongs to, for the footer's reason line. */
   customerName?: string | undefined;
   unsubscribeUrl?: string | undefined;
+  /** Files sent as download links instead of attachments (D-26), listed under the body. */
+  downloads?: { expiresAt: Date; files: { name: string; url: string }[] } | undefined;
 }
 
 /** An attribute of a node as text: what the schema stored, or nothing. */
@@ -334,6 +336,27 @@ export function EmailDocument({ input }: { input: RenderInput }) {
 
             <Section style={{ padding: '32px 32px 8px' }}>
               <NodeView node={input.body} ctx={ctx} />
+              {input.downloads && input.downloads.files.length > 0 ? (
+                <Section style={{ margin: '4px 0 16px' }}>
+                  <Text style={{ ...text, margin: '0 0 6px', fontWeight: 700 }}>
+                    {t.downloads.title}
+                  </Text>
+                  {input.downloads.files.map((file) => (
+                    <Text key={file.url} style={{ ...text, margin: '0 0 4px' }}>
+                      <Link href={file.url} style={{ color: look.accent }}>
+                        {file.name}
+                      </Link>
+                    </Text>
+                  ))}
+                  <Text style={{ ...text, margin: '6px 0 0', fontSize: '13px', color: MUTED }}>
+                    {t.downloads.valid(
+                      input.downloads.expiresAt.toLocaleDateString('sk-SK', {
+                        timeZone: 'Europe/Bratislava',
+                      }),
+                    )}
+                  </Text>
+                </Section>
+              ) : null}
               {input.signature ? (
                 <Section
                   style={{ marginTop: '12px', paddingTop: '20px', borderTop: '1px solid #e5eaea' }}
