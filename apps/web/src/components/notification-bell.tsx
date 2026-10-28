@@ -1,7 +1,7 @@
 import { sk } from '@intra/shared/i18n';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { Bell, MailWarning, Reply } from 'lucide-react';
+import { Bell, CalendarClock, MailWarning, Reply } from 'lucide-react';
 import { useState } from 'react';
 import { SidebarButton } from '@/components/app-sidebar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -56,7 +56,12 @@ export function NotificationBell({ collapsed }: { collapsed: boolean }) {
         ) : (
           <ul className="max-h-96 divide-y divide-border-subtle overflow-y-auto">
             {items.map((item) => {
-              const Icon = item.kind === 'reply' ? Reply : MailWarning;
+              const Icon =
+                item.kind === 'reply'
+                  ? Reply
+                  : item.kind === 'bounce'
+                    ? MailWarning
+                    : CalendarClock;
               return (
                 <li key={item.id}>
                   <button
@@ -73,10 +78,17 @@ export function NotificationBell({ collapsed }: { collapsed: boolean }) {
                             to: '/emails/inbox/$inboundId',
                             params: { inboundId: item.refId },
                           })
-                        : navigate({
-                            to: '/emails/sent/$campaignId',
-                            params: { campaignId: item.refId },
-                          }));
+                        : item.kind === 'bounce'
+                          ? navigate({
+                              to: '/emails/sent/$campaignId',
+                              params: { campaignId: item.refId },
+                            })
+                          : item.customerId
+                            ? navigate({
+                                to: '/customers/$customerId',
+                                params: { customerId: item.customerId },
+                              })
+                            : undefined);
                     }}
                   >
                     <Icon
@@ -90,7 +102,9 @@ export function NotificationBell({ collapsed }: { collapsed: boolean }) {
                       <span className="block truncate text-sm font-medium">
                         {item.kind === 'reply'
                           ? t.reply(item.customerName)
-                          : t.bounce(item.customerName)}
+                          : item.kind === 'bounce'
+                            ? t.bounce(item.customerName)
+                            : t.nextStep(item.customerName)}
                       </span>
                       {item.subject ? (
                         <span className="block truncate text-xs text-muted">{item.subject}</span>

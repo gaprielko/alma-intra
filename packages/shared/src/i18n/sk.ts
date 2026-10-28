@@ -1432,6 +1432,8 @@ export const sk = {
     reply: (customer: string | null) => (customer ? `Odpoveď od ${customer}` : 'Nová odpoveď'),
     bounce: (customer: string | null) =>
       customer ? `E-mail pre ${customer} sa nedoručil` : 'E-mail sa nedoručil',
+    nextStep: (customer: string | null) =>
+      customer ? `Na rade je ďalší krok: ${customer}` : 'Na rade je ďalší krok',
     unread: 'Neprečítané',
   },
   inbound: {

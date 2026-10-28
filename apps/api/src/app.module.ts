@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
+import { ActivitiesModule } from './activities/next-step-reminder.js';
 import { CampaignsModule } from './campaigns/campaigns.module.js';
 import { DbModule } from './db/db.module.js';
 import { EmailModule } from './email/email.module.js';
@@ -24,6 +25,7 @@ import { McpModule } from './mcp/mcp.module.js';
     FilesModule,
     EmailModule,
     CampaignsModule,
+    ActivitiesModule,
     McpModule,
     TrpcModule,
   ],

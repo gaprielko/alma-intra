@@ -676,3 +676,28 @@ function activityUsage(db: Db, fileId: string) {
     .orderBy(desc(activities.occurredAt))
     .limit(50);
 }
+
+/**
+ * Reminds each assignee of their next steps due by `today` (a local date, YYYY-MM-DD) in the
+ * bell, once per due date: the claim and the reminder are one statement, so two runs never
+ * remind twice.
+ */
+export async function remindDueNextSteps(db: Db, today: string) {
+  const due = await db.execute<{ count: number }>(sql`
+    with claimed as (
+      update activities a set next_step_reminded_for = a.next_step_due
+      where a.next_step_text is not null and a.next_step_done_at is null
+        and a.deleted_at is null and a.next_step_user_id is not null
+        and a.next_step_due <= ${today}::date
+        and a.next_step_reminded_for is distinct from a.next_step_due
+        and exists (select 1 from customers c where c.id = a.customer_id and c.deleted_at is null)
+        and exists (select 1 from users u where u.id = a.next_step_user_id and u.status = 'active')
+      returning a.id, a.customer_id, a.next_step_user_id, a.next_step_text
+    ), notified as (
+      insert into notifications (user_id, kind, ref_id, customer_id, subject)
+      select next_step_user_id, 'next_step', id, customer_id, next_step_text from claimed
+      returning 1
+    )
+    select count(*)::int as count from notified`);
+  return due.rows[0]?.count ?? 0;
+}

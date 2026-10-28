@@ -1,4 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { remindDueNextSteps } from '../../src/activities/activities.service.js';
+import { localNow } from '../../src/activities/next-step-reminder.js';
 import { SEED_USERS } from '../../src/db/seed.js';
 import { browser, JANA, startApi } from './client.js';
 
@@ -51,6 +53,26 @@ describe('activities', () => {
     await jana.call('activity.setNextStepDone', { id: made.data.id, done: true });
     const after = await jana.call<{ id: string }[]>('activity.myNextSteps');
     expect(after.data.some((s) => s.id === made.data.id)).toBe(false);
+  });
+
+  it('reminds the assignee in the bell once a next step is due, once per due date', async () => {
+    const today = localNow().date;
+    const made = await jana.call<{ id: string }>(
+      'activity.create',
+      activity({
+        nextStep: { text: 'Zavolať riaditeľke', assigneeId: SEED_USERS.jana, due: today },
+      }),
+    );
+    const reminders = async () =>
+      (
+        await jana.call<{ items: { kind: string; refId: string; subject: string | null }[] }>(
+          'notification.list',
+        )
+      ).data.items.filter((n) => n.kind === 'next_step' && n.refId === made.data.id);
+    expect(await remindDueNextSteps(api.db, today)).toBeGreaterThan(0);
+    expect(await reminders()).toEqual([expect.objectContaining({ subject: 'Zavolať riaditeľke' })]);
+    await remindDueNextSteps(api.db, today);
+    expect(await reminders()).toHaveLength(1);
   });
 
   it('refuses a javascript: link in the notes and a person of another contact', async () => {

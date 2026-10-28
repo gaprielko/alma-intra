@@ -43,6 +43,8 @@ export const activities = pgTable(
     nextStepUserId: uuid('next_step_user_id').references(() => users.id),
     nextStepDoneAt: timestamp('next_step_done_at', { withTimezone: true }),
     nextStepDoneByUserId: uuid('next_step_done_by_user_id').references(() => users.id),
+    /** The due date the assignee was last reminded of; a new date reminds again. */
+    nextStepRemindedFor: date('next_step_reminded_for'),
     authorUserId: uuid('author_user_id').references(() => users.id),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
