@@ -9,17 +9,21 @@ import { getCustomer, listCustomers } from '../customers/customers.service.js';
 import type { Db } from '../db/db.module.js';
 import { fileVersions } from '../db/schema/index.js';
 import {
+  addVersionFromBytes,
+  createFileFromBytes,
   customerRootFolderId,
   downloadUrl,
   FileError,
   fileDetail,
   folderContents,
+  moveFile,
+  renameFile,
 } from '../files/files.service.js';
 import type { Storage } from '../storage/storage.js';
 import { extractText } from './text.js';
 
 /**
- * Intra's MCP server (spec 7.5): Claude finds, reads and (E7b) writes files and looks up the
+ * Intra's MCP server (spec 7.5): Claude finds, reads and writes files and looks up the
  * customers they belong to, always as one user and audited as „Claude on behalf of“ that user.
  * Tool results are data: documents may hold text that tries to instruct Claude, so the tools that
  * write stay within files, and nothing is ever sent from here.
@@ -40,6 +44,17 @@ const json = (value: unknown) => ({
 
 /** A refusal Claude can act on, said in words instead of a stack trace. */
 const refusal = (text: string) => ({ content: [{ type: 'text' as const, text }], isError: true });
+
+/** The refusals of the file tools, in words Claude can act on. */
+const REFUSALS: Partial<Record<FileError['code'], string>> = {
+  NOT_FOUND: 'Not found (or in the trash).',
+  TYPE_MISMATCH:
+    'The type is not allowed, or differs from the file (a new version or a rename keeps the extension).',
+  UPLOAD_MISMATCH:
+    'The content is empty, too large (50 MB at most), not of the type the name says, or both or neither of text and base64 were given.',
+  STORAGE_NOT_CONFIGURED: 'Files are not set up on this server.',
+  OTHER_TREE: 'That folder cannot hold this file.',
+};
 
 const READ_ONLY = { readOnlyHint: true, openWorldHint: false } as const;
 
@@ -81,9 +96,7 @@ export function buildMcpServer(ctx: McpContext) {
         return json(result);
       } catch (error) {
         if (error instanceof FileError) {
-          return refusal(
-            error.code === 'NOT_FOUND' ? 'Not found (or in the trash).' : `Refused: ${error.code}.`,
-          );
+          return refusal(REFUSALS[error.code] ?? `Refused: ${error.code}.`);
         }
         throw error;
       }
@@ -279,7 +292,135 @@ export function buildMcpServer(ctx: McpContext) {
     ),
   );
 
+  const content = {
+    text: z.string().max(2_000_000).optional().describe('The content as text, for TXT, MD or CSV.'),
+    base64: z
+      .string()
+      .max(70_000_000)
+      .optional()
+      .describe('The content as base64, for DOCX, XLSX, PPTX, PDF or images.'),
+  };
+  const WRITES = { readOnlyHint: false, destructiveHint: false, openWorldHint: false } as const;
+
+  server.registerTool(
+    'files_create',
+    {
+      title: 'Create a file',
+      description:
+        "A new file in a folder (folderId, or customerId for that customer's folder). The name " +
+        'must end in an allowed type (pdf, docx, odt, xlsx, csv, pptx, txt, md, jpg, png, webp, ' +
+        'svg, zip) and the content must really be of that type.',
+      inputSchema: {
+        name: z.string().min(1).max(200),
+        folderId: z.string().uuid().optional(),
+        customerId: z.string().uuid().optional(),
+        note: z.string().max(500).optional(),
+        ...content,
+      },
+      annotations: WRITES,
+    },
+    tool(
+      'files_create',
+      'mutation',
+      async (
+        args: WriteArgs & {
+          name: string;
+          folderId?: string | undefined;
+          customerId?: string | undefined;
+        },
+      ) => {
+        const folderId =
+          args.folderId ??
+          (args.customerId ? await customerRootFolderId(ctx.db, args.customerId) : null);
+        if (!folderId) throw new FileError('NOT_FOUND');
+        const created = await createFileFromBytes(ctx.db, ctx.storage, {
+          folderId,
+          name: args.name,
+          bytes: bytesOf(args),
+          userId: ctx.userId,
+          via: 'mcp',
+          note: args.note,
+        });
+        return { result: created, diff: { fileId: created.fileId, folderId } };
+      },
+    ),
+  );
+
+  server.registerTool(
+    'files_update',
+    {
+      title: 'Save a new version',
+      description:
+        'Saves new content of a file as its next version; the older versions stay and can be ' +
+        'restored in Intra. The type stays the same.',
+      inputSchema: {
+        fileId: z.string().uuid(),
+        note: z.string().max(500).optional().describe('What changed, shown with the version.'),
+        ...content,
+      },
+      annotations: WRITES,
+    },
+    tool('files_update', 'mutation', async (args: WriteArgs & { fileId: string }) => {
+      const version = await addVersionFromBytes(ctx.db, ctx.storage, {
+        fileId: args.fileId,
+        bytes: bytesOf(args),
+        userId: ctx.userId,
+        via: 'mcp',
+        note: args.note,
+      });
+      return { result: version, diff: { fileId: args.fileId, versionId: version.versionId } };
+    }),
+  );
+
+  server.registerTool(
+    'files_move',
+    {
+      title: 'Move a file',
+      description: "Moves a file into another folder (a company folder or a customer's).",
+      inputSchema: { fileId: z.string().uuid(), folderId: z.string().uuid() },
+      annotations: WRITES,
+    },
+    tool(
+      'files_move',
+      'mutation',
+      async ({ fileId, folderId }: { fileId: string; folderId: string }) => {
+        await moveFile(ctx.db, fileId, folderId);
+        return { result: { ok: true }, diff: { fileId, folderId } };
+      },
+    ),
+  );
+
+  server.registerTool(
+    'files_rename',
+    {
+      title: 'Rename a file',
+      description: 'Renames a file; the extension must stay the same.',
+      inputSchema: { fileId: z.string().uuid(), name: z.string().min(1).max(200) },
+      annotations: WRITES,
+    },
+    tool('files_rename', 'mutation', async ({ fileId, name }: { fileId: string; name: string }) => {
+      await renameFile(ctx.db, fileId, name);
+      return { result: { ok: true }, diff: { fileId } };
+    }),
+  );
+
   return server;
+}
+
+interface WriteArgs {
+  text?: string | undefined;
+  base64?: string | undefined;
+  note?: string | undefined;
+}
+
+/** The content Claude sent: text, or base64 for anything else; exactly one of them. */
+function bytesOf(args: WriteArgs) {
+  if ((args.text === undefined) === (args.base64 === undefined)) {
+    throw new FileError('UPLOAD_MISMATCH');
+  }
+  return args.text !== undefined
+    ? new TextEncoder().encode(args.text)
+    : new Uint8Array(Buffer.from(args.base64!, 'base64'));
 }
 
 /** The object key of a version, read for its text. */
