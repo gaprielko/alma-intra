@@ -8,6 +8,7 @@ import {
   customers,
   inboundMessages,
 } from '../db/schema/index.js';
+import { notify } from '../notifications/notifications.service.js';
 
 /** A refusal the web words for itself (`sk.inbound.errors`). */
 export class InboundError extends Error {
@@ -99,7 +100,7 @@ export async function assignInbound(
   input: { id: string; customerId: string; contactId: string | null },
 ) {
   const [customer] = await db
-    .select({ id: customers.id })
+    .select({ id: customers.id, ownerUserId: customers.ownerUserId })
     .from(customers)
     .where(and(eq(customers.id, input.customerId), isNull(customers.deletedAt)));
   if (!customer) throw new InboundError('CUSTOMER_NOT_FOUND');
@@ -117,7 +118,11 @@ export async function assignInbound(
     if (!contact) throw new InboundError('CONTACT_NOT_OF_CUSTOMER');
   }
   const [before] = await db
-    .select({ customerId: inboundMessages.customerId, status: inboundMessages.status })
+    .select({
+      customerId: inboundMessages.customerId,
+      status: inboundMessages.status,
+      subject: inboundMessages.subject,
+    })
     .from(inboundMessages)
     .where(and(eq(inboundMessages.id, input.id), ne(inboundMessages.status, 'discarded')));
   if (!before) throw new InboundError('NOT_FOUND');
@@ -137,6 +142,16 @@ export async function assignInbound(
       ...(kept && kept.customerId !== input.customerId ? { messageId: null } : {}),
     })
     .where(eq(inboundMessages.id, input.id));
+  // The contact's owner learns of an e-mail that reached their contact, unless they filed it.
+  if (before.customerId !== input.customerId && customer.ownerUserId !== userId) {
+    await notify(db, {
+      userId: customer.ownerUserId,
+      kind: 'reply',
+      refId: input.id,
+      customerId: input.customerId,
+      subject: before.subject.slice(0, 200),
+    });
+  }
   return { before };
 }
 

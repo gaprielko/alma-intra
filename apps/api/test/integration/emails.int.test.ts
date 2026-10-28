@@ -207,4 +207,29 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     );
     expect(owner.rows[0]!.n).toBe(1);
   });
+
+  it('tells the contact owner when a colleague files an unknown e-mail to the contact', async () => {
+    const filed = await receiveInbound(api.db, loadEnv(), {
+      providerEmailId: `test-unknown-${Date.now()}`,
+      from: 'Neznámy <nikto@example.org>',
+      to: ['info@mail.alma-care.eu'],
+      cc: [],
+      receivedFor: [],
+      subject: 'Otázka na ceny',
+      html: '<p>Dobrý deň</p>',
+      text: 'Dobrý deň',
+      headerMessageId: '<y@example.org>',
+      inReplyTo: null,
+      references: null,
+      attachments: [],
+      receivedAt: new Date(),
+    });
+    expect(filed.matched).toBeNull();
+    await jana.call('inbound.assign', { id: filed.id, customerId: HARMONIA, contactId: null });
+    const told = await api.db.execute<{ subject: string }>(
+      sql`select n.subject from notifications n join customers c on c.owner_user_id = n.user_id
+        where c.id = ${HARMONIA} and n.ref_id = ${filed.id}`,
+    );
+    expect(told.rows.map((row) => row.subject)).toEqual(['Otázka na ceny']);
+  });
 });
