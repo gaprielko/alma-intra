@@ -153,6 +153,20 @@ the Reply-To is the colleague's own mailbox, as before.
    Intra (Resend → Emails → Receiving shows it too). Received mail counts against the Resend
    quota like sent mail; Resend keeps it even while the webhook is down and retries the call.
 
+### 5b. Claude access (E7)
+
+Claude reaches Intra at `https://intra.alma-care.eu/mcp`; nothing to configure on the server
+(`WEB_URL` must be the public https address: it is the OAuth issuer).
+
+- **claude.ai / Claude Desktop**: Settings › Connectors › Add custom connector › the URL above.
+  Claude registers itself, opens Intra's sign-in and the consent page („Povoliť“); the connection
+  then shows under „Môj účet › Prístup pre Claude › Pripojené aplikácie“, where it can be ended.
+- **Claude Code**: either the same OAuth (`claude mcp add --transport http alma-intra <URL>`, then
+  `/mcp` in Claude Code to sign in), or a personal token from „Môj účet“ (the page shows the full
+  command with the `Authorization` header).
+- Every call is audited as `mcp.<tool>` with `actor_kind = claude`. Claude can read and write
+  files (always a new version), never delete or send.
+
 ## 6. Secrets
 
 Generate and store in the password manager:

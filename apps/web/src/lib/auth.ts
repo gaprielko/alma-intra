@@ -7,6 +7,9 @@ import { queryClient, trpc } from './trpc';
  * Makes sure a session is loaded before a protected route renders. The tokens are httpOnly
  * cookies, so "am I logged in" can only be answered by asking the API.
  */
+/** Where the OAuth consent page waits while somebody signs in first (`/` takes them back). */
+export const PENDING_CONSENT_KEY = 'intra.oauthConsent';
+
 export async function requireSession() {
   if (useSession.getState().actor) return;
   if (!(await restoreSession())) {

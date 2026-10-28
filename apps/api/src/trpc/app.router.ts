@@ -6,6 +6,7 @@ import { customerRouter } from './customer.router.js';
 import { fileRouter } from './file.router.js';
 import { inboundRouter } from './inbound.router.js';
 import { notificationRouter } from './notification.router.js';
+import { oauthRouter } from './oauth.router.js';
 import { campaignRouter, unsubscribeRouter } from './campaign.router.js';
 import { templateRouter } from './template.router.js';
 import { router } from './trpc.js';
@@ -23,6 +24,7 @@ export const appRouter = router({
   campaign: campaignRouter,
   inbound: inboundRouter,
   notification: notificationRouter,
+  oauth: oauthRouter,
   unsubscribe: unsubscribeRouter,
 });
 

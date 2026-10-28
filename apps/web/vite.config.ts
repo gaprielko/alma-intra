@@ -25,6 +25,10 @@ export default defineConfig({
       // Claude's MCP endpoint and its OAuth metadata, so the address shown in dev works too.
       '/mcp': 'http://localhost:3100',
       '/.well-known': 'http://localhost:3100',
+      '/authorize': 'http://localhost:3100',
+      '/token': 'http://localhost:3100',
+      '/register': 'http://localhost:3100',
+      '/revoke': 'http://localhost:3100',
     },
   },
 });

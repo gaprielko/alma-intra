@@ -753,6 +753,16 @@ function ClaudeAccessCard() {
       onError: (error) => toast('error', errorMessage(error)),
     }),
   );
+  const connections = useQuery(trpc.oauth.connections.queryOptions());
+  const disconnect = useMutation(
+    trpc.oauth.revokeConnection.mutationOptions({
+      onSuccess: async () => {
+        toast('success', c.disconnected);
+        await queryClient.invalidateQueries(trpc.oauth.connections.pathFilter());
+      },
+      onError: (error) => toast('error', errorMessage(error)),
+    }),
+  );
   const address = `${window.location.origin}/mcp`;
   const now = Date.now();
   return (
@@ -770,6 +780,43 @@ function ClaudeAccessCard() {
         <div>
           <Label htmlFor="mcp-address">{c.address}</Label>
           <CopyField id="mcp-address" value={address} />
+        </div>
+        <div>
+          <p className="mb-2 text-sm font-medium">{c.connections}</p>
+          {(connections.data ?? []).length === 0 ? (
+            <p className="text-sm text-muted">{c.noConnections}</p>
+          ) : (
+            <ul>
+              {connections.data!.map((connection) => (
+                <li
+                  key={connection.id}
+                  className="flex items-center gap-3 border-t border-border-subtle py-3 first:border-t-0 first:pt-0 last:pb-0"
+                >
+                  <div className="mr-auto min-w-0">
+                    <p className="truncate text-sm font-medium">
+                      {connection.clientName ?? sk.oauth.unnamed}
+                    </p>
+                    <p className="text-xs text-muted">
+                      {[
+                        c.connected(formatDate(connection.createdAt)),
+                        connection.lastUsedAt
+                          ? c.lastUsed(formatRecent(connection.lastUsedAt))
+                          : c.neverUsed,
+                      ].join(' · ')}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={disconnect.isPending}
+                    onClick={() => disconnect.mutate({ id: connection.id })}
+                  >
+                    {c.disconnect}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <div>
           <p className="mb-2 text-sm font-medium">{c.tokens}</p>

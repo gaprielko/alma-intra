@@ -259,6 +259,11 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     days: number,
     revoked: flag,
   },
+  /** Claude's OAuth sign-in: approved or refused, a connection revoked. */
+  oauth: {
+    approved: flag,
+    revoked: flag,
+  },
   /** What Claude did through MCP for a user: the tool's ids and counts, never its text. */
   mcp: {
     customerId: uuid,

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { All, Controller, Inject, Logger, Module, Req, Res } from '@nestjs/common';
+import { getOAuthProtectedResourceMetadataUrl } from '@modelcontextprotocol/sdk/server/auth/router.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { Request, Response } from 'express';
@@ -9,6 +10,7 @@ import { describeError } from '../logging/describe-error.js';
 import { STORAGE } from '../storage/storage.module.js';
 import type { Storage } from '../storage/storage.js';
 import { userOfAccessToken } from './access-tokens.js';
+import { userOfOAuthToken } from './oauth.js';
 import { buildMcpServer } from './server.js';
 
 /**
@@ -28,15 +30,16 @@ export class McpController {
   async handle(@Req() req: Request, @Res() res: Response) {
     const header = req.headers.authorization ?? '';
     const token = /^Bearer\s+(\S+)$/i.exec(header)?.[1];
-    const user = token ? await userOfAccessToken(this.db, token) : null;
+    // A personal token (Claude Code) or an OAuth access token (claude.ai, Desktop, Code).
+    const user = token
+      ? ((await userOfAccessToken(this.db, token)) ?? (await userOfOAuthToken(this.db, token)))
+      : null;
     if (!user) {
-      // Where a client learns how to get a token (OAuth, E7c); a personal token works meanwhile.
+      // Where a client learns how to get a token: Intra's OAuth (main.ts mounts it).
+      const metadata = getOAuthProtectedResourceMetadataUrl(new URL(`${loadEnv().WEB_URL}/mcp`));
       res
         .status(401)
-        .setHeader(
-          'WWW-Authenticate',
-          `Bearer resource_metadata="${loadEnv().WEB_URL}/.well-known/oauth-protected-resource"`,
-        )
+        .setHeader('WWW-Authenticate', `Bearer resource_metadata="${metadata}"`)
         .json({ error: 'invalid_token' });
       return;
     }

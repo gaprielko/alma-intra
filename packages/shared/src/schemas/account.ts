@@ -54,3 +54,7 @@ export const createAccessTokenSchema = z.object({
   days: z.union([z.literal(30), z.literal(90), z.literal(365)]),
 });
 export const accessTokenIdSchema = z.object({ id: z.string().uuid() });
+
+/** The consent page: the pending OAuth request it answers. */
+export const oauthRequestSchema = z.object({ request: z.string().uuid() });
+export const oauthDecisionSchema = z.object({ request: z.string().uuid(), approve: z.boolean() });

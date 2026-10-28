@@ -21,6 +21,7 @@ import { Route as AppEmailsRouteImport } from './routes/_app/emails'
 import { Route as AppFilesRouteImport } from './routes/_app/files'
 import { Route as AppOverviewRouteImport } from './routes/_app/overview'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as OauthConsentRouteImport } from './routes/oauth.consent'
 import { Route as AppCustomersIndexRouteImport } from './routes/_app/customers.index'
 import { Route as AppCustomersNewRouteImport } from './routes/_app/customers.new'
 import { Route as AppEmailsDraftsRouteImport } from './routes/_app/emails.drafts'
@@ -95,6 +96,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => AppRoute,
+} as any)
+const OauthConsentRoute = OauthConsentRouteImport.update({
+  id: '/oauth/consent',
+  path: '/oauth/consent',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppCustomersIndexRoute = AppCustomersIndexRouteImport.update({
   id: '/customers/',
@@ -188,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/files': typeof AppFilesRoute
   '/overview': typeof AppOverviewRoute
   '/settings': typeof AppSettingsRouteWithChildren
+  '/oauth/consent': typeof OauthConsentRoute
   '/customers/new': typeof AppCustomersNewRoute
   '/emails/drafts': typeof AppEmailsDraftsRoute
   '/emails/inbox': typeof AppEmailsInboxRoute
@@ -216,6 +223,7 @@ export interface FileRoutesByTo {
   '/files': typeof AppFilesRoute
   '/overview': typeof AppOverviewRoute
   '/settings': typeof AppSettingsRouteWithChildren
+  '/oauth/consent': typeof OauthConsentRoute
   '/customers/new': typeof AppCustomersNewRoute
   '/emails/drafts': typeof AppEmailsDraftsRoute
   '/emails/inbox': typeof AppEmailsInboxRoute
@@ -246,6 +254,7 @@ export interface FileRoutesById {
   '/_app/files': typeof AppFilesRoute
   '/_app/overview': typeof AppOverviewRoute
   '/_app/settings': typeof AppSettingsRouteWithChildren
+  '/oauth/consent': typeof OauthConsentRoute
   '/_app/customers/new': typeof AppCustomersNewRoute
   '/_app/emails/drafts': typeof AppEmailsDraftsRoute
   '/_app/emails/inbox': typeof AppEmailsInboxRoute
@@ -276,6 +285,7 @@ export interface FileRouteTypes {
     | '/files'
     | '/overview'
     | '/settings'
+    | '/oauth/consent'
     | '/customers/new'
     | '/emails/drafts'
     | '/emails/inbox'
@@ -304,6 +314,7 @@ export interface FileRouteTypes {
     | '/files'
     | '/overview'
     | '/settings'
+    | '/oauth/consent'
     | '/customers/new'
     | '/emails/drafts'
     | '/emails/inbox'
@@ -333,6 +344,7 @@ export interface FileRouteTypes {
     | '/_app/files'
     | '/_app/overview'
     | '/_app/settings'
+    | '/oauth/consent'
     | '/_app/customers/new'
     | '/_app/emails/drafts'
     | '/_app/emails/inbox'
@@ -358,6 +370,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   OdhlasenieRoute: typeof OdhlasenieRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  OauthConsentRoute: typeof OauthConsentRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -445,6 +458,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings'
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/oauth/consent': {
+      id: '/oauth/consent'
+      path: '/oauth/consent'
+      fullPath: '/oauth/consent'
+      preLoaderRoute: typeof OauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_app/customers/': {
       id: '/_app/customers/'
@@ -630,6 +650,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   OdhlasenieRoute: OdhlasenieRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  OauthConsentRoute: OauthConsentRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
