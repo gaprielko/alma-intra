@@ -28,6 +28,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectItem } from '@/components/ui/select';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
 import { formatSize } from '@/lib/files';
@@ -263,6 +264,25 @@ function RecipientsStep({ campaign, onNext }: { campaign: Campaign; onNext: () =
         ),
       ),
     );
+  const queryClient = useQueryClient();
+  const segments = useQuery(trpc.segment.list.queryOptions());
+  const addSegment = async (id: string) => {
+    if (!id) return;
+    try {
+      const found = await queryClient.fetchQuery({
+        ...trpc.segment.customerIds.queryOptions({ id }),
+        staleTime: 0,
+      });
+      const added = found.ids.filter((customerId) => !customerIds.includes(customerId));
+      setCustomerIds((ids) => [...new Set([...ids, ...found.ids])].slice(0, 500));
+      toast(
+        found.capped ? 'warning' : 'success',
+        found.capped ? sk.segments.capped : sk.segments.added(added.length),
+      );
+    } catch (error) {
+      toast('error', errorMessage(error));
+    }
+  };
   const addCustomer = (id: string) => {
     if (customerIds.includes(id)) return;
     setCustomerIds((ids) => [...ids, id]);
@@ -314,34 +334,52 @@ function RecipientsStep({ campaign, onNext }: { campaign: Campaign; onNext: () =
           </Button>
         </div>
       </div>
-      <div className="relative max-w-md">
-        <label className="flex h-10 items-center gap-2 rounded-[10px] border border-border bg-white px-3 focus-within:border-primary">
-          <Search className="size-4 shrink-0 text-tertiary" aria-hidden />
-          <span className="sr-only">{r.searchCustomers}</span>
-          <input
-            value={typed}
-            onChange={(event) => setTyped(event.target.value)}
-            placeholder={r.addCustomers}
-            className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-tertiary"
-          />
-        </label>
-        {typed.trim().length >= 2 && found.data ? (
-          <ul className="absolute inset-x-0 top-full z-20 mt-1 max-h-72 overflow-y-auto rounded-xl border border-border-subtle bg-white p-1 shadow-floating">
-            {found.data.items.map((customer) => (
-              <li key={customer.id}>
-                <button
-                  type="button"
-                  onClick={() => addCustomer(customer.id)}
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-hover"
-                >
-                  <Plus className="size-4 text-primary-text" aria-hidden />
-                  <span className="truncate">{customer.name}</span>
-                  <span className="ml-auto shrink-0 text-xs text-muted">{customer.city}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+      <div className="flex flex-wrap items-start gap-3">
+        {(segments.data ?? []).length > 0 ? (
+          <div className="w-64">
+            <Select
+              value=""
+              aria-label={sk.segments.fromSegment}
+              onChange={(id) => void addSegment(id)}
+            >
+              <SelectItem value="">{sk.segments.fromSegment}</SelectItem>
+              {segments.data!.map((segment) => (
+                <SelectItem key={segment.id} value={segment.id}>
+                  {segment.name}
+                </SelectItem>
+              ))}
+            </Select>
+          </div>
         ) : null}
+        <div className="relative w-full max-w-md">
+          <label className="flex h-10 items-center gap-2 rounded-[10px] border border-border bg-white px-3 focus-within:border-primary">
+            <Search className="size-4 shrink-0 text-tertiary" aria-hidden />
+            <span className="sr-only">{r.searchCustomers}</span>
+            <input
+              value={typed}
+              onChange={(event) => setTyped(event.target.value)}
+              placeholder={r.addCustomers}
+              className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-tertiary"
+            />
+          </label>
+          {typed.trim().length >= 2 && found.data ? (
+            <ul className="absolute inset-x-0 top-full z-20 mt-1 max-h-72 overflow-y-auto rounded-xl border border-border-subtle bg-white p-1 shadow-floating">
+              {found.data.items.map((customer) => (
+                <li key={customer.id}>
+                  <button
+                    type="button"
+                    onClick={() => addCustomer(customer.id)}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-hover"
+                  >
+                    <Plus className="size-4 text-primary-text" aria-hidden />
+                    <span className="truncate">{customer.name}</span>
+                    <span className="ml-auto shrink-0 text-xs text-muted">{customer.city}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
       </div>
 
       {customers.length === 0 ? (

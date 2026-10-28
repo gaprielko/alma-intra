@@ -259,6 +259,21 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     days: number,
     revoked: flag,
   },
+  /** A saved segment: shared or not, which filters it holds (names only, never their values). */
+  segment: {
+    shared: flag,
+    deleted: flag,
+    filters: subsetOf([
+      'search',
+      'status',
+      'kind',
+      'contactTypeId',
+      'productId',
+      'region',
+      'tagId',
+      'ownerUserId',
+    ]),
+  },
   /** A document made from a template: which template, for whom. Never the fields typed. */
   document: {
     templateId: uuid,

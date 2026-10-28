@@ -249,3 +249,16 @@ export function personName(p: {
   const core = [p.titleBefore, p.firstName, p.lastName].filter(Boolean).join(' ');
   return p.titleAfter ? `${core}, ${p.titleAfter}` : core;
 }
+
+/** A saved segment (D-7): the list's filters under a name, for oneself or shared. */
+export const segmentSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  filters: customerFilterSchema,
+  shared: z.boolean().default(false),
+});
+export const updateSegmentSchema = z.object({
+  id: idSchema,
+  name: z.string().trim().min(1).max(80),
+  shared: z.boolean(),
+});
+export const segmentIdSchema = z.object({ id: idSchema });

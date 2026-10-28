@@ -868,3 +868,14 @@ export async function formOptions(db: Db | Tx) {
     users: people,
   };
 }
+
+/** The live customers a filter finds, by name, at most `limit` (a segment's recipients). */
+export async function customerIdsMatching(db: Db | Tx, filter: CustomerFilter, limit: number) {
+  const rows = await db
+    .select({ id: customers.id })
+    .from(customers)
+    .where(and(...filterWhere(filter), ...statusWhere(filter.status)))
+    .orderBy(collated(customers.name), asc(customers.id))
+    .limit(limit);
+  return rows.map((row) => row.id);
+}
