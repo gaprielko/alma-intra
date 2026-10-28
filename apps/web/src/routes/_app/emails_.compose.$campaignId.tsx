@@ -28,9 +28,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectItem } from '@/components/ui/select';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
 import { formatSize } from '@/lib/files';
+import { formatDateTime } from '@/lib/format';
 import { loadFailed } from '@/lib/query-view';
 import { useSession } from '@/lib/session';
 import { type RouterOutputs, trpc } from '@/lib/trpc';
@@ -263,6 +265,25 @@ function RecipientsStep({ campaign, onNext }: { campaign: Campaign; onNext: () =
         ),
       ),
     );
+  const queryClient = useQueryClient();
+  const segments = useQuery(trpc.segment.list.queryOptions());
+  const addSegment = async (id: string) => {
+    if (!id) return;
+    try {
+      const found = await queryClient.fetchQuery({
+        ...trpc.segment.customerIds.queryOptions({ id }),
+        staleTime: 0,
+      });
+      const added = found.ids.filter((customerId) => !customerIds.includes(customerId));
+      setCustomerIds((ids) => [...new Set([...ids, ...found.ids])].slice(0, 500));
+      toast(
+        found.capped ? 'warning' : 'success',
+        found.capped ? sk.segments.capped : sk.segments.added(added.length),
+      );
+    } catch (error) {
+      toast('error', errorMessage(error));
+    }
+  };
   const addCustomer = (id: string) => {
     if (customerIds.includes(id)) return;
     setCustomerIds((ids) => [...ids, id]);
@@ -314,34 +335,52 @@ function RecipientsStep({ campaign, onNext }: { campaign: Campaign; onNext: () =
           </Button>
         </div>
       </div>
-      <div className="relative max-w-md">
-        <label className="flex h-10 items-center gap-2 rounded-[10px] border border-border bg-white px-3 focus-within:border-primary">
-          <Search className="size-4 shrink-0 text-tertiary" aria-hidden />
-          <span className="sr-only">{r.searchCustomers}</span>
-          <input
-            value={typed}
-            onChange={(event) => setTyped(event.target.value)}
-            placeholder={r.addCustomers}
-            className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-tertiary"
-          />
-        </label>
-        {typed.trim().length >= 2 && found.data ? (
-          <ul className="absolute inset-x-0 top-full z-20 mt-1 max-h-72 overflow-y-auto rounded-xl border border-border-subtle bg-white p-1 shadow-floating">
-            {found.data.items.map((customer) => (
-              <li key={customer.id}>
-                <button
-                  type="button"
-                  onClick={() => addCustomer(customer.id)}
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-hover"
-                >
-                  <Plus className="size-4 text-primary-text" aria-hidden />
-                  <span className="truncate">{customer.name}</span>
-                  <span className="ml-auto shrink-0 text-xs text-muted">{customer.city}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+      <div className="flex flex-wrap items-start gap-3">
+        {(segments.data ?? []).length > 0 ? (
+          <div className="w-64">
+            <Select
+              value=""
+              aria-label={sk.segments.fromSegment}
+              onChange={(id) => void addSegment(id)}
+            >
+              <SelectItem value="">{sk.segments.fromSegment}</SelectItem>
+              {segments.data!.map((segment) => (
+                <SelectItem key={segment.id} value={segment.id}>
+                  {segment.name}
+                </SelectItem>
+              ))}
+            </Select>
+          </div>
         ) : null}
+        <div className="relative w-full max-w-md">
+          <label className="flex h-10 items-center gap-2 rounded-[10px] border border-border bg-white px-3 focus-within:border-primary">
+            <Search className="size-4 shrink-0 text-tertiary" aria-hidden />
+            <span className="sr-only">{r.searchCustomers}</span>
+            <input
+              value={typed}
+              onChange={(event) => setTyped(event.target.value)}
+              placeholder={r.addCustomers}
+              className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-tertiary"
+            />
+          </label>
+          {typed.trim().length >= 2 && found.data ? (
+            <ul className="absolute inset-x-0 top-full z-20 mt-1 max-h-72 overflow-y-auto rounded-xl border border-border-subtle bg-white p-1 shadow-floating">
+              {found.data.items.map((customer) => (
+                <li key={customer.id}>
+                  <button
+                    type="button"
+                    onClick={() => addCustomer(customer.id)}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-hover"
+                  >
+                    <Plus className="size-4 text-primary-text" aria-hidden />
+                    <span className="truncate">{customer.name}</span>
+                    <span className="ml-auto shrink-0 text-xs text-muted">{customer.city}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
       </div>
 
       {customers.length === 0 ? (
@@ -1075,6 +1114,14 @@ function ReviewStep({ campaign, onBack }: { campaign: Campaign; onBack: () => vo
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [testAt, setTestAt] = useState<string | null>(null);
+  const [when, setWhen] = useState<'now' | 'later'>('now');
+  // Tomorrow at 8:00 is the usual answer to „when“.
+  const [day, setDay] = useState(() => {
+    const tomorrow = new Date(Date.now() + 86_400_000);
+    return `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+  });
+  const [time, setTime] = useState('08:00');
+  const scheduledAt = day && time ? new Date(`${day}T${time}`) : null;
   const first = campaign.messages.find((m) => !m.skipReason);
   const preview = useQuery({
     ...trpc.campaign.preview.queryOptions({ messageId: first?.id ?? '' }),
@@ -1095,7 +1142,12 @@ function ReviewStep({ campaign, onBack }: { campaign: Campaign; onBack: () => vo
   const send = useMutation(
     trpc.campaign.send.mutationOptions({
       onSuccess: async (result) => {
-        toast('success', t.review.sent(result.queued));
+        toast(
+          'success',
+          result.scheduledAt
+            ? t.review.scheduled(formatDateTime(result.scheduledAt))
+            : t.review.sent(result.queued),
+        );
         await queryClient.invalidateQueries(trpc.campaign.pathFilter());
         await navigate({ to: '/emails/sent/$campaignId', params: { campaignId: campaign.id } });
       },
@@ -1165,10 +1217,51 @@ function ReviewStep({ campaign, onBack }: { campaign: Campaign; onBack: () => vo
         </section>
         <section className="rounded-2xl border border-border-subtle bg-white p-5 shadow-rest">
           <h2 className="text-[15px] font-semibold">{r.when}</h2>
-          <div className="mt-2 rounded-xl border border-primary bg-[#f0f8f7] px-3 py-2.5">
-            <p className="text-sm font-semibold">{r.now}</p>
-            <p className="text-[13px] text-muted">{r.nowHint}</p>
+          <div role="radiogroup" aria-label={r.when} className="mt-2 space-y-2">
+            {(['now', 'later'] as const).map((choice) => (
+              <button
+                key={choice}
+                type="button"
+                role="radio"
+                aria-checked={when === choice}
+                onClick={() => setWhen(choice)}
+                className={cn(
+                  'block w-full rounded-xl border px-3 py-2.5 text-left',
+                  when === choice ? 'border-primary bg-[#f0f8f7]' : 'border-border hover:bg-hover',
+                )}
+              >
+                <span className="block text-sm font-semibold">{r[choice]}</span>
+                <span className="block text-[13px] text-muted">
+                  {choice === 'now' ? r.nowHint : r.laterHint}
+                </span>
+              </button>
+            ))}
           </div>
+          {when === 'later' ? (
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <div>
+                <Label htmlFor="schedule-date">{r.date}</Label>
+                <Input
+                  id="schedule-date"
+                  type="date"
+                  className="mt-1.5"
+                  value={day}
+                  onChange={(event) => setDay(event.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="schedule-time">{r.time}</Label>
+                <Input
+                  id="schedule-time"
+                  type="time"
+                  step={300}
+                  className="mt-1.5"
+                  value={time}
+                  onChange={(event) => setTime(event.target.value)}
+                />
+              </div>
+            </div>
+          ) : null}
         </section>
         <div className="flex gap-2">
           <Button variant="ghost" onClick={onBack}>
@@ -1176,11 +1269,22 @@ function ReviewStep({ campaign, onBack }: { campaign: Campaign; onBack: () => vo
           </Button>
           <Button
             className="flex-1"
-            disabled={send.isPending || missing > 0 || sendable.length === 0}
-            onClick={() => send.mutate({ id: campaign.id })}
+            disabled={
+              send.isPending ||
+              missing > 0 ||
+              sendable.length === 0 ||
+              (when === 'later' && !scheduledAt)
+            }
+            onClick={() =>
+              send.mutate(
+                when === 'later' && scheduledAt
+                  ? { id: campaign.id, at: scheduledAt.toISOString() }
+                  : { id: campaign.id },
+              )
+            }
           >
             <Send className="size-4" aria-hidden />
-            {r.send(sendable.length)}
+            {when === 'later' ? r.schedule(sendable.length) : r.send(sendable.length)}
           </Button>
         </div>
       </div>

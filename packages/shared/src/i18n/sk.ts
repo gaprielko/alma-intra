@@ -1222,6 +1222,22 @@ export const sk = {
   },
   overview: {
     title: 'Prehľad',
+    statuses: 'Zákazníci podľa stavu',
+    scheduled: 'Naplánované e-maily',
+    scheduledLine: (when: string, recipients: number) =>
+      `${when} · ${plural(recipients, 'adresát', 'adresáti', 'adresátov')}`,
+    campaigns: 'Posledné odoslané e-maily',
+    allSent: 'Všetky odoslané',
+    noCampaigns: 'Zatiaľ žiadne odoslané e-maily.',
+    counts: (recipients: number, delivered: number, replies: number) =>
+      `${plural(recipients, 'adresát', 'adresáti', 'adresátov')}, doručené ${delivered}, odpovede ${replies}`,
+    bounced: (n: number) => `nedoručené ${n}`,
+    unassigned: (n: number) =>
+      `${plural(n, 'prijatý e-mail čaká', 'prijaté e-maily čakajú', 'prijatých e-mailov čaká')} na priradenie`,
+    open: 'Otvoriť',
+    stale: (days: number) => `Moje kontakty bez kontaktu viac ako ${days} dní`,
+    noStale: 'Všetky vaše kontakty majú nedávny kontakt.',
+    never: 'ešte nikdy',
   },
   emails: {
     title: 'E-maily',
@@ -1233,6 +1249,29 @@ export const sk = {
       scheduled: 'Naplánované a koncepty',
       drafts: 'Koncepty',
       templates: 'Šablóny',
+    },
+  },
+  segments: {
+    title: 'Segmenty',
+    empty: 'Zatiaľ žiadne segmenty.',
+    sharedBy: (name: string) => `Zdieľa ${name}`,
+    sharedLabel: 'Zdieľaný s kolegami',
+    delete: (name: string) => `Odstrániť segment ${name}`,
+    deleted: 'Segment je odstránený.',
+    save: 'Uložiť filtre ako segment',
+    saveNeedsFilter: 'Najprv nastavte filtre, potom ich uložte ako segment',
+    saved: 'Segment je uložený.',
+    fromSegment: 'Pridať zo segmentu',
+    added: (n: number) => `Pridané zo segmentu: ${plural(n, 'kontakt', 'kontakty', 'kontaktov')}.`,
+    capped: 'Segment má viac kontaktov, pridalo sa prvých 500.',
+    dialog: {
+      title: 'Nový segment',
+      lead: 'Segment si pamätá filtre, nie zoznam. Nový kontakt, ktorý im vyhovuje, doň patrí hneď.',
+      name: 'Názov',
+      namePlaceholder: 'Napríklad ADOS v Košickom kraji',
+      shared: 'Zdieľať s kolegami',
+      sharedHint: 'Kolegovia ho uvidia a môžu ho použiť, meniť ho môžete len vy.',
+      submit: 'Uložiť segment',
     },
   },
   documents: {
@@ -1660,7 +1699,13 @@ export const sk = {
       when: 'Kedy odoslať',
       now: 'Hneď',
       nowHint: 'Odošle sa do niekoľkých minút.',
+      later: 'Naplánovať',
+      laterHint: 'Odošle sa v zvolený deň a čas. Dovtedy sa dá zrušiť.',
+      date: 'Deň',
+      time: 'Čas',
       send: (n: number) => `Odoslať ${plural(n, 'e-mail', 'e-maily', 'e-mailov')}`,
+      schedule: (n: number) => `Naplánovať ${plural(n, 'e-mail', 'e-maily', 'e-mailov')}`,
+      scheduled: (when: string) => `E-mail je naplánovaný na ${when}.`,
       sent: (n: number) => `Odosiela sa ${plural(n, 'e-mail', 'e-maily', 'e-mailov')}.`,
     },
     list: {
@@ -1679,10 +1724,13 @@ export const sk = {
       },
       noSubject: 'Bez predmetu',
       sending: 'Odosiela sa',
+      scheduled: (when: string) => `Naplánované na ${when}`,
       continue: 'Pokračovať',
     },
     detail: {
       back: 'Odoslané',
+      unschedule: 'Zrušiť naplánovanie',
+      unscheduled: 'Naplánovanie je zrušené, e-mail je znova koncept.',
       meta: (sender: string, when: string, template: string | null) =>
         [sender, when, template ? `šablóna ${template}` : null].filter(Boolean).join(' · '),
       stats: {
@@ -1723,6 +1771,8 @@ export const sk = {
     errors: {
       NOT_FOUND: 'E-mail sa nenašiel.',
       NOT_DRAFT: 'E-mail už bol odoslaný.',
+      NOT_SCHEDULED: 'E-mail už nie je naplánovaný: odosiela sa alebo bol odoslaný.',
+      BAD_SCHEDULE: 'Čas odoslania musí byť aspoň 5 minút dopredu a najviac 90 dní.',
       CUSTOMER_NOT_FOUND: 'Kontakt sa nenašiel.',
       CONTACT_NOT_OF_CUSTOMER: 'Kontaktná osoba nepatrí k tomuto kontaktu.',
       TEMPLATE_NOT_FOUND: 'Šablóna sa nenašla alebo je neaktívna.',

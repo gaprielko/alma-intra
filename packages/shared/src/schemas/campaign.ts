@@ -39,6 +39,15 @@ export const createCampaignSchema = z.object({
 
 export const campaignIdSchema = z.object({ id: idSchema });
 
+/** How far ahead an e-mail can be scheduled (D-12). */
+export const MAX_SCHEDULE_DAYS = 90;
+
+/** „Odoslať“: now, or at a time (an ISO instant at least a few minutes ahead). */
+export const sendCampaignSchema = z.object({
+  id: idSchema,
+  at: z.string().datetime({ offset: true }).optional(),
+});
+
 /** A recipient: a contact of an organization, or a private person (no contact). */
 export const recipientSchema = z.object({
   customerId: idSchema,

@@ -821,6 +821,9 @@ export async function purgeFiles(db: Db, storage: Storage) {
         // Nor one a sent e-mail carried (spec 7.2).
         sql`not exists (select 1 from file_versions v join message_attachments ma
           on ma.file_version_id = v.id where v.file_id = ${files.id})`,
+        // Nor one a draft e-mail still lists: the draft would point at nothing (and the
+        // foreign key refuses the delete, which stopped the whole purge).
+        sql`not exists (select 1 from campaign_attachments ca where ca.file_id = ${files.id})`,
       ),
     );
   const stale = await db

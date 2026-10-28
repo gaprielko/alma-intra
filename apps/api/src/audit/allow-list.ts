@@ -252,12 +252,29 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     edited: flag,
     deleted: flag,
     test: flag,
+    scheduled: flag,
+    unscheduled: flag,
     fields: subsetOf(['content']),
   },
   /** Personal access tokens for Claude: how long one lives, that one was revoked. Never a value. */
   access_token: {
     days: number,
     revoked: flag,
+  },
+  /** A saved segment: shared or not, which filters it holds (names only, never their values). */
+  segment: {
+    shared: flag,
+    deleted: flag,
+    filters: subsetOf([
+      'search',
+      'status',
+      'kind',
+      'contactTypeId',
+      'productId',
+      'region',
+      'tagId',
+      'ownerUserId',
+    ]),
   },
   /** A document made from a template: which template, for whom. Never the fields typed. */
   document: {

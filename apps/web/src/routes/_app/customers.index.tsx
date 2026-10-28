@@ -37,6 +37,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectItem } from '@/components/ui/select';
 import { RowLink, TableCell, TableRow } from '@/components/ui/table';
+import { SegmentsMenu } from '@/components/customers/segments-menu';
 import { useToast } from '@/components/ui/toast';
 import { datedFilename, downloadText } from '@/lib/download';
 import { errorMessage } from '@/lib/errors';
@@ -253,6 +254,23 @@ function CustomersPage() {
                   />
                 </label>
                 <div className="flex flex-wrap gap-2">
+                  <SegmentsMenu
+                    filter={Object.fromEntries(
+                      Object.entries(activeFilter).filter(([key]) => key !== 'search'),
+                    )}
+                    onApply={(segment) =>
+                      setSearch({
+                        q: segment.search,
+                        status: segment.status,
+                        kind: segment.kind,
+                        contactType: segment.contactTypeId,
+                        product: segment.productId,
+                        region: segment.region,
+                        tag: segment.tagId,
+                        owner: segment.ownerUserId,
+                      })
+                    }
+                  />
                   <FilterMenu
                     label={t.filters.contactType}
                     value={params.contactType}
