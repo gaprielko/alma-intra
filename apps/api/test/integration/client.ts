@@ -71,14 +71,18 @@ export function browser(baseUrl: string) {
     };
   };
 
-  /** Signs a seeded person in: password, then the code of the seed's second factor. */
-  const signIn = async (email: string) => {
+  /**
+   * Signs a seeded person in: password, then the code of the seed's second factor. A code works
+   * once: a second sign-in of the same person within 30 seconds takes the next window's code
+   * (`windowOffset: 1`).
+   */
+  const signIn = async (email: string, windowOffset = 0) => {
     const first = await call<{ secondStep: { kind: string; challenge: string } | null }>(
       'auth.login',
       { email, password: SEED_PASSWORD },
     );
     if (!first.data?.secondStep) throw new Error(`no second step for ${email}: ${first.code}`);
-    const code = totpAt(base32Decode(SEED_TOTP_SECRET), Date.now());
+    const code = totpAt(base32Decode(SEED_TOTP_SECRET), Date.now() + windowOffset * 30_000);
     const second = await call('auth.secondFactorVerify', {
       challenge: first.data.secondStep.challenge,
       code,
