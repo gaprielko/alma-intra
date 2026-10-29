@@ -100,6 +100,52 @@ describe('files', () => {
     expect(refused.message).toBe('FILE_NOT_FOUND');
   });
 
+  it('copies a file with its versions, and a folder with what is in it', async () => {
+    const file = await upload('Cennik 2026-10-01.txt', text('v1'), 'text/plain');
+    const asked = await jana.call<{ versionId: string; fileId: string }>('file.requestVersion', {
+      fileId: file.fileId,
+      name: 'Cennik 2026-10-20.txt',
+      size: 2,
+    });
+    await bucket.storage.put(
+      storageKey(file.fileId, asked.data.versionId),
+      text('v2'),
+      'text/plain',
+    );
+    await jana.call('file.confirmUpload', { versionId: asked.data.versionId });
+
+    const target = await jana.call<{ id: string }>('file.createFolder', {
+      parentId: COMPANY_ROOT_FOLDER_ID,
+      name: 'Kópie',
+    });
+    const copy = await jana.call<{ fileId: string }>('file.copyFile', {
+      id: file.fileId,
+      folderId: target.data.id,
+    });
+    const detail = await jana.call<{
+      name: string;
+      versions: { number: number; documentDate: string }[];
+    }>('file.get', { id: copy.data.fileId });
+    expect(detail.data.name).toBe('Cennik.txt');
+    expect(detail.data.versions.map((v) => [v.number, v.documentDate])).toEqual([
+      [2, '2026-10-20'],
+      [1, '2026-10-01'],
+    ]);
+
+    const folderCopy = await jana.call<{ folderId: string; files: number }>('file.copyFolder', {
+      id: target.data.id,
+      parentId: folderId,
+    });
+    expect(folderCopy.data.files).toBe(1);
+    const inside = await jana.call<{ files: { name: string }[] }>('file.contents', {
+      folderId: folderCopy.data.folderId,
+    });
+    expect(inside.data.files.map((f) => f.name)).toEqual(['Cennik.txt']);
+    expect(
+      (await jana.call('file.copyFolder', { id: target.data.id, parentId: target.data.id })).code,
+    ).toBeDefined();
+  });
+
   it('moves a file to the trash and back', async () => {
     const file = await upload('Kôš.txt', text('x'), 'text/plain');
     await jana.call('file.trashFile', { id: file.fileId });

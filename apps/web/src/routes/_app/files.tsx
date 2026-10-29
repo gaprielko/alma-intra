@@ -870,7 +870,7 @@ function ContentsSection({
                 {searched ? (
                   <button
                     type="button"
-                    className="block text-xs text-muted hover:text-primary-text hover:underline"
+                    className="block text-left text-xs text-muted hover:text-primary-text hover:underline"
                     onClick={(event) => {
                       event.stopPropagation();
                       onOpenFolder(file.folderId);
@@ -882,10 +882,8 @@ function ContentsSection({
               </div>
             </div>
           </TableCell>
-          <TableCell className="text-xs leading-[18px] text-tertiary">
-            <p className="whitespace-nowrap">
-              {t.dateLine(file.documentDate ? formatDate(file.documentDate) : sk.common.none)}
-            </p>
+          <TableCell className="text-xs leading-[18px] whitespace-nowrap text-tertiary">
+            <p>{t.dateLine(file.documentDate ? formatDate(file.documentDate) : sk.common.none)}</p>
             <p>
               {t.changedLine(formatRecent(file.changedAt))} ·{' '}
               <ChangedBy name={file.changedBy} via={file.changedVia} />
