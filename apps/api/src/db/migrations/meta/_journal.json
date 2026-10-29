@@ -225,6 +225,13 @@
       "when": 1793300574371,
       "tag": "0031_establishments",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793301786206,
+      "tag": "0032_products",
+      "breakpoints": true
     }
   ]
 }

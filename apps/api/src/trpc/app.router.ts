@@ -12,6 +12,7 @@ import { oauthRouter } from './oauth.router.js';
 import { overviewRouter } from './overview.router.js';
 import { segmentRouter } from './segment.router.js';
 import { campaignRouter, unsubscribeRouter } from './campaign.router.js';
+import { productRouter } from './product.router.js';
 import { personRouter } from './person.router.js';
 import { templateRouter } from './template.router.js';
 import { router } from './trpc.js';
@@ -23,6 +24,7 @@ export const appRouter = router({
   account: accountRouter,
   user: userRouter,
   customer: customerRouter,
+  product: productRouter,
   person: personRouter,
   codeList: codeListRouter,
   file: fileRouter,

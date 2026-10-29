@@ -1,5 +1,7 @@
 import {
   CUSTOMER_KINDS,
+  ITEM_BILLINGS,
+  PRODUCT_PERIODS,
   ORGANIZATION_ROLES,
   CUSTOMER_STATUSES,
   EMAIL_STATUSES,
@@ -13,6 +15,7 @@ import {
   check,
   index,
   integer,
+  numeric,
   pgEnum,
   pgTable,
   primaryKey,
@@ -44,10 +47,79 @@ export const codeListColumns = () => ({
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-/** What Alma offers a record (ADOS, DOS, Stacionár, …): none, one or several. */
-export const products = pgTable('products', codeListColumns(), (t) => [
-  uniqueIndex('products_name_unique').on(sql`lower(${t.name})`),
-]);
+export const productPeriod = pgEnum('product_period', PRODUCT_PERIODS);
+export const itemBilling = pgEnum('item_billing', ITEM_BILLINGS);
+
+/** EUR to the cent, read as a number. */
+const money = (name: string) => numeric(name, { precision: 10, scale: 2, mode: 'number' });
+
+/**
+ * What a customer buys (docs/products.md): ADOS, DOS, … with its base price for a period and its
+ * price list. `active` is „Ponúka sa“; off, it is kept for the customers who have it.
+ */
+export const products = pgTable(
+  'products',
+  {
+    ...codeListColumns(),
+    description: text('description'),
+    /** Without and with VAT, both kept so what was typed stays exact (R-9); NULL: not set yet. */
+    basePrice: money('base_price'),
+    basePriceGross: money('base_price_gross'),
+    period: productPeriod('period').notNull().default('month'),
+    /** Every workload is rounded up to this many percent (R-14). */
+    workloadStep: integer('workload_step').notNull().default(50),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('products_name_unique').on(sql`lower(${t.name})`),
+    check('products_workload_step', sql`${t.workloadStep} between 1 and 100`),
+  ],
+);
+
+/** The shared catalog of what price lists count or add (R-2): „Admin prístup“, „Sestra“, … */
+export const productItems = pgTable(
+  'product_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: text('name').notNull(),
+    /** The word for one („prístup“, „sestra“). */
+    unit: text('unit'),
+    description: text('description'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('product_items_name_unique').on(sql`lower(${t.name})`)],
+);
+
+/** One product's price list (R-3): an item with this product's numbers. */
+export const productPriceItems = pgTable(
+  'product_price_items',
+  {
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    itemId: uuid('item_id')
+      .notNull()
+      .references(() => productItems.id),
+    included: integer('included').notNull().default(0),
+    unitPrice: money('unit_price'),
+    unitPriceGross: money('unit_price_gross'),
+    max: integer('max'),
+    billing: itemBilling('billing').notNull().default('recurring'),
+    byWorkload: boolean('by_workload').notNull().default(false),
+    position: integer('position').notNull().default(0),
+  },
+  (t) => [
+    primaryKey({ columns: [t.productId, t.itemId] }),
+    index('product_price_items_item_idx').on(t.itemId),
+  ],
+);
+
+/** Nastavenia › Ceny a DPH: one row (R-9). */
+export const pricingSettings = pgTable('pricing_settings', {
+  id: integer('id').primaryKey().default(1),
+  vatRate: numeric('vat_rate', { precision: 5, scale: 2, mode: 'number' }).notNull().default(23),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
 
 /** Where a customer came from: a referral, a conference, the web. */
 export const organizationSources = pgTable('organization_sources', codeListColumns(), (t) => [
