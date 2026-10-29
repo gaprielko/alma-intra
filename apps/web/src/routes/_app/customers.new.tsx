@@ -35,7 +35,10 @@ function NewCustomerPage() {
   );
   return (
     <div className="min-w-0">
-      <PageHeader title={t.form.newTitle} back={{ to: '/customers', label: t.form.back }} />
+      <PageHeader
+        title={t.form.newTitle}
+        back={{ to: '/organizations/customers', label: t.form.back }}
+      />
       <div className="max-w-[1100px] px-7 pt-5 pb-10">
         <CustomerForm
           initial={emptyCustomer(userId)}
@@ -43,7 +46,7 @@ function NewCustomerPage() {
           pending={create.isPending}
           serverError={create.error}
           onSubmit={(input) => create.mutate(input)}
-          onCancel={() => void navigate({ to: '/customers' })}
+          onCancel={() => void navigate({ to: '/organizations/customers' })}
         />
       </div>
     </div>

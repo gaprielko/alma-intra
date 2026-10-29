@@ -219,7 +219,7 @@ export const sk = {
     nav: {
       label: 'Hlavná navigácia',
       overview: 'Prehľad',
-      customers: 'Kontakty',
+      customers: 'Organizácie',
       emails: 'E-maily',
       files: 'Súbory',
       settings: 'Nastavenia',
@@ -566,6 +566,63 @@ export const sk = {
         shownOnce: 'Token sa zobrazuje iba teraz. Uložte si ho, potom ho už neuvidíte.',
         command: 'Príkaz pre Claude Code',
         done: 'Hotovo',
+      },
+    },
+  },
+  /** Organizácie: the tabs Zákazníci, Partneri and Kontakty (docs/contacts-redesign.md). */
+  organizations: {
+    title: 'Organizácie',
+    subtitle: 'Zákazníci, partneri a ich kontaktné osoby',
+    tabs: { customers: 'Zákazníci', partners: 'Partneri', contacts: 'Kontakty' },
+    newCustomer: 'Nový zákazník',
+    newPartner: 'Nový partner',
+    newPerson: 'Nová osoba',
+    privatePerson: 'Súkromná osoba',
+    partnerColumn: 'Partner',
+    customerColumn: 'Zákazník',
+    statusFilter: 'Stav',
+    picked: (labels: string[]) =>
+      labels.length <= 2 ? labels.join(', ') : `${labels.length} vybrané`,
+    partnersEmpty: {
+      title: 'Zatiaľ žiadni partneri',
+      text: 'Pridajte organizácie a osoby, s ktorými spolupracujete: dodávateľov, inštitúcie, konzultantov.',
+    },
+    customersEmpty: {
+      title: 'Zatiaľ žiadni zákazníci',
+      text: 'Pridajte prvého zákazníka. Kontaktné osoby, e-maily a súbory sa budú viazať naňho.',
+    },
+    customersSelected: (n: number) =>
+      n === 1
+        ? '1 vybraný zákazník'
+        : n <= 4
+          ? `${n} vybraní zákazníci`
+          : `${n} vybraných zákazníkov`,
+    partnersSelected: (n: number) =>
+      n === 1 ? '1 vybraný partner' : n <= 4 ? `${n} vybraní partneri` : `${n} vybraných partnerov`,
+    persons: {
+      searchLabel: 'Hľadať osobu',
+      searchPlaceholder: 'Meno, e-mail, telefón alebo organizácia',
+      link: 'Väzba',
+      links: { customer: 'U zákazníkov', partner: 'U partnerov', none: 'Bez organizácie' },
+      organization: 'Organizácia',
+      emailState: 'Stav e-mailu',
+      emailStates: { unsubscribed: 'Odhlásení zo zasielania', invalid: 'Neplatný e-mail' },
+      columns: {
+        person: 'Osoba',
+        organizations: 'Organizácia a pozícia',
+        contact: 'E-mail a telefón',
+        lastContact: 'Posledný kontakt',
+      },
+      roles: { customer: 'Zákazník', partner: 'Partner' },
+      self: (role: string) => `Súkromná osoba · ${role}`,
+      noOrganization: 'Bez organizácie',
+      unsubscribed: 'Odhlásená zo zasielania',
+      invalid: 'Neplatný e-mail',
+      selected: (n: number) =>
+        n === 1 ? '1 vybraná osoba' : n <= 4 ? `${n} vybrané osoby` : `${n} vybraných osôb`,
+      empty: {
+        title: 'Zatiaľ žiadne osoby',
+        text: 'Osoby pribudnú s kontaktnými osobami zákazníkov a partnerov, alebo ich pridajte samostatne.',
       },
     },
   },

@@ -142,8 +142,8 @@ function StatusCard({ statuses }: { statuses: Record<string, number> }) {
         {keys.map((key) => (
           <Link
             key={key}
-            to="/customers"
-            search={{ status: key }}
+            to="/organizations/customers"
+            search={{ status: [key] }}
             className="rounded-xl border border-border-subtle p-3 transition-colors hover:bg-hover"
           >
             <p className="text-[22px] leading-7 font-bold tabular-nums">{statuses[key] ?? 0}</p>

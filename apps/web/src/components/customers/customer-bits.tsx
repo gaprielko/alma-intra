@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { Badge, type BadgeTone } from '@/components/ui/badge';
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
@@ -172,6 +173,78 @@ function MenuItems<T extends string>({
         </DropdownMenuItem>
       ))}
     </DropdownMenuContent>
+  );
+}
+
+/**
+ * A dropdown filter of several values (D-12): ticking keeps the menu open, the button names what
+ * is picked („Stav: Oslovený, Má záujem“, or how many), the cross clears it.
+ */
+export function MultiFilterMenu<T extends string>({
+  label,
+  values,
+  options,
+  onChange,
+}: {
+  label: string;
+  values: readonly T[] | undefined;
+  options: readonly { value: T; label: string; count?: number | undefined }[];
+  onChange: (values: T[] | undefined) => void;
+}) {
+  const picked = options.filter((o) => values?.includes(o.value));
+  const toggle = (value: T) => {
+    const next = values?.includes(value)
+      ? values.filter((v) => v !== value)
+      : [...(values ?? []), value];
+    onChange(next.length > 0 ? next : undefined);
+  };
+  const items = (
+    <DropdownMenuContent align="start" className="max-h-80 min-w-56 overflow-y-auto">
+      {options.map((option) => (
+        <DropdownMenuCheckboxItem
+          key={option.value}
+          checked={values?.includes(option.value) ?? false}
+          // Several values are picked in one go: the menu stays open.
+          onSelect={(event) => event.preventDefault()}
+          onCheckedChange={() => toggle(option.value)}
+        >
+          <span className="flex-1">{option.label}</span>
+          {option.count === undefined ? null : (
+            <span className="text-xs text-muted tabular-nums">{option.count}</span>
+          )}
+        </DropdownMenuCheckboxItem>
+      ))}
+    </DropdownMenuContent>
+  );
+  const on = picked.length > 0;
+  // One menu whatever is picked: swapping it for another would close it after the first tick.
+  return (
+    <span
+      className={cn(
+        filterClass,
+        on ? 'border-primary pr-1 font-semibold text-primary-text' : 'p-0',
+      )}
+    >
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          className={cn('inline-flex items-center gap-1.5 outline-none', !on && 'h-full px-3')}
+        >
+          {on ? `${label}: ${sk.organizations.picked(picked.map((o) => o.label))}` : label}
+          {on ? null : <ChevronDown className="size-3.5" aria-hidden />}
+        </DropdownMenuTrigger>
+        {items}
+      </DropdownMenu>
+      {on ? (
+        <button
+          type="button"
+          aria-label={sk.customers.filters.clear(label)}
+          onClick={() => onChange(undefined)}
+          className="inline-flex size-6 items-center justify-center rounded-md hover:bg-primary-soft"
+        >
+          <X className="size-3.5" aria-hidden />
+        </button>
+      ) : null}
+    </span>
   );
 }
 

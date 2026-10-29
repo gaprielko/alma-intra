@@ -76,7 +76,10 @@ function CustomerDetailPage() {
   if (customer.isPending) {
     return (
       <div className="min-w-0">
-        <PageHeader title={sk.common.loading} back={{ to: '/customers', label: t.back }} />
+        <PageHeader
+          title={sk.common.loading}
+          back={{ to: '/organizations/customers', label: t.back }}
+        />
         <div className="grid gap-5 p-7 xl:grid-cols-2">
           <CardSkeleton lines={5} />
           <CardSkeleton lines={5} />
@@ -87,7 +90,10 @@ function CustomerDetailPage() {
   if (loadFailed(customer)) {
     return (
       <div className="min-w-0">
-        <PageHeader title={sk.customers.title} back={{ to: '/customers', label: t.back }} />
+        <PageHeader
+          title={sk.customers.title}
+          back={{ to: '/organizations/customers', label: t.back }}
+        />
         <div className="p-10">
           <ErrorState
             text={errorMessage(customer.error, sk.customers.errors)}
@@ -112,7 +118,7 @@ function CustomerDetailPage() {
       <PageHeader
         title={c.name}
         subtitle={meta}
-        back={{ to: '/customers', label: t.back }}
+        back={{ to: '/organizations/customers', label: t.back }}
         badge={c.status ? <CustomerStatusBadge status={c.status} /> : undefined}
       >
         {canSend ? (
@@ -953,7 +959,7 @@ function DeleteCustomer({ customer, onClose }: { customer: Customer; onClose: ()
       onSuccess: async () => {
         toast('success', c.done);
         await queryClient.invalidateQueries(trpc.customer.list.pathFilter());
-        await navigate({ to: '/customers' });
+        await navigate({ to: '/organizations/customers' });
       },
       onError: (error) => {
         toast('error', errorMessage(error, sk.customers.errors));

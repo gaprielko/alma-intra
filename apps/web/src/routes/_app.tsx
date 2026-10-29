@@ -50,7 +50,7 @@ function AppShell() {
               collapsed={collapsed}
             />
             <SidebarLink
-              to="/customers"
+              to="/organizations"
               icon={CustomersMark}
               label={nav.customers}
               collapsed={collapsed}
