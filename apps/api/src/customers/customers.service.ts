@@ -36,6 +36,7 @@ import {
   users,
 } from '../db/schema/index.js';
 import { createCustomerFolder } from '../files/files.service.js';
+import { nursesOf } from './holdings.service.js';
 
 /** The object without one key, for a row that must not leave the server whole. */
 function omit<T extends object, K extends keyof T>(value: T, key: K): Omit<T, K> {
@@ -279,13 +280,14 @@ export async function getCustomer(db: Db | Tx, id: string) {
     .leftJoin(organizationSources, eq(organizationSources.id, organizations.sourceId))
     .where(and(eq(organizations.id, id), alive));
   if (!row) throw new CustomerError('NOT_FOUND');
-  const [people, parent, [established]] = await Promise.all([
+  const [people, parent, [established], nurses] = await Promise.all([
     personsOf(db, id),
     row.customer.parentId ? parentSummary(db, row.customer.parentId) : Promise.resolve(null),
     db
       .select({ count: sql<number>`count(*)`.mapWith(Number) })
       .from(organizations)
       .where(and(eq(organizations.parentId, id), alive)),
+    nursesOf(db, id),
   ]);
   const { customer, ...rest } = row;
   const self = customer.kind === 'individual' ? people.find((p) => p.isPrimary) : undefined;
@@ -302,6 +304,8 @@ export async function getCustomer(db: Db | Tx, id: string) {
     /** A prevádzka's organization: what it shares (IČO, role, status, owner, tags). */
     parent,
     establishmentCount: established?.count ?? 0,
+    /** „Sestry“ in the header, from the products held now (R-12); NULL without the item. */
+    nurses,
   };
 }
 
@@ -426,11 +430,23 @@ async function setProducts(tx: Tx, customerId: string, picked: readonly string[]
             .from(products)
             .where(inArray(products.id, [...new Set(picked)]))
         ).map((row) => row.id);
-  await tx.delete(organizationProducts).where(eq(organizationProducts.organizationId, customerId));
+  // Only what was unticked goes, and only what is new comes: a held product keeps its counts.
+  const removed = before.filter((id) => !ids.includes(id));
+  if (removed.length > 0) {
+    await tx
+      .delete(organizationProducts)
+      .where(
+        and(
+          eq(organizationProducts.organizationId, customerId),
+          inArray(organizationProducts.productId, removed),
+        ),
+      );
+  }
   if (ids.length > 0) {
     await tx
       .insert(organizationProducts)
-      .values(ids.map((productId) => ({ organizationId: customerId, productId })));
+      .values(ids.map((productId) => ({ organizationId: customerId, productId })))
+      .onConflictDoNothing();
   }
   return {
     added: ids.filter((id) => !before.includes(id)),

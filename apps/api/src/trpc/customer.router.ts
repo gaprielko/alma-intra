@@ -5,6 +5,8 @@ import {
   createContactSchema,
   createCustomerSchema,
   createEstablishmentSchema,
+  holdingKeySchema,
+  holdingSchema,
   customerIdSchema,
   customerListSchema,
   exportCustomersSchema,
@@ -17,6 +19,7 @@ import {
 import { TRPCError } from '@trpc/server';
 import { lookupCompany, RegisterUnavailableError } from '../customers/business-register.js';
 import * as organizations from '../customers/customers.service.js';
+import * as holdings from '../customers/holdings.service.js';
 import { toCsv } from '../customers/csv.js';
 import type { Context } from './context.js';
 import { authorizedProcedure, router } from './trpc.js';
@@ -34,6 +37,19 @@ async function run<T>(fn: () => Promise<T>): Promise<T> {
           ? 'CONFLICT'
           : 'BAD_REQUEST';
     throw new TRPCError({ code, message: error.code });
+  }
+}
+
+/** A held product's refusals as tRPC errors. */
+async function runHolding<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    if (!(error instanceof holdings.HoldingError)) throw error;
+    throw new TRPCError({
+      code: error.code === 'COUNT_OUT_OF_RANGE' ? 'BAD_REQUEST' : 'NOT_FOUND',
+      message: error.code,
+    });
   }
 }
 
@@ -125,6 +141,30 @@ export const customerRouter = router({
       if (parentId)
         auditCustomer(ctx, parentId, { establishment: 'deleted', establishmentId: input.id });
       else auditCustomer(ctx, input.id, { deleted: true });
+      return { ok: true as const };
+    }),
+
+  /** The products an organization and its prevádzky hold, priced now (docs/products.md 9). */
+  holdings: authorizedProcedure('customer.read')
+    .input(customerIdSchema)
+    .query(({ ctx, input }) => holdings.holdingsOf(ctx.db, input.id)),
+
+  holdingSave: authorizedProcedure('customer.write')
+    .input(holdingSchema)
+    .mutation(async ({ ctx, input }) => {
+      const saved = await runHolding(() => holdings.saveHolding(ctx.db, input));
+      auditCustomer(ctx, input.organizationId, {
+        holding: saved.created ? 'added' : 'changed',
+        productId: input.productId,
+      });
+      return { ok: true as const };
+    }),
+
+  holdingEnd: authorizedProcedure('customer.write')
+    .input(holdingKeySchema)
+    .mutation(async ({ ctx, input }) => {
+      await runHolding(() => holdings.endHolding(ctx.db, input.organizationId, input.productId));
+      auditCustomer(ctx, input.organizationId, { holding: 'ended', productId: input.productId });
       return { ok: true as const };
     }),
 

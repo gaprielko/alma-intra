@@ -232,6 +232,13 @@
       "when": 1793301786206,
       "tag": "0032_products",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793302495665,
+      "tag": "0033_holdings",
+      "breakpoints": true
     }
   ]
 }

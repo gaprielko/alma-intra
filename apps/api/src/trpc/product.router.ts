@@ -7,6 +7,7 @@ import {
   vatRateSchema,
 } from '@intra/shared/schemas';
 import { TRPCError } from '@trpc/server';
+import { holdingsOf } from '../customers/holdings.service.js';
 import * as productsService from '../products/products.service.js';
 import { authorizedProcedure, router } from './trpc.js';
 
@@ -34,7 +35,31 @@ export const productRouter = router({
 
   get: authorizedProcedure('product.read')
     .input(productIdSchema)
-    .query(({ ctx, input }) => run(() => productsService.getProduct(ctx.db, input.id))),
+    .query(async ({ ctx, input }) => {
+      const product = await run(() => productsService.getProduct(ctx.db, input.id));
+      // Each holder's counts and price, as its detail shows them (the first 30).
+      const holders = await Promise.all(
+        product.holders.slice(0, 30).map(async (holder) => {
+          const held = (await holdingsOf(ctx.db, holder.id)).find(
+            (h) => h.organizationId === holder.id && h.productId === input.id,
+          );
+          return {
+            ...holder,
+            scope: held
+              ? held.items
+                  .filter((i) => i.billing === 'recurring' && i.count > 0)
+                  .map((i) => `${i.count} × ${i.name}`)
+                  .join(' · ')
+              : '',
+            monthly: held?.price.monthly ?? null,
+            yearly: held?.price.yearly ?? null,
+            monthlyGross: held?.price.monthlyGross ?? null,
+            yearlyGross: held?.price.yearlyGross ?? null,
+          };
+        }),
+      );
+      return { ...product, holders };
+    }),
 
   create: authorizedProcedure('product.write')
     .input(productSchema)

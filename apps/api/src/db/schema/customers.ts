@@ -2,6 +2,7 @@ import {
   CUSTOMER_KINDS,
   ITEM_BILLINGS,
   PRODUCT_PERIODS,
+  PRODUCT_PRICINGS,
   ORGANIZATION_ROLES,
   CUSTOMER_STATUSES,
   EMAIL_STATUSES,
@@ -14,6 +15,8 @@ import {
   boolean,
   check,
   index,
+  date,
+  foreignKey,
   integer,
   numeric,
   pgEnum,
@@ -207,6 +210,12 @@ export const organizationTags = pgTable(
   ],
 );
 
+export const productPricing = pgEnum('product_pricing', PRODUCT_PRICINGS);
+
+/**
+ * A product an organization or a prevádzka holds (docs/products.md 9): once at a time, with its
+ * dates and how it is priced; its counts and workloads in the two tables below.
+ */
 export const organizationProducts = pgTable(
   'organization_products',
   {
@@ -216,10 +225,67 @@ export const organizationProducts = pgTable(
     productId: uuid('product_id')
       .notNull()
       .references(() => products.id),
+    validFrom: date('valid_from')
+      .notNull()
+      .default(sql`current_date`),
+    /** NULL: ongoing; ending sets it, nothing is deleted (R-10). */
+    validTo: date('valid_to'),
+    pricing: productPricing('pricing').notNull().default('list'),
+    discountPercent: numeric('discount_percent', { precision: 5, scale: 2, mode: 'number' }),
+    /** The discount's months from `valid_from`; NULL: permanent. */
+    discountMonths: integer('discount_months'),
+    fixedPrice: money('fixed_price'),
+    fixedPriceGross: money('fixed_price_gross'),
+    note: text('note'),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     primaryKey({ columns: [t.organizationId, t.productId] }),
     index('organization_products_product_idx').on(t.productId),
+  ],
+);
+
+/** How many of each item of the price list a holder has (R-13). */
+export const organizationProductCounts = pgTable(
+  'organization_product_counts',
+  {
+    organizationId: uuid('organization_id').notNull(),
+    productId: uuid('product_id').notNull(),
+    itemId: uuid('item_id')
+      .notNull()
+      .references(() => productItems.id),
+    count: integer('count').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.organizationId, t.productId, t.itemId] }),
+    foreignKey({
+      columns: [t.organizationId, t.productId],
+      foreignColumns: [organizationProducts.organizationId, organizationProducts.productId],
+      name: 'organization_product_counts_holding_fk',
+    }).onDelete('cascade'),
+  ],
+);
+
+/** The people and their workload behind an item counted by workloads (R-14). */
+export const organizationProductWorkloads = pgTable(
+  'organization_product_workloads',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id').notNull(),
+    productId: uuid('product_id').notNull(),
+    itemId: uuid('item_id')
+      .notNull()
+      .references(() => productItems.id),
+    persons: integer('persons').notNull(),
+    percent: integer('percent').notNull(),
+  },
+  (t) => [
+    index('organization_product_workloads_holding_idx').on(t.organizationId, t.productId),
+    foreignKey({
+      columns: [t.organizationId, t.productId],
+      foreignColumns: [organizationProducts.organizationId, organizationProducts.productId],
+      name: 'organization_product_workloads_holding_fk',
+    }).onDelete('cascade'),
   ],
 );
 

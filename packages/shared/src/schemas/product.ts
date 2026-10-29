@@ -109,3 +109,93 @@ export function countFromWorkloads(
   const sum = workloads.reduce((total, w) => total + w.persons * rounded(w.percent), 0);
   return { percent: sum, count: Math.ceil(sum / 100) };
 }
+
+/** How a held product is priced (R-7, R-11). */
+export const PRODUCT_PRICINGS = ['list', 'discount', 'fixed'] as const;
+export type ProductPricing = (typeof PRODUCT_PRICINGS)[number];
+
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+/** A product at an organization or a prevádzka (docs/products.md 9). */
+export const holdingSchema = z.object({
+  organizationId: idSchema,
+  productId: idSchema,
+  validFrom: isoDate,
+  validTo: isoDate.nullable(),
+  pricing: z.enum(PRODUCT_PRICINGS),
+  discountPercent: z.number().min(0).max(100).nullable(),
+  /** The discount's months from `validFrom`; NULL: permanent. */
+  discountMonths: z.number().int().min(1).max(120).nullable(),
+  fixedPrice: money.nullable(),
+  fixedPriceGross: money.nullable(),
+  note: z.string().trim().max(1000).optional(),
+  counts: z
+    .array(z.object({ itemId: idSchema, count: z.number().int().min(0).max(100_000) }))
+    .max(50),
+  workloads: z
+    .array(
+      z.object({
+        itemId: idSchema,
+        persons: z.number().int().min(1).max(1000),
+        percent: z.number().int().min(1).max(100),
+      }),
+    )
+    .max(500),
+});
+export type HoldingInput = z.infer<typeof holdingSchema>;
+export const holdingKeySchema = z.object({ organizationId: idSchema, productId: idSchema });
+
+/** What a held product's price is computed from. */
+export interface HeldPriceInput {
+  product: PriceList & {
+    period: ProductPeriod;
+    workloadStep: number;
+    items: (PriceList['items'][number] & { byWorkload: boolean })[];
+  };
+  counts: Record<string, number>;
+  workloads: Record<string, { persons: number; percent: number }[]>;
+  pricing: ProductPricing;
+  discountPercent: number | null;
+  discountMonths: number | null;
+  fixedPrice: number | null;
+  validFrom: string;
+}
+
+/**
+ * The counts a held product has: from workloads for such items, never below the package (R-13,
+ * R-14); and its price without VAT for the product's period, now and by the list (R-7, R-11).
+ */
+export function heldPrice(input: HeldPriceInput, today = new Date()) {
+  const counts: Record<string, number> = {};
+  for (const item of input.product.items) {
+    const typed = input.counts[item.itemId];
+    const count = item.byWorkload
+      ? countFromWorkloads(input.workloads[item.itemId] ?? [], input.product.workloadStep).count
+      : (typed ?? (item.billing === 'once' ? 0 : item.included));
+    counts[item.itemId] = item.billing === 'once' ? count : Math.max(item.included, count);
+  }
+  const list = priceOf(input.product, counts);
+  const start = new Date(`${input.validFrom}T00:00:00`);
+  const months =
+    (today.getFullYear() - start.getFullYear()) * 12 + (today.getMonth() - start.getMonth());
+  const discounting =
+    input.pricing === 'discount' &&
+    input.discountPercent !== null &&
+    (input.discountMonths === null || months < input.discountMonths);
+  const factor = discounting ? 1 - (input.discountPercent ?? 0) / 100 : 1;
+  const recurring =
+    input.pricing === 'fixed' && input.fixedPrice !== null
+      ? input.fixedPrice
+      : toCents(list.recurring * factor);
+  const once = toCents(list.once * factor);
+  const perMonth = (n: number) => toCents(input.product.period === 'month' ? n : n / 12);
+  const perYear = (n: number) => toCents(input.product.period === 'month' ? n * 12 : n);
+  return {
+    counts,
+    discounting,
+    monthly: perMonth(recurring),
+    yearly: perYear(recurring),
+    listMonthly: perMonth(list.recurring),
+    once,
+  };
+}
