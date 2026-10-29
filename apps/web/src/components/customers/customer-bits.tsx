@@ -36,6 +36,10 @@ const NOT_A_NAME =
   /^(s\.?r\.?o\.?|a\.?s\.?|n\.?o\.?|o\.?z\.?|spol\.?|k\.?s\.?|v\.?o\.?s\.?|z\.?s\.?|s|a|pri|pre|na|v)$/i;
 
 /** „ADOS Harmónia, s.r.o.“ → „AH“: the first letters of the first two words that name it. */
+/** A place a person is at: „ADOS Harmónia · ADOS Harmónia Prešov“ for a prevádzka. */
+export const placeName = (place: { name: string; parentName?: string | null | undefined }) =>
+  place.parentName ? `${place.parentName} · ${place.name}` : place.name;
+
 export function organizationInitials(name: string): string {
   const words = name.split(/[\s,]+/).filter((word) => word && !NOT_A_NAME.test(word));
   return words

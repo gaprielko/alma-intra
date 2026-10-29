@@ -6,7 +6,7 @@ import { type ReactNode, useState } from 'react';
 import { ActivityDialog } from '@/components/activities/activity-dialog';
 import { ActivitySheet } from '@/components/activities/activity-sheet';
 import { ActivityItem, EmailItem, ReplyItem } from '@/components/activities/timeline-items';
-import { CustomerAvatar } from '@/components/customers/customer-bits';
+import { CustomerAvatar, placeName } from '@/components/customers/customer-bits';
 import { PersonDialog } from '@/components/customers/person-dialog';
 import { ErrorState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
@@ -99,7 +99,7 @@ function PersonPage() {
   const home = c.organizations[0];
   const subtitle = c.organizations
     .filter((o) => o.kind === 'organization')
-    .map((o) => p.positionAt(o.position, o.name))
+    .map((o) => p.positionAt(o.position, placeName(o)))
     .join(' · ');
 
   return (
@@ -250,7 +250,7 @@ function OrganizationsCard({ person: c }: { person: Person }) {
                     params={{ customerId: org.id }}
                     className="font-semibold text-primary-text hover:underline"
                   >
-                    {org.name}
+                    {placeName(org)}
                   </Link>
                 </p>
                 <p className="mt-1 text-xs text-muted">
@@ -465,7 +465,7 @@ function PersonTimeline({ person: c }: { person: Person }) {
                   onClick={() => setOrganization(organization === org.id ? '' : org.id)}
                   className={chip(organization === org.id)}
                 >
-                  {org.name}
+                  {placeName(org)}
                 </button>
               ))
             : null}

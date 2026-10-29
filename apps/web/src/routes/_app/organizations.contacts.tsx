@@ -5,7 +5,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { ArrowDown, ArrowUp, Plus, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
-import { CustomerAvatar, MultiFilterMenu } from '@/components/customers/customer-bits';
+import { CustomerAvatar, MultiFilterMenu, placeName } from '@/components/customers/customer-bits';
 import { BarButton, useDebounced } from '@/components/customers/organization-list';
 import { OrganizationsHeader } from '@/components/customers/organizations-header';
 import { PersonDialog } from '@/components/customers/person-dialog';
@@ -357,7 +357,7 @@ function PersonRow({
                     params={{ customerId: org.id }}
                     className="font-semibold text-primary-text hover:underline"
                   >
-                    {org.name}
+                    {placeName(org)}
                   </Link>
                 )}
                 {org.position ? <span className="text-muted">{org.position}</span> : null}
