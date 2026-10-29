@@ -329,6 +329,8 @@ function ProductEditor({ product, rate }: { product: Product | undefined; rate: 
                 <Input
                   id="product-base"
                   inputMode="decimal"
+                  // Worked out from the price with VAT, which is the one entered.
+                  className="bg-surface"
                   value={draft.basePrice}
                   onChange={(event) => {
                     const both = pair(event.target.value, false);
@@ -477,7 +479,7 @@ function ProductEditor({ product, rate }: { product: Product | undefined; rate: 
                               const both = pair(event.target.value, false);
                               setRow(index, { unitPrice: both.net, unitPriceGross: both.gross });
                             }}
-                            className="h-9 w-24 text-right"
+                            className="h-9 w-24 bg-surface text-right"
                           />
                         </td>
                         <td className="px-2 py-2">

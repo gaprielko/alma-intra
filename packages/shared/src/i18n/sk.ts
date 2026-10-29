@@ -1115,10 +1115,10 @@ export const sk = {
       workloadHint:
         'Pre položky „podľa úväzkov“: 33 % aj 15 % sa počíta ako 50 %, 51 % ako 100 %. Súčet úväzkov dáva počet.',
       vatHint: (rate: number) =>
-        `Zadajte cenu bez DPH alebo s DPH, druhá sa dopočíta a zaokrúhli na 2 desatinné miesta. Sadzba DPH je ${rate} %.`,
+        `Zadajte cenu s DPH, cena bez DPH sa dopočíta. Platí to aj naopak. Obe sa zaokrúhlia na 2 desatinné miesta. Sadzba DPH je ${rate} %.`,
       priceList: 'Cenník',
       priceListHint:
-        '„V cene“ je počet zahrnutý v základnej cene, každý ďalší stojí „Ďalšia“, najviac do „Max.“. Prázdne Max. znamená bez obmedzenia.',
+        '„V cene“ je počet zahrnutý v základnej cene, každý ďalší stojí „Ďalšia“, najviac do „Max.“. Prázdne Max. znamená bez obmedzenia. Cenu za ďalšiu zadajte s DPH a cena bez DPH sa dopočíta. Platí to aj naopak.',
       addItem: 'Pridať položku',
       columns: {
         item: 'Položka',
