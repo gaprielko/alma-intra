@@ -35,6 +35,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
 import { formatDate, formatRecent } from '@/lib/format';
@@ -651,6 +652,17 @@ function describe(event: HistoryEvent): ReactNode {
  * The customer's timeline: activities and notes with the changes from the audit trail, newest
  * first, filtered by kind; a note is written right at its top. Sent e-mails join it with E5.
  */
+const WITH_ESTABLISHMENTS_KEY = 'intra.timeline.withEstablishments';
+type TimelineItem = RouterOutputs['activity']['timeline'][number];
+const keyOf = (item: TimelineItem) =>
+  item.type === 'activity'
+    ? item.activity.id
+    : item.type === 'email'
+      ? item.email.id
+      : item.type === 'reply'
+        ? item.reply.id
+        : item.change.id;
+
 function TimelineCard({ customer }: { customer: Customer }) {
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -662,10 +674,45 @@ function TimelineCard({ customer }: { customer: Customer }) {
   const [noteKey, setNoteKey] = useState(0);
   const [openId, setOpenId] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
+  // „Aj prevádzky“ (P-7): on by default, remembered in this browser.
+  const hasEstablishments = !customer.parent && customer.establishmentCount > 0;
+  const [withEstablishments, setWithEstablishments] = useState(() => {
+    try {
+      return localStorage.getItem(WITH_ESTABLISHMENTS_KEY) !== 'off';
+    } catch {
+      return true;
+    }
+  });
+  const toggleEstablishments = () => {
+    const next = !withEstablishments;
+    setWithEstablishments(next);
+    try {
+      localStorage.setItem(WITH_ESTABLISHMENTS_KEY, next ? 'on' : 'off');
+    } catch {
+      // A private window: the choice lasts this page only.
+    }
+  };
   const timeline = useQuery({
-    ...trpc.activity.timeline.queryOptions({ customerId: customer.id, filter }),
+    ...trpc.activity.timeline.queryOptions({
+      customerId: customer.id,
+      filter,
+      withEstablishments: hasEstablishments && withEstablishments,
+    }),
     placeholderData: keepPreviousData,
   });
+  // A prevádzka's entry is indented under its name (docs/establishments.md 4.3).
+  const holderOf = (item: TimelineItem) =>
+    item.type === 'activity'
+      ? item.activity.organization
+      : item.type === 'email'
+        ? item.email.organization
+        : item.type === 'reply'
+          ? item.reply.organization
+          : item.change.organization;
+  const establishmentName = (item: TimelineItem) => {
+    const holder = holderOf(item);
+    return holder && holder.id !== customer.id ? holder.name : null;
+  };
   const saveNote = useMutation(
     trpc.activity.create.mutationOptions({
       onSuccess: async () => {
@@ -685,13 +732,32 @@ function TimelineCard({ customer }: { customer: Customer }) {
   return (
     <Card>
       <CardHeader
-        title={a.timeline.title}
+        title={
+          <span className="inline-flex items-center gap-2">
+            {a.timeline.title}
+            {canWrite ? (
+              <Button
+                variant="secondary"
+                size="icon"
+                className="size-7"
+                aria-label={a.record}
+                onClick={() => setRecording(true)}
+              >
+                <Plus className="size-3.5" aria-hidden />
+              </Button>
+            ) : null}
+          </span>
+        }
         action={
-          canWrite ? (
-            <Button variant="secondary" size="sm" onClick={() => setRecording(true)}>
-              <Plus className="size-3.5" aria-hidden />
-              {a.record}
-            </Button>
+          hasEstablishments ? (
+            <span className="flex items-center gap-2 text-[13px] font-medium text-muted">
+              {a.timeline.withEstablishments}
+              <Switch
+                checked={withEstablishments}
+                label={a.timeline.withEstablishments}
+                onChange={toggleEstablishments}
+              />
+            </span>
           ) : null
         }
       />
@@ -778,33 +844,46 @@ function TimelineCard({ customer }: { customer: Customer }) {
                 timeline.isPlaceholderData && 'opacity-60',
               )}
             >
-              {timeline.data.map((item) =>
-                item.type === 'activity' ? (
-                  <ActivityItem
-                    key={item.activity.id}
-                    item={item.activity}
-                    onOpen={() => setOpenId(item.activity.id)}
-                  />
-                ) : item.type === 'email' ? (
-                  <EmailItem key={item.email.id} item={item.email} />
-                ) : item.type === 'reply' ? (
-                  <ReplyItem key={item.reply.id} item={item.reply} />
-                ) : (
-                  <li key={item.change.id} className="relative">
-                    <span
-                      aria-hidden
-                      className="absolute top-1.5 -left-[29px] size-2 rounded-full bg-border ring-4 ring-white"
+              {timeline.data.map((item) => {
+                const entry =
+                  item.type === 'activity' ? (
+                    <ActivityItem
+                      key={item.activity.id}
+                      item={item.activity}
+                      onOpen={() => setOpenId(item.activity.id)}
                     />
-                    <div className="text-sm">{describe(item.change)}</div>
-                    <p className="text-xs text-muted">
-                      {t.history.by(
-                        item.change.userName ?? sk.common.none,
-                        formatRecent(item.change.at),
-                      )}
-                    </p>
+                  ) : item.type === 'email' ? (
+                    <EmailItem key={item.email.id} item={item.email} />
+                  ) : item.type === 'reply' ? (
+                    <ReplyItem key={item.reply.id} item={item.reply} />
+                  ) : (
+                    <li key={item.change.id} className="relative">
+                      <span
+                        aria-hidden
+                        className="absolute top-1.5 -left-[29px] size-2 rounded-full bg-border ring-4 ring-white"
+                      />
+                      <div className="text-sm">{describe(item.change)}</div>
+                      <p className="text-xs text-muted">
+                        {t.history.by(
+                          item.change.userName ?? sk.common.none,
+                          formatRecent(item.change.at),
+                        )}
+                      </p>
+                    </li>
+                  );
+                const at = establishmentName(item);
+                return at ? (
+                  <li
+                    key={`est-${keyOf(item)}`}
+                    className="relative ml-3 border-l-2 border-warning-soft pl-3"
+                  >
+                    <EstablishmentChip name={at} className="mb-1.5" />
+                    <ol className="relative">{entry}</ol>
                   </li>
-                ),
-              )}
+                ) : (
+                  entry
+                );
+              })}
             </ol>
           )}
         </div>

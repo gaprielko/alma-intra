@@ -563,8 +563,16 @@ export async function timelineOf(
     ...(customerIds && (filter === 'all' || filter === 'changes')
       ? (
           await Promise.all(
-            customerIds.map(async (id) =>
-              (await customerHistory(db, id)).map((event) => ({ ...event, organizationId: id })),
+            (
+              await db
+                .select({ id: organizations.id, name: organizations.name })
+                .from(organizations)
+                .where(inArray(organizations.id, customerIds))
+            ).map(async (organization) =>
+              (await customerHistory(db, organization.id)).map((event) => ({
+                ...event,
+                organization,
+              })),
             ),
           )
         )

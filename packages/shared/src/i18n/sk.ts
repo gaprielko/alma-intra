@@ -1736,6 +1736,7 @@ export const sk = {
     record: 'Zapísať aktivitu',
     timeline: {
       title: 'Časová os',
+      withEstablishments: 'Aj prevádzky',
       filters: {
         label: 'Čo zobraziť',
         all: 'Všetko',
@@ -1781,6 +1782,10 @@ export const sk = {
       addParticipant: 'Pridať kontaktnú osobu alebo kolegu',
       removeParticipant: (name: string) => `Odobrať ${name}`,
       contactsGroup: 'Kontaktné osoby',
+      belongsTo: 'Patrí k',
+      belongsToHint: 'Podľa osôb, ktoré sa zúčastnili. Môžete zmeniť.',
+      organization: 'organizácia',
+      establishment: 'prevádzka',
       usersGroup: 'Kolegovia',
       noMatch: 'Nikto sa nenašiel.',
       notes: 'Poznámky',
