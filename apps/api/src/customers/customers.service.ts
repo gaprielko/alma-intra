@@ -1286,3 +1286,62 @@ export async function organizationPersons(db: Db | Tx, organizationId: string) {
   // The organization's primary contact first, the rest by name.
   return [...byId.values()].sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary));
 }
+
+/**
+ * An organization and its prevádzky, from any of them: the head organization and every live id,
+ * the head first; with the names, for the „Patrí k“ field.
+ */
+export async function familyOf(db: Db | Tx, organizationId: string) {
+  const [row] = await db
+    .select({ parentId: organizations.parentId })
+    .from(organizations)
+    .where(eq(organizations.id, organizationId));
+  const headId = row?.parentId ?? organizationId;
+  const members = await db
+    .select({ id: organizations.id, name: organizations.name, parentId: organizations.parentId })
+    .from(organizations)
+    .where(
+      and(
+        or(eq(organizations.id, headId), eq(organizations.parentId, headId)),
+        isNull(organizations.deletedAt),
+      ),
+    )
+    .orderBy(sql`${organizations.parentId} is not null`, collated(organizations.name));
+  return {
+    headId,
+    members: members.map((m) => ({ id: m.id, name: m.name, isEstablishment: m.parentId !== null })),
+  };
+}
+
+/**
+ * Where an activity, an e-mail or a reply with these persons belongs (docs/establishments.md 7,
+ * P-11): when every one of them is at the same prevádzka of the organization, and none at the
+ * organization itself, that prevádzka; otherwise the organization.
+ */
+export async function fileUnder(db: Db | Tx, organizationId: string, contactIds: string[]) {
+  if (contactIds.length === 0) return organizationId;
+  const [row] = await db
+    .select({ parentId: organizations.parentId })
+    .from(organizations)
+    .where(eq(organizations.id, organizationId));
+  if (!row || row.parentId !== null) return organizationId;
+  const links = await db
+    .select({ contactId: contactLinks.contactId, organizationId: contactLinks.organizationId })
+    .from(contactLinks)
+    .innerJoin(organizations, eq(organizations.id, contactLinks.organizationId))
+    .where(
+      and(
+        inArray(contactLinks.contactId, contactIds),
+        or(eq(organizations.id, organizationId), eq(organizations.parentId, organizationId)),
+        isNull(organizations.deletedAt),
+      ),
+    );
+  // The prevádzky every person is at so far; NULL before the first person.
+  let common: string[] | null = null;
+  for (const contactId of new Set(links.map((l) => l.contactId))) {
+    const places = links.filter((l) => l.contactId === contactId).map((l) => l.organizationId);
+    if (places.includes(organizationId)) return organizationId;
+    common = common === null ? places : common.filter((p) => places.includes(p));
+  }
+  return common !== null && common.length === 1 ? common[0]! : organizationId;
+}

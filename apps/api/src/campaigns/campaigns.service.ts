@@ -11,6 +11,7 @@ import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm
 import { createHash, createHmac } from 'node:crypto';
 import type { Env } from '../config/env.js';
 import type { Db, Tx } from '../db/db.module.js';
+import { fileUnder } from '../customers/customers.service.js';
 import {
   campaignAttachments,
   campaignMessages,
@@ -893,6 +894,12 @@ export async function queueCampaign(db: Db, env: Env, id: string, at?: Date) {
         .update(campaignMessages)
         .set({
           status: 'queued',
+          // Filed by its recipient: at a prevádzka when the person is only there (P-11).
+          organizationId: await fileUnder(
+            tx,
+            message.customerId,
+            message.contactId ? [message.contactId] : [],
+          ),
           toEmail: message.email,
           toName: message.name,
           subject: out.subject,

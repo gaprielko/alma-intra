@@ -174,7 +174,7 @@ export function buildMcpServer(ctx: McpContext) {
     tool('customers_get', 'read', async ({ customerId }: { customerId: string }) => {
       const customer = await getCustomer(ctx.db, customerId).catch(() => null);
       if (!customer) throw new FileError('NOT_FOUND');
-      const recent = (await timeline(ctx.db, customerId, 'all'))
+      const recent = (await timeline(ctx.db, customerId, 'all', true))
         .filter((item) => item.type !== 'change')
         .slice(0, 20);
       return {
