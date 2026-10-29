@@ -1,0 +1,194 @@
+# Produkty: products, their items and prices (draft)
+
+Status: **draft for review** (2026-10-29). Phase 1 (spec) and phase 2 (screens: the `Prod*` boards on
+the canvas page „Produkty · návrh“). How a product is assigned to an organization or a prevádzka and
+shown on its detail follows once this is agreed (section 9); it continues
+[establishments.md](establishments.md) section 4.4.
+
+Marks: **[R-n]** a decision of this spec (section 11), _proposed_ until the user agrees.
+
+---
+
+## 1. Why
+
+Today a product is only a name in Nastavenia › Číselníky (ADOS, DOS, Stacionár) ticked on a
+customer. The user wants products as software a customer buys, each with its own price list:
+
+- a product has a name (ADOS) and a base price;
+- the base price includes a number of accesses per role (ADOS: 1 admin, 4 sestry);
+- each further access has a surcharge (another admin, another sestra), up to a maximum;
+- a product may have items of its own (a superadmin role with its own price), so every product is
+  set up on its own;
+- the names of the items are shared: „Admin prístup“ made for ADOS is picked from a list for DOS.
+
+---
+
+## 2. Terms
+
+- **Produkt** (code: `product`): what a customer buys. Name, short description, base price for a
+  period, state.
+- **Položka** (code: `product_item`, the catalog): a named thing a price list counts or adds:
+  „Admin prístup“, „Sestra“, „Superadmin“, „Implementácia“. Shared by all products [R-2].
+- **Položka produktu** (code: `product_price_item`): an item in one product's price list, with that
+  product's numbers: how many are in the base price, the price of each further one, the maximum,
+  whether it repeats every period or is paid once [R-3].
+
+---
+
+## 3. Data model
+
+```
+products                    (today's code list `products`, extended) [R-1]
+  id, name (unique), description
+  base_price                numeric(10,2), EUR without VAT; NULL = not set yet
+  period                    'month' | 'year'
+  state                     'offered' | 'withdrawn' (no longer offered; kept for customers who have it)
+  position, created_*, updated_at, deleted_at
+
+product_items               the shared catalog of item names [R-2]
+  id, name (unique), unit   „Admin prístup“ / unit „prístup“; „Sestra“ / „sestra“
+  description, created_*, deleted_at
+
+product_price_items         one product's price list [R-3]
+  product_id, item_id       (one item once per product)
+  included                  how many are in the base price (0 = none)
+  unit_price                each further one, EUR without VAT; NULL = none may be added beyond `included`
+  max                       the most a customer may have (NULL = no limit)
+  billing                   'recurring' (every period of the product) | 'once'
+  position                  order in the price list
+```
+
+The price of a product for given counts [R-4]:
+
+```
+recurring = base_price + Σ over recurring items: max(0, count − included) × unit_price
+once      =              Σ over one-off items:  count × unit_price
+```
+
+A count above `max` is refused. Prices are without VAT, in EUR; VAT is not computed in Intra.
+
+---
+
+## 4. Navigation
+
+A sidebar item **„Produkty“** right under „Organizácie“ [R-5], with two tabs:
+
+| Tab | What |
+| --- | ---- |
+| **Produkty** | the products with their base price and what it includes |
+| **Položky** | the shared catalog of item names |
+
+„Produkty“ leaves Nastavenia › Číselníky; the code list's products become products (section 8).
+
+---
+
+## 5. Produkty (list)
+
+Board `ProdList`. A table, paging as elsewhere, a search by name:
+
+| Column | Content |
+| ------ | ------- |
+| Produkt | the name as a chip and the description under it |
+| Základná cena | „49 € / mesiac“; „cena nezadaná“ when empty |
+| V základnej cene | „1 × Admin prístup · 4 × Sestra“ |
+| Príplatky | the items with a price per further one, „Admin prístup +10 € · Sestra +8 €“ |
+| Zákazníci | how many organizations and prevádzky have it (link to the filtered list) |
+| Stav | „Ponúka sa“ / „Už sa neponúka“ |
+
+Actions: „Nový produkt“, a row's „…“: Upraviť, Duplikovať, Už sa neponúka / Znova ponúkať,
+Odstrániť (only while no customer has it).
+
+---
+
+## 6. A product's detail and price list
+
+Board `ProdDetail`, at `/products/<id>`. One page that is edited in place (no separate form):
+
+- **Základné údaje**: name, description, base price, period (Mesačne / Ročne), state.
+- **Cenník** (the price list), a table, rows dragged to order:
+
+  | Položka | Platba | V cene | Cena za ďalšiu | Max. | |
+  | ------- | ------ | ------ | -------------- | ---- | - |
+  | Admin prístup | opakovane | 1 | 10 € | 3 | odobrať |
+  | Sestra | opakovane | 4 | 8 € | 50 | |
+  | Superadmin | opakovane | 0 | 25 € | 1 | |
+  | Implementácia | jednorazovo | 0 | 450 € | 1 | |
+
+  „Pridať položku“ opens the item picker (section 7).
+- **Výpočet ceny** (right): counts per item, the result as „107 € / mesiac + 450 € jednorazovo“,
+  each line explained („Sestra: 10, z toho 4 v cene, 6 × 8 € = 48 €“). It is a calculator for
+  offers; it stores nothing [R-6].
+- **Majú ho** (right): the organizations and prevádzky with this product (once assignment exists).
+- **História zmien**: who changed which price when (the audit, as elsewhere).
+
+Saving changes a product for the future; what it does to customers who already have it is section
+9's question [R-7].
+
+„Duplikovať“ copies a product with its price list under the name „ADOS (kópia)“, a quick start for
+a similar product.
+
+---
+
+## 7. Adding an item: the shared catalog
+
+Dialog „Pridať položku“ (board `ProdItemDialog`) on a product's price list:
+
+- a search over the catalog; each item shows where it is already used, with that product's numbers
+  („v ADOS: 1 v cene, +10 €, max. 3“);
+- picking one adds it with the numbers of the product it was last used in, ready to change
+  („Prevziať nastavenia z ADOS“, on by default) [R-8];
+- **„Nová položka“**: a name and a unit; it joins the catalog and is offered to every product
+  from then on;
+- an item already in this product's price list is shown but cannot be added twice.
+
+## 8. Položky (catalog tab)
+
+Board `ProdItems`. A table: name, unit, description, the products that use it (chips). Actions:
+„Nová položka“, rename (the new name shows in every product), delete (only while no product uses
+it).
+
+---
+
+## 9. Next: a product at a customer (to be detailed)
+
+Not in this spec; noted so the model above fits it:
+
+- an organization or a prevádzka **has** a product with its own counts per item (2 admins,
+  10 sestier) and dates (from, to); the price is computed as in section 3;
+- **agreed prices**: whether a customer keeps the prices from when the product was assigned
+  (a copy of the price list), or follows the product's current price list, possibly with a
+  discount [R-7];
+- the organization's detail shows its products and, apart, those of its prevádzky (agreed in
+  establishments.md 4.4), each with its counts and price;
+- the lists' product filter (today: ticked products) keeps working on top of it.
+
+## 10. Migration of today's data
+
+1. Each code-list product (ADOS, DOS, Stacionár) becomes a product with the same id and name, no
+   price („cena nezadaná“) and an empty price list.
+2. Customers' ticked products stay linked as they are; section 9 later gives them counts.
+3. The catalog starts empty; the user fills it while setting up the first price list.
+4. Settings › Číselníky drops „Produkty“; the products' names are edited on Produkty.
+
+## 11. Decisions
+
+| Id | Decision | State |
+| --- | -------- | ----- |
+| R-1 | Products are today's code list extended (same ids), not a new list beside it. | proposed |
+| R-2 | Item names live in one shared catalog; a product's price list points to them. | user |
+| R-3 | Per product and item: included count, price of each further one, maximum, recurring or once. | user + proposed (once) |
+| R-4 | Price = base + further items × their price; prices in EUR without VAT; a product has a period, monthly or yearly. | proposed |
+| R-5 | „Produkty“ is a sidebar item under „Organizácie“, with tabs Produkty and Položky. | user |
+| R-6 | The product's detail has a price calculator that stores nothing. | proposed |
+| R-7 | What a price change does to customers who have the product: decided with section 9. | open |
+| R-8 | Adding an item offers the numbers from the product it was last used in. | proposed |
+
+## 12. Stages (after approval)
+
+| Stage | What |
+| ----- | ---- |
+| R1 | Data: products extended, `product_items`, `product_price_items`; API with the price function; tests |
+| R2 | Web: sidebar item, Produkty list, Položky tab |
+| R3 | Web: product detail with the price list, the item dialog, the calculator, duplicate |
+| R4 | Code list removed from Nastavenia, `functional-spec.md` |
+| then | the product at a customer (section 9), its own spec |

@@ -71,6 +71,10 @@ with the code so the implementation can be checked against them.
 | Est | `EstDetail.dc.html` | Prevádzka detail |
 | Est | `EstDialog.dc.html` | New prevádzka with its primary contact |
 | Est | `EstActivityDialog.dc.html` | Record an activity: the prevádzka found by the contact |
+| Prod | `ProdList.dc.html` | Produkty: products with base price, what it includes and surcharges |
+| Prod | `ProdDetail.dc.html` | Product detail: price list and price calculator (interactive) |
+| Prod | `ProdItemDialog.dc.html` | Add an item to a price list from the shared catalog |
+| Prod | `ProdItems.dc.html` | Položky: the shared catalog of item names |
 
 The `Org` boards are the agreed redesign of [contacts-redesign.md](../contacts-redesign.md) (29 Oct
 2026); they replace the E1 boards once implemented. `Sidebar.dc.html` gained the switch
@@ -78,6 +82,9 @@ The `Org` boards are the agreed redesign of [contacts-redesign.md](../contacts-r
 
 The `Est` boards are the draft of [establishments.md](../establishments.md) (prevádzky, 29 Oct
 2026), not yet agreed.
+
+The `Prod` boards are the draft of [products.md](../products.md) (29 Oct 2026), not yet agreed.
+`Sidebar.dc.html` shows „Produkty“ under „Organizácie“ when `organizations` is on.
 
 ## Keeping them in step
 

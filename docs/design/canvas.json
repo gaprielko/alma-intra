@@ -57,6 +57,10 @@
     {
       "id": "est",
       "name": "Prevádzky · návrh"
+    },
+    {
+      "id": "prod",
+      "name": "Produkty · návrh"
     }
   ],
   "boards": {
@@ -536,6 +540,43 @@
       "title": "Zapísať aktivitu · prevádzka určená podľa kontaktu",
       "page": "est",
       "expand": "fill"
+    },
+    "ProdList.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Produkty · zoznam s cenou a tým, čo obsahuje",
+      "page": "prod",
+      "expand": "fill"
+    },
+    "ProdDetail.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 1200,
+      "title": "Detail produktu · cenník a výpočet ceny",
+      "page": "prod",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "ProdItemDialog.dc.html": {
+      "x": 3040,
+      "y": 0,
+      "w": 1440,
+      "h": 1000,
+      "title": "Pridať položku · zo spoločného zoznamu, s nastavením z iného produktu",
+      "page": "prod",
+      "expand": "fill"
+    },
+    "ProdItems.dc.html": {
+      "x": 0,
+      "y": 1020,
+      "w": 1440,
+      "h": 900,
+      "title": "Položky · spoločné názvy pre všetky produkty",
+      "page": "prod",
+      "expand": "fill"
     }
   },
   "order": [
@@ -591,7 +632,11 @@
     "EstOrgDetail.dc.html",
     "EstDetail.dc.html",
     "EstDialog.dc.html",
-    "EstActivityDialog.dc.html"
+    "EstActivityDialog.dc.html",
+    "ProdList.dc.html",
+    "ProdDetail.dc.html",
+    "ProdItemDialog.dc.html",
+    "ProdItems.dc.html"
   ],
   "notes": {
     "logotitle": {
@@ -689,6 +734,14 @@
       "kind": "title1",
       "maxW": 4480,
       "page": "est"
+    },
+    "prodtitle": {
+      "x": 0,
+      "y": -300,
+      "text": "Produkty · cenníky, položky a výpočet ceny",
+      "kind": "title1",
+      "maxW": 4480,
+      "page": "prod"
     }
   },
   "designSystems": []
