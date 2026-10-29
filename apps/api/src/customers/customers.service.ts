@@ -23,6 +23,7 @@ import {
 import type { Db, Tx } from '../db/db.module.js';
 import {
   auditEvents,
+  contactLinks,
   contacts,
   contactTypes,
   organizationSources,
@@ -109,8 +110,8 @@ function filterWhere(filter: CustomerFilter): SQL[] {
         sql`unaccent(${organizations.name}) ilike unaccent(${pattern})`,
         sql`${organizations.email} ilike ${pattern}`,
         /^\d+$/.test(digits) ? sql`${organizations.ico} like ${likePattern(digits)}` : sql`false`,
-        sql`exists (select 1 from contacts p where p.organization_id = ${CUSTOMER_ID}
-          and p.deleted_at is null
+        sql`exists (select 1 from contact_links l join contacts p on p.id = l.contact_id
+          where l.organization_id = ${CUSTOMER_ID} and p.deleted_at is null
           and (p.email ilike ${pattern}
             or unaccent(p.first_name || ' ' || p.last_name) ilike unaccent(${pattern})))`,
       )!,
@@ -132,17 +133,14 @@ const productsJson = sql<{ id: string; name: string }[]>`coalesce((
   from organization_products cp join products p on p.id = cp.product_id
   where cp.organization_id = ${CUSTOMER_ID}), '[]'::json)`;
 
-/** The primary contact, or for a private person the person. */
+/** The primary contact: the person at an organization, or a private person themself. */
 const primaryContactJson = sql<{
   name: string;
   email: string | null;
-} | null>`case when ${organizations.kind} = 'individual'
-  then json_build_object('name', ${organizations.name}, 'email', ${organizations.email})
-  else (select json_build_object(
-      'name', concat_ws(' ', p.title_before, p.first_name, p.last_name), 'email', p.email)
-    from contacts p
-    where p.organization_id = ${CUSTOMER_ID} and p.is_primary and p.deleted_at is null)
-  end`;
+} | null>`(select json_build_object(
+    'name', concat_ws(' ', p.title_before, p.first_name, p.last_name), 'email', p.email)
+  from contact_links l join contacts p on p.id = l.contact_id
+  where l.organization_id = ${CUSTOMER_ID} and l.is_primary and p.deleted_at is null)`;
 
 /** The last activity, e-mail sent to the customer or reply received from it. */
 export const LAST_CONTACT = sql`greatest(
@@ -256,16 +254,50 @@ export async function getCustomer(db: Db | Tx, id: string) {
     .leftJoin(organizationSources, eq(organizationSources.id, organizations.sourceId))
     .where(and(eq(organizations.id, id), alive));
   if (!row) throw new CustomerError('NOT_FOUND');
-  const people = await db
-    .select()
-    .from(contacts)
-    .where(and(eq(contacts.organizationId, id), aliveContact))
-    .orderBy(desc(contacts.isPrimary), asc(contacts.createdAt));
+  const people = await personsOf(db, id);
   const { customer, ...rest } = row;
+  const self = customer.kind === 'individual' ? people.find((p) => p.isPrimary) : undefined;
   return {
     ...omit(customer, 'deletedAt'),
     ...rest,
-    contacts: people.map((contact) => omit(contact, 'deletedAt')),
+    // A private person's own fields, from their person (stage O2 keeps the old shape).
+    ...personFieldsOf(self),
+    email: self ? self.email : customer.email,
+    phone: self ? self.phone : customer.phone,
+    contacts: customer.kind === 'individual' ? [] : people,
+  };
+}
+
+/** The live persons of an organization with their position there, the primary one first. */
+async function personsOf(db: Db | Tx, organizationId: string) {
+  const rows = await db
+    .select({
+      contact: contacts,
+      position: contactLinks.position,
+      isPrimary: contactLinks.isPrimary,
+    })
+    .from(contactLinks)
+    .innerJoin(contacts, eq(contacts.id, contactLinks.contactId))
+    .where(and(eq(contactLinks.organizationId, organizationId), aliveContact))
+    .orderBy(desc(contactLinks.isPrimary), asc(contacts.createdAt));
+  return rows.map(({ contact, position, isPrimary }) => ({
+    ...omit(contact, 'deletedAt'),
+    position,
+    isPrimary,
+  }));
+}
+
+function personFieldsOf(person: Awaited<ReturnType<typeof personsOf>>[number] | undefined) {
+  return {
+    titleBefore: person?.titleBefore ?? null,
+    firstName: person?.firstName ?? null,
+    lastName: person?.lastName ?? null,
+    titleAfter: person?.titleAfter ?? null,
+    gender: person?.gender ?? null,
+    salutation: person?.salutation ?? null,
+    emailStatus: person?.emailStatus ?? ('ok' as const),
+    unsubscribedAt: person?.unsubscribedAt ?? null,
+    unsubscribeSource: person?.unsubscribeSource ?? null,
   };
 }
 
@@ -388,16 +420,21 @@ function columnsOf(input: CustomerInput, salesStatus: boolean) {
       web: input.web ?? null,
     };
   }
+  // A private person's e-mail and phone are their person's.
+  return { ...common, kind: input.kind, name: personName(input), email: null, phone: null };
+}
+
+/** The person of a private-person record, from the form. */
+function selfColumns(input: Extract<CustomerInput, { kind: 'individual' }>) {
   return {
-    ...common,
-    kind: input.kind,
-    name: personName(input),
     titleBefore: input.titleBefore ?? null,
     firstName: input.firstName,
     lastName: input.lastName,
     titleAfter: input.titleAfter ?? null,
     gender: input.gender ?? null,
     salutation: input.salutation ?? null,
+    email: input.email ?? null,
+    phone: input.phone ?? null,
   };
 }
 
@@ -409,14 +446,13 @@ function contactColumns(input: ContactInput) {
     titleAfter: input.titleAfter ?? null,
     gender: input.gender ?? null,
     salutation: input.salutation ?? null,
-    position: input.position ?? null,
     email: input.email ?? null,
     phone: input.phone ?? null,
     note: input.note ?? null,
   };
 }
 
-/** The unique index on a contact's e-mail within a customer, by name. */
+/** The unique index on a person's e-mail (D-7), by name. */
 const isContactEmailClash = (error: unknown) =>
   error instanceof Error &&
   (error as { constraint?: string; cause?: { constraint?: string } }).constraint ===
@@ -433,7 +469,7 @@ async function mapUnique<T>(fn: () => Promise<T>): Promise<T> {
     const constraint = constraintOf(error);
     if (constraint === 'contacts_email_unique' || isContactEmailClash(error))
       throw new CustomerError('CONTACT_EMAIL_TAKEN');
-    if (constraint === 'customers_ico_unique') throw new CustomerError('ICO_TAKEN');
+    if (constraint === 'organizations_ico_unique') throw new CustomerError('ICO_TAKEN');
     throw error;
   }
 }
@@ -450,21 +486,34 @@ export async function createCustomer(db: Db, userId: string, input: CreateCustom
         tx,
         input.customer.kind === 'organization' ? input.customer.ico : undefined,
       );
-      const unsubscribed =
-        input.customer.kind === 'individual' && !input.customer.receivesBulk
-          ? { unsubscribedAt: new Date(), unsubscribeSource: 'manual' as const }
-          : {};
       const [created] = await tx
         .insert(organizations)
-        .values({ ...values, ...unsubscribed, createdByUserId: userId })
+        .values({ ...values, createdByUserId: userId })
         .returning({ id: organizations.id });
+      if (input.customer.kind === 'individual') {
+        const unsubscribed = input.customer.receivesBulk
+          ? {}
+          : { unsubscribedAt: new Date(), unsubscribeSource: 'manual' as const };
+        const [person] = await tx
+          .insert(contacts)
+          .values({ ...selfColumns(input.customer), ...unsubscribed })
+          .returning({ id: contacts.id });
+        await tx
+          .insert(contactLinks)
+          .values({ contactId: person!.id, organizationId: created!.id, isPrimary: true });
+      }
       const { added } = await setTags(tx, created!.id, input.customer.tags);
       const productChange = await setProducts(tx, created!.id, input.customer.productIds);
       await createCustomerFolder(tx, created!.id);
       if (input.firstContact && input.customer.kind === 'organization') {
-        await tx.insert(contacts).values({
-          ...contactColumns(input.firstContact),
+        const [person] = await tx
+          .insert(contacts)
+          .values(contactColumns(input.firstContact))
+          .returning({ id: contacts.id });
+        await tx.insert(contactLinks).values({
+          contactId: person!.id,
           organizationId: created!.id,
+          position: input.firstContact.position ?? null,
           isPrimary: true,
         });
       }
@@ -504,18 +553,26 @@ export async function updateCustomer(db: Db, id: string, input: CustomerInput) {
       await assertIcoFree(tx, input.kind === 'organization' ? input.ico : undefined, id);
       const values = columnsOf(input, await hasSalesStatus(tx, input.contactTypeId));
       const fields = changedFields(current, values).filter((f) => f !== 'kind');
-      const unsubscribe =
-        input.kind === 'individual'
-          ? input.receivesBulk
-            ? { unsubscribedAt: null, unsubscribeSource: null }
-            : current.unsubscribedAt
-              ? {}
-              : { unsubscribedAt: new Date(), unsubscribeSource: 'manual' as const }
-          : {};
       await tx
         .update(organizations)
-        .set({ ...values, ...unsubscribe, updatedAt: new Date() })
+        .set({ ...values, updatedAt: new Date() })
         .where(eq(organizations.id, id));
+      if (input.kind === 'individual') {
+        const [self] = await personsOf(tx, id);
+        if (self) {
+          const person = selfColumns(input);
+          fields.push(...changedFields(self, person).filter((f) => !fields.includes(f)));
+          const unsubscribe = input.receivesBulk
+            ? { unsubscribedAt: null, unsubscribeSource: null }
+            : self.unsubscribedAt
+              ? {}
+              : { unsubscribedAt: new Date(), unsubscribeSource: 'manual' as const };
+          await tx
+            .update(contacts)
+            .set({ ...person, ...unsubscribe, updatedAt: new Date() })
+            .where(eq(contacts.id, self.id));
+        }
+      }
       const tagChange = await setTags(tx, id, input.tags);
       if (tagChange.added.length + tagChange.removed.length > 0) fields.push('tags');
       const productChange = await setProducts(tx, id, input.productIds);
@@ -591,14 +648,11 @@ export async function exportRows(
     email: string | null;
     phone: string | null;
     salutation: string | null;
-  } | null>`case when ${organizations.kind} = 'individual'
-    then json_build_object('name', ${organizations.name}, 'email', ${organizations.email}, 'phone', ${organizations.phone}, 'salutation', ${organizations.salutation})
-    else (select json_build_object(
-        'name', concat_ws(' ', p.title_before, p.first_name, p.last_name),
-        'email', p.email, 'phone', p.phone, 'salutation', p.salutation)
-      from contacts p
-      where p.organization_id = ${CUSTOMER_ID} and p.is_primary and p.deleted_at is null)
-    end`;
+  } | null>`(select json_build_object(
+      'name', concat_ws(' ', p.title_before, p.first_name, p.last_name),
+      'email', p.email, 'phone', p.phone, 'salutation', p.salutation)
+    from contact_links l join contacts p on p.id = l.contact_id
+    where l.organization_id = ${CUSTOMER_ID} and l.is_primary and p.deleted_at is null)`;
   return db
     .select({
       name: organizations.name,
@@ -740,21 +794,25 @@ async function organizationOf(tx: Tx, customerId: string) {
   if (row.kind !== 'organization') throw new CustomerError('NOT_ORGANIZATION');
 }
 
-/** A new contact; the first one of a customer becomes its primary contact. */
+/** A new person at an organization; the first one becomes its primary contact. */
 export async function createContact(db: Db, customerId: string, input: ContactInput) {
   return mapUnique(() =>
     db.transaction(async (tx) => {
       await organizationOf(tx, customerId);
       const [primary] = await tx
-        .select({ id: contacts.id })
-        .from(contacts)
-        .where(
-          and(eq(contacts.organizationId, customerId), eq(contacts.isPrimary, true), aliveContact),
-        );
+        .select({ id: contactLinks.contactId })
+        .from(contactLinks)
+        .where(and(eq(contactLinks.organizationId, customerId), eq(contactLinks.isPrimary, true)));
       const [created] = await tx
         .insert(contacts)
-        .values({ ...contactColumns(input), organizationId: customerId, isPrimary: !primary })
+        .values(contactColumns(input))
         .returning({ id: contacts.id });
+      await tx.insert(contactLinks).values({
+        contactId: created!.id,
+        organizationId: customerId,
+        position: input.position ?? null,
+        isPrimary: !primary,
+      });
       await touch(tx, customerId);
       return { id: created!.id, customerId };
     }),
@@ -764,10 +822,15 @@ export async function createContact(db: Db, customerId: string, input: ContactIn
 const touch = (tx: Tx, customerId: string) =>
   tx.update(organizations).set({ updatedAt: new Date() }).where(eq(organizations.id, customerId));
 
-async function liveContact(tx: Tx, id: string) {
+/** A live person at the organization, with their link there. */
+async function liveContact(tx: Tx, id: string, customerId: string) {
   const [row] = await tx
-    .select()
+    .select({ contact: contacts, link: contactLinks })
     .from(contacts)
+    .innerJoin(
+      contactLinks,
+      and(eq(contactLinks.contactId, contacts.id), eq(contactLinks.organizationId, customerId)),
+    )
     .where(and(eq(contacts.id, id), aliveContact))
     .for('update');
   if (!row) throw new CustomerError('NOT_FOUND');
@@ -777,14 +840,17 @@ async function liveContact(tx: Tx, id: string) {
 export async function updateContact(
   db: Db,
   id: string,
+  customerId: string,
   input: ContactInput,
   receivesBulk: boolean,
 ) {
   return mapUnique(() =>
     db.transaction(async (tx) => {
-      const current = await liveContact(tx, id);
+      const { contact: current, link } = await liveContact(tx, id, customerId);
       const values = contactColumns(input);
       const fields = changedFields(current, values);
+      const position = input.position ?? null;
+      if (position !== link.position) fields.push('position');
       const unsubscribe = receivesBulk
         ? { unsubscribedAt: null, unsubscribeSource: null }
         : current.unsubscribedAt
@@ -795,49 +861,72 @@ export async function updateContact(
         .update(contacts)
         .set({ ...values, ...unsubscribe, updatedAt: new Date() })
         .where(eq(contacts.id, id));
-      await touch(tx, current.organizationId);
-      return { customerId: current.organizationId, fields: fields.sort() };
+      await tx
+        .update(contactLinks)
+        .set({ position })
+        .where(and(eq(contactLinks.contactId, id), eq(contactLinks.organizationId, customerId)));
+      await touch(tx, customerId);
+      return { customerId, fields: fields.sort() };
     }),
   );
 }
 
-export async function setPrimaryContact(db: Db, id: string) {
+export async function setPrimaryContact(db: Db, id: string, customerId: string) {
   return db.transaction(async (tx) => {
-    const current = await liveContact(tx, id);
+    await liveContact(tx, id, customerId);
     await tx
-      .update(contacts)
+      .update(contactLinks)
       .set({ isPrimary: false })
-      .where(
-        and(eq(contacts.organizationId, current.organizationId), eq(contacts.isPrimary, true)),
-      );
+      .where(and(eq(contactLinks.organizationId, customerId), eq(contactLinks.isPrimary, true)));
     await tx
-      .update(contacts)
-      .set({ isPrimary: true, updatedAt: new Date() })
-      .where(eq(contacts.id, id));
-    await touch(tx, current.organizationId);
-    return { customerId: current.organizationId };
+      .update(contactLinks)
+      .set({ isPrimary: true })
+      .where(and(eq(contactLinks.contactId, id), eq(contactLinks.organizationId, customerId)));
+    await touch(tx, customerId);
+    return { customerId };
   });
 }
 
-/** Removes a contact; when it was the primary one, the oldest remaining contact takes over. */
-export async function deleteContact(db: Db, id: string) {
+/**
+ * Takes a person off the organization; when they were its primary contact, the person there the
+ * longest takes over. A person left without any organization is removed, as before stage O5.
+ */
+export async function deleteContact(db: Db, id: string, customerId: string) {
   return db.transaction(async (tx) => {
-    const current = await liveContact(tx, id);
+    const { link } = await liveContact(tx, id, customerId);
     await tx
-      .update(contacts)
-      .set({ deletedAt: new Date(), isPrimary: false, updatedAt: new Date() })
-      .where(eq(contacts.id, id));
-    if (current.isPrimary) {
+      .delete(contactLinks)
+      .where(and(eq(contactLinks.contactId, id), eq(contactLinks.organizationId, customerId)));
+    if (link.isPrimary) {
       const [next] = await tx
-        .select({ id: contacts.id })
-        .from(contacts)
-        .where(and(eq(contacts.organizationId, current.organizationId), aliveContact))
-        .orderBy(asc(contacts.createdAt))
+        .select({ id: contactLinks.contactId })
+        .from(contactLinks)
+        .innerJoin(contacts, eq(contacts.id, contactLinks.contactId))
+        .where(and(eq(contactLinks.organizationId, customerId), aliveContact))
+        .orderBy(asc(contactLinks.createdAt))
         .limit(1);
-      if (next) await tx.update(contacts).set({ isPrimary: true }).where(eq(contacts.id, next.id));
+      if (next) {
+        await tx
+          .update(contactLinks)
+          .set({ isPrimary: true })
+          .where(
+            and(eq(contactLinks.contactId, next.id), eq(contactLinks.organizationId, customerId)),
+          );
+      }
     }
-    await touch(tx, current.organizationId);
-    return { customerId: current.organizationId };
+    const [elsewhere] = await tx
+      .select({ id: contactLinks.organizationId })
+      .from(contactLinks)
+      .where(eq(contactLinks.contactId, id))
+      .limit(1);
+    if (!elsewhere) {
+      await tx
+        .update(contacts)
+        .set({ deletedAt: new Date(), updatedAt: new Date() })
+        .where(eq(contacts.id, id));
+    }
+    await touch(tx, customerId);
+    return { customerId };
   });
 }
 

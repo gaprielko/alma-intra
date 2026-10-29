@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { browser, JANA, startApi } from './client.js';
 
@@ -104,6 +105,50 @@ describe('contacts (organizations)', () => {
       contact: person,
     });
     expect(again.message).toBe('CONTACT_EMAIL_TAKEN');
+    // One person per e-mail anywhere (D-7), not only within one organization.
+    const other = await jana.call<{ id: string }>('customer.create', organization('Iné osoby'));
+    const elsewhere = await jana.call('customer.contactCreate', {
+      customerId: other.data.id,
+      contact: { ...person, email: 'EVA.NOVA@example.org' },
+    });
+    expect(elsewhere.message).toBe('CONTACT_EMAIL_TAKEN');
+  });
+
+  it('a private person is a person of their own, the primary contact and the recipient', async () => {
+    const made = await jana.call<{ id: string }>('customer.create', {
+      customer: {
+        kind: 'individual',
+        firstName: 'Oľga',
+        lastName: 'Súkromná',
+        email: 'olga.sukromna@example.org',
+        contactTypeId: typeOf('customer'),
+        receivesBulk: true,
+        tags: [],
+        productIds: [],
+      },
+    });
+    expect(made.code).toBeUndefined();
+    const detail = await jana.call<{ name: string; firstName: string; email: string }>(
+      'customer.get',
+      { id: made.data.id },
+    );
+    expect(detail.data).toMatchObject({
+      name: 'Oľga Súkromná',
+      firstName: 'Oľga',
+      email: 'olga.sukromna@example.org',
+    });
+    const person = await api.db.execute<{ is_primary: boolean; email: string }>(
+      sql`select l.is_primary, c.email from contact_links l join contacts c on c.id = l.contact_id
+        where l.organization_id = ${made.data.id}`,
+    );
+    expect(person.rows).toEqual([{ is_primary: true, email: 'olga.sukromna@example.org' }]);
+    const candidates = await jana.call<
+      { self: unknown; contacts: { name: string; isPrimary: boolean }[] }[]
+    >('campaign.candidates', { customerIds: [made.data.id] });
+    expect(candidates.data[0]!.self).toBeNull();
+    expect(candidates.data[0]!.contacts).toEqual([
+      expect.objectContaining({ name: 'Oľga Súkromná', isPrimary: true }),
+    ]);
   });
 
   it('finds a contact without its diacritics', async () => {

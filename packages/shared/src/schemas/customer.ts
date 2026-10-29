@@ -192,11 +192,14 @@ export const exportCustomersSchema = customerFilterSchema.extend({
 export const createContactSchema = z.object({ customerId: idSchema, contact: contactSchema });
 export const updateContactSchema = z.object({
   id: idSchema,
+  /** The organization the person is edited at: the position is theirs there. */
+  customerId: idSchema,
   contact: contactSchema,
   /** Off: no marketing e-mails; replies still go to them. */
   receivesBulk: z.boolean(),
 });
-export const contactIdSchema = z.object({ id: idSchema });
+/** A person at one organization (a person may belong to several). */
+export const contactIdSchema = z.object({ id: idSchema, customerId: idSchema });
 
 /** Contact types, products and sources: a name each, offered in the forms while active. */
 export const CODE_LISTS = ['contact_type', 'product', 'source', 'template_category'] as const;

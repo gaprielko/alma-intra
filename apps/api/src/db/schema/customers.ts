@@ -107,16 +107,6 @@ export const organizations = pgTable(
     sourceId: uuid('source_id').references(() => organizationSources.id),
     note: text('note'),
     almaOrganizationId: text('alma_organization_id'),
-    // A private person only.
-    titleBefore: text('title_before'),
-    firstName: text('first_name'),
-    lastName: text('last_name'),
-    titleAfter: text('title_after'),
-    gender: gender('gender'),
-    salutation: text('salutation'),
-    emailStatus: emailStatus('email_status').notNull().default('ok'),
-    unsubscribedAt: timestamp('unsubscribed_at', { withTimezone: true }),
-    unsubscribeSource: unsubscribeSource('unsubscribe_source'),
     createdByUserId: uuid('created_by_user_id').references(() => users.id),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -131,10 +121,6 @@ export const organizations = pgTable(
     index('organizations_contact_type_idx').on(t.contactTypeId),
     index('organizations_owner_idx').on(t.ownerUserId),
     check('organizations_name_length', sql`char_length(${t.name}) between 1 and 200`),
-    check(
-      'organizations_person_named',
-      sql`${t.kind} = 'organization' or (${t.firstName} is not null and ${t.lastName} is not null)`,
-    ),
   ],
 );
 
@@ -171,26 +157,21 @@ export const organizationProducts = pgTable(
 );
 
 /**
- * A person at an organization customer. One primary contact per customer, the default recipient;
- * an e-mail address once per customer. Soft deleted, like the customer.
+ * A natural person (Kontakty): a contact person of customers or partners, a private-person
+ * customer or partner itself, or nobody's (D-2). Where they work is `contact_links`. Soft deleted.
  */
 export const contacts = pgTable(
   'contacts',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    organizationId: uuid('organization_id')
-      .notNull()
-      .references(() => organizations.id),
     titleBefore: text('title_before'),
     firstName: text('first_name').notNull(),
     lastName: text('last_name').notNull(),
     titleAfter: text('title_after'),
     gender: gender('gender'),
     salutation: text('salutation'),
-    position: text('position'),
     email: text('email'),
     phone: text('phone'),
-    isPrimary: boolean('is_primary').notNull().default(false),
     emailStatus: emailStatus('email_status').notNull().default('ok'),
     unsubscribedAt: timestamp('unsubscribed_at', { withTimezone: true }),
     unsubscribeSource: unsubscribeSource('unsubscribe_source'),
@@ -200,12 +181,36 @@ export const contacts = pgTable(
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
   },
   (t) => [
-    index('contacts_organization_idx').on(t.organizationId),
-    uniqueIndex('contacts_primary_unique')
-      .on(t.organizationId)
-      .where(sql`${t.isPrimary} and ${t.deletedAt} is null`),
+    // One person is entered once (D-7): an e-mail belongs to one live person.
     uniqueIndex('contacts_email_unique')
-      .on(t.organizationId, sql`lower(${t.email})`)
+      .on(sql`lower(${t.email})`)
       .where(sql`${t.deletedAt} is null and ${t.email} is not null`),
+  ],
+);
+
+/**
+ * A person at an organization (D-3): their position there and whether they are its primary
+ * contact, the default recipient. A person may have none (D-2) or several. A private-person
+ * customer or partner is linked to its own person as the primary contact.
+ */
+export const contactLinks = pgTable(
+  'contact_links',
+  {
+    contactId: uuid('contact_id')
+      .notNull()
+      .references(() => contacts.id),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id),
+    position: text('position'),
+    isPrimary: boolean('is_primary').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.contactId, t.organizationId] }),
+    index('contact_links_organization_idx').on(t.organizationId),
+    uniqueIndex('contact_links_primary_unique')
+      .on(t.organizationId)
+      .where(sql`${t.isPrimary}`),
   ],
 );

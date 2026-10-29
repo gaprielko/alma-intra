@@ -7,7 +7,6 @@ import {
   campaignMessages,
   campaigns,
   contacts,
-  organizations,
   emailEvents,
   files,
   fileVersions,
@@ -295,13 +294,9 @@ export async function handleResendEvent(db: Db, eventId: string, event: ResendEv
   }
   if (next === 'bounced' || next === 'complained') {
     const emailStatus = next === 'bounced' ? 'bounced' : 'complained';
+    // Every e-mail names its person since stage O2 (a private person included).
     if (message.contactId) {
       await db.update(contacts).set({ emailStatus }).where(eq(contacts.id, message.contactId));
-    } else {
-      await db
-        .update(organizations)
-        .set({ emailStatus })
-        .where(eq(organizations.id, message.customerId));
     }
   }
   return { ignored: false, messageId: message.id, status: next };
@@ -337,10 +332,7 @@ export async function unsubscribeInfo(db: Db, token: string) {
         .select({ unsubscribedAt: contacts.unsubscribedAt })
         .from(contacts)
         .where(eq(contacts.id, row.contactId))
-    : await db
-        .select({ unsubscribedAt: organizations.unsubscribedAt })
-        .from(organizations)
-        .where(eq(organizations.id, row.customerId));
+    : [];
   return {
     email: maskEmail(row.toEmail),
     unsubscribed: state?.unsubscribedAt !== null && state?.unsubscribedAt !== undefined,
@@ -349,8 +341,8 @@ export async function unsubscribeInfo(db: Db, token: string) {
 }
 
 /**
- * Unsubscribes the recipient of the message (or brings them back): the contact, or the private
- * person. A colleague's „manual“ switch is not undone by the link.
+ * Unsubscribes the person the message went to (or brings them back). A colleague's „manual“
+ * switch is not undone by the link.
  */
 export async function setUnsubscribed(db: Db, token: string, unsubscribed: boolean) {
   const row = await byToken(db, token);
@@ -368,21 +360,6 @@ export async function setUnsubscribed(db: Db, token: string, unsubscribed: boole
           unsubscribed
             ? isNull(contacts.unsubscribedAt)
             : or(eq(contacts.unsubscribeSource, 'link'), isNull(contacts.unsubscribeSource)),
-        ),
-      );
-  } else {
-    await db
-      .update(organizations)
-      .set(values)
-      .where(
-        and(
-          eq(organizations.id, row.customerId),
-          unsubscribed
-            ? isNull(organizations.unsubscribedAt)
-            : or(
-                eq(organizations.unsubscribeSource, 'link'),
-                isNull(organizations.unsubscribeSource),
-              ),
         ),
       );
   }

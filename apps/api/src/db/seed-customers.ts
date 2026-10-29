@@ -2,6 +2,7 @@ import { eq, sql } from 'drizzle-orm';
 import type { Tx } from './db.module.js';
 import { COMPANY_ROOT_FOLDER_ID } from '@intra/shared/schemas';
 import {
+  contactLinks,
   contacts,
   contactTypes,
   organizations,
@@ -316,15 +317,12 @@ export async function seedCustomers(
       city: c.city,
       region: c.region,
       web: c.web ?? null,
-      email: c.email ?? null,
-      phone: c.phone ?? null,
+      // A private person's e-mail and phone are their person's.
+      email: self ? null : (c.email ?? null),
+      phone: self ? null : (c.phone ?? null),
       ownerUserId: c.owner,
       sourceId: c.source === undefined ? null : id('b', c.source + 1),
       note: c.note ?? null,
-      firstName: self?.firstName ?? null,
-      lastName: self?.lastName ?? null,
-      gender: self?.gender ?? null,
-      salutation: self?.salutation ?? null,
       createdByUserId: owners.jana,
       deletedAt: null,
     };
@@ -349,20 +347,18 @@ export async function seedCustomers(
         .insert(organizationProducts)
         .values({ organizationId: customerId, productId: ADOS_PRODUCT_ID });
     }
-    if (c.kind !== 'organization') continue;
-    for (const [j, p] of c.people.entries()) {
+    const people = self ? [{ ...self, email: c.email ?? self.email, phone: c.phone }] : c.people;
+    for (const [j, p] of people.entries()) {
+      const contactId = id('e', (i + 1) * 10 + j);
       const contact: typeof contacts.$inferInsert = {
-        id: id('e', (i + 1) * 10 + j),
-        organizationId: customerId,
+        id: contactId,
         titleBefore: p.titleBefore ?? null,
         firstName: p.firstName,
         lastName: p.lastName,
         gender: p.gender,
         salutation: p.salutation,
-        position: p.position ?? null,
         email: p.email,
         phone: p.phone ?? null,
-        isPrimary: j === 0,
         unsubscribedAt: p.unsubscribed ? new Date('2026-09-03T08:00:00Z') : null,
         unsubscribeSource: p.unsubscribed ? 'link' : null,
         deletedAt: null,
@@ -371,6 +367,14 @@ export async function seedCustomers(
         .insert(contacts)
         .values(contact)
         .onConflictDoUpdate({ target: contacts.id, set: { ...contact, updatedAt: sql`now()` } });
+      const link = { position: p.position ?? null, isPrimary: j === 0 };
+      await tx
+        .insert(contactLinks)
+        .values({ contactId, organizationId: customerId, ...link })
+        .onConflictDoUpdate({
+          target: [contactLinks.contactId, contactLinks.organizationId],
+          set: link,
+        });
     }
   }
 }

@@ -15,6 +15,7 @@ import {
   campaignAttachments,
   campaignMessages,
   campaigns,
+  contactLinks,
   contacts,
   organizations,
   emailTemplateAttachments,
@@ -124,28 +125,26 @@ export async function recipientCandidates(db: Db | Tx, customerIds: string[]) {
         kind: organizations.kind,
         city: organizations.city,
         status: organizations.status,
-        email: organizations.email,
-        unsubscribedAt: organizations.unsubscribedAt,
-        emailStatus: organizations.emailStatus,
       })
       .from(organizations)
       .where(and(inArray(organizations.id, customerIds), isNull(organizations.deletedAt))),
     db
       .select({
         id: contacts.id,
-        customerId: contacts.organizationId,
+        customerId: contactLinks.organizationId,
         titleBefore: contacts.titleBefore,
         firstName: contacts.firstName,
         lastName: contacts.lastName,
         titleAfter: contacts.titleAfter,
         email: contacts.email,
-        isPrimary: contacts.isPrimary,
+        isPrimary: contactLinks.isPrimary,
         unsubscribedAt: contacts.unsubscribedAt,
         emailStatus: contacts.emailStatus,
       })
-      .from(contacts)
-      .where(and(inArray(contacts.organizationId, customerIds), isNull(contacts.deletedAt)))
-      .orderBy(desc(contacts.isPrimary), asc(contacts.lastName)),
+      .from(contactLinks)
+      .innerJoin(contacts, eq(contacts.id, contactLinks.contactId))
+      .where(and(inArray(contactLinks.organizationId, customerIds), isNull(contacts.deletedAt)))
+      .orderBy(desc(contactLinks.isPrimary), asc(contacts.lastName)),
   ]);
   const order = new Map(customerIds.map((id, i) => [id, i]));
   return rows
@@ -156,11 +155,11 @@ export async function recipientCandidates(db: Db | Tx, customerIds: string[]) {
       kind: customer.kind,
       city: customer.city,
       status: customer.status,
-      /** A private person: their own address and state. */
-      self:
-        customer.kind === 'individual'
-          ? { email: customer.email, skipReason: skipReasonOf(customer) }
-          : null,
+      /**
+       * Before stage O2 a private person was their own recipient; now they are their record's
+       * person, among the contacts.
+       */
+      self: null as { email: string | null; skipReason: SkipReason | null } | null,
       contacts: people
         .filter((p) => p.customerId === customer.id)
         .map((p) => ({
@@ -538,10 +537,6 @@ export async function getCampaign(db: Db, id: string) {
       contactEmail: contacts.email,
       contactUnsubscribedAt: contacts.unsubscribedAt,
       contactEmailStatus: contacts.emailStatus,
-      customerSalutation: organizations.salutation,
-      customerEmail: organizations.email,
-      customerUnsubscribedAt: organizations.unsubscribedAt,
-      customerEmailStatus: organizations.emailStatus,
       values: campaignMessages.values,
       ownFileIds: campaignMessages.ownFileIds,
       bodyOverride: campaignMessages.bodyOverride,
@@ -613,11 +608,12 @@ export async function getCampaign(db: Db, id: string) {
             emailStatus: m.contactEmailStatus ?? 'ok',
           }
         : {
+            // A message names its person since stage O2; an older one without stays readable.
             name: m.customerName,
-            salutation: m.customerSalutation,
-            email: m.customerEmail,
-            unsubscribedAt: m.customerUnsubscribedAt,
-            emailStatus: m.customerEmailStatus,
+            salutation: null,
+            email: null,
+            unsubscribedAt: null,
+            emailStatus: 'ok' as const,
           };
       const draftState = c.status === 'draft';
       return {
@@ -749,7 +745,7 @@ async function renderFor(
 ) {
   const { values, customerName } = await valuesFor(
     db,
-    message.contactId ? { contactId: message.contactId } : { customerId: message.customerId },
+    { contactId: message.contactId ?? undefined, customerId: message.customerId },
     campaign.senderUserId,
     { ...campaign.commonValues, ...message.values },
   );

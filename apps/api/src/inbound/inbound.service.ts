@@ -112,7 +112,7 @@ export async function assignInbound(
       .where(
         and(
           eq(contacts.id, input.contactId),
-          eq(contacts.organizationId, input.customerId),
+          sql`exists (select 1 from contact_links l where l.contact_id = ${contacts.id} and l.organization_id = ${input.customerId})`,
           isNull(contacts.deletedAt),
         ),
       );

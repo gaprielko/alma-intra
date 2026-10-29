@@ -7,6 +7,7 @@ import { notify } from '../notifications/notifications.service.js';
 import {
   campaignMessages,
   campaigns,
+  contactLinks,
   contacts,
   organizations,
   inboundMessages,
@@ -168,12 +169,16 @@ export function tokenIn(addresses: readonly string[], domain: string | undefined
   return null;
 }
 
-/** Who a mail is from, by the address: one live contact, else one live customer's own address. */
+/**
+ * Who a mail is from, by the address: the live person with it at their one organization, else one
+ * live organization's own address. A person at several organizations stays for a colleague to file.
+ */
 async function bySender(db: Db, email: string) {
   const people = await db
-    .select({ contactId: contacts.id, customerId: contacts.organizationId })
+    .select({ contactId: contacts.id, customerId: contactLinks.organizationId })
     .from(contacts)
-    .innerJoin(organizations, eq(organizations.id, contacts.organizationId))
+    .innerJoin(contactLinks, eq(contactLinks.contactId, contacts.id))
+    .innerJoin(organizations, eq(organizations.id, contactLinks.organizationId))
     .where(
       and(
         sql`lower(${contacts.email}) = ${email}`,

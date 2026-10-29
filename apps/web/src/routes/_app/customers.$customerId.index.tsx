@@ -469,7 +469,9 @@ function ContactsCard({ customer: c }: { customer: Customer }) {
                       {tc.edit}
                     </DropdownMenuItem>
                     {contact.isPrimary ? null : (
-                      <DropdownMenuItem onSelect={() => primary.mutate({ id: contact.id })}>
+                      <DropdownMenuItem
+                        onSelect={() => primary.mutate({ id: contact.id, customerId: c.id })}
+                      >
                         {tc.makePrimary}
                       </DropdownMenuItem>
                     )}
@@ -502,7 +504,7 @@ function ContactsCard({ customer: c }: { customer: Customer }) {
           confirmLabel={tc.deleteConfirm.confirm}
           destructive
           pending={remove.isPending}
-          onConfirm={() => remove.mutate({ id: removing.id })}
+          onConfirm={() => remove.mutate({ id: removing.id, customerId: c.id })}
         />
       ) : null}
     </Card>

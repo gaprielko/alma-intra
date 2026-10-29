@@ -17,6 +17,7 @@ import {
   campaigns,
   messageAttachments,
   inboundMessages,
+  contactLinks,
   contacts,
   organizations,
   files,
@@ -67,7 +68,7 @@ async function checkParticipants(tx: Tx, customerId: string, input: ActivityValu
       .where(
         and(
           inArray(contacts.id, contactIds),
-          eq(contacts.organizationId, customerId),
+          sql`exists (select 1 from contact_links l where l.contact_id = ${contacts.id} and l.organization_id = ${customerId})`,
           isNull(contacts.deletedAt),
         ),
       );
@@ -522,11 +523,12 @@ export async function activityOptions(db: Db, customerId: string) {
         firstName: contacts.firstName,
         lastName: contacts.lastName,
         titleAfter: contacts.titleAfter,
-        position: contacts.position,
+        position: contactLinks.position,
       })
-      .from(contacts)
-      .where(and(eq(contacts.organizationId, customerId), isNull(contacts.deletedAt)))
-      .orderBy(desc(contacts.isPrimary), asc(contacts.lastName)),
+      .from(contactLinks)
+      .innerJoin(contacts, eq(contacts.id, contactLinks.contactId))
+      .where(and(eq(contactLinks.organizationId, customerId), isNull(contacts.deletedAt)))
+      .orderBy(desc(contactLinks.isPrimary), asc(contacts.lastName)),
     db
       .select({ id: users.id, name: users.name })
       .from(users)

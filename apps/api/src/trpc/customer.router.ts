@@ -182,7 +182,13 @@ export const customerRouter = router({
     .input(updateContactSchema)
     .mutation(async ({ ctx, input }) => {
       const change = await run(() =>
-        organizations.updateContact(ctx.db, input.id, input.contact, input.receivesBulk),
+        organizations.updateContact(
+          ctx.db,
+          input.id,
+          input.customerId,
+          input.contact,
+          input.receivesBulk,
+        ),
       );
       auditCustomer(ctx, change.customerId, {
         contact: 'updated',
@@ -195,7 +201,9 @@ export const customerRouter = router({
   contactSetPrimary: authorizedProcedure('customer.write')
     .input(contactIdSchema)
     .mutation(async ({ ctx, input }) => {
-      const { customerId } = await run(() => organizations.setPrimaryContact(ctx.db, input.id));
+      const { customerId } = await run(() =>
+        organizations.setPrimaryContact(ctx.db, input.id, input.customerId),
+      );
       auditCustomer(ctx, customerId, { contact: 'primary', contactId: input.id });
       return { ok: true as const };
     }),
@@ -203,7 +211,9 @@ export const customerRouter = router({
   contactDelete: authorizedProcedure('customer.write')
     .input(contactIdSchema)
     .mutation(async ({ ctx, input }) => {
-      const { customerId } = await run(() => organizations.deleteContact(ctx.db, input.id));
+      const { customerId } = await run(() =>
+        organizations.deleteContact(ctx.db, input.id, input.customerId),
+      );
       auditCustomer(ctx, customerId, { contact: 'deleted', contactId: input.id });
       return { ok: true as const };
     }),
