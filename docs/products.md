@@ -42,6 +42,8 @@ products                    (today's code list `products`, extended) [R-1]
   id, name (unique), description
   base_price, base_price_gross   numeric(10,2), EUR without and with VAT; NULL = not set yet
   period                    'month' | 'year'
+  workload_step             % to which every workload is rounded up (e.g. 50); for items counted
+                            by workloads [R-14]
   state                     'offered' | 'withdrawn' (no longer offered; kept for customers who have it)
   position, created_*, updated_at, deleted_at
 
@@ -56,6 +58,7 @@ product_price_items         one product's price list [R-3]
                             added beyond `included`
   max                       the most a customer may have (NULL = no limit)
   billing                   'recurring' (every period of the product) | 'once'
+  by_workload               counted from workloads at the customer (recurring items only)
   position                  order in the price list
 ```
 
@@ -178,12 +181,20 @@ organization_products       (today's link, extended) [R-10]
   note
 organization_product_counts how many of each item it has
   organization_product_id, item_id, count
+organization_product_workloads   for an item counted by workloads: the people and their workload
+  organization_product_id, item_id, persons, percent   („3 × 33 %“)
 ```
 
 - **Rozsah a príplatky** (the counts): one count per item of the product's price list. It starts
   at the number in the package (`included`) and **cannot go below it**; each piece above it is a
   surcharge, shown per piece (as the product's price list sets it, not changeable here) and in
   total („+2 × 9,84 € = +19,68 €“). It cannot exceed the maximum; one-off items count once.
+- **Workloads** [R-14]: for an item switched to „podľa úväzkov“ on the product (Sestra), the count is
+  not set by hand. The customer's workloads are listed („2 × 100 %, 3 × 33 %, 1 × 15 %“); each is
+  rounded **up** to the product's step (with 50 %: 33 % and 15 % count as 50 %, 51 % as 100 %); the
+  sum gives the count (400 % = 4 sestry, covered by a package of 4), a sum that is not whole is
+  rounded up to the next one (450 % = 5) [R-15]. The package floor and the surcharge then apply as
+  above.
 - **Price** [R-7, R-11]: by default it follows the product's current price list, so a price change
   reaches every customer on it (and shows in their history of changes); a **discount** in % keeps
   following it, either **permanent** or for a number of months (then the list price applies); a **fixed price** is agreed with the customer and stays until changed.
@@ -232,6 +243,8 @@ organization_product_counts how many of each item it has
 | R-10 | A product is held by an organization or a prevádzka, with counts per item and dates; ended, not deleted. | proposed |
 | R-11 | Price modes at a customer: by the list, a discount in %, or a fixed agreed price. | proposed |
 | R-13 | The count of an item starts at the package and cannot go below it; the surcharge per piece is the price list's, not changed per customer. | agreed |
+| R-14 | An item of a product can be counted from workloads; each workload rounds up to the product's step; the sum gives the count. | agreed |
+| R-15 | A sum of workloads that is not whole is rounded up to the next whole count. | proposed |
 | R-12 | „Sestry“ in the header is the sum of the „Sestra“ counts over the organization and its prevádzky. | proposed |
 | R-8 | Adding an item offers the numbers from the product it was last used in. | agreed |
 

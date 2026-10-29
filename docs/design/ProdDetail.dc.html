@@ -96,7 +96,7 @@ tr:first-child td{border-top:0}
 .hint{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:#fdf6ea;color:#7a4508;font-size:13px;line-height:19px}
 </style>
 </helmet>
-<div style="position: relative; display: flex; flex-wrap: wrap; min-height: 1200px; background: #eaf0ee">
+<div style="position: relative; display: flex; flex-wrap: wrap; min-height: 1300px; background: #eaf0ee">
   <div style="flex: 0 0 232px; background: #0c3b3c">
     <dc-import name="Sidebar" active="products" organizations="{{ true }}" hint-size="232px,900px"></dc-import>
   </div>
@@ -128,6 +128,8 @@ tr:first-child td{border-top:0}
             <label class="field" style="grid-column: span 2"><span>Základná cena bez DPH (€)</span><input value="49,00"></label>
             <label class="field" style="grid-column: span 2; background: #f7faf9"><span>s DPH 23 % (€)</span><input value="60,27"></label>
             <div style="grid-column: span 2; display: flex; flex-direction: column; justify-content: center; gap: 6px"><span class="meta" style="font-weight: 500">Obdobie</span><div class="seg" style="flex-wrap: nowrap; align-self: flex-start"><button type="button" class="on">Mesačne</button><button type="button">Ročne</button></div></div>
+            <label class="field" style="grid-column: span 2"><span>Úväzky zaokrúhľovať nahor na (%)</span><input value="50"></label>
+            <p class="meta" style="grid-column: span 4; margin: 0; align-self: center; font-size: 13px; line-height: 19px">Pre položky „podľa úväzkov“: 33 % aj 15 % sa počíta ako 50 %, 51 % ako 100 %. Súčet úväzkov dáva počet (400 % = 4 sestry).</p>
             <p class="meta" style="grid-column: 1 / -1; margin: 0">Zadajte cenu bez DPH alebo s DPH, druhá sa dopočíta a zaokrúhli na 2 desatinné miesta. Sadzbu DPH (23 %) mení <a href="ProdVatSettings.dc.html">Nastavenia</a>.</p>
           </div>
         </section>
@@ -143,7 +145,7 @@ tr:first-child td{border-top:0}
               <tbody>
                 <tr>
                   <td style="width: 24px; padding-right: 0"><span class="handle" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="9" cy="6" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span></td>
-                  <td style="padding-left: 6px"><span class="name">Admin prístup</span><span class="sub">jednotka: prístup</span></td>
+                  <td style="padding-left: 6px"><span class="name">Admin prístup</span><span class="sub">jednotka: prístup</span><label style="display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 12px; color: #48625f; cursor: pointer; white-space: nowrap"><button type="button" class="switch switch-sm" role="switch" aria-checked="false" aria-label="Admin prístup: podľa úväzkov" style="background: #b9c8c5"><i style="left: 2px"></i></button>podľa úväzkov</label></td>
                   <td><button type="button" class="chip chip-sm" aria-label="Admin prístup: platba">Opakovane<svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></button></td>
                   <td><input class="num" value="1" aria-label="Admin prístup: v cene"></td>
                   <td><span class="euro"><input class="num num-w" value="10,00" aria-label="Admin prístup: cena za ďalšiu bez DPH"> €</span></td>
@@ -153,7 +155,7 @@ tr:first-child td{border-top:0}
                 </tr>
 <tr>
                   <td style="width: 24px; padding-right: 0"><span class="handle" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="9" cy="6" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span></td>
-                  <td style="padding-left: 6px"><span class="name">Sestra</span><span class="sub">jednotka: sestra</span></td>
+                  <td style="padding-left: 6px"><span class="name">Sestra</span><span class="sub">jednotka: sestra</span><label style="display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 12px; color: #48625f; cursor: pointer; white-space: nowrap"><button type="button" class="switch switch-sm" role="switch" aria-checked="true" aria-label="Sestra: podľa úväzkov" style="background: #0f8b8d"><i style="left: 16px"></i></button>podľa úväzkov</label></td>
                   <td><button type="button" class="chip chip-sm" aria-label="Sestra: platba">Opakovane<svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></button></td>
                   <td><input class="num" value="4" aria-label="Sestra: v cene"></td>
                   <td><span class="euro"><input class="num num-w" value="8,00" aria-label="Sestra: cena za ďalšiu bez DPH"> €</span></td>
@@ -163,7 +165,7 @@ tr:first-child td{border-top:0}
                 </tr>
 <tr>
                   <td style="width: 24px; padding-right: 0"><span class="handle" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="9" cy="6" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span></td>
-                  <td style="padding-left: 6px"><span class="name">Superadmin</span><span class="sub">jednotka: prístup</span></td>
+                  <td style="padding-left: 6px"><span class="name">Superadmin</span><span class="sub">jednotka: prístup</span><label style="display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 12px; color: #48625f; cursor: pointer; white-space: nowrap"><button type="button" class="switch switch-sm" role="switch" aria-checked="false" aria-label="Superadmin: podľa úväzkov" style="background: #b9c8c5"><i style="left: 2px"></i></button>podľa úväzkov</label></td>
                   <td><button type="button" class="chip chip-sm" aria-label="Superadmin: platba">Opakovane<svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></button></td>
                   <td><input class="num" value="0" aria-label="Superadmin: v cene"></td>
                   <td><span class="euro"><input class="num num-w" value="25,00" aria-label="Superadmin: cena za ďalšiu bez DPH"> €</span></td>
@@ -240,7 +242,7 @@ tr:first-child td{border-top:0}
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1200}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
