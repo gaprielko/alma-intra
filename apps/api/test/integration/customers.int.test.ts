@@ -196,10 +196,10 @@ describe('contacts (organizations)', () => {
         where l.organization_id = ${made.data.id}`,
     );
     expect(person.rows).toEqual([{ is_primary: true, email: 'olga.sukromna@example.org' }]);
-    const candidates = await jana.call<
-      { self: unknown; contacts: { name: string; isPrimary: boolean }[] }[]
-    >('campaign.candidates', { customerIds: [made.data.id] });
-    expect(candidates.data[0]!.self).toBeNull();
+    const candidates = await jana.call<{ contacts: { name: string; isPrimary: boolean }[] }[]>(
+      'campaign.candidates',
+      { customerIds: [made.data.id] },
+    );
     expect(candidates.data[0]!.contacts).toEqual([
       expect.objectContaining({ name: 'Oľga Súkromná', isPrimary: true }),
     ]);
