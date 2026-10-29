@@ -4,7 +4,8 @@ import {
   type FileGroup,
   fileExtension,
   type FolderContentsInput,
-  MAX_FILE_BYTES,
+  maxBytesOf,
+  splitDocumentDate,
   TRASH_DAYS,
 } from '@intra/shared/schemas';
 import { and, asc, desc, eq, inArray, isNotNull, isNull, lt, or, type SQL, sql } from 'drizzle-orm';
@@ -184,6 +185,15 @@ export async function customerRootFolderId(db: Db | Tx, customerId: string) {
   return row.id;
 }
 
+/** A sub-folder of this name (any case), or `null`. */
+export async function folderNamed(db: Db, parentId: string, name: string) {
+  const [row] = await db
+    .select({ id: folders.id })
+    .from(folders)
+    .where(and(eq(folders.parentId, parentId), sql`lower(${folders.name}) = lower(${name})`));
+  return row?.id ?? null;
+}
+
 export async function createFolder(db: Db, userId: string, parentId: string, name: string) {
   return mapUnique(() =>
     db.transaction(async (tx) => {
@@ -286,6 +296,7 @@ function fileRows(db: Db, where: SQL[]) {
       changedAt: fileVersions.createdAt,
       changedVia: fileVersions.createdVia,
       changedBy: changer.name,
+      documentDate: fileVersions.documentDate,
     })
     .from(files)
     .innerJoin(fileVersions, eq(fileVersions.id, files.currentVersionId))
@@ -309,6 +320,8 @@ export async function folderContents(db: Db, input: FolderContentsInput) {
       sql`${fileVersions.createdAt} > now() - make_interval(days => ${PERIOD_DAYS[input.period]})`,
     );
   }
+  if (input.dateFrom) where.push(sql`${fileVersions.documentDate} >= ${input.dateFrom}`);
+  if (input.dateTo) where.push(sql`${fileVersions.documentDate} <= ${input.dateTo}`);
 
   if (input.search) {
     where.push(
@@ -376,6 +389,11 @@ const SIGNATURES: Record<string, (bytes: Uint8Array) => boolean> = {
   webp: (b) =>
     startsWith(b, [0x52, 0x49, 0x46, 0x46]) &&
     [0x57, 0x45, 0x42, 0x50].every((byte, i) => b[8 + i] === byte),
+  doc: (b) => startsWith(b, [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]),
+  rtf: (b) => startsWith(b, [0x7b, 0x5c, 0x72, 0x74, 0x66]),
+  html: isText,
+  mp4: isMediaBox,
+  mov: isMediaBox,
   docx: isZip,
   xlsx: isZip,
   pptx: isZip,
@@ -394,6 +412,11 @@ function startsWith(bytes: Uint8Array, prefix: number[]) {
 function isZip(bytes: Uint8Array) {
   return startsWith(bytes, [0x50, 0x4b, 0x03, 0x04]) || startsWith(bytes, [0x50, 0x4b, 0x05, 0x06]);
 }
+/** An MP4 or QuickTime file opens with a box: `ftyp`, or in an older QuickTime `moov`, `mdat`, … */
+function isMediaBox(bytes: Uint8Array) {
+  const box = String.fromCharCode(...bytes.slice(4, 8));
+  return ['ftyp', 'moov', 'mdat', 'wide', 'free', 'skip'].includes(box);
+}
 function isText(bytes: Uint8Array) {
   return !bytes.includes(0);
 }
@@ -411,53 +434,78 @@ function mimeOf(name: string): string {
   return FILE_TYPES[ext].mime;
 }
 
+/** Today in Bratislava, `2026-10-29`: the date of a document whose name gives none. */
+export function today(now = new Date()): string {
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Bratislava' }).format(now);
+}
+
+/** Who uploads through a signed URL (a person in the web, or Claude), and a date that wins over the name's. */
+export interface UploadOrigin {
+  via?: 'web' | 'mcp' | undefined;
+  documentDate?: string | undefined;
+}
+
 async function pendingVersion(
   tx: Tx,
   storage: Storage,
-  file: { id: string },
-  values: { mime: string; size: number; note?: string | undefined; userId: string },
+  file: { id: string; name: string },
+  values: {
+    size: number;
+    note?: string | undefined;
+    userId: string;
+    documentDate: string;
+    via: 'web' | 'mcp';
+  },
 ) {
+  if (values.size > maxBytesOf(file.name)) throw new FileError('UPLOAD_MISMATCH');
+  const mime = mimeOf(file.name);
   const versionId = randomUUID();
   const key = storageKey(file.id, versionId);
   await tx.insert(fileVersions).values({
     id: versionId,
     fileId: file.id,
     storageKey: key,
-    mime: values.mime,
+    mime,
     size: values.size,
     note: values.note || null,
+    documentDate: values.documentDate,
+    createdVia: values.via,
     createdByUserId: values.userId,
   });
   const upload = await storage.createUploadUrl(key, {
-    contentType: values.mime,
+    contentType: mime,
     contentLength: values.size,
   });
-  return { versionId, url: upload.url, contentType: values.mime };
+  return { versionId, url: upload.url, contentType: mime, documentDate: values.documentDate };
 }
 
 /**
  * A new file in a folder: a row nobody sees yet, a pending version and a signed PUT bound to the
- * type and the size. The file shows once `confirmUpload` checked what arrived.
+ * type and the size. The file shows once `confirmUpload` checked what arrived. A date at the end
+ * of the name (`… 2026-10-28.pdf`) becomes the document's date and leaves the name.
  */
 export async function requestUpload(
   db: Db,
   storage: Storage | null,
   userId: string,
-  input: { folderId: string; name: string; size: number },
+  input: { folderId: string; name: string; size: number; note?: string | undefined } & UploadOrigin,
 ) {
+  const named = splitDocumentDate(input.name);
   return db.transaction(async (tx) => {
     await folderPath(tx, input.folderId);
     const bucket = requireStorage(storage);
     const [file] = await tx
       .insert(files)
-      .values({ folderId: input.folderId, name: input.name, createdByUserId: userId })
-      .returning({ id: files.id });
+      .values({ folderId: input.folderId, name: named.name, createdByUserId: userId })
+      .returning({ id: files.id, name: files.name });
     const upload = await pendingVersion(tx, bucket, file!, {
-      mime: mimeOf(input.name),
       size: input.size,
+      note: input.note,
       userId,
+      documentDate: input.documentDate ?? named.documentDate ?? today(),
+      via: input.via ?? 'web',
     });
-    return { fileId: file!.id, ...upload };
+    return { fileId: file!.id, name: named.name, ...upload };
   });
 }
 
@@ -473,12 +521,15 @@ async function liveFile(db: Db | Tx, id: string, lock = false) {
   return file;
 }
 
-/** A new version of a file: the same extension, so a DOCX stays a DOCX. */
+/**
+ * A new version of a file: the same extension, so a DOCX stays a DOCX. A date at the end of the
+ * uploaded name dates the version.
+ */
 export async function requestVersion(
   db: Db,
   storage: Storage | null,
   userId: string,
-  input: { fileId: string; name: string; size: number; note?: string | undefined },
+  input: { fileId: string; name: string; size: number; note?: string | undefined } & UploadOrigin,
 ) {
   return db.transaction(async (tx) => {
     const file = await liveFile(tx, input.fileId);
@@ -487,10 +538,11 @@ export async function requestVersion(
       throw new FileError('TYPE_MISMATCH');
     }
     const upload = await pendingVersion(tx, bucket, file, {
-      mime: mimeOf(file.name),
       size: input.size,
       note: input.note,
       userId,
+      documentDate: input.documentDate ?? splitDocumentDate(input.name).documentDate ?? today(),
+      via: input.via ?? 'web',
     });
     return { fileId: file.id, ...upload };
   });
@@ -593,6 +645,7 @@ export async function fileDetail(db: Db, id: string) {
       size: fileVersions.size,
       mime: fileVersions.mime,
       note: fileVersions.note,
+      documentDate: fileVersions.documentDate,
       restoredFrom: fileVersions.restoredFrom,
       createdVia: fileVersions.createdVia,
       createdAt: fileVersions.createdAt,
@@ -732,6 +785,7 @@ export async function restoreVersion(
       storageKey: key,
       mime: old.mime,
       size: old.size,
+      documentDate: old.documentDate,
       restoredFrom: old.number,
       createdByUserId: userId,
     });
@@ -895,7 +949,7 @@ type ServerSource = 'mcp' | 'generated' | 'inbound';
 function checkedMime(name: string, bytes: Uint8Array) {
   const ext = fileExtension(name);
   if (ext === null) throw new FileError('TYPE_MISMATCH');
-  if (bytes.byteLength === 0 || bytes.byteLength > MAX_FILE_BYTES) {
+  if (bytes.byteLength === 0 || bytes.byteLength > maxBytesOf(name)) {
     throw new FileError('UPLOAD_MISMATCH');
   }
   if (!hasSignature(bytes, name)) throw new FileError('UPLOAD_MISMATCH');
@@ -913,11 +967,13 @@ export async function createFileFromBytes(
     userId: string | null;
     via: ServerSource;
     note?: string | undefined;
+    documentDate?: string | undefined;
   },
 ) {
   const bucket = requireStorage(storage);
   await folderPath(db, input.folderId);
-  const mime = checkedMime(input.name, input.bytes);
+  const named = splitDocumentDate(input.name);
+  const mime = checkedMime(named.name, input.bytes);
   const fileId = randomUUID();
   const versionId = randomUUID();
   const key = storageKey(fileId, versionId);
@@ -926,7 +982,7 @@ export async function createFileFromBytes(
     await tx.insert(files).values({
       id: fileId,
       folderId: input.folderId,
-      name: input.name,
+      name: named.name,
       currentVersionId: versionId,
       createdByUserId: input.userId,
     });
@@ -939,11 +995,12 @@ export async function createFileFromBytes(
       mime,
       size: input.bytes.byteLength,
       note: input.note || null,
+      documentDate: input.documentDate ?? named.documentDate ?? today(),
       createdVia: input.via,
       createdByUserId: input.userId,
     });
   });
-  return { fileId, versionId, number: 1 };
+  return { fileId, versionId, number: 1, name: named.name };
 }
 
 /**
@@ -959,6 +1016,7 @@ export async function addVersionFromBytes(
     userId: string | null;
     via: ServerSource;
     note?: string | undefined;
+    documentDate?: string | undefined;
   },
 ) {
   const bucket = requireStorage(storage);
@@ -979,6 +1037,7 @@ export async function addVersionFromBytes(
       mime,
       size: input.bytes.byteLength,
       note: input.note || null,
+      documentDate: input.documentDate ?? today(),
       createdVia: input.via,
       createdByUserId: input.userId,
     });

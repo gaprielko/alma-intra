@@ -222,6 +222,12 @@ function SheetBody({ file, onClose }: { file: Detail; onClose: () => void }) {
             {current ? <ChangedBy name={current.createdBy} via={current.createdVia} /> : null}
           </dd>
         </div>
+        <div>
+          <dt className="text-xs font-medium text-muted">{d.documentDate}</dt>
+          <dd className="mt-0.5 text-sm">
+            {current?.documentDate ? formatDate(current.documentDate) : sk.common.none}
+          </dd>
+        </div>
         <div className="col-span-2">
           <dt className="text-xs font-medium text-muted">{d.description}</dt>
           <dd
@@ -328,6 +334,7 @@ function Versions({
               <p className="mt-0.5 text-[13px] text-muted">
                 {[
                   formatDateTime(version.createdAt),
+                  version.documentDate ? d.dated(formatDate(version.documentDate)) : null,
                   formatSize(version.size),
                   version.restoredFrom ? d.restoredFrom(version.restoredFrom) : null,
                   version.note ? `„${version.note}“` : null,

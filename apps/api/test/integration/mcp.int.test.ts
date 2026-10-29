@@ -88,6 +88,71 @@ describe('Claude through MCP', () => {
     );
   });
 
+  it('makes folders and uploads through a signed link, dated by the name', async () => {
+    const made = JSON.parse(
+      (await tool('files_create_folder', { name: 'Marketing MCP' })).text,
+    ) as {
+      folderId: string;
+      created: boolean;
+    };
+    expect(made.created).toBe(true);
+    const again = JSON.parse((await tool('files_create_folder', { name: 'marketing mcp' })).text);
+    expect(again).toEqual({ folderId: made.folderId, created: false });
+
+    const pdf = new TextEncoder().encode('%PDF-1.4 brozura');
+    const begun = JSON.parse(
+      (
+        await tool('files_upload_begin', {
+          name: 'Alma ADOS - Brozura 2026-10-19.pdf',
+          size: pdf.byteLength,
+          folderId: made.folderId,
+        })
+      ).text,
+    ) as { fileId: string; versionId: string; name: string; documentDate: string; url: string };
+    expect(begun.name).toBe('Alma ADOS - Brozura.pdf');
+    expect(begun.documentDate).toBe('2026-10-19');
+    await bucket.storage.put(begun.url.replace('memory://', ''), pdf, 'application/pdf');
+    const finished = JSON.parse(
+      (await tool('files_upload_finish', { versionId: begun.versionId })).text,
+    ) as { number: number };
+    expect(finished.number).toBe(1);
+
+    const next = JSON.parse(
+      (
+        await tool('files_upload_begin', {
+          name: 'Alma ADOS - Brozura 2026-10-21.pdf',
+          size: pdf.byteLength,
+          fileId: begun.fileId,
+        })
+      ).text,
+    ) as { versionId: string; url: string; documentDate: string };
+    expect(next.documentDate).toBe('2026-10-21');
+    await bucket.storage.put(next.url.replace('memory://', ''), pdf, 'application/pdf');
+    await tool('files_upload_finish', { versionId: next.versionId });
+
+    const listed = JSON.parse((await tool('files_list_folder', { folderId: made.folderId })).text)
+      .files as { name: string; version: number; documentDate: string }[];
+    expect(listed).toEqual([
+      expect.objectContaining({
+        name: 'Alma ADOS - Brozura.pdf',
+        version: 2,
+        documentDate: '2026-10-21',
+      }),
+    ]);
+
+    const inRange = await jana.call<{ files: { id: string }[] }>('file.contents', {
+      folderId: made.folderId,
+      dateFrom: '2026-10-20',
+      dateTo: '2026-10-31',
+    });
+    expect(inRange.data.files.map((f) => f.id)).toEqual([begun.fileId]);
+    const before = await jana.call<{ files: unknown[] }>('file.contents', {
+      folderId: made.folderId,
+      dateTo: '2026-10-20',
+    });
+    expect(before.data.files).toEqual([]);
+  });
+
   it('refuses content that is not of the type the name says', async () => {
     const refused = await tool('files_create', {
       name: 'falošné.pdf',

@@ -1139,6 +1139,8 @@ export const sk = {
       group: 'Typ',
       changedBy: 'Zmenil',
       period: 'Zmenené',
+      dateFrom: 'Dátum od',
+      dateTo: 'do',
     },
     groups: {
       pdf: 'PDF',
@@ -1146,6 +1148,7 @@ export const sk = {
       spreadsheet: 'Tabuľky',
       presentation: 'Prezentácie',
       image: 'Obrázky',
+      video: 'Videá',
       text: 'Text',
       archive: 'Archívy ZIP',
     },
@@ -1157,6 +1160,7 @@ export const sk = {
     columns: {
       name: 'Názov',
       folder: 'Priečinok',
+      documentDate: 'Dátum',
       changed: 'Zmenené',
       changedBy: 'Zmenil',
       size: 'Veľkosť',
@@ -1171,7 +1175,7 @@ export const sk = {
     dropzone: {
       before: 'Pretiahnite súbory sem alebo ',
       pick: 'vyberte z počítača',
-      after: '. Najviac 50 MB na súbor.',
+      after: '. Najviac 50 MB na súbor, video 500 MB.',
       over: 'Pustite súbory a nahrajú sa do tohto priečinka.',
     },
     notConfigured:
@@ -1200,7 +1204,7 @@ export const sk = {
       dismiss: 'Zavrieť',
       waiting: 'Čaká',
       done: 'Hotovo',
-      tooLarge: 'Väčší ako 50 MB',
+      tooLarge: 'Väčší ako 50 MB (video 500 MB)',
       notAllowed: 'Tento typ súboru sa nedá nahrať',
       failed: 'Nahrávanie zlyhalo',
       mismatch: 'Obsah nezodpovedá typu súboru',
@@ -1246,6 +1250,7 @@ export const sk = {
       version: (n: number) => `verzia ${n}`,
       createdBy: 'Vytvoril',
       changedBy: 'Naposledy zmenil',
+      documentDate: 'Dátum dokumentu',
       description: 'Popis',
       noDescription: 'Bez popisu',
       tabs: {
@@ -1263,6 +1268,7 @@ export const sk = {
         `${customer} · verzia ${version} · ${date}`,
       current: 'Aktuálna',
       restoredFrom: (n: number) => `Obnovená z verzie ${n}`,
+      dated: (date: string) => `dátum dokumentu ${date}`,
       restore: 'Obnoviť',
       restoreDone: (n: number) => `Verzia ${n} je znova aktuálna.`,
       download: 'Stiahnuť',

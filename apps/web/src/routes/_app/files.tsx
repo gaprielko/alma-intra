@@ -4,6 +4,7 @@ import {
   FILE_ACCEPT,
   FILE_GROUPS,
   FILE_PERIODS,
+  isoDateSchema,
 } from '@intra/shared/schemas';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
@@ -45,6 +46,9 @@ const search = z.object({
   group: z.enum(FILE_GROUPS).optional(),
   by: z.string().uuid().optional(),
   period: z.enum(FILE_PERIODS).optional(),
+  /** The document's date, from and to. */
+  from: isoDateSchema.optional().catch(undefined),
+  to: isoDateSchema.optional().catch(undefined),
   /** The file whose sheet is open. */
   file: z.string().uuid().optional(),
   view: z.enum(['trash']).optional(),
@@ -362,6 +366,8 @@ function ContentsSection({
     ...(params.group ? { group: params.group } : {}),
     ...(params.by ? { changedBy: params.by } : {}),
     ...(params.period ? { period: params.period } : {}),
+    ...(params.from ? { dateFrom: params.from } : {}),
+    ...(params.to ? { dateTo: params.to } : {}),
   };
   const contents = useQuery({
     ...trpc.file.contents.queryOptions(input),
@@ -390,7 +396,7 @@ function ContentsSection({
     }),
   );
 
-  const filtered = Boolean(params.group || params.by || params.period);
+  const filtered = Boolean(params.group || params.by || params.period || params.from || params.to);
   const data = contents.data;
   const path = data?.path ?? [];
   const current = path.at(-1);
@@ -508,6 +514,7 @@ function ContentsSection({
                 </button>
               </div>
             </TableCell>
+            <TableCell className="text-muted">{sk.common.none}</TableCell>
             <TableCell className="text-muted">{formatDate(folder.updatedAt)}</TableCell>
             <TableCell className="text-muted">{sk.common.none}</TableCell>
             <TableCell className="text-muted">{t.folderFiles(folder.fileCount)}</TableCell>
@@ -578,6 +585,9 @@ function ContentsSection({
                 ) : null}
               </div>
             </div>
+          </TableCell>
+          <TableCell className="whitespace-nowrap text-muted">
+            {file.documentDate ? formatDate(file.documentDate) : sk.common.none}
           </TableCell>
           <TableCell className="text-muted">{formatRecent(file.changedAt)}</TableCell>
           <TableCell className="text-muted">
@@ -668,6 +678,36 @@ function ContentsSection({
           options={FILE_PERIODS.map((value) => ({ value, label: t.periods[value] }))}
           onChange={(period) => setSearch({ period })}
         />
+        <label
+          className={cn(
+            'inline-flex h-9 items-center gap-2 rounded-[10px] border border-border bg-white px-3 text-[13px] font-medium',
+            (params.from || params.to) && 'border-primary text-primary-text',
+          )}
+        >
+          {t.filters.dateFrom}
+          <input
+            type="date"
+            value={params.from ?? ''}
+            max={params.to}
+            onChange={(event) => setSearch({ from: event.target.value || undefined })}
+            className="bg-transparent outline-none"
+          />
+        </label>
+        <label
+          className={cn(
+            'inline-flex h-9 items-center gap-2 rounded-[10px] border border-border bg-white px-3 text-[13px] font-medium',
+            (params.from || params.to) && 'border-primary text-primary-text',
+          )}
+        >
+          {t.filters.dateTo}
+          <input
+            type="date"
+            value={params.to ?? ''}
+            min={params.from}
+            onChange={(event) => setSearch({ to: event.target.value || undefined })}
+            className="bg-transparent outline-none"
+          />
+        </label>
       </div>
 
       {empty && !message ? (
@@ -682,6 +722,7 @@ function ContentsSection({
           className="rounded-none border-0 shadow-none"
           columns={[
             t.columns.name,
+            t.columns.documentDate,
             t.columns.changed,
             t.columns.changedBy,
             t.columns.size,

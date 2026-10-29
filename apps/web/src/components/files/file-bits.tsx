@@ -24,6 +24,7 @@ const GROUP_CLASS: Record<FileGroup, string> = {
   spreadsheet: 'bg-[#eaf3de] text-[#3b6d11]',
   presentation: 'bg-[#fcf0de] text-[#b45309]',
   image: 'bg-[#f0ebfa] text-[#5b3fa0]',
+  video: 'bg-[#fbe9f3] text-[#9d2766]',
   text: 'bg-surface text-muted',
   archive: 'bg-[#e9eef6] text-[#334e7b]',
 };

@@ -355,6 +355,7 @@ its files; they never store bytes themselves.
 | Versions    | every upload of a new content is a new version; the history is kept                    |
 | Type, size  | from the stored object (HEAD + signature check, as in Alma ADOS), not from the client  |
 | Description, tags | optional                                                                        |
+| Document date | per version **[D-33]**: a date at the end of the uploaded name (`… 2026-10-28.pdf`) leaves the name and becomes the date; otherwise the upload day. The current version's date is the file's; the list shows it and filters by a range |
 | Created / changed by | user (or „Claude on behalf of <user>“, section 7.5)                          |
 
 - **Versioning**: replacing a file adds a version; any version can be downloaded or restored.
@@ -362,8 +363,9 @@ its files; they never store bytes themselves.
   what a customer already received.
 - **Deleting** moves to „Kôš“ (trash) for 30 days **[D-28]**; a file referenced by a sent e-mail is
   kept for the e-mail's record even after it is emptied from the trash (hidden, not destroyed).
-- **Limits [D-29]**: max 50 MB per file; allowed types: documents (PDF, DOCX, XLSX, PPTX, ODT, TXT,
-  MD, CSV), images (JPG, PNG, WEBP, SVG as download only), archives (ZIP).
+- **Limits [D-29]**: max 50 MB per file, a video 500 MB; allowed types: documents (PDF, DOCX, DOC,
+  RTF, ODT, HTML as download only, XLSX, PPTX, TXT, MD, CSV), images (JPG, PNG, WEBP, SVG as
+  download only), videos (MP4, MOV, download only), archives (ZIP).
 
 ### 7.3 Screens and functions
 
@@ -408,7 +410,8 @@ service).
   - `files.search`, `files.list_folder`, `files.get_info`, `files.read` (text extraction for
     DOCX/XLSX/PDF/MD, or the raw file for Claude's own document skills), `files.download_url`;
   - `files.create` (into a folder), `files.update` (**always a new version**, never an overwrite),
-    `files.move`, `files.rename`; no hard delete;
+    `files.move`, `files.rename`, `files.create_folder`, and `files.upload_begin` /
+    `files.upload_finish` (a signed link for content too large for base64); no hard delete;
   - `customers.search`, `customers.get` (with contacts and recent timeline), so Claude knows whom a
     document is for;
   - later, optionally: `activities.create` (e.g. notes from a meeting), `emails.create_draft` (a
@@ -563,10 +566,11 @@ both attach files.
 | D-26  | Over the 40 MB attachment limit: a signed download link valid 30 days                                                     |
 | D-27  | A copy of each reply is forwarded to the sender's own mailbox                                                             |
 | D-28  | Trash keeps files 30 days                                                                                                 |
-| D-29  | Max 50 MB per file; allowed types as in 7.2                                                                               |
+| D-29  | Max 50 MB per file (video 500 MB); types in 7.2                                                                            |
 | D-30  | No PDF renditions of Office files                                                                                         |
 | D-31  | MCP for all Claude clients: OAuth (claude.ai, Desktop, Code) and personal access tokens (Code), both in E7                |
 | D-32  | No job library: e-mails wait in `campaign_messages` (and system mail in `mail_outbox`), drained every few seconds by a worker in the API process with leases, retries and scheduled times; one process, no extra service. pg-boss only if several API instances run |
+| D-33  | A file's document date is a property of each version, taken from the end of the uploaded name or the upload day; old versions merged into one file keep their dates |
 
 ### Still to verify (not decisions)
 

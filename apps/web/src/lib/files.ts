@@ -1,4 +1,4 @@
-import { FILE_TYPES, type FileGroup, fileExtension, MAX_FILE_BYTES } from '@intra/shared/schemas';
+import { FILE_TYPES, type FileGroup, fileExtension, maxBytesOf } from '@intra/shared/schemas';
 
 /** `48 kB`, `1,2 MB`: Slovak decimals, kB under a megabyte. */
 export function formatSize(bytes: number): string {
@@ -31,7 +31,7 @@ export function uploadRefusal(file: {
 }): 'tooLarge' | 'notAllowed' | null {
   if (fileExtension(file.name) === null) return 'notAllowed';
   if (file.size === 0) return 'notAllowed';
-  if (file.size > MAX_FILE_BYTES) return 'tooLarge';
+  if (file.size > maxBytesOf(file.name)) return 'tooLarge';
   return null;
 }
 
