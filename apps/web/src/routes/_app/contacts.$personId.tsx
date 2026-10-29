@@ -1,8 +1,9 @@
 import { sk } from '@intra/shared/i18n';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { MoreHorizontal, Plus } from 'lucide-react';
+import { Mail, MoreHorizontal, Plus } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
+import { ActivityDialog } from '@/components/activities/activity-dialog';
 import { ActivitySheet } from '@/components/activities/activity-sheet';
 import { ActivityItem, EmailItem, ReplyItem } from '@/components/activities/timeline-items';
 import { CustomerAvatar } from '@/components/customers/customer-bits';
@@ -50,6 +51,25 @@ function PersonPage() {
   const canWrite = useCan('customer.write');
   const [deleting, setDeleting] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const canSend = useCan('email.send');
+  const canRecord = useCan('activity.write');
+  const toast = useToast();
+  const navigate = useNavigate();
+  const setRecipients = useMutation(trpc.campaign.setRecipients.mutationOptions());
+  // An e-mail to this person: a draft for their organization with them as the one recipient.
+  const compose = useMutation(
+    trpc.campaign.create.mutationOptions({
+      onSuccess: async (created, input) => {
+        await setRecipients.mutateAsync({
+          id: created.id,
+          recipients: [{ customerId: input.customerIds?.[0] ?? '', contactId: personId }],
+        });
+        await navigate({ to: '/emails/compose/$campaignId', params: { campaignId: created.id } });
+      },
+      onError: (error) => toast('error', errorMessage(error, sk.campaigns.errors)),
+    }),
+  );
   const back = { to: '/organizations/contacts' as const, label: p.back };
 
   if (person.isPending) {
@@ -75,6 +95,8 @@ function PersonPage() {
   }
   const c = person.data;
   const own = c.organizations.find((o) => o.kind === 'individual');
+  // The organization an e-mail or an activity from here belongs to: the primary one, else the first.
+  const home = c.organizations[0];
   const subtitle = c.organizations
     .filter((o) => o.kind === 'organization')
     .map((o) => p.positionAt(o.position, o.name))
@@ -86,6 +108,22 @@ function PersonPage() {
         {canWrite && !own ? (
           <Button variant="ghost" onClick={() => setDeleting(true)}>
             {p.delete}
+          </Button>
+        ) : null}
+        {canSend && home ? (
+          <Button
+            variant="secondary"
+            disabled={compose.isPending}
+            onClick={() => compose.mutate({ customerIds: [home.id] })}
+          >
+            <Mail className="size-4" aria-hidden />
+            {sk.campaigns.sendEmail}
+          </Button>
+        ) : null}
+        {canRecord && home ? (
+          <Button onClick={() => setRecording(true)}>
+            <Plus className="size-4" aria-hidden />
+            {sk.activities.record}
           </Button>
         ) : null}
         {canWrite ? (
@@ -105,6 +143,14 @@ function PersonPage() {
       </div>
       {deleting ? <DeletePerson person={c} onClose={() => setDeleting(false)} /> : null}
       {editing ? <PersonDialog person={c} onClose={() => setEditing(false)} /> : null}
+      {recording && home ? (
+        <ActivityDialog
+          customerId={home.id}
+          customerName={home.name}
+          contact={{ id: c.id, name: c.name }}
+          onClose={() => setRecording(false)}
+        />
+      ) : null}
     </div>
   );
 }
