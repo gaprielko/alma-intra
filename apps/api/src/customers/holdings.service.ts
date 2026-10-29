@@ -113,8 +113,16 @@ export async function holdingsOf(db: Db | Tx, organizationId: string) {
           basePrice: product.basePrice,
           basePriceGross: product.basePriceGross,
         },
-        items: list.map(({ productId: _p, position: _q, ...item }) => ({
-          ...item,
+        items: list.map((item) => ({
+          itemId: item.itemId,
+          name: item.name,
+          unit: item.unit,
+          included: item.included,
+          unitPrice: item.unitPrice,
+          unitPriceGross: item.unitPriceGross,
+          max: item.max,
+          billing: item.billing,
+          byWorkload: item.byWorkload,
           count: price.counts[item.itemId] ?? 0,
           workloads: workloadMap[item.itemId] ?? [],
         })),
