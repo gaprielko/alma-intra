@@ -4,6 +4,7 @@ import {
   folderNameSchema,
   isoDateSchema,
   MAX_VIDEO_BYTES,
+  personName,
 } from '@intra/shared/schemas';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { eq } from 'drizzle-orm';
@@ -11,7 +12,12 @@ import type { Request } from 'express';
 import { z } from 'zod';
 import { timeline, timelineOf } from '../activities/activities.service.js';
 import { AuditTrail, writeAuditEvent } from '../audit/audit.js';
-import { getCustomer, listCustomers } from '../customers/customers.service.js';
+import {
+  getCustomer,
+  listCustomers,
+  listEstablishments,
+  organizationPersons,
+} from '../customers/customers.service.js';
 import { getPerson, listPersons } from '../customers/persons.service.js';
 import type { Db } from '../db/db.module.js';
 import { fileVersions } from '../db/schema/index.js';
@@ -166,8 +172,9 @@ export function buildMcpServer(ctx: McpContext) {
       title: 'Get an organization',
       description:
         'One customer or partner with its details, its contact persons (with their position ' +
-        'there) and the newest 20 items of its timeline (activities, notes, e-mails sent and ' +
-        'received).',
+        'there), its prevádzky (branches, each with its persons) and the newest 20 items of its ' +
+        'timeline, the prevádzky included (activities, notes, e-mails sent and received; each ' +
+        'item names the organization or prevádzka it belongs to).',
       inputSchema: { customerId: z.string().uuid() },
       annotations: READ_ONLY,
     },
@@ -177,9 +184,31 @@ export function buildMcpServer(ctx: McpContext) {
       const recent = (await timeline(ctx.db, customerId, 'all', true))
         .filter((item) => item.type !== 'change')
         .slice(0, 20);
+      // A head organization's prevádzky, each with the persons who are there.
+      const establishments =
+        customer.parent || customer.establishmentCount === 0
+          ? []
+          : await Promise.all([
+              listEstablishments(ctx.db, customerId),
+              organizationPersons(ctx.db, customerId),
+            ]).then(([list, persons]) =>
+              list.map((e) => ({
+                ...e,
+                persons: persons
+                  .filter((p) => p.establishments.some((at) => at.id === e.id))
+                  .map((p) => ({
+                    id: p.id,
+                    name: personName(p),
+                    email: p.email,
+                    phone: p.phone,
+                    position: p.establishments.find((at) => at.id === e.id)?.position ?? null,
+                  })),
+              })),
+            );
       return {
         result: {
           ...customer,
+          establishments,
           folderId: await customerRootFolderId(ctx.db, customerId),
           timeline: recent,
         },
