@@ -216,6 +216,7 @@ function CustomerDetailPage() {
             customerId={c.id}
             customerName={c.name}
             isEstablishment={parent !== null && parent !== undefined}
+            withVat={c.pricesWithVat}
           />
           {c.kind === 'organization' ? (
             <PersonsTable
