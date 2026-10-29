@@ -1,9 +1,9 @@
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { SEED_USERS } from '../../src/db/seed.js';
 import { browser, JANA, startApi } from './client.js';
 
 type Options = {
-  contactTypes: { id: string; name: string; systemKey: string | null }[];
   products: { id: string; name: string }[];
 };
 type Page = {
@@ -16,10 +16,6 @@ describe('contacts (organizations)', () => {
   let api: Awaited<ReturnType<typeof startApi>>;
   let jana: ReturnType<typeof browser>;
   let options: Options;
-  const typeOf = (key: 'customer' | 'Partner') =>
-    options.contactTypes.find((t) =>
-      key === 'customer' ? t.systemKey === 'customer' : t.name === key,
-    )!.id;
 
   beforeAll(async () => {
     api = await startApi();
@@ -35,7 +31,7 @@ describe('contacts (organizations)', () => {
     customer: {
       kind: 'organization',
       name,
-      contactTypeId: typeOf('customer'),
+      role: 'customer',
       tags: [],
       productIds: [],
       ...extra,
@@ -56,17 +52,24 @@ describe('contacts (organizations)', () => {
     expect(second.message).toBe('ICO_TAKEN');
   });
 
-  it('keeps a status only for the type „Zákazník“', async () => {
+  it('keeps a status, an owner and products only for a customer (D-10)', async () => {
+    const ados = options.products.find((p) => p.name === 'ADOS')!;
     const partner = await jana.call<{ id: string }>(
       'customer.create',
-      organization('Partner bez stavu', { contactTypeId: typeOf('Partner'), status: 'interested' }),
+      organization('Partner bez stavu', {
+        role: 'partner',
+        status: 'interested',
+        ownerUserId: SEED_USERS.jana,
+        productIds: [ados.id],
+      }),
     );
-    const got = await jana.call<{ status: string | null; role: string }>('customer.get', {
-      id: partner.data.id,
-    });
-    expect(got.data.status).toBeNull();
-    // Any type but „Zákazník“ is a partner; changing the type to „Zákazník“ makes a customer.
-    expect(got.data.role).toBe('partner');
+    const got = await jana.call<{
+      status: string | null;
+      role: string;
+      owner: unknown;
+      products: unknown[];
+    }>('customer.get', { id: partner.data.id });
+    expect(got.data).toMatchObject({ role: 'partner', status: null, owner: null, products: [] });
     const customer = await jana.call<{ id: string }>(
       'customer.create',
       organization('Zákazník s rolou'),
@@ -172,7 +175,7 @@ describe('contacts (organizations)', () => {
         firstName: 'Oľga',
         lastName: 'Súkromná',
         email: 'olga.sukromna@example.org',
-        contactTypeId: typeOf('customer'),
+        role: 'customer',
         receivesBulk: true,
         tags: [],
         productIds: [],

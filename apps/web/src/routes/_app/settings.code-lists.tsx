@@ -29,32 +29,24 @@ import { cn } from '@/lib/utils';
 
 const t = sk.codeLists;
 type Section = CodeList | 'tags';
-const SECTIONS: readonly Section[] = [
-  'contact_type',
-  'product',
-  'source',
-  'template_category',
-  'tags',
-];
+const SECTIONS: readonly Section[] = ['product', 'source', 'template_category', 'tags'];
 
 export const Route = createFileRoute('/_app/settings/code-lists')({
   validateSearch: z.object({
-    list: z.enum(['contact_type', 'product', 'source', 'template_category', 'tags']).optional(),
+    list: z.enum(['product', 'source', 'template_category', 'tags']).optional(),
   }),
   component: CodeListsPage,
 });
 
 /** Settings › Číselníky: the lists on the left, the chosen one on the right. */
 function CodeListsPage() {
-  const { list = 'contact_type' } = Route.useSearch();
+  const { list = 'product' } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-  const contactTypes = useQuery(trpc.codeList.list.queryOptions({ list: 'contact_type' }));
   const products = useQuery(trpc.codeList.list.queryOptions({ list: 'product' }));
   const sources = useQuery(trpc.codeList.list.queryOptions({ list: 'source' }));
   const categories = useQuery(trpc.codeList.list.queryOptions({ list: 'template_category' }));
   const tags = useQuery(trpc.codeList.tags.queryOptions());
   const count = {
-    contact_type: contactTypes.data?.items.length,
     product: products.data?.items.length,
     source: sources.data?.items.length,
     template_category: categories.data?.items.length,

@@ -1,10 +1,9 @@
-import { eq, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import type { Tx } from './db.module.js';
 import { COMPANY_ROOT_FOLDER_ID } from '@intra/shared/schemas';
 import {
   contactLinks,
   contacts,
-  contactTypes,
   organizations,
   organizationSources,
   organizationProducts,
@@ -297,11 +296,6 @@ export async function seedCustomers(
     },
   ];
 
-  // „Zákazník“, installed by `0011_contact_types`.
-  const [customerType] = await tx
-    .select({ id: contactTypes.id })
-    .from(contactTypes)
-    .where(eq(contactTypes.systemKey, 'customer'));
   for (const [i, c] of list.entries()) {
     const customerId = id('d', i + 1);
     const self = c.kind === 'individual' ? c.people[0]! : undefined;
@@ -309,7 +303,6 @@ export async function seedCustomers(
       id: customerId,
       kind: c.kind,
       role: 'customer',
-      contactTypeId: customerType!.id,
       name: c.name,
       ico: c.ico ?? null,
       status: c.status,

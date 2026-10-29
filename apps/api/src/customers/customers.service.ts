@@ -25,7 +25,6 @@ import {
   auditEvents,
   contactLinks,
   contacts,
-  contactTypes,
   organizationSources,
   organizations,
   organizationTags,
@@ -47,12 +46,7 @@ function omit<T extends object, K extends keyof T>(value: T, key: K): Omit<T, K>
 export class CustomerError extends Error {
   constructor(
     readonly code:
-      | 'NOT_FOUND'
-      | 'ICO_TAKEN'
-      | 'KIND_CHANGED'
-      | 'CONTACT_EMAIL_TAKEN'
-      | 'NOT_ORGANIZATION'
-      | 'CONTACT_TYPE_UNKNOWN',
+      'NOT_FOUND' | 'ICO_TAKEN' | 'KIND_CHANGED' | 'CONTACT_EMAIL_TAKEN' | 'NOT_ORGANIZATION',
   ) {
     super(code);
   }
@@ -116,7 +110,6 @@ function filterWhere(filter: CustomerFilter): SQL[] {
   const where: SQL[] = [alive];
   if (filter.role) where.push(eq(organizations.role, filter.role));
   where.push(...anyOf(organizations.kind, filter.kind));
-  where.push(...anyOf(organizations.contactTypeId, filter.contactTypeId));
   where.push(...linkedTo('organization_products', 'product_id', filter.productId));
   where.push(...anyOf(organizations.region, filter.region));
   where.push(...anyOf(organizations.ownerUserId, filter.ownerUserId));
@@ -202,7 +195,6 @@ export async function listCustomers(db: Db | Tx, raw: CustomerListInput) {
         role: organizations.role,
         name: organizations.name,
         city: organizations.city,
-        contactTypeName: contactTypes.name,
         products: productsJson,
         status: organizations.status,
         owner: sql<{ id: string; name: string } | null>`case when ${users.id} is null then null
@@ -213,7 +205,6 @@ export async function listCustomers(db: Db | Tx, raw: CustomerListInput) {
         total: sql<number>`count(*) over ()`.mapWith(Number),
       })
       .from(organizations)
-      .innerJoin(contactTypes, eq(contactTypes.id, organizations.contactTypeId))
       .leftJoin(users, eq(users.id, organizations.ownerUserId))
       .where(and(...where))
       .orderBy(order, asc(organizations.id))
@@ -265,7 +256,6 @@ export async function getCustomer(db: Db | Tx, id: string) {
   const [row] = await db
     .select({
       customer: organizations,
-      contactTypeName: contactTypes.name,
       products: productsJson,
       sourceName: organizationSources.name,
       owner,
@@ -273,7 +263,6 @@ export async function getCustomer(db: Db | Tx, id: string) {
       tags: tagsJson,
     })
     .from(organizations)
-    .innerJoin(contactTypes, eq(contactTypes.id, organizations.contactTypeId))
     .leftJoin(organizationSources, eq(organizationSources.id, organizations.sourceId))
     .where(and(eq(organizations.id, id), alive));
   if (!row) throw new CustomerError('NOT_FOUND');
@@ -406,28 +395,17 @@ async function assertIcoFree(tx: Tx, ico: string | undefined, except?: string) {
   if (taken && taken.id !== except) throw new CustomerError('ICO_TAKEN');
 }
 
-/** Whether the contact type is „Zákazník“, the one type with a sales status. */
-async function hasSalesStatus(tx: Tx, contactTypeId: string) {
-  const [type] = await tx
-    .select({ systemKey: contactTypes.systemKey })
-    .from(contactTypes)
-    .where(eq(contactTypes.id, contactTypeId));
-  if (!type) throw new CustomerError('CONTACT_TYPE_UNKNOWN');
-  return type.systemKey === 'customer';
-}
-
-/** The columns of a customer from the form; the status only for a „Zákazník“. */
-function columnsOf(input: CustomerInput, salesStatus: boolean) {
+/** The columns of a record from the form; status and owner a customer's only (D-10). */
+function columnsOf(input: CustomerInput) {
+  const customer = input.role === 'customer';
   const common = {
-    contactTypeId: input.contactTypeId,
-    // Until the forms offer the role, „Zákazník“ makes a customer and any other type a partner.
-    role: salesStatus ? ('customer' as const) : ('partner' as const),
-    status: salesStatus ? (input.status ?? null) : null,
+    role: input.role,
+    status: customer ? (input.status ?? null) : null,
     street: input.street ?? null,
     postalCode: input.postalCode ?? null,
     city: input.city ?? null,
     region: input.region ?? null,
-    ownerUserId: input.ownerUserId ?? null,
+    ownerUserId: customer ? (input.ownerUserId ?? null) : null,
     sourceId: input.sourceId ?? null,
     note: input.note ?? null,
     almaOrganizationId: input.almaOrganizationId ?? null,
@@ -503,10 +481,7 @@ async function mapUnique<T>(fn: () => Promise<T>): Promise<T> {
 export async function createCustomer(db: Db, userId: string, input: CreateCustomerInput) {
   return mapUnique(() =>
     db.transaction(async (tx) => {
-      const values = columnsOf(
-        input.customer,
-        await hasSalesStatus(tx, input.customer.contactTypeId),
-      );
+      const values = columnsOf(input.customer);
       await assertIcoFree(
         tx,
         input.customer.kind === 'organization' ? input.customer.ico : undefined,
@@ -528,7 +503,11 @@ export async function createCustomer(db: Db, userId: string, input: CreateCustom
           .values({ contactId: person!.id, organizationId: created!.id, isPrimary: true });
       }
       const { added } = await setTags(tx, created!.id, input.customer.tags);
-      const productChange = await setProducts(tx, created!.id, input.customer.productIds);
+      const productChange = await setProducts(
+        tx,
+        created!.id,
+        input.customer.role === 'customer' ? input.customer.productIds : [],
+      );
       await createCustomerFolder(tx, created!.id);
       if (input.firstContact && input.customer.kind === 'organization') {
         const [person] = await tx
@@ -576,7 +555,7 @@ export async function updateCustomer(db: Db, id: string, input: CustomerInput) {
       if (!current) throw new CustomerError('NOT_FOUND');
       if (current.kind !== input.kind) throw new CustomerError('KIND_CHANGED');
       await assertIcoFree(tx, input.kind === 'organization' ? input.ico : undefined, id);
-      const values = columnsOf(input, await hasSalesStatus(tx, input.contactTypeId));
+      const values = columnsOf(input);
       const fields = changedFields(current, values).filter((f) => f !== 'kind');
       await tx
         .update(organizations)
@@ -600,13 +579,17 @@ export async function updateCustomer(db: Db, id: string, input: CustomerInput) {
       }
       const tagChange = await setTags(tx, id, input.tags);
       if (tagChange.added.length + tagChange.removed.length > 0) fields.push('tags');
-      const productChange = await setProducts(tx, id, input.productIds);
+      const productChange = await setProducts(
+        tx,
+        id,
+        input.role === 'customer' ? input.productIds : [],
+      );
       if (productChange.added.length + productChange.removed.length > 0) fields.push('products');
       return {
         fields: fields.sort(),
         status: { before: current.status, after: values.status },
         ownerUserId: { before: current.ownerUserId, after: values.ownerUserId },
-        contactTypeId: { before: current.contactTypeId, after: values.contactTypeId },
+        role: { before: current.role, after: values.role },
         sourceId: { before: current.sourceId, after: values.sourceId },
         tagsAdded: tagChange.added,
         tagsRemoved: tagChange.removed,
@@ -620,8 +603,7 @@ export async function updateCustomer(db: Db, id: string, input: CustomerInput) {
 /**
  * A partner becomes a customer, or a customer a partner (D-5): the history, persons, files and
  * segments stay. A partner has no status, owner or products, so a customer turned partner loses
- * them (the history of changes keeps them). Until the forms offer the role, the contact type
- * follows: „Zákazník“, or the first other type.
+ * them (the history of changes keeps them).
  */
 export async function setRole(db: Db, id: string, role: 'customer' | 'partner') {
   return db.transaction(async (tx) => {
@@ -632,22 +614,10 @@ export async function setRole(db: Db, id: string, role: 'customer' | 'partner') 
       .for('update');
     if (!current) throw new CustomerError('NOT_FOUND');
     if (current.role === role) return { changed: false, productsRemoved: [] as string[] };
-    const [type] = await tx
-      .select({ id: contactTypes.id })
-      .from(contactTypes)
-      .where(
-        role === 'customer'
-          ? eq(contactTypes.systemKey, 'customer')
-          : sql`${contactTypes.systemKey} is distinct from 'customer'`,
-      )
-      .orderBy(desc(contactTypes.active), asc(contactTypes.position))
-      .limit(1);
-    if (!type) throw new CustomerError('CONTACT_TYPE_UNKNOWN');
     await tx
       .update(organizations)
       .set({
         role,
-        contactTypeId: type.id,
         ...(role === 'partner' ? { status: null, ownerUserId: null } : {}),
         updatedAt: new Date(),
       })
@@ -690,13 +660,7 @@ export async function bulkSetStatus(db: Db, ids: string[], status: CustomerStatu
   const rows = await db
     .update(organizations)
     .set({ status, updatedAt: new Date() })
-    .where(
-      and(
-        inArray(organizations.id, ids),
-        alive,
-        sql`${organizations.contactTypeId} in (select id from contact_types where system_key = 'customer')`,
-      ),
-    )
+    .where(and(inArray(organizations.id, ids), alive, eq(organizations.role, 'customer')))
     .returning({ id: organizations.id });
   return rows.map((r) => r.id);
 }
@@ -723,7 +687,7 @@ export async function exportRows(
     .select({
       name: organizations.name,
       kind: organizations.kind,
-      contactType: contactTypes.name,
+      role: organizations.role,
       products: productsJson,
       status: organizations.status,
       ico: organizations.ico,
@@ -743,7 +707,6 @@ export async function exportRows(
       createdAt: organizations.createdAt,
     })
     .from(organizations)
-    .innerJoin(contactTypes, eq(contactTypes.id, organizations.contactTypeId))
     .leftJoin(organizationSources, eq(organizationSources.id, organizations.sourceId))
     .leftJoin(users, eq(users.id, organizations.ownerUserId))
     .where(and(...where))
@@ -812,40 +775,34 @@ async function namesOf(db: Db | Tx, diffs: (Record<string, unknown> | null)[]) {
   for (const diff of diffs) idsIn(diff, ids);
   const list = [...ids];
   if (list.length === 0) return {} as Record<string, string>;
-  const [tagRows, contactRows, userRows, productRows, sourceRows, contactTypeRows] =
-    await Promise.all([
-      db.select({ id: tags.id, name: tags.name }).from(tags).where(inArray(tags.id, list)),
-      db
-        .select({
-          id: contacts.id,
-          titleBefore: contacts.titleBefore,
-          firstName: contacts.firstName,
-          lastName: contacts.lastName,
-          titleAfter: contacts.titleAfter,
-        })
-        .from(contacts)
-        .where(inArray(contacts.id, list)),
-      db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, list)),
-      db
-        .select({ id: products.id, name: products.name })
-        .from(products)
-        .where(inArray(products.id, list)),
-      db
-        .select({ id: organizationSources.id, name: organizationSources.name })
-        .from(organizationSources)
-        .where(inArray(organizationSources.id, list)),
-      db
-        .select({ id: contactTypes.id, name: contactTypes.name })
-        .from(contactTypes)
-        .where(inArray(contactTypes.id, list)),
-    ]);
+  const [tagRows, contactRows, userRows, productRows, sourceRows] = await Promise.all([
+    db.select({ id: tags.id, name: tags.name }).from(tags).where(inArray(tags.id, list)),
+    db
+      .select({
+        id: contacts.id,
+        titleBefore: contacts.titleBefore,
+        firstName: contacts.firstName,
+        lastName: contacts.lastName,
+        titleAfter: contacts.titleAfter,
+      })
+      .from(contacts)
+      .where(inArray(contacts.id, list)),
+    db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, list)),
+    db
+      .select({ id: products.id, name: products.name })
+      .from(products)
+      .where(inArray(products.id, list)),
+    db
+      .select({ id: organizationSources.id, name: organizationSources.name })
+      .from(organizationSources)
+      .where(inArray(organizationSources.id, list)),
+  ]);
   return Object.fromEntries([
     ...tagRows.map((row) => [row.id, row.name]),
     ...contactRows.map((row) => [row.id, personName(row)]),
     ...userRows.map((row) => [row.id, row.name]),
     ...productRows.map((row) => [row.id, row.name]),
     ...sourceRows.map((row) => [row.id, row.name]),
-    ...contactTypeRows.map((row) => [row.id, row.name]),
   ]) as Record<string, string>;
 }
 
@@ -996,18 +953,9 @@ export async function deleteContact(db: Db, id: string, customerId: string) {
   });
 }
 
-/** What the forms and filters offer: contact types, products, sources, tags and the active users. */
+/** What the forms and filters offer: products, sources, tags and the active users. */
 export async function formOptions(db: Db | Tx) {
-  const [contactTypeRows, productRows, sources, tagRows, people] = await Promise.all([
-    db
-      .select({
-        id: contactTypes.id,
-        name: contactTypes.name,
-        active: contactTypes.active,
-        systemKey: contactTypes.systemKey,
-      })
-      .from(contactTypes)
-      .orderBy(asc(contactTypes.position), collated(contactTypes.name)),
+  const [productRows, sources, tagRows, people] = await Promise.all([
     db
       .select({ id: products.id, name: products.name, active: products.active })
       .from(products)
@@ -1028,7 +976,6 @@ export async function formOptions(db: Db | Tx) {
       .orderBy(collated(users.name)),
   ]);
   return {
-    contactTypes: contactTypeRows,
     products: productRows,
     sources,
     tags: tagRows,

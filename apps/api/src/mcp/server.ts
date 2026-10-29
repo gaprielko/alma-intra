@@ -125,7 +125,7 @@ export function buildMcpServer(ctx: McpContext) {
             id: c.id,
             name: c.name,
             kind: c.kind,
-            contactType: c.contactTypeName,
+            role: c.role,
             products: c.products.map((p) => p.name),
             status: c.status,
             city: c.city,

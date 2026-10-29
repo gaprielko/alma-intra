@@ -5,6 +5,8 @@ import {
   type CreateCustomerInput,
   type CustomerKind,
   icoLookupSchema,
+  ORGANIZATION_ROLES,
+  type OrganizationRole,
   REGIONS,
 } from '@intra/shared/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -55,7 +57,7 @@ const NEW_ITEM = '__new';
 export interface CustomerFormValues {
   customer: PersonValues & {
     kind: CustomerKind;
-    contactTypeId: string;
+    role: OrganizationRole;
     name: string;
     ico: string;
     dic: string;
@@ -79,13 +81,15 @@ export interface CustomerFormValues {
   firstContact: PersonValues;
 }
 
-export function emptyCustomer(ownerUserId: string): CustomerFormValues {
+export function emptyCustomer(
+  ownerUserId: string,
+  role: OrganizationRole = 'customer',
+): CustomerFormValues {
   return {
     customer: {
       ...emptyPerson(),
       kind: 'organization',
-      // „Zákazník“ once the options are loaded (`ContactTypeField`).
-      contactTypeId: '',
+      role,
       name: '',
       ico: '',
       dic: '',
@@ -97,7 +101,8 @@ export function emptyCustomer(ownerUserId: string): CustomerFormValues {
       postalCode: '',
       city: '',
       region: '',
-      ownerUserId,
+      // A partner has no owner (D-10).
+      ownerUserId: role === 'customer' ? ownerUserId : '',
       sourceId: '',
       tags: [],
       note: '',
@@ -511,8 +516,8 @@ function IndividualBasics() {
 }
 
 /**
- * A code list field (the type, the source) whose last option adds a new item to the code list on
- * the spot and picks it: „Nový typ organizácie“, „Nový zdroj“.
+ * A code list field (the source) whose last option adds a new item to the code list on the spot
+ * and picks it: „Nový zdroj“.
  */
 function CodeListField({
   list,
@@ -523,8 +528,8 @@ function CodeListField({
   placeholder,
   items,
 }: {
-  list: 'contact_type' | 'source';
-  name: 'customer.contactTypeId' | 'customer.sourceId';
+  list: 'source';
+  name: 'customer.sourceId';
   label: string;
   /** The option for none; a field without one must have a value. */
   emptyLabel?: string;
@@ -611,44 +616,24 @@ function CodeListField({
   );
 }
 
-/** The type, with „Nový typ organizácie“ adding one to the code list on the spot. */
-/** Zákazník, Partner, …: a new record starts as „Zákazník“. */
-function ContactTypeField() {
-  const options = useQuery(trpc.customer.options.queryOptions());
-  const { control, getValues, setValue } = useFormContext<CustomerFormValues>();
-  const c = t.classification;
-  const value = useWatch({ control, name: 'customer.contactTypeId' });
-  const customerType = options.data?.contactTypes.find((type) => type.systemKey === 'customer');
-  useEffect(() => {
-    if (customerType && !getValues('customer.contactTypeId')) {
-      setValue('customer.contactTypeId', customerType.id);
-    }
-  }, [customerType, getValues, setValue, value]);
-  return (
-    <CodeListField
-      list="contact_type"
-      name="customer.contactTypeId"
-      label={c.contactType}
-      newLabel={c.newContactType}
-      placeholder={c.newContactTypePlaceholder}
-      items={options.data?.contactTypes}
-    />
-  );
-}
-
 function Classification() {
   const { control } = useFormContext<CustomerFormValues>();
   const options = useQuery(trpc.customer.options.queryOptions());
-  const contactTypeId = useWatch({ control, name: 'customer.contactTypeId' });
-  // The sales status belongs to a „Zákazník“ only; another type has none.
-  const salesStatus =
-    options.data?.contactTypes.find((type) => type.id === contactTypeId)?.systemKey === 'customer';
+  const role = useWatch({ control, name: 'customer.role' });
+  // Status, owner and products are a customer's (D-6, D-10); a partner has none.
+  const customer = role === 'customer';
   const c = t.classification;
   return (
     <Section title={c.title} lead={c.lead}>
       <div className="grid gap-4 @md:grid-cols-3">
-        <ContactTypeField />
-        {salesStatus ? (
+        <SelectField name="customer.role" label={c.role}>
+          {ORGANIZATION_ROLES.map((value) => (
+            <SelectItem key={value} value={value}>
+              {sk.organizations.persons.roles[value]}
+            </SelectItem>
+          ))}
+        </SelectField>
+        {customer ? (
           <SelectField name="customer.status" label={c.status}>
             <SelectItem value="">{c.noStatus}</SelectItem>
             {CUSTOMER_STATUSES.map((s) => (
@@ -658,14 +643,16 @@ function Classification() {
             ))}
           </SelectField>
         ) : null}
-        <SelectField name="customer.ownerUserId" label={c.owner}>
-          <SelectItem value="">{c.noOwner}</SelectItem>
-          {(options.data?.users ?? []).map((u) => (
-            <SelectItem key={u.id} value={u.id}>
-              {u.name}
-            </SelectItem>
-          ))}
-        </SelectField>
+        {customer ? (
+          <SelectField name="customer.ownerUserId" label={c.owner}>
+            <SelectItem value="">{c.noOwner}</SelectItem>
+            {(options.data?.users ?? []).map((u) => (
+              <SelectItem key={u.id} value={u.id}>
+                {u.name}
+              </SelectItem>
+            ))}
+          </SelectField>
+        ) : null}
         <CodeListField
           list="source"
           name="customer.sourceId"
@@ -675,9 +662,11 @@ function Classification() {
           placeholder={c.newSourcePlaceholder}
           items={options.data?.sources}
         />
-        <div className="@md:col-span-3">
-          <ProductsField items={options.data?.products} />
-        </div>
+        {customer ? (
+          <div className="@md:col-span-3">
+            <ProductsField items={options.data?.products} />
+          </div>
+        ) : null}
         <div className="@md:col-span-2">
           <TagsField suggestions={(options.data?.tags ?? []).map((tag) => tag.name)} />
         </div>

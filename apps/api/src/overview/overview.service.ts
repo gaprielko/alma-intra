@@ -2,12 +2,7 @@ import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 import { listCampaigns } from '../campaigns/campaigns.service.js';
 import { LAST_CONTACT } from '../customers/customers.service.js';
 import type { Db } from '../db/db.module.js';
-import {
-  campaigns as campaignsTable,
-  contactTypes,
-  organizations,
-  inboundMessages,
-} from '../db/schema/index.js';
+import { campaigns as campaignsTable, organizations, inboundMessages } from '../db/schema/index.js';
 
 /** A contact of mine with no contact for this long shows on the dashboard. */
 export const STALE_DAYS = 30;
@@ -22,8 +17,7 @@ export async function overviewSummary(db: Db, userId: string) {
     db
       .select({ status: organizations.status, count: sql<number>`count(*)`.mapWith(Number) })
       .from(organizations)
-      .innerJoin(contactTypes, eq(contactTypes.id, organizations.contactTypeId))
-      .where(and(isNull(organizations.deletedAt), eq(contactTypes.systemKey, 'customer')))
+      .where(and(isNull(organizations.deletedAt), eq(organizations.role, 'customer')))
       .groupBy(organizations.status),
     db
       .select({ count: sql<number>`count(*)`.mapWith(Number) })

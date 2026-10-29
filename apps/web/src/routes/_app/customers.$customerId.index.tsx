@@ -105,7 +105,7 @@ function CustomerDetailPage() {
   }
   const c = customer.data;
   const meta = [
-    c.contactTypeName,
+    sk.organizations.persons.roles[c.role],
     c.kind === 'individual' ? sk.customers.kind.individual : null,
     c.city,
     c.ico ? t.ico(c.ico.replace(/^(\d{2})(\d{3})(\d{3})$/, '$1 $2 $3')) : null,

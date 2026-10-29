@@ -22,16 +22,11 @@ describe('Kontakty: persons on their own', () => {
     api = await startApi();
     jana = browser(api.baseUrl);
     await jana.signIn(JANA);
-    const options = (
-      await jana.call<{ contactTypes: { id: string; systemKey: string | null }[] }>(
-        'customer.options',
-      )
-    ).data;
     const made = await jana.call<{ id: string }>('customer.create', {
       customer: {
         kind: 'organization',
         name: 'Asociácia na skúšku',
-        contactTypeId: options.contactTypes.find((t) => t.systemKey !== 'customer')!.id,
+        role: 'partner',
         tags: [],
         productIds: [],
       },

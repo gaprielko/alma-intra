@@ -1,6 +1,8 @@
 import { sk } from '@intra/shared/i18n';
+import { ORGANIZATION_ROLES } from '@intra/shared/schemas';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { z } from 'zod';
 import {
   CustomerForm,
   emptyCustomer,
@@ -11,7 +13,11 @@ import { useToast } from '@/components/ui/toast';
 import { errorMessage, errorReason } from '@/lib/errors';
 import { trpc } from '@/lib/trpc';
 
-export const Route = createFileRoute('/_app/customers/new')({ component: NewCustomerPage });
+export const Route = createFileRoute('/_app/customers/new')({
+  // „Nový zákazník“ or „Nový partner“: the tab it was opened from.
+  validateSearch: z.object({ role: z.enum(ORGANIZATION_ROLES).optional() }),
+  component: NewCustomerPage,
+});
 
 const t = sk.customers;
 
@@ -20,6 +26,7 @@ function NewCustomerPage() {
   const toast = useToast();
   const queryClient = useQueryClient();
   const userId = useCurrentUserId();
+  const { role = 'customer' } = Route.useSearch();
   const create = useMutation(
     trpc.customer.create.mutationOptions({
       onSuccess: async (created) => {
@@ -36,17 +43,24 @@ function NewCustomerPage() {
   return (
     <div className="min-w-0">
       <PageHeader
-        title={t.form.newTitle}
-        back={{ to: '/organizations/customers', label: t.form.back }}
+        title={role === 'partner' ? sk.organizations.newPartner : sk.organizations.newCustomer}
+        back={{
+          to: role === 'partner' ? '/organizations/partners' : '/organizations/customers',
+          label: t.form.back,
+        }}
       />
       <div className="max-w-[1100px] px-7 pt-5 pb-10">
         <CustomerForm
-          initial={emptyCustomer(userId)}
+          initial={emptyCustomer(userId, role)}
           editing={false}
           pending={create.isPending}
           serverError={create.error}
           onSubmit={(input) => create.mutate(input)}
-          onCancel={() => void navigate({ to: '/organizations/customers' })}
+          onCancel={() =>
+            void navigate({
+              to: role === 'partner' ? '/organizations/partners' : '/organizations/customers',
+            })
+          }
         />
       </div>
     </div>

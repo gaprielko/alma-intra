@@ -81,9 +81,9 @@ export const customerRouter = router({
       );
       auditCustomer(ctx, created.id, {
         kind: input.customer.kind,
-        // As stored: a type other than „Zákazník“ has none.
+        // As stored: a partner has none.
         ...(created.status ? { status: created.status } : {}),
-        contactTypeId: input.customer.contactTypeId,
+        role: input.customer.role,
         firstContact: input.firstContact !== undefined,
         ...(created.tagsAdded.length > 0 ? { tagsAdded: created.tagsAdded } : {}),
         ...(created.productsAdded.length > 0 ? { productsAdded: created.productsAdded } : {}),
@@ -105,9 +105,7 @@ export const customerRouter = router({
           : {}),
         // Ids only: the history resolves the names when it is shown (names never go into the
         // append-only trail).
-        ...(change.contactTypeId.before !== change.contactTypeId.after
-          ? { contactTypeId: change.contactTypeId }
-          : {}),
+        ...(change.role.before !== change.role.after ? { role: change.role.after } : {}),
         ...(change.sourceId.before !== change.sourceId.after ? { sourceId: change.sourceId } : {}),
         ...(change.tagsAdded.length > 0 ? { tagsAdded: change.tagsAdded } : {}),
         ...(change.tagsRemoved.length > 0 ? { tagsRemoved: change.tagsRemoved } : {}),

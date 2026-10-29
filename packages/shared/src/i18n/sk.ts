@@ -730,7 +730,7 @@ export const sk = {
     csv: {
       name: 'Názov',
       kind: 'Druh',
-      contactType: 'Typ kontaktu',
+      role: 'Rola',
       products: 'Produkty',
       status: 'Stav',
       ico: 'IČO',
@@ -794,9 +794,7 @@ export const sk = {
       classification: {
         title: 'Zaradenie',
         lead: 'Stav obchodného vzťahu, kto má kontakt na starosti a podľa čoho ho nájdete.',
-        contactType: 'Typ kontaktu',
-        newContactType: 'Nový typ kontaktu',
-        newContactTypePlaceholder: 'Napríklad Konzultant',
+        role: 'Zákazník alebo partner',
         products: 'Produkty',
         noProducts: 'Zatiaľ žiadne produkty.',
         newProduct: 'Nový produkt',
@@ -970,15 +968,12 @@ export const sk = {
   codeLists: {
     title: 'Číselníky',
     lists: {
-      contact_type: 'Typy kontaktov',
       product: 'Produkty',
       source: 'Zdroje kontaktov',
       template_category: 'Kategórie šablón',
       tags: 'Štítky',
     },
     leads: {
-      contact_type:
-        'Čím je kontakt pre Almu: zákazník, partner, dodávateľ. Každý kontakt má jeden typ. Obchodný stav sa vedie len pri zákazníkoch, preto sa typ Zákazník nedá odstrániť. Typ, ktorý niektorý kontakt má, sa dá len vypnúť.',
       product:
         'Čo Alma kontaktu ponúka. Kontakt môže mať viac produktov alebo žiadny. Produkt, ktorý má niektorý kontakt, sa nedá odstrániť, dá sa len vypnúť.',
       source:
@@ -997,19 +992,16 @@ export const sk = {
     },
     noProduct: (n: number) => `Bez produktu · ${plural(n, 'kontakt', 'kontakty', 'kontaktov')}`,
     newItem: {
-      contact_type: 'Nový typ kontaktu',
       product: 'Nový produkt',
       source: 'Nový zdroj',
       template_category: 'Nová kategória',
     },
     newPlaceholder: {
-      contact_type: 'Nový typ kontaktu, napríklad Konzultant',
       product: 'Nový produkt, napríklad Stacionár',
       source: 'Nový zdroj, napríklad Veľtrh',
       template_category: 'Nová kategória, napríklad Poďakovanie',
     },
     add: {
-      contact_type: 'Pridať typ kontaktu',
       product: 'Pridať produkt',
       source: 'Pridať zdroj',
       template_category: 'Pridať kategóriu',

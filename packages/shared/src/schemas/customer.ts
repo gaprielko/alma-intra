@@ -91,16 +91,17 @@ export const personFields = {
 
 /** Where a customer sits, how it is classified and who has it in hand. */
 const classificationFields = {
-  /** Zákazník, Partner, Dodávateľ, …: every record has one. */
-  contactTypeId: idSchema,
-  /** ADOS, DOS, Stacionár, …: none, one or several. */
+  /** A customer or a partner (D-1); a partner's kind of cooperation is a tag (D-4). */
+  role: z.enum(ORGANIZATION_ROLES),
+  /** ADOS, DOS, Stacionár, …: a customer's only (the server drops them for a partner). */
   productIds: z.array(idSchema).max(20).default([]),
-  /** Only a „Zákazník“ keeps it (the server drops it for other types); empty until set. */
+  /** A customer's only, and empty until set (D-6). */
   status: z.enum(CUSTOMER_STATUSES).optional().nullable(),
   street: optionalText(160),
   postalCode: optionalText(12),
   city: optionalText(80),
   region: z.enum(REGIONS).optional().nullable(),
+  /** A customer's only (D-10). */
   ownerUserId: idSchema.optional().nullable(),
   sourceId: idSchema.optional().nullable(),
   /** Tag names; a new name becomes a tag. */
@@ -177,7 +178,6 @@ export const customerFilterSchema = z.object({
   /** Statuses, `none` for the records without one. */
   status: oneOrMore(z.enum(CUSTOMER_STATUSES).or(z.literal('none'))),
   kind: oneOrMore(z.enum(CUSTOMER_KINDS)),
-  contactTypeId: oneOrMore(idSchema),
   /** Products, `none` for the records without any. */
   productId: oneOrMore(idSchema.or(z.literal('none'))),
   region: oneOrMore(z.enum(REGIONS)),
@@ -221,7 +221,7 @@ export const updateContactSchema = z.object({
 export const contactIdSchema = z.object({ id: idSchema, customerId: idSchema });
 
 /** Contact types, products and sources: a name each, offered in the forms while active. */
-export const CODE_LISTS = ['contact_type', 'product', 'source', 'template_category'] as const;
+export const CODE_LISTS = ['product', 'source', 'template_category'] as const;
 export type CodeList = (typeof CODE_LISTS)[number];
 
 export const codeListSchema = z.object({ list: z.enum(CODE_LISTS) });
