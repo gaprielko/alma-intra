@@ -178,10 +178,14 @@ organization_products       (today's link, extended) [R-10]
   note
 organization_product_counts how many of each item it has
   organization_product_id, item_id, count
+  unit_price, unit_price_gross   the surcharge per piece above the package for this customer;
+                                 filled from the price list, may be changed [R-13]
 ```
 
-- **Rozsah** (the counts): one count per item of the product's price list; it starts at the
-  included number, cannot exceed the maximum; one-off items count once.
+- **Rozsah a príplatky** (the counts): one count per item of the product's price list. It starts
+  at the number in the package (`included`) and **cannot go below it**; each piece above it is a
+  surcharge, shown per piece (from the price list, with VAT, changeable for this customer) and in
+  total („+2 × 9,84 € = +19,68 €“). It cannot exceed the maximum; one-off items count once.
 - **Price** [R-7, R-11]: by default it follows the product's current price list, so a price change
   reaches every customer on it (and shows in their history of changes); a **discount** in % keeps
   following it, either **permanent** or for a number of months (then the list price applies); a **fixed price** is agreed with the customer and stays until changed.
@@ -229,6 +233,7 @@ organization_product_counts how many of each item it has
 | R-7 | A held product follows the current price list; a discount in % follows it too; a fixed price stays. | proposed |
 | R-10 | A product is held by an organization or a prevádzka, with counts per item and dates; ended, not deleted. | proposed |
 | R-11 | Price modes at a customer: by the list, a discount in %, or a fixed agreed price. | proposed |
+| R-13 | The count of an item starts at the package and cannot go below it; the surcharge per piece comes from the price list and may be changed per customer. | proposed |
 | R-12 | „Sestry“ in the header is the sum of the „Sestra“ counts over the organization and its prevádzky. | proposed |
 | R-8 | Adding an item offers the numbers from the product it was last used in. | agreed |
 

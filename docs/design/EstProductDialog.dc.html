@@ -79,7 +79,7 @@ tr:first-child td{border-top:0}
 .opt{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:10px 14px;border:1px solid #dfe8e6;border-radius:12px}
 .opt-on{border-color:#0f8b8d;background:#f3faf9}
 .skel{background:#dde6e3;border-radius:8px}
-.step{width:28px;height:28px;border:1px solid #d6e1de;border-radius:8px;background:#fff;color:#0a6466;font:inherit;font-size:16px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.step:disabled{opacity:.35;cursor:default} .step{width:28px;height:28px;border:1px solid #d6e1de;border-radius:8px;background:#fff;color:#0a6466;font:inherit;font-size:16px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
 .hint{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:#fdf6ea;color:#7a4508;font-size:13px;line-height:19px}
 </style>
 </helmet>
@@ -109,23 +109,21 @@ tr:first-child td{border-top:0}
       <form style="padding: 20px 24px 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px">
         <div class="field" style="grid-column: span 3; display: flex; align-items: center; gap: 8px"><div style="flex: 1"><span>Pre</span><div style="padding-top: 4px; font-size: 15px; display: flex; align-items: center; gap: 6px"><span class="est"><svg aria-hidden="true" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9 4.5 4h15L21 9"></path><path d="M4 9v11h16V9"></path><path d="M9 20v-6h6v6"></path></svg>Prevádzka</span>ADOS Harmónia Prešov</div></div><svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></div>
         <div style="grid-column: span 3; position: relative">
-          <div class="field" style="display: flex; align-items: center; gap: 8px; border-color: #0f8b8d"><div style="flex: 1"><span>Produkt</span><div style="padding-top: 2px; display: flex; align-items: center; gap: 6px; font-size: 15px"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>ado<span style="width: 1px; height: 18px; background: #152b2a"></span></div></div><svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></div>
-          <div class="menu" role="listbox" style="left: 0; right: auto; top: 62px; width: 100%; box-sizing: border-box">
-            <label role="option" aria-selected="true" style="background: #f0f8f7"><span class="prod">ADOS</span><small style="margin-left: auto">od 60,27 € / mes.</small><span style="color: #0a6466"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span></label>
-            <label role="option"><span class="prod">ADOS Mobil</span><small style="margin-left: auto">od 18,45 € / mes.</small></label>
-            <label role="option"><span class="prod">ADOS Plánovanie trás</span><small style="margin-left: auto">od 24,60 € / mes.</small></label>
-            <label role="option" style="opacity: .55"><span class="prod">ADOS Archív 2024</span><small style="margin-left: auto">už sa neponúka</small></label>
-            <p class="meta" style="margin: 4px 10px 6px">4 zo 17 produktov · hľadá sa v názve a popise</p>
-          </div>
+          <div class="field" style="display: flex; align-items: center; gap: 8px"><div style="flex: 1"><span>Produkt · hľadať názov alebo popis</span><div style="padding-top: 4px; display: flex; align-items: center; gap: 8px; font-size: 15px"><span class="prod">ADOS</span><span class="meta">od 60,27 € / mes. s DPH</span></div></div><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg></div>
         </div>
-        <p style="grid-column: 1 / -1; margin: 8px 0 0; font-size: 14px; font-weight: 600">Rozsah</p>
+        <p style="grid-column: 1 / -1; margin: 8px 0 0; font-size: 14px; font-weight: 600">Rozsah a príplatky <span class="meta" style="font-weight: 400">· menej, ako je v balíku, sa nastaviť nedá</span></p>
         <div style="grid-column: 1 / -1; border: 1px solid #dfe8e6; border-radius: 12px; padding: 0 14px">
+          <div style="display: grid; grid-template-columns: minmax(0, 1fr) 112px 96px 92px; gap: 12px; padding: 8px 0 6px; font-size: 12px; font-weight: 600; color: #48625f"><span>Položka</span><span style="text-align: center">Počet</span><span style="text-align: right">Príplatok / ks</span><span style="text-align: right">Príplatok</span></div>
           <sc-for list="{{ items }}" as="it" hint-placeholder-count="4">
-            <div style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid #edf2f0">
-              <span style="flex: 1; min-width: 0"><span style="display: block; font-size: 14px; font-weight: 600">{{ it.name }}</span><span class="sub">{{ it.rule }}</span></span>
-              <button type="button" class="step" aria-label="Menej" onClick="{{ it.dec }}">−</button>
-              <span style="min-width: 24px; text-align: center; font-weight: 600">{{ it.count }}</span>
-              <button type="button" class="step" aria-label="Viac" onClick="{{ it.inc }}">+</button>
+            <div style="display: grid; grid-template-columns: minmax(0, 1fr) 112px 96px 92px; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid #edf2f0">
+              <span style="min-width: 0"><span style="display: block; font-size: 14px; font-weight: 600">{{ it.name }}</span><span class="sub">{{ it.rule }}</span></span>
+              <span style="display: inline-flex; align-items: center; justify-content: center; gap: 8px">
+                <button type="button" class="step" aria-label="Menej" disabled="{{ it.atMin }}" onClick="{{ it.dec }}">−</button>
+                <span style="min-width: 24px; text-align: center; font-weight: 600">{{ it.count }}</span>
+                <button type="button" class="step" aria-label="Viac" disabled="{{ it.atMax }}" onClick="{{ it.inc }}">+</button>
+              </span>
+              <span class="euro" style="justify-content: flex-end"><input class="num" value="{{ it.unit }}" aria-label="Príplatok za kus s DPH" style="width: 72px; height: 32px; box-sizing: border-box; border: 1px solid #d6e1de; border-radius: 8px; padding: 0 8px; font: inherit; font-size: 14px; text-align: right"> €</span>
+              <span style="text-align: right; font-weight: 600; white-space: nowrap">{{ it.extra }}</span>
             </div>
           </sc-for>
         </div>
@@ -173,7 +171,7 @@ tr:first-child td{border-top:0}
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { admin: 1, sestra: 4, superadmin: 0, impl: 1, permanent: false, months: 6 };
+    this.state = { admin: 1, sestra: 6, superadmin: 0, impl: 1, permanent: false, months: 6 };
   }
   renderVals() {
     const vat = 0.23;
@@ -191,12 +189,19 @@ class Component extends DCLogic {
     const items = list.map((it) => {
       const count = this.state[it.key];
       if (it.once) once += count * it.price; else month += Math.max(0, count - it.included) * it.price;
+      // The package sets the floor: fewer than included cannot be set, each one above it is a surcharge.
+      const floor = it.once ? 0 : it.included;
+      const over = it.once ? count : Math.max(0, count - it.included);
+      const unitGross = cents(it.price * (1 + vat));
       const rule = it.once
-        ? 'jednorazovo ' + eur(cents(it.price * (1 + vat))) + ' s DPH'
-        : (it.included ? it.included + ' v cene · ' : '') + 'max. ' + it.max + ' · ' + (it.included ? 'ďalší +' : '') + eur(cents(it.price * (1 + vat))) + ' s DPH';
+        ? 'jednorazovo · max. ' + it.max
+        : (it.included ? 'v balíku ' + it.included : 'nie je v balíku') + ' · max. ' + it.max;
       return {
         name: it.name, count, rule,
-        dec: () => this.setState({ [it.key]: Math.max(0, count - 1) }),
+        unit: unitGross.toLocaleString('sk-SK', { minimumFractionDigits: 2 }),
+        extra: over ? '+' + eur(cents(over * unitGross)) : '—',
+        atMin: count <= floor, atMax: count >= it.max,
+        dec: () => this.setState({ [it.key]: Math.max(floor, count - 1) }),
         inc: () => this.setState({ [it.key]: Math.min(it.max, count + 1) }),
       };
     });
