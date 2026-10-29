@@ -67,10 +67,17 @@ with the code so the implementation can be checked against them.
 | Org | `OrgIndividualDetail.dc.html` | Private person as a customer, without status |
 | Org | `ContactDetail.dc.html` | Contact (person) detail: organizations and the person's own timeline |
 | Org | `PersonDialog.dc.html` | New person: organizations with position, existing e-mail |
+| Est | `EstOrgDetail.dc.html` | Organization with prevádzky: their table, persons as a table, timeline with prevádzky (interactive switch) |
+| Est | `EstDetail.dc.html` | Prevádzka detail |
+| Est | `EstDialog.dc.html` | New prevádzka with its primary contact |
+| Est | `EstActivityDialog.dc.html` | Record an activity: the prevádzka found by the contact |
 
 The `Org` boards are the agreed redesign of [contacts-redesign.md](../contacts-redesign.md) (29 Oct
 2026); they replace the E1 boards once implemented. `Sidebar.dc.html` gained the switch
 `organizations` that names the item „Organizácie“.
+
+The `Est` boards are the draft of [establishments.md](../establishments.md) (prevádzky, 29 Oct
+2026), not yet agreed.
 
 ## Keeping them in step
 
