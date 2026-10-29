@@ -70,9 +70,11 @@ changes that of its prevádzky too; deleting an organization deletes its prevád
 
 Changes against today's detail (board `EstOrgDetail`):
 
-**Layout**: two columns. On the left the Prevádzky and Kontaktné osoby tables, under them the
-data cards (basics, products, classification) side by side. On the right the timeline, at the
-very top, with „Zobraziť staršie“ at its end. The prevádzka's detail uses the same layout.
+**Layout**: the timeline is the right-hand panel, from the very top, with „Zobraziť staršie“ at its
+end. The middle part holds, in this order: the Prevádzky table, the products right under it (section
+4.4), the Kontaktné osoby table, and the basics and classification cards side by side. The persons
+table puts the position under the name and the e-mail over the phone, so it fits beside the
+timeline. The prevádzka's detail uses the same layout.
 
 ### 4.1 Prevádzky card
 

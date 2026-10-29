@@ -76,7 +76,7 @@ tr:first-child td{border-top:0}
 .hint{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:#fdf6ea;color:#7a4508;font-size:13px;line-height:19px}
 </style>
 </helmet>
-<div style="position: relative; display: flex; flex-wrap: wrap; min-height: 2000px; background: #eaf0ee">
+<div style="position: relative; display: flex; flex-wrap: wrap; min-height: 1700px; background: #eaf0ee">
   <div style="flex: 0 0 232px; background: #0c3b3c">
     <dc-import name="Sidebar" active="customers" organizations="{{ true }}" hint-size="232px,900px"></dc-import>
   </div>
@@ -142,6 +142,20 @@ tr:first-child td{border-top:0}
       </section>
 
       <section class="card">
+        <div class="card-h"><h2>Produkty</h2><span class="meta">neskôr, podľa špecifikácie produktov</span></div>
+        <div style="padding: 12px 20px 18px; display: flex; flex-direction: column; gap: 12px">
+          <div><p class="meta" style="margin: 0 0 6px">Organizácia</p><div style="display: flex; flex-wrap: wrap; gap: 6px"><span class="prod">ADOS</span></div></div>
+          <div style="border-top: 1px solid #edf2f0; padding-top: 12px"><p style="margin: 0 0 8px; font-size: 13px; font-weight: 600">Produkty prevádzok</p>
+            <div style="display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; align-items: center; font-size: 13px; max-width: 520px">
+              <span>Košice – Terasa</span><span style="display: flex; gap: 4px; justify-content: flex-end"><span class="prod">ADOS</span></span>
+              <span>Prešov</span><span style="display: flex; gap: 4px; justify-content: flex-end"><span class="prod">ADOS</span><span class="prod">DOS</span></span>
+              <span>Denný stacionár Michalovce</span><span style="display: flex; gap: 4px; justify-content: flex-end"><span class="prod">Stacionár</span></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
         <div class="card-h">
           <h2>Kontaktné osoby <span class="count">· 6</span></h2>
           <div style="position: relative">
@@ -162,46 +176,40 @@ tr:first-child td{border-top:0}
         </div>
         <div class="tblwrap">
           <table>
-            <thead><tr><th>Meno</th><th>Pozícia</th><th>Prevádzka</th><th>Kontakt</th><th></th></tr></thead>
+            <thead><tr><th>Meno a pozícia</th><th>Prevádzka</th><th>Kontakt</th><th></th></tr></thead>
             <tbody>
                 <tr>
-                  <td><div style="display: flex; align-items: center; gap: 10px"><span class="avatar" style="background: #e3f3f2; color: #0a6466">ET</span><span style="min-width: 0"><a href="ContactDetail.dc.html" class="name">Mgr. Eva Tóthová</a> <span class="badge b-info" style="margin-left: 6px">Hlavný kontakt</span></span></div></td>
-                  <td>Riaditeľka</td>
+                  <td><div style="display: flex; align-items: center; gap: 10px"><span class="avatar" style="background: #e3f3f2; color: #0a6466">ET</span><span style="min-width: 0"><a href="ContactDetail.dc.html" class="name">Mgr. Eva Tóthová</a> <span class="badge b-info" style="margin-left: 6px">Hlavný kontakt</span><span class="sub">Riaditeľka</span></span></div></td>
                   <td><div style="display: flex; flex-wrap: wrap; gap: 4px"><span class="est"><svg aria-hidden="true" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9 4.5 4h15L21 9"></path><path d="M4 9v11h16V9"></path><path d="M9 20v-6h6v6"></path></svg>Michalovce · hlavný</span></div></td>
                   <td><a href="#">eva.tothova@adosharmonia.sk</a><span class="sub" style="white-space: nowrap">+421 905 222 314</span></td>
                   <td style="width: 40px"><button type="button" class="dots" aria-label="Akcie pre Mgr. Eva Tóthová"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg></button></td>
                 </tr>
 <tr>
-                  <td><div style="display: flex; align-items: center; gap: 10px"><span class="avatar" style="background: #e6f1fb; color: #0c447c">ML</span><span style="min-width: 0"><a href="ContactDetail.dc.html" class="name">Bc. Marek Lukáč</a></span></div></td>
-                  <td>Ekonóm</td>
+                  <td><div style="display: flex; align-items: center; gap: 10px"><span class="avatar" style="background: #e6f1fb; color: #0c447c">ML</span><span style="min-width: 0"><a href="ContactDetail.dc.html" class="name">Bc. Marek Lukáč</a><span class="sub">Ekonóm</span></span></div></td>
                   <td><div style="display: flex; flex-wrap: wrap; gap: 4px"><span class="meta">organizácia</span></div></td>
                   <td><a href="#">ekonom@adosharmonia.sk</a><span class="sub" style="white-space: nowrap">+421 908 771 020</span></td>
                   <td style="width: 40px"><button type="button" class="dots" aria-label="Akcie pre Bc. Marek Lukáč"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg></button></td>
                 </tr>
 <tr>
-                  <td><div style="display: flex; align-items: center; gap: 10px"><span class="avatar" style="background: #faeeda; color: #854f0b">JP</span><span style="min-width: 0"><a href="ContactDetail.dc.html" class="name">Jana Pavlíková</a></span></div></td>
-                  <td>Vedúca sestra</td>
+                  <td><div style="display: flex; align-items: center; gap: 10px"><span class="avatar" style="background: #faeeda; color: #854f0b">JP</span><span style="min-width: 0"><a href="ContactDetail.dc.html" class="name">Jana Pavlíková</a><span class="sub">Vedúca sestra</span></span></div></td>
                   <td><div style="display: flex; flex-wrap: wrap; gap: 4px"><span class="est"><svg aria-hidden="true" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9 4.5 4h15L21 9"></path><path d="M4 9v11h16V9"></path><path d="M9 20v-6h6v6"></path></svg>Košice – Terasa · hlavný</span></div></td>
                   <td><a href="#">pavlikova@adosharmonia.sk</a><span class="sub" style="white-space: nowrap">+421 917 404 118</span></td>
                   <td style="width: 40px"><button type="button" class="dots" aria-label="Akcie pre Jana Pavlíková"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg></button></td>
                 </tr>
 <tr>
-                  <td><div style="display: flex; align-items: center; gap: 10px"><span class="avatar" style="background: #eeedfe; color: #3c3489">PH</span><span style="min-width: 0"><a href="ContactDetail.dc.html" class="name">Ing. Pavol Hudák</a></span></div></td>
-                  <td>Vedúci prevádzky</td>
+                  <td><div style="display: flex; align-items: center; gap: 10px"><span class="avatar" style="background: #eeedfe; color: #3c3489">PH</span><span style="min-width: 0"><a href="ContactDetail.dc.html" class="name">Ing. Pavol Hudák</a><span class="sub">Vedúci prevádzky</span></span></div></td>
                   <td><div style="display: flex; flex-wrap: wrap; gap: 4px"><span class="est"><svg aria-hidden="true" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9 4.5 4h15L21 9"></path><path d="M4 9v11h16V9"></path><path d="M9 20v-6h6v6"></path></svg>Prešov · hlavný</span></div></td>
                   <td><a href="#">hudak@adosharmonia.sk</a><span class="sub" style="white-space: nowrap">+421 902 515 330</span></td>
                   <td style="width: 40px"><button type="button" class="dots" aria-label="Akcie pre Ing. Pavol Hudák"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg></button></td>
                 </tr>
 <tr>
-                  <td><div style="display: flex; align-items: center; gap: 10px"><span class="avatar" style="background: #fbeaf0; color: #993556">MK</span><span style="min-width: 0"><a href="ContactDetail.dc.html" class="name">Mária Kollárová</a> <span class="badge b-neutral" style="margin-left: 6px">Odhlásená zo zasielania</span></span></div></td>
-                  <td>Sestra</td>
+                  <td><div style="display: flex; align-items: center; gap: 10px"><span class="avatar" style="background: #fbeaf0; color: #993556">MK</span><span style="min-width: 0"><a href="ContactDetail.dc.html" class="name">Mária Kollárová</a> <span class="badge b-neutral" style="margin-left: 6px">Odhlásená zo zasielania</span><span class="sub">Sestra</span></span></div></td>
                   <td><div style="display: flex; flex-wrap: wrap; gap: 4px"><span class="est"><svg aria-hidden="true" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9 4.5 4h15L21 9"></path><path d="M4 9v11h16V9"></path><path d="M9 20v-6h6v6"></path></svg>Prešov</span><span class="est"><svg aria-hidden="true" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9 4.5 4h15L21 9"></path><path d="M4 9v11h16V9"></path><path d="M9 20v-6h6v6"></path></svg>Košice – Terasa</span></div></td>
                   <td><a href="#">kollarova@adosharmonia.sk</a><span class="sub" style="white-space: nowrap">+421 911 640 207</span></td>
                   <td style="width: 40px"><button type="button" class="dots" aria-label="Akcie pre Mária Kollárová"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg></button></td>
                 </tr>
 <tr>
-                  <td><div style="display: flex; align-items: center; gap: 10px"><span class="avatar" style="background: #e6f1fb; color: #0c447c">LS</span><span style="min-width: 0"><a href="ContactDetail.dc.html" class="name">Lenka Sabová</a></span></div></td>
-                  <td>Sociálna pracovníčka</td>
+                  <td><div style="display: flex; align-items: center; gap: 10px"><span class="avatar" style="background: #e6f1fb; color: #0c447c">LS</span><span style="min-width: 0"><a href="ContactDetail.dc.html" class="name">Lenka Sabová</a><span class="sub">Sociálna pracovníčka</span></span></div></td>
                   <td><div style="display: flex; flex-wrap: wrap; gap: 4px"><span class="est"><svg aria-hidden="true" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9 4.5 4h15L21 9"></path><path d="M4 9v11h16V9"></path><path d="M9 20v-6h6v6"></path></svg>Michalovce</span></div></td>
                   <td><a href="#">sabova@adosharmonia.sk</a><span class="sub" style="white-space: nowrap">+421 915 208 446</span></td>
                   <td style="width: 40px"><button type="button" class="dots" aria-label="Akcie pre Lenka Sabová"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg></button></td>
@@ -221,19 +229,6 @@ tr:first-child td{border-top:0}
               <div><dt>Telefón</dt><dd>+421 55 622 1100</dd></div>
               <div><dt>E-mail</dt><dd><a href="#">info@adosharmonia.sk</a></dd></div>
             </dl>
-          </section>
-          <section class="card">
-            <div class="card-h"><h2>Produkty</h2><span class="meta">neskôr, podľa špecifikácie produktov</span></div>
-            <div style="padding: 12px 20px 18px; display: flex; flex-direction: column; gap: 12px">
-              <div><p class="meta" style="margin: 0 0 6px">Organizácia</p><div style="display: flex; flex-wrap: wrap; gap: 6px"><span class="prod">ADOS</span></div></div>
-              <div style="border-top: 1px solid #edf2f0; padding-top: 12px"><p style="margin: 0 0 8px; font-size: 13px; font-weight: 600">Produkty prevádzok</p>
-                <div style="display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; align-items: center; font-size: 13px">
-                  <span>Košice – Terasa</span><span style="display: flex; gap: 4px; justify-content: flex-end"><span class="prod">ADOS</span></span>
-                  <span>Prešov</span><span style="display: flex; gap: 4px; justify-content: flex-end"><span class="prod">ADOS</span><span class="prod">DOS</span></span>
-                  <span>Denný stacionár Michalovce</span><span style="display: flex; gap: 4px; justify-content: flex-end"><span class="prod">Stacionár</span></span>
-                </div>
-              </div>
-            </div>
           </section>
           <section class="card">
             <div class="card-h"><h2>Zaradenie</h2></div>
@@ -339,7 +334,7 @@ tr:first-child td{border-top:0}
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2000}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1700}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
