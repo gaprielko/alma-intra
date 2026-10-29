@@ -41,6 +41,13 @@ function SettingsLayout() {
         >
           {t.tabs.emailLook}
         </Link>
+        <Link
+          to="/settings/activity-log"
+          className={tabClass}
+          activeProps={{ className: activeTabClass }}
+        >
+          {t.tabs.activityLog}
+        </Link>
       </nav>
       <Outlet />
     </>

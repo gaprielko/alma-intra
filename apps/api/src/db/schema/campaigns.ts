@@ -6,6 +6,7 @@ import {
 } from '@intra/shared/schemas';
 import { sql } from 'drizzle-orm';
 import {
+  boolean,
   index,
   integer,
   jsonb,
@@ -50,6 +51,8 @@ export const campaigns = pgTable(
     sentAt: timestamp('sent_at', { withTimezone: true }),
     /** When a scheduled campaign leaves (D-12); its messages wait in the queue until then. */
     scheduledAt: timestamp('scheduled_at', { withTimezone: true }),
+    /** The files go as signed download links valid 30 days instead of attachments (D-26). */
+    attachmentsAsLinks: boolean('attachments_as_links').notNull().default(false),
   },
   (t) => [index('campaigns_status_idx').on(t.status, t.updatedAt)],
 );
@@ -153,6 +156,8 @@ export const messageAttachments = pgTable(
       .notNull()
       .references(() => fileVersions.id),
     position: integer('position').notNull().default(0),
+    /** Sent as a download link in the text, not attached (D-26). */
+    asLink: boolean('as_link').notNull().default(false),
   },
   (t) => [
     primaryKey({ columns: [t.messageId, t.fileVersionId] }),

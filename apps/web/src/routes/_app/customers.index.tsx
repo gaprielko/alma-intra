@@ -13,6 +13,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { ArrowDown, ArrowUp, Download, Plus, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { z } from 'zod';
+import { ActivityDialog } from '@/components/activities/activity-dialog';
 import {
   CustomerAvatar,
   CustomerStatusBadge,
@@ -136,6 +137,8 @@ function CustomersPage() {
   });
   const options = useQuery(trpc.customer.options.queryOptions());
   const canSend = useCan('email.send');
+  const canRecord = useCan('activity.write');
+  const [recording, setRecording] = useState(false);
   const compose = useMutation(
     trpc.campaign.create.mutationOptions({
       onSuccess: (created) =>
@@ -155,6 +158,8 @@ function CustomersPage() {
   );
 
   const rows = list.data?.items ?? [];
+  // An activity is about one contact: offered when exactly one on this page is chosen.
+  const single = selected.size === 1 ? rows.find((row) => selected.has(row.id)) : undefined;
   const pageIds = rows.map((r) => r.id);
   const allOnPage = pageIds.length > 0 && pageIds.every((id) => selected.has(id));
   const toggle = (id: string) =>
@@ -356,6 +361,9 @@ function CustomersPage() {
                       {sk.campaigns.sendEmail}
                     </BarButton>
                   ) : null}
+                  {canRecord && single ? (
+                    <BarButton onClick={() => setRecording(true)}>{sk.activities.record}</BarButton>
+                  ) : null}
                   <BarButton onClick={() => setDialog('tag')}>{t.bulk.addTag}</BarButton>
                   <BarButton onClick={() => setDialog('status')}>{t.bulk.changeStatus}</BarButton>
                   <BarButton
@@ -446,6 +454,13 @@ function CustomersPage() {
             setDialog(null);
             if (done) setSelected(new Set());
           }}
+        />
+      ) : null}
+      {recording && single ? (
+        <ActivityDialog
+          customerId={single.id}
+          customerName={single.name}
+          onClose={() => setRecording(false)}
         />
       ) : null}
       {dialog === 'status' ? (

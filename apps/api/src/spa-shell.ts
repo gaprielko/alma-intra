@@ -21,6 +21,8 @@ const API_PREFIXES = [
   '/health',
   '/mcp',
   '/.well-known',
+  // Files sent as download links (D-26).
+  '/d',
   // The OAuth endpoints of the MCP SDK (main.ts).
   '/authorize',
   '/token',

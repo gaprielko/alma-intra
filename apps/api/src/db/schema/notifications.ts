@@ -8,7 +8,8 @@ export const notificationKind = pgEnum('notification_kind', NOTIFICATION_KINDS);
 
 /**
  * Something one colleague should see (spec 8): a reply to their e-mail (`refId` the received
- * e-mail), an e-mail of theirs that bounced (`refId` the campaign). Words are made when shown;
+ * e-mail), an e-mail of theirs that bounced (`refId` the campaign), a next step of theirs that is
+ * due (`refId` the activity). Words are made when shown;
  * the row keeps ids only.
  */
 export const notifications = pgTable(

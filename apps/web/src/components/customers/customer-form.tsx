@@ -11,6 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building2, Plus, Search, UserRound } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
+import { LeaveGuard } from '@/components/leave-guard';
 import { type Resolver, useForm, useFormContext, useWatch } from 'react-hook-form';
 import { TagChip } from '@/components/customers/customer-bits';
 import {
@@ -208,6 +209,7 @@ export function CustomerForm({
 
   return (
     <Form {...form}>
+      <LeaveGuard dirty={form.formState.isDirty} saving={pending} />
       <form
         noValidate
         onSubmit={(event) => void form.handleSubmit(onSubmit)(event)}

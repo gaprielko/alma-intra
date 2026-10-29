@@ -1,4 +1,5 @@
 import {
+  attachmentsAsLinksSchema,
   campaignContentSchema,
   campaignIdSchema,
   campaignListSchema,
@@ -48,7 +49,11 @@ export const campaignRouter = router({
 
   get: authorizedProcedure('email.read')
     .input(campaignIdSchema)
-    .query(({ ctx, input }) => run(() => campaigns.getCampaign(ctx.db, input.id))),
+    .query(async ({ ctx, input }) => ({
+      ...(await run(() => campaigns.getCampaign(ctx.db, input.id))),
+      // With an inbound domain every e-mail's Reply-To is Intra's own (spec 6.6).
+      repliesToIntra: Boolean(ctx.env.INBOUND_REPLY_DOMAIN),
+    })),
 
   candidates: authorizedProcedure('email.send')
     .input(recipientCandidatesSchema)
@@ -64,13 +69,24 @@ export const campaignRouter = router({
     .input(createCampaignSchema)
     .mutation(async ({ ctx, input }) => {
       const created = await run(() =>
-        campaigns.createCampaign(ctx.db, ctx.session.userId, input.customerIds),
+        campaigns.createCampaign(ctx.db, ctx.session.userId, input.customerIds, input.fileIds),
       );
       ctx.audit.set({
         entityType: 'campaign',
         entityId: created.id,
         diff: { count: input.customerIds.length },
       });
+      return created;
+    }),
+
+  /** „Použiť znova“: a new draft from a sent campaign. */
+  reuse: authorizedProcedure('email.send')
+    .input(campaignIdSchema)
+    .mutation(async ({ ctx, input }) => {
+      const created = await run(() =>
+        campaigns.reuseCampaign(ctx.db, ctx.session.userId, input.id),
+      );
+      ctx.audit.set({ entityType: 'campaign', entityId: created.id, diff: { from: input.id } });
       return created;
     }),
 
@@ -103,6 +119,18 @@ export const campaignRouter = router({
     .mutation(async ({ ctx, input }) => {
       await run(() => campaigns.saveContent(ctx.db, input));
       ctx.audit.set({ entityType: 'campaign', entityId: input.id, diff: { fields: ['content'] } });
+      return { ok: true as const };
+    }),
+
+  setAttachmentsAsLinks: authorizedProcedure('email.send')
+    .input(attachmentsAsLinksSchema)
+    .mutation(async ({ ctx, input }) => {
+      await run(() => campaigns.setAttachmentsAsLinks(ctx.db, input.id, input.asLinks));
+      ctx.audit.set({
+        entityType: 'campaign',
+        entityId: input.id,
+        diff: { asLinks: input.asLinks },
+      });
       return { ok: true as const };
     }),
 

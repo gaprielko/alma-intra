@@ -55,6 +55,13 @@ export const RATE_LIMITS = {
   },
   /** Per user: invitations sent; each one is an e-mail from the company's domain. */
   invitationPerUser: { scope: 'invitation:user', limit: 30, windowMs: 60 * MINUTE },
+  /**
+   * Per user: requests to `/mcp`. Claude may call several tools for one question; a loop of
+   * hundreds is a runaway, not a person asking.
+   */
+  mcpPerUser: { scope: 'mcp:user', limit: 600, windowMs: 15 * MINUTE },
+  /** Per IP: requests to `/mcp` with a token that opens nothing. */
+  mcpBadTokenPerIp: { scope: 'mcp-bad-token:ip', limit: 60, windowMs: 15 * MINUTE },
   /** Per user: how many refusals are written to the audit trail; the refusals themselves go on. */
   deniedAuditPerUser: { scope: 'audit-denied:user', limit: 20, windowMs: 15 * MINUTE },
 } as const satisfies Record<string, RateLimitRule>;

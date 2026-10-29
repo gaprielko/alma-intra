@@ -15,10 +15,12 @@ import type {
   OAuthTokens,
 } from '@modelcontextprotocol/sdk/shared/auth.js';
 import { and, desc, eq, gt, isNull, lt, or } from 'drizzle-orm';
+import type { INestApplication } from '@nestjs/common';
+import { mcpAuthRouter } from '@modelcontextprotocol/sdk/server/auth/router.js';
 import type { Response } from 'express';
 import type { Env } from '../config/env.js';
 import { decryptField, encryptField } from '../crypto/field-encryption.js';
-import type { Db } from '../db/db.module.js';
+import { DB, type Db } from '../db/db.module.js';
 import { oauthClients, oauthGrants, users } from '../db/schema/index.js';
 
 /**
@@ -139,6 +141,8 @@ export function oauthProvider(db: Db, env: Pick<Env, 'WEB_URL' | 'DATA_ENCRYPTIO
           requestExpiresAt: new Date(Date.now() + REQUEST_TTL_MS),
         })
         .returning({ id: oauthGrants.id });
+      // Requests nobody answered pile up; sweep them now and then instead of running a job.
+      if (Math.random() < 0.05) void purgeStaleGrants(db).catch(() => undefined);
       res.redirect(`${env.WEB_URL}/oauth/consent?request=${grant!.id}`);
     },
 
@@ -339,4 +343,43 @@ export async function revokeConnection(db: Db, userId: string, id: string) {
     .where(and(eq(oauthGrants.id, id), eq(oauthGrants.userId, userId)))
     .returning({ id: oauthGrants.id });
   return rows.length > 0;
+}
+
+/**
+ * Mounts Intra's OAuth endpoints (the MCP SDK's router) on the app: metadata, registration,
+ * /authorize, /token and /revoke. Called by `main.ts`, and by the integration tests' app.
+ */
+export function mountOAuth(
+  app: INestApplication,
+  env: Pick<Env, 'WEB_URL' | 'DATA_ENCRYPTION_KEY'>,
+) {
+  app.use(
+    mcpAuthRouter({
+      provider: oauthProvider(app.get<Db>(DB), env),
+      issuerUrl: new URL(env.WEB_URL),
+      resourceServerUrl: new URL(`${env.WEB_URL}/mcp`),
+      resourceName: 'Alma Intra',
+    }),
+  );
+}
+
+/** How long a dead grant is kept for a look at what happened. */
+const STALE_GRANT_MS = 24 * 60 * 60_000;
+
+/**
+ * Deletes what can never be used again: requests nobody approved and codes nobody exchanged,
+ * a day after they expired. Active and revoked grants stay (the connections and their history).
+ */
+export async function purgeStaleGrants(db: Db, now = new Date()) {
+  const before = new Date(now.getTime() - STALE_GRANT_MS);
+  const gone = await db
+    .delete(oauthGrants)
+    .where(
+      or(
+        and(eq(oauthGrants.status, 'pending'), lt(oauthGrants.requestExpiresAt, before)),
+        and(eq(oauthGrants.status, 'code'), lt(oauthGrants.codeExpiresAt, before)),
+      ),
+    )
+    .returning({ id: oauthGrants.id });
+  return gone.length;
 }

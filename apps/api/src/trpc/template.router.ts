@@ -11,6 +11,7 @@ import {
 import { TRPCError } from '@trpc/server';
 import * as images from '../email/images.service.js';
 import * as templates from '../email/templates.service.js';
+import { MailProviderError } from '../mail/transport.js';
 import { authorizedProcedure, router } from './trpc.js';
 
 /** The services' refusals as tRPC errors, with the code as message for the web to word. */
@@ -102,6 +103,23 @@ export const templateRouter = router({
     .query(({ ctx, input }) =>
       templates.previewTemplate(ctx.db, ctx.env.WEB_URL, ctx.session.userId, input),
     ),
+
+  /** „Poslať test“: the preview as it stands, to the signed-in user's own address. */
+  sendTest: authorizedProcedure('email.send')
+    .input(templatePreviewSchema)
+    .mutation(async ({ ctx, input }) => {
+      const mail = await templates.testTemplate(ctx.db, ctx.env, ctx.session.userId, input);
+      try {
+        await ctx.campaignTransport.send(mail);
+      } catch (error) {
+        if (error instanceof MailProviderError) {
+          throw new TRPCError({ code: 'BAD_GATEWAY', message: 'PROVIDER' });
+        }
+        throw error;
+      }
+      ctx.audit.set({ entityType: 'email_template', diff: { test: true } });
+      return { sentTo: mail.to };
+    }),
 
   /** The look, and the sending address it is shown with (read-only, from the environment). */
   look: authorizedProcedure('template.read').query(async ({ ctx }) => ({

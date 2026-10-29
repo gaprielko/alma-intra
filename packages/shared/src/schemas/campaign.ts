@@ -35,9 +35,14 @@ export const MAX_MESSAGE_BYTES = 40 * 1024 * 1024;
 /** A new draft, for these customers (from the list or a detail), or for nobody yet. */
 export const createCampaignSchema = z.object({
   customerIds: z.array(idSchema).max(100).default([]),
+  /** Files every recipient gets („Priložiť k e-mailu“ from a file). */
+  fileIds: z.array(idSchema).max(20).default([]),
 });
 
 export const campaignIdSchema = z.object({ id: idSchema });
+
+/** The review step's switch: files as download links valid 30 days (D-26). */
+export const attachmentsAsLinksSchema = z.object({ id: idSchema, asLinks: z.boolean() });
 
 /** How far ahead an e-mail can be scheduled (D-12). */
 export const MAX_SCHEDULE_DAYS = 90;

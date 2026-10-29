@@ -39,9 +39,11 @@
     "pizzip": "3.3.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "read-excel-file": "9.3.12",
     "reflect-metadata": "^0.2.2",
     "resend": "^6.28.1",
     "rxjs": "^7.8.2",
+    "unpdf": "1.8.1",
     "zod": "^3.25.0"
   },
   "devDependencies": {

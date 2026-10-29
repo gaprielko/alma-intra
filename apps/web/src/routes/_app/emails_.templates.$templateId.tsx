@@ -15,6 +15,7 @@ import { EmailBodyEditor, EmailSubjectEditor } from '@/components/emails/email-e
 import { ErrorState } from '@/components/empty-state';
 import { FileBadge } from '@/components/files/file-bits';
 import { FilePicker } from '@/components/files/file-picker';
+import { LeaveGuard } from '@/components/leave-guard';
 import { PageHeader } from '@/components/page-header';
 import { CardSkeleton } from '@/components/skeletons';
 import { Button } from '@/components/ui/button';
@@ -218,6 +219,7 @@ function Editor({ template, look }: { template: Template | null; look: EmailLook
 
   return (
     <div className="min-w-0">
+      <LeaveGuard dirty={dirty} saving={pending} />
       <PageHeader
         title={name.trim() || t.untitled}
         subtitle={status}
@@ -584,6 +586,17 @@ function Preview({
     }),
     placeholderData: keepPreviousData,
   });
+  const me = useSession((state) => state.user);
+  const canSend = useCan('email.send');
+  const toast = useToast();
+  const [testAt, setTestAt] = useState<string | null>(null);
+  const test = useMutation(
+    trpc.template.sendTest.mutationOptions({
+      onSuccess: () =>
+        setTestAt(new Date().toLocaleTimeString('sk-SK', { hour: 'numeric', minute: '2-digit' })),
+      onError: (error) => toast('error', errorMessage(error, t.errors)),
+    }),
+  );
   return (
     <div className="grid gap-0 lg:grid-cols-[18rem_minmax(0,1fr)]">
       <div className="space-y-4 border-b border-border-subtle p-4 lg:border-r lg:border-b-0">
@@ -628,6 +641,31 @@ function Preview({
           >
             {preview.data.missing.length > 0 ? p.missing(preview.data.missing.length) : p.complete}
           </p>
+        ) : null}
+        {canSend && me ? (
+          <div className="space-y-1.5">
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={test.isPending}
+              onClick={() =>
+                test.mutate({
+                  subject,
+                  body,
+                  customFields: fields,
+                  ...(chosen ? { contactId: chosen } : {}),
+                  values,
+                })
+              }
+            >
+              {p.test(me.email)}
+            </Button>
+            {testAt ? (
+              <p role="status" className="text-[13px] text-muted">
+                {p.testSent(testAt)}
+              </p>
+            ) : null}
+          </div>
         ) : null}
         <div role="radiogroup" aria-label={t.devices.label} className="flex gap-1.5">
           {(['desktop', 'phone'] as const).map((key) => {

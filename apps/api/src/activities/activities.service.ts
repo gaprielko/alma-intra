@@ -15,6 +15,7 @@ import {
   auditEvents,
   campaignMessages,
   campaigns,
+  messageAttachments,
   inboundMessages,
   contacts,
   customers,
@@ -624,8 +625,39 @@ export async function attachmentUrl(
   return { url: signed.url, fileId: row.fileId };
 }
 
-/** „Kde je použitý“: the activities that keep a version of the file. */
+/**
+ * „Kde je použitý“: the activities that keep a version of the file and the e-mails that carried
+ * one (one row per e-mail, with how many it went to), newest first.
+ */
 export async function fileUsage(db: Db, fileId: string) {
+  const [used, sent] = await Promise.all([activityUsage(db, fileId), emailUsage(db, fileId)]);
+  return [
+    ...used.map((row) => ({ type: 'activity' as const, at: row.occurredAt, ...row })),
+    ...sent.map((row) => ({ type: 'email' as const, at: row.sentAt, ...row })),
+  ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+}
+
+/** The e-mails that carried a version of the file, one row each. */
+function emailUsage(db: Db, fileId: string) {
+  return db
+    .select({
+      campaignId: campaigns.id,
+      subject: campaigns.subjectText,
+      sentAt: sql<Date>`max(${campaignMessages.sentAt})`,
+      recipients: sql<number>`count(distinct ${campaignMessages.id})`.mapWith(Number),
+      version: sql<number>`max(${fileVersions.number})`,
+    })
+    .from(messageAttachments)
+    .innerJoin(fileVersions, eq(fileVersions.id, messageAttachments.fileVersionId))
+    .innerJoin(campaignMessages, eq(campaignMessages.id, messageAttachments.messageId))
+    .innerJoin(campaigns, eq(campaigns.id, campaignMessages.campaignId))
+    .where(and(eq(fileVersions.fileId, fileId), isNotNull(campaignMessages.sentAt)))
+    .groupBy(campaigns.id)
+    .orderBy(desc(sql`max(${campaignMessages.sentAt})`))
+    .limit(50);
+}
+
+function activityUsage(db: Db, fileId: string) {
   return db
     .select({
       activityId: activities.id,
@@ -643,4 +675,29 @@ export async function fileUsage(db: Db, fileId: string) {
     .where(and(eq(fileVersions.fileId, fileId), alive, isNull(customers.deletedAt)))
     .orderBy(desc(activities.occurredAt))
     .limit(50);
+}
+
+/**
+ * Reminds each assignee of their next steps due by `today` (a local date, YYYY-MM-DD) in the
+ * bell, once per due date: the claim and the reminder are one statement, so two runs never
+ * remind twice.
+ */
+export async function remindDueNextSteps(db: Db, today: string) {
+  const due = await db.execute<{ count: number }>(sql`
+    with claimed as (
+      update activities a set next_step_reminded_for = a.next_step_due
+      where a.next_step_text is not null and a.next_step_done_at is null
+        and a.deleted_at is null and a.next_step_user_id is not null
+        and a.next_step_due <= ${today}::date
+        and a.next_step_reminded_for is distinct from a.next_step_due
+        and exists (select 1 from customers c where c.id = a.customer_id and c.deleted_at is null)
+        and exists (select 1 from users u where u.id = a.next_step_user_id and u.status = 'active')
+      returning a.id, a.customer_id, a.next_step_user_id, a.next_step_text
+    ), notified as (
+      insert into notifications (user_id, kind, ref_id, customer_id, subject)
+      select next_step_user_id, 'next_step', id, customer_id, next_step_text from claimed
+      returning 1
+    )
+    select count(*)::int as count from notified`);
+  return due.rows[0]?.count ?? 0;
 }

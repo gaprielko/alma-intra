@@ -1,8 +1,8 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { sk } from '@intra/shared/i18n';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
-import { Download, Eye, MoreHorizontal, Upload } from 'lucide-react';
+import { Link, useNavigate } from '@tanstack/react-router';
+import { Download, Eye, Mail, MoreHorizontal, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { KindMark } from '@/components/activities/activity-bits';
 import { ChangedBy, FileBadge } from '@/components/files/file-bits';
@@ -67,6 +67,15 @@ function SheetBody({ file, onClose }: { file: Detail; onClose: () => void }) {
   const queryClient = useQueryClient();
   const canWrite = useCan('file.write');
   const canDelete = useCan('file.delete');
+  const canSend = useCan('email.send');
+  const navigate = useNavigate();
+  const compose = useMutation(
+    trpc.campaign.create.mutationOptions({
+      onSuccess: (created) =>
+        navigate({ to: '/emails/compose/$campaignId', params: { campaignId: created.id } }),
+      onError: (error) => toast('error', errorMessage(error, sk.campaigns.errors)),
+    }),
+  );
   const [tab, setTab] = useState<'versions' | 'usage' | 'history'>('versions');
   const usage = useQuery(trpc.activity.fileUsage.queryOptions({ fileId: file.id }));
   const [dialog, setDialog] = useState<FilesDialog | null>(null);
@@ -153,7 +162,7 @@ function SheetBody({ file, onClose }: { file: Detail; onClose: () => void }) {
             {t.menu.newVersion}
           </Button>
         ) : null}
-        {canWrite || canDelete ? (
+        {canWrite || canDelete || canSend ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="icon" className="size-10" aria-label={t.actionsFor(file.name)}>
@@ -173,6 +182,19 @@ function SheetBody({ file, onClose }: { file: Detail; onClose: () => void }) {
                     {t.menu.describe}
                   </DropdownMenuItem>
                 </>
+              ) : null}
+              {canSend ? (
+                <DropdownMenuItem
+                  onSelect={() =>
+                    compose.mutate({
+                      // A contact's file goes to that contact; a company file to whoever is picked.
+                      customerIds: file.path[0]?.customerId ? [file.path[0].customerId] : [],
+                      fileIds: [file.id],
+                    })
+                  }
+                >
+                  {t.menu.attachToEmail}
+                </DropdownMenuItem>
               ) : null}
               {canDelete ? (
                 <>
@@ -364,30 +386,50 @@ function describeEvent(action: string, diff: Record<string, unknown> | null): st
   }
 }
 
-/** „Kde je použitý“: the activities that keep a version of this file. */
+/** „Kde je použitý“: the activities that keep a version of this file and the e-mails that carried one. */
 function Usage({ rows }: { rows: RouterOutputs['activity']['fileUsage'] }) {
   if (rows.length === 0) return <p className="py-6 text-sm text-muted">{d.usageEmpty}</p>;
   return (
     <ul className="space-y-2 pt-3">
-      {rows.map((row) => (
-        <li key={row.activityId}>
-          <Link
-            to="/customers/$customerId"
-            params={{ customerId: row.customerId }}
-            className="flex items-center gap-3 rounded-xl border border-border-subtle px-3.5 py-3 hover:bg-hover"
-          >
-            <KindMark kind={row.kind} />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold">
-                {d.usageItem(sk.activities.kinds[row.kind], row.subject ?? '')}
+      {rows.map((row) =>
+        row.type === 'email' ? (
+          <li key={`e-${row.campaignId}`}>
+            <Link
+              to="/emails/sent/$campaignId"
+              params={{ campaignId: row.campaignId }}
+              className="flex items-center gap-3 rounded-xl border border-border-subtle px-3.5 py-3 hover:bg-hover"
+            >
+              <Mail className="size-4 shrink-0 text-muted" aria-hidden />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold">
+                  {d.usageEmail(row.subject ?? '')}
+                </span>
+                <span className="block truncate text-[13px] text-muted">
+                  {d.usageEmailMeta(row.recipients, row.version, formatDate(row.sentAt))}
+                </span>
               </span>
-              <span className="block truncate text-[13px] text-muted">
-                {d.usageMeta(row.customerName, row.version, formatDate(row.occurredAt))}
+            </Link>
+          </li>
+        ) : (
+          <li key={row.activityId}>
+            <Link
+              to="/customers/$customerId"
+              params={{ customerId: row.customerId }}
+              className="flex items-center gap-3 rounded-xl border border-border-subtle px-3.5 py-3 hover:bg-hover"
+            >
+              <KindMark kind={row.kind} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold">
+                  {d.usageItem(sk.activities.kinds[row.kind], row.subject ?? '')}
+                </span>
+                <span className="block truncate text-[13px] text-muted">
+                  {d.usageMeta(row.customerName, row.version, formatDate(row.occurredAt))}
+                </span>
               </span>
-            </span>
-          </Link>
-        </li>
-      ))}
+            </Link>
+          </li>
+        ),
+      )}
     </ul>
   );
 }

@@ -61,6 +61,9 @@ export async function listTemplates(
         categoryName: templateCategories.name,
         updatedAt: emailTemplates.updatedAt,
         updatedBy: editor.name,
+        // E-mails that left with it (drafts not counted).
+        sentCount: sql<number>`(select count(*)::int from campaigns c
+          where c.template_id = ${emailTemplates.id} and c.status in ('sending', 'sent'))`,
       })
       .from(emailTemplates)
       .leftJoin(templateCategories, eq(templateCategories.id, emailTemplates.categoryId))
@@ -385,7 +388,36 @@ export async function previewTemplate(
     customerName: filled.customerName ?? sk.templates.variables['customer.name'],
     unsubscribeUrl: `${baseUrl}/odhlasenie`,
   });
-  return { subject: rendered.subject, html: rendered.html, missing: rendered.missing };
+  return {
+    subject: rendered.subject,
+    html: rendered.html,
+    text: rendered.text,
+    missing: rendered.missing,
+  };
+}
+
+/**
+ * „Poslať test“ from the template editor: the preview as it stands (saved or not), marked TEST, to
+ * the signed-in user's own address. No attachments.
+ */
+export async function testTemplate(
+  db: Db,
+  env: { WEB_URL: string; CAMPAIGN_FROM_ADDRESS: string },
+  userId: string,
+  input: Parameters<typeof previewTemplate>[3],
+) {
+  const [[user], look, out] = await Promise.all([
+    db.select({ email: users.email, name: users.name }).from(users).where(eq(users.id, userId)),
+    getLook(db),
+    previewTemplate(db, env.WEB_URL, userId, input),
+  ]);
+  return {
+    to: user!.email,
+    from: `${user!.name} | ${look.brandName} <${env.CAMPAIGN_FROM_ADDRESS}>`,
+    subject: `${sk.campaigns.review.testPrefix} ${out.subject}`,
+    html: out.html,
+    text: out.text,
+  };
 }
 
 /** The look alone, with a sample body: Settings › Vzhľad e-mailov. */

@@ -175,6 +175,7 @@ function TemplatesPage() {
                       {item.updatedBy
                         ? t.meta(item.updatedBy, formatDate(item.updatedAt))
                         : t.metaPlain(formatDate(item.updatedAt))}
+                      <span className="block">{t.sentCount(item.sentCount)}</span>
                     </p>
                   </div>
                 </Link>

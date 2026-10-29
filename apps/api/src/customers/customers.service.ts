@@ -101,12 +101,14 @@ function filterWhere(filter: CustomerFilter): SQL[] {
     const digits = filter.search.replace(/\s/g, '');
     where.push(
       or(
-        sql`${customers.name} ilike ${pattern}`,
+        // Without regard to diacritics either: „Toth“ finds „Tóth“ (migration 0022).
+        sql`unaccent(${customers.name}) ilike unaccent(${pattern})`,
         sql`${customers.email} ilike ${pattern}`,
         /^\d+$/.test(digits) ? sql`${customers.ico} like ${likePattern(digits)}` : sql`false`,
         sql`exists (select 1 from contacts p where p.customer_id = ${CUSTOMER_ID}
           and p.deleted_at is null
-          and (p.email ilike ${pattern} or (p.first_name || ' ' || p.last_name) ilike ${pattern}))`,
+          and (p.email ilike ${pattern}
+            or unaccent(p.first_name || ' ' || p.last_name) ilike unaccent(${pattern})))`,
       )!,
     );
   }
