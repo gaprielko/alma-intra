@@ -16,6 +16,7 @@ import { ActivityItem, EmailItem, ReplyItem } from '@/components/activities/time
 import { Avatar } from '@/components/avatar';
 import { EstablishmentDialog } from '@/components/customers/establishment-dialog';
 import { EstablishmentChip, EstablishmentsCard } from '@/components/customers/establishments-card';
+import { HoldingsCard } from '@/components/customers/holdings-card';
 import { PersonsTable } from '@/components/customers/persons-table';
 import { CustomerStatusBadge, ProductChip, TagChip } from '@/components/customers/customer-bits';
 import { CreateDocumentDialog } from '@/components/documents/create-document-dialog';
@@ -203,6 +204,11 @@ function CustomerDetailPage() {
           {!parent && c.establishmentCount > 0 ? (
             <EstablishmentsCard parentId={c.id} parentName={c.name} />
           ) : null}
+          <HoldingsCard
+            customerId={c.id}
+            customerName={c.name}
+            isEstablishment={parent !== null && parent !== undefined}
+          />
           {c.kind === 'organization' ? (
             <PersonsTable
               organizationId={c.id}
@@ -329,7 +335,7 @@ function HeaderFacts({ customer: c }: { customer: Customer }) {
           </>
         )}
       </p>
-      <p className="flex flex-wrap items-center gap-x-3.5 gap-y-1">
+      <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1">
         {c.products.length > 0 ? (
           <span className="inline-flex flex-wrap gap-1">
             {c.products.map((product) => (
@@ -353,12 +359,13 @@ function HeaderFacts({ customer: c }: { customer: Customer }) {
         ) : c.establishmentCount > 0 ? (
           <Fact label={h.establishments}>{c.establishmentCount}</Fact>
         ) : null}
+        {c.nurses !== null ? <Fact label={h.nurses}>{c.nurses}</Fact> : null}
         {parent ? (
           parent.tags.map((tag) => <TagChip key={tag.id}>{tag.name}</TagChip>)
         ) : (
           <TagsQuickAdd customer={c} />
         )}
-      </p>
+      </div>
     </div>
   );
 }
@@ -529,6 +536,7 @@ function describe(event: HistoryEvent): ReactNode {
     const after = nameOf(value.after) ?? h.none;
     return `${before} → ${after}`;
   };
+  const named = (text: string, id: unknown) => (nameOf(id) ? `${text}: ${nameOf(id)}` : text);
   const contactName = nameOf(diff.contactId);
   const withContact = (text: string) => (contactName ? `${text}: ${contactName}` : text);
   const added = namesOf(diff.tagsAdded);
@@ -573,7 +581,19 @@ function describe(event: HistoryEvent): ReactNode {
         .filter(Boolean)
         .join(' · ');
     case 'customer.delete':
-      return h.deleted;
+      return diff.establishment === 'deleted'
+        ? named(h.establishmentDeleted, diff.establishmentId)
+        : h.deleted;
+    case 'customer.establishmentCreate':
+      return named(h.establishmentCreated, diff.establishmentId);
+    case 'customer.establishmentUpdate':
+      return fieldList
+        ? `${named(h.establishmentUpdated, diff.establishmentId)} (${fieldList})`
+        : named(h.establishmentUpdated, diff.establishmentId);
+    case 'customer.holdingSave':
+      return named(diff.holding === 'added' ? h.holdingAdded : h.holdingChanged, diff.productId);
+    case 'customer.holdingEnd':
+      return named(h.holdingEnded, diff.productId);
     case 'customer.bulkAddTag':
       return nameOf(diff.tagId) ? `${h.tagAdded}: ${nameOf(diff.tagId)}` : h.tagAdded;
     case 'customer.bulkSetStatus':

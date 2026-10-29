@@ -684,16 +684,33 @@ function HoldersCard({ product }: { product: Product }) {
               key={holder.id}
               className="flex items-center justify-between gap-3 border-t border-border-subtle py-2.5 text-sm first:border-t-0"
             >
-              <Link
-                to="/organizations/$customerId"
-                params={{ customerId: holder.id }}
-                className="font-semibold hover:underline"
-              >
-                {holder.name}
-              </Link>
-              <span className="text-xs text-muted">
-                {holder.parentName ? d.establishmentOf(holder.parentName) : d.organization}
+              <span className="min-w-0">
+                <Link
+                  to="/organizations/$customerId"
+                  params={{ customerId: holder.id }}
+                  className="font-semibold hover:underline"
+                >
+                  {holder.name}
+                </Link>
+                <span className="block text-xs text-muted">
+                  {[
+                    holder.parentName ? d.establishmentOf(holder.parentName) : d.organization,
+                    'scope' in holder ? holder.scope : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </span>
               </span>
+              {'monthlyGross' in holder && holder.monthlyGross !== null ? (
+                <span className="shrink-0 text-right tabular-nums">
+                  <span className="block font-semibold">
+                    {d.perMonth(formatEur(holder.monthlyGross))}
+                  </span>
+                  <span className="block text-xs text-muted">
+                    {d.perYear(formatEur(holder.yearlyGross ?? 0))}
+                  </span>
+                </span>
+              ) : null}
             </li>
           ))}
         </ul>
