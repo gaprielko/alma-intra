@@ -503,7 +503,15 @@ function OrganizationRow({
   onToggle: () => void;
 }) {
   const href = `/organizations/${row.id}`;
-  const meta = [row.city, row.kind === 'individual' ? o.privatePerson : null]
+  const meta = [
+    row.city,
+    row.kind === 'individual' ? o.privatePerson : null,
+    row.foundEstablishment
+      ? sk.establishments.found(row.foundEstablishment)
+      : row.establishmentCount > 0
+        ? sk.establishments.count(row.establishmentCount)
+        : null,
+  ]
     .filter(Boolean)
     .join(' · ');
   return (

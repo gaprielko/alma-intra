@@ -154,6 +154,41 @@ describe('prevádzky (establishments)', () => {
     expect((await jana.call('customer.get', { id: est.data.id })).code).toBe('NOT_FOUND');
   });
 
+  it('the list finds an organization by its prevádzka, and its region', async () => {
+    type Page = {
+      items: { id: string; establishmentCount: number; foundEstablishment: string | null }[];
+    };
+    const org = await jana.call<{ id: string }>('customer.create', {
+      customer: {
+        kind: 'organization',
+        name: 'Sieť Tatry, s.r.o.',
+        role: 'customer',
+        region: 'zilina',
+        tags: [],
+        productIds: [],
+      },
+    });
+    await jana.call('customer.establishmentCreate', {
+      parentId: org.data.id,
+      establishment: establishment('Tatry Kežmarok', { city: 'Kežmarok', region: 'presov' }),
+    });
+    const found = await jana.call<Page>('customer.list', { search: 'Kezmarok', pageSize: 100 });
+    expect(found.data.items).toEqual([
+      expect.objectContaining({
+        id: org.data.id,
+        establishmentCount: 1,
+        foundEstablishment: 'Tatry Kežmarok',
+      }),
+    ]);
+    const presov = await jana.call<Page>('customer.list', { region: ['presov'], pageSize: 100 });
+    expect(presov.data.items.some((i) => i.id === org.data.id)).toBe(true);
+    const nitra = await jana.call<Page>('customer.list', { region: ['nitra'], pageSize: 100 });
+    expect(nitra.data.items.some((i) => i.id === org.data.id)).toBe(false);
+    const csv = await jana.call<{ csv: string }>('customer.exportCsv', { ids: [org.data.id] });
+    expect(csv.data.csv).toContain(';Prevádzky;');
+    expect(csv.data.csv).toContain(';Tatry Kežmarok;');
+  });
+
   it('removing a prevádzka is told in its organization’s history', async () => {
     const est = await jana.call<{ id: string }>('customer.establishmentCreate', {
       parentId: HARMONIA,

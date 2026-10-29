@@ -125,7 +125,7 @@ function filterWhere(filter: CustomerFilter): SQL[] {
   if (filter.role) where.push(eq(organizations.role, filter.role));
   where.push(...anyOf(organizations.kind, filter.kind));
   where.push(...linkedTo('organization_products', 'product_id', filter.productId));
-  where.push(...anyOf(organizations.region, filter.region));
+  where.push(...regionWhere(filter.region));
   where.push(...anyOf(organizations.ownerUserId, filter.ownerUserId));
   where.push(...linkedTo('organization_tags', 'tag_id', filter.tagId));
   if (filter.search) {
@@ -141,10 +141,33 @@ function filterWhere(filter: CustomerFilter): SQL[] {
           where l.organization_id = ${CUSTOMER_ID} and p.deleted_at is null
           and (p.email ilike ${pattern}
             or unaccent(p.first_name || ' ' || p.last_name) ilike unaccent(${pattern})))`,
+        // A prevádzka's name, city or person finds its organization (P-12).
+        sql`exists (select 1 from organizations e where e.parent_id = ${CUSTOMER_ID}
+          and e.deleted_at is null and ${establishmentMatch(pattern)})`,
       )!,
     );
   }
   return where;
+}
+
+/** A prevádzka `e` found by its name, city or one of its persons. */
+const establishmentMatch = (pattern: string) => sql`(unaccent(e.name) ilike unaccent(${pattern})
+  or unaccent(coalesce(e.city, '')) ilike unaccent(${pattern})
+  or exists (select 1 from contact_links el join contacts ep on ep.id = el.contact_id
+    where el.organization_id = e.id and ep.deleted_at is null
+    and (ep.email ilike ${pattern}
+      or unaccent(ep.first_name || ' ' || ep.last_name) ilike unaccent(${pattern}))))`;
+
+/** The region filter: the seat, or the seat of one of the prevádzky (P-12). */
+function regionWhere(regions: CustomerFilter['region']): SQL[] {
+  if (!regions || regions.length === 0) return [];
+  return [
+    or(
+      inArray(organizations.region, regions),
+      sql`exists (select 1 from organizations e where e.parent_id = ${CUSTOMER_ID}
+        and e.deleted_at is null and e.region in ${regions})`,
+    )!,
+  ];
 }
 
 /** The customer's tags, by name, as JSON. */
@@ -216,6 +239,15 @@ export async function listCustomers(db: Db | Tx, raw: CustomerListInput) {
         tags: tagsJson,
         primaryContact: primaryContactJson,
         lastContactAt: sql<string | null>`${LAST_CONTACT}`,
+        establishmentCount: sql<number>`(select count(*)::int from organizations e
+          where e.parent_id = ${CUSTOMER_ID} and e.deleted_at is null)`,
+        // The prevádzka the search found, named under the organization („prevádzka Prešov“).
+        foundEstablishment: input.search
+          ? sql<string | null>`(select e.name from organizations e
+              where e.parent_id = ${CUSTOMER_ID} and e.deleted_at is null
+              and ${establishmentMatch(likePattern(input.search))}
+              order by e.name limit 1)`
+          : sql<string | null>`null`,
         total: sql<number>`count(*) over ()`.mapWith(Number),
       })
       .from(organizations)
@@ -789,6 +821,8 @@ export async function exportRows(
       owner: users.name,
       source: organizationSources.name,
       tags: tagsJson,
+      establishments: sql<string | null>`(select string_agg(e.name, ', ' order by e.name)
+        from organizations e where e.parent_id = ${CUSTOMER_ID} and e.deleted_at is null)`,
       primary,
       createdAt: organizations.createdAt,
     })

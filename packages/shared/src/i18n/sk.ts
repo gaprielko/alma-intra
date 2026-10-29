@@ -874,6 +874,7 @@ export const sk = {
       owner: 'Zodpovedá',
       source: 'Zdroj',
       tags: 'Štítky',
+      establishments: 'Prevádzky',
       contact: 'Hlavný kontakt',
       contactEmail: 'E-mail kontaktu',
       contactPhone: 'Telefón kontaktu',
@@ -1295,6 +1296,9 @@ export const sk = {
   },
   establishments: {
     title: 'Prevádzky',
+    count: (n: number) =>
+      n === 1 ? '1 prevádzka' : n >= 2 && n <= 4 ? `${n} prevádzky` : `${n} prevádzok`,
+    found: (name: string) => `nájdené v prevádzke ${name}`,
     add: 'Pridať prevádzku',
     badge: 'Prevádzka',
     columns: {
