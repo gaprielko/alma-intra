@@ -150,8 +150,8 @@ tr:first-child td{border-top:0}
           <table style="font-size: 14px">
             <thead><tr><th style="background: transparent; padding-left: 0; border-top: 0">Cena</th><th style="background: transparent; text-align: right; border-top: 0">s DPH 23 %</th><th style="background: transparent; text-align: right; padding-right: 0; border-top: 0">bez DPH</th></tr></thead>
             <tbody>
+              <tr><td style="padding-left: 0; font-weight: 600">Mesačne pred zľavou</td><td style="text-align: right">{{ fullG }}</td><td style="text-align: right; padding-right: 0">{{ full }}</td></tr>
               <tr><td style="padding-left: 0; font-weight: 600">Mesačne so zľavou</td><td style="text-align: right"><strong style="font-size: 16px">{{ mG }}</strong></td><td style="text-align: right; padding-right: 0">{{ m }}</td></tr>
-              <sc-if value="{{ limited }}" hint-placeholder-val="{{ true }}"><tr><td style="padding-left: 0; font-weight: 600">Mesačne po zľave</td><td style="text-align: right">{{ fullG }}</td><td style="text-align: right; padding-right: 0">{{ full }}</td></tr></sc-if>
               <tr><td style="padding-left: 0; font-weight: 600">{{ yearLabel }}</td><td style="text-align: right"><strong>{{ yG }}</strong></td><td style="text-align: right; padding-right: 0">{{ y }}</td></tr>
               <tr><td style="padding-left: 0; font-weight: 600">Jednorazovo</td><td style="text-align: right">{{ oG }}</td><td style="text-align: right; padding-right: 0">{{ o }}</td></tr>
             </tbody>
