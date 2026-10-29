@@ -189,8 +189,9 @@ organization_product_workloads   for an item counted by workloads: the people an
   at the number in the package (`included`) and **cannot go below it**; each piece above it is a
   surcharge, shown per piece (as the product's price list sets it, not changeable here) and in
   total („+2 × 9,84 € = +19,68 €“). It cannot exceed the maximum; one-off items count once.
-- **Workloads** [R-14]: for an item switched to „podľa úväzkov“ on the product (Sestra), the count is
-  not set by hand. The customer's workloads are listed („2 × 100 %, 3 × 33 %, 1 × 15 %“); each is
+- **Workloads** [R-14]: for any item switched to „podľa úväzkov“ on the product (Sestra, or others),
+  the count is not set by hand: the button „Úväzky“ opens a modal of its own for that item, so many
+  such items stay readable. The customer's workloads are listed („2 × 100 %, 3 × 33 %, 1 × 15 %“); each is
   rounded **up** to the product's step (with 50 %: 33 % and 15 % count as 50 %, 51 % as 100 %); the
   sum gives the count (400 % = 4 sestry, covered by a package of 4), a sum that is not whole is
   rounded up to the next one (450 % = 5) [R-15]. The package floor and the surcharge then apply as

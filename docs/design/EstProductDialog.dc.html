@@ -127,30 +127,13 @@ tr:first-child td{border-top:0}
                 </sc-if>
                 <sc-if value="{{ it.byWorkload }}" hint-placeholder-val="{{ false }}">
                   <strong style="min-width: 24px; text-align: center">{{ it.count }}</strong>
-                  <span class="chip chip-sm" style="cursor: default; border-color: #0f8b8d; color: #0a6466">z úväzkov</span>
+                  <button type="button" class="chip chip-sm" style="border-color: #0f8b8d; color: #0a6466" onClick="{{ it.open }}">Úväzky</button>
                 </sc-if>
               </span>
               <span style="text-align: right; white-space: nowrap; color: #48625f">{{ it.unit }} €</span>
               <span style="text-align: right; font-weight: 600; white-space: nowrap">{{ it.extra }}</span>
             </div>
           </sc-for>
-          <div style="margin: 0 -14px; padding: 12px 14px 14px; border-top: 1px solid #dfe8e6; background: #f7faf9; border-radius: 0 0 12px 12px">
-            <p style="margin: 0 0 8px; font-size: 13px; font-weight: 600">Úväzky · Sestra <span class="meta" style="font-weight: 400">· každý úväzok sa zaokrúhľuje nahor na 50 % (nastavenie produktu ADOS)</span></p>
-            <sc-for list="{{ workloads }}" as="w" hint-placeholder-count="3">
-              <div style="display: grid; grid-template-columns: 120px 20px 128px minmax(0, 1fr) 70px 32px; gap: 8px; align-items: center; padding: 5px 0">
-                <span style="display: inline-flex; align-items: center; gap: 6px"><button type="button" class="step" aria-label="Menej osôb" onClick="{{ w.nDec }}">−</button><strong style="min-width: 18px; text-align: center">{{ w.n }}</strong><button type="button" class="step" aria-label="Viac osôb" onClick="{{ w.nInc }}">+</button></span>
-                <span class="meta">×</span>
-                <span style="display: inline-flex; align-items: center; gap: 6px"><button type="button" class="step" aria-label="Menší úväzok" onClick="{{ w.pDec }}">−</button><strong style="min-width: 44px; text-align: center">{{ w.p }} %</strong><button type="button" class="step" aria-label="Väčší úväzok" onClick="{{ w.pInc }}">+</button></span>
-                <span class="meta">{{ w.counted }}</span>
-                <span style="text-align: right; font-weight: 600">{{ w.total }}</span>
-                <button type="button" class="dots" aria-label="Odobrať úväzok" onClick="{{ w.remove }}" style="width: 28px; height: 28px">×</button>
-              </div>
-            </sc-for>
-            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 6px">
-              <button type="button" class="btn btn-ghost btn-sm" style="padding: 0 6px" onClick="{{ addWorkload }}">+ Pridať úväzok</button>
-              <span style="margin-left: auto; font-size: 13px">{{ workloadSum }}</span>
-            </div>
-          </div>
         </div>
         <div style="grid-column: span 4; display: flex; flex-direction: column; gap: 6px"><span class="meta" style="font-weight: 500">Cena</span><div class="seg" style="flex-wrap: nowrap; align-self: flex-start"><button type="button">Podľa cenníka</button><button type="button" class="on">Zľava</button><button type="button">Pevná cena</button></div></div>
         <label class="field" style="grid-column: span 2"><span>Zľava (%)</span><input value="10"></label>
@@ -169,6 +152,37 @@ tr:first-child td{border-top:0}
             <span class="meta" style="margin-left: auto">{{ until }}</span>
           </sc-if>
         </div>
+        <sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ true }}">
+          <div style="position: absolute; inset: 0; z-index: 10; background: rgba(12,43,44,0.35); display: flex; align-items: flex-start; justify-content: center; padding: 140px 24px; box-sizing: border-box">
+            <section role="dialog" aria-modal="true" aria-label="Úväzky" style="width: 100%; max-width: 560px; border-radius: 18px; background: #fff; box-shadow: 0 24px 60px rgba(12,43,44,0.32)">
+              <header style="display: flex; align-items: flex-start; gap: 12px; padding: 20px 22px 0">
+                <div style="flex: 1">
+                  <h3 style="margin: 0; font-size: 18px; line-height: 24px; font-weight: 700">Úväzky · {{ modalItem }}</h3>
+                  <p style="margin: 4px 0 0; font-size: 13px; color: #48625f">Každý úväzok sa zaokrúhľuje nahor na {{ step }} % (nastavenie produktu ADOS). Súčet dáva počet.</p>
+                </div>
+                <button type="button" aria-label="Zavrieť" onClick="{{ close }}" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: #48625f; cursor: pointer"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+              </header>
+              <div style="padding: 14px 22px 0">
+                <div style="display: grid; grid-template-columns: 112px 16px 128px minmax(0, 1fr) 64px 28px; gap: 8px; padding: 0 0 6px; font-size: 12px; font-weight: 600; color: #48625f"><span>Osoby</span><span></span><span>Úväzok</span><span>Počíta sa</span><span style="text-align: right">Spolu</span><span></span></div>
+                <sc-for list="{{ workloads }}" as="w" hint-placeholder-count="3">
+                  <div style="display: grid; grid-template-columns: 112px 16px 128px minmax(0, 1fr) 64px 28px; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px solid #edf2f0">
+                    <span style="display: inline-flex; align-items: center; gap: 6px"><button type="button" class="step" aria-label="Menej osôb" onClick="{{ w.nDec }}">−</button><strong style="min-width: 18px; text-align: center">{{ w.n }}</strong><button type="button" class="step" aria-label="Viac osôb" onClick="{{ w.nInc }}">+</button></span>
+                    <span class="meta">×</span>
+                    <span style="display: inline-flex; align-items: center; gap: 6px"><button type="button" class="step" aria-label="Menší úväzok" onClick="{{ w.pDec }}">−</button><strong style="min-width: 44px; text-align: center">{{ w.p }} %</strong><button type="button" class="step" aria-label="Väčší úväzok" onClick="{{ w.pInc }}">+</button></span>
+                    <span class="meta">{{ w.counted }}</span>
+                    <span style="text-align: right; font-weight: 600">{{ w.total }}</span>
+                    <button type="button" class="dots" aria-label="Odobrať úväzok" onClick="{{ w.remove }}" style="width: 28px; height: 28px">×</button>
+                  </div>
+                </sc-for>
+                <button type="button" class="btn btn-ghost btn-sm" style="padding: 0 6px; margin-top: 4px" onClick="{{ addWorkload }}">+ Pridať úväzok</button>
+                <div style="display: flex; justify-content: space-between; gap: 12px; margin-top: 10px; padding: 12px 14px; border-radius: 12px; background: #f7faf9; font-size: 14px"><span>{{ workloadSum }}</span><strong>{{ workloadExtra }}</strong></div>
+              </div>
+              <footer style="display: flex; justify-content: flex-end; gap: 8px; padding: 16px 22px 20px">
+                <button type="button" class="btn btn-primary" onClick="{{ close }}">Hotovo</button>
+              </footer>
+            </section>
+          </div>
+        </sc-if>
         <div style="grid-column: 1 / -1; background: #f7faf9; border-radius: 12px; padding: 12px 14px">
           <table style="font-size: 14px">
             <thead><tr><th style="background: transparent; padding-left: 0; border-top: 0">Cena</th><th style="background: transparent; text-align: right; border-top: 0">s DPH 23 %</th><th style="background: transparent; text-align: right; padding-right: 0; border-top: 0">bez DPH</th></tr></thead>
@@ -196,7 +210,8 @@ class Component extends DCLogic {
     super(props);
     this.state = {
       admin: 1, superadmin: 0, impl: 1, permanent: false, months: 6,
-      workloads: [{ n: 2, p: 100 }, { n: 3, p: 33 }, { n: 1, p: 15 }],
+      workloads: { sestra: [{ n: 2, p: 100 }, { n: 3, p: 33 }, { n: 1, p: 15 }] },
+      open: 'sestra',
     };
   }
   renderVals() {
@@ -206,34 +221,41 @@ class Component extends DCLogic {
     const eur = (n) => n.toLocaleString('sk-SK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
     const list = [
       { key: 'admin', name: 'Admin prístup', included: 1, price: 10, max: 3, once: false },
-      { key: 'sestra', name: 'Sestra', included: 4, price: 8, max: 50, once: false, workload: true },
+      { key: 'sestra', name: 'Sestra', forms: ['sestra', 'sestry', 'sestier'], included: 4, price: 8, max: 50, once: false, workload: true },
       { key: 'superadmin', name: 'Superadmin', included: 0, price: 25, max: 1, once: false },
       { key: 'impl', name: 'Implementácia', included: 0, price: 450, max: 1, once: true },
     ];
-    // Workloads: each one rounded up to the product's step, their sum gives the count (400 % = 4).
+    // Workloads per item: each one rounded up to the product's step, their sum gives the count (400 % = 4).
     const step = 50;
-    const wl = this.state.workloads;
-    const setWl = (k, f) => this.setState({ workloads: wl.map((w, j) => (j === k ? f(w) : w)) });
     const rounded = (p) => Math.min(100, Math.ceil(p / step) * step);
-    const sumPct = wl.reduce((a, w) => a + w.n * rounded(w.p), 0);
-    const workloadCount = Math.ceil(sumPct / 100);
+    const all = this.state.workloads;
+    const sumOf = (key) => (all[key] || []).reduce((a, w) => a + w.n * rounded(w.p), 0);
+    const countOf = (key) => Math.ceil(sumOf(key) / 100);
+    const openKey = this.state.open;
+    const wl = all[openKey] || [];
+    const setWl = (next) => this.setState({ workloads: { ...all, [openKey]: next } });
     const workloads = wl.map((w, k) => ({
       n: w.n, p: w.p,
-      counted: rounded(w.p) === w.p ? 'počíta sa ' + w.p + ' %' : 'počíta sa ' + rounded(w.p) + ' %',
+      counted: rounded(w.p) + ' %',
       total: w.n * rounded(w.p) + ' %',
-      nDec: () => setWl(k, (x) => ({ ...x, n: Math.max(1, x.n - 1) })),
-      nInc: () => setWl(k, (x) => ({ ...x, n: x.n + 1 })),
-      pDec: () => setWl(k, (x) => ({ ...x, p: Math.max(5, x.p - 5) })),
-      pInc: () => setWl(k, (x) => ({ ...x, p: Math.min(100, x.p + 5) })),
-      remove: () => this.setState({ workloads: wl.filter((_, j) => j !== k) }),
+      nDec: () => setWl(wl.map((x, j) => (j === k ? { ...x, n: Math.max(1, x.n - 1) } : x))),
+      nInc: () => setWl(wl.map((x, j) => (j === k ? { ...x, n: x.n + 1 } : x))),
+      pDec: () => setWl(wl.map((x, j) => (j === k ? { ...x, p: Math.max(5, x.p - 5) } : x))),
+      pInc: () => setWl(wl.map((x, j) => (j === k ? { ...x, p: Math.min(100, x.p + 5) } : x))),
+      remove: () => setWl(wl.filter((_, j) => j !== k)),
     }));
     const pctTxt = (n) => n.toLocaleString('sk-SK') + ' %';
-    const workloadSum = 'Spolu ' + pctTxt(sumPct) + ' = ' + workloadCount + ' ' + (workloadCount === 1 ? 'sestra' : workloadCount < 5 ? 'sestry' : 'sestier') +
-      (sumPct % 100 ? ' (zaokrúhlené nahor na celé)' : '');
+    const openItem = list.find((it) => it.key === openKey);
+    const openSum = openKey ? sumOf(openKey) : 0;
+    const openCount = openKey ? countOf(openKey) : 0;
+    const workloadSum = 'Spolu ' + pctTxt(openSum) + ' = ' + openCount + ' ' + (openItem ? openItem.forms[openCount === 1 ? 0 : openCount >= 2 && openCount <= 4 ? 1 : 2] : '') + (openSum % 100 ? ' (nahor na celé)' : '');
+    const workloadExtra = openItem
+      ? (openCount > openItem.included ? (openCount - openItem.included) + ' nad balík' : 'v balíku ' + openItem.included)
+      : '';
     let month = 49;
     let once = 0;
     const items = list.map((it) => {
-      const count = it.workload ? Math.max(it.included, workloadCount) : this.state[it.key];
+      const count = it.workload ? Math.max(it.included, countOf(it.key)) : this.state[it.key];
       if (it.once) once += count * it.price; else month += Math.max(0, count - it.included) * it.price;
       // The package sets the floor: fewer than included cannot be set, each one above it is a surcharge.
       const floor = it.once ? 0 : it.included;
@@ -248,6 +270,7 @@ class Component extends DCLogic {
         extra: over ? '+' + eur(cents(over * unitGross)) : '—',
         atMin: count <= floor, atMax: count >= it.max,
         manual: !it.workload, byWorkload: !!it.workload,
+        open: () => this.setState({ open: it.key }),
         dec: () => this.setState({ [it.key]: Math.max(floor, count - 1) }),
         inc: () => this.setState({ [it.key]: Math.min(it.max, count + 1) }),
       };
@@ -261,8 +284,10 @@ class Component extends DCLogic {
     const monthNames = ['januára', 'februára', 'marca', 'apríla', 'mája', 'júna', 'júla', 'augusta', 'septembra', 'októbra', 'novembra', 'decembra'];
     const end = new Date(2026, 10 + months, 0);
     return {
-      items, workloads, workloadSum,
-      addWorkload: () => this.setState({ workloads: [...wl, { n: 1, p: 100 }] }),
+      items, workloads, workloadSum, workloadExtra, step,
+      modalOpen: !!openKey, modalItem: openItem ? openItem.name : '',
+      close: () => this.setState({ open: null }),
+      addWorkload: () => setWl([...wl, { n: 1, p: 100 }]),
       m: eur(m), mG: eur(cents(m * (1 + vat))),
       full: eur(month), fullG: eur(cents(month * (1 + vat))),
       y: eur(year), yG: eur(cents(year * (1 + vat))),
