@@ -4,12 +4,34 @@ import {
   FILE_ACCEPT,
   FILE_GROUPS,
   FILE_PERIODS,
+  FILE_TYPES,
+  fileExtension,
   isoDateSchema,
 } from '@intra/shared/schemas';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { Building2, Folder, FolderPlus, MoreVertical, Search, Trash2, Upload } from 'lucide-react';
-import { type DragEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Building2,
+  ChevronRight,
+  ChevronsDownUp,
+  ChevronsUpDown,
+  Folder,
+  FolderPlus,
+  MoreVertical,
+  Search,
+  Trash2,
+  Upload,
+} from 'lucide-react';
+import {
+  type CSSProperties,
+  type DragEvent,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { z } from 'zod';
 import { FilterMenu } from '@/components/customers/customer-bits';
 import { ChangedBy, FileBadge, FolderTile } from '@/components/files/file-bits';
@@ -19,6 +41,7 @@ import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
 import { TableShell } from '@/components/table-shell';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,7 +57,7 @@ import { canPreview, formatSize } from '@/lib/files';
 import { formatDate, formatRecent } from '@/lib/format';
 import { loadFailed } from '@/lib/query-view';
 import { useCan } from '@/lib/session';
-import { type RouterOutputs, trpc } from '@/lib/trpc';
+import { type RouterOutputs, trpc, trpcClient } from '@/lib/trpc';
 import { downloadFile, previewFile, uploadFiles } from '@/lib/uploads';
 import { cn } from '@/lib/utils';
 
@@ -125,14 +148,14 @@ function FilesPage() {
         ) : null}
       </PageHeader>
 
-      <div className="flex max-w-[1440px] flex-wrap items-start gap-5 px-7 pt-5 pb-10">
+      <div className="flex max-w-[1440px] flex-col items-stretch gap-5 px-7 pt-5 pb-10 md:flex-row md:items-start">
         <FolderTree
           folderId={folderId}
           trash={params.view === 'trash'}
           onOpen={openFolder}
           onTrash={() => setSearch({ view: 'trash', q: undefined, file: undefined }, false)}
         />
-        <div className="min-w-0 flex-[999_1_560px] space-y-4">
+        <div className="min-w-0 flex-1 space-y-4">
           {configured ? null : <StatusBanner tone="warning">{t.notConfigured}</StatusBanner>}
           {params.view === 'trash' ? (
             <TrashSection />
@@ -177,6 +200,71 @@ function nodeClass(active: boolean) {
   );
 }
 
+/** Indent of one level of the tree: small, so four levels still show their names. */
+const INDENT = 14;
+const TREE_WIDTH = { initial: 260, min: 200, max: 560 } as const;
+const WIDTH_KEY = 'intra.files.treeWidth';
+const OPEN_KEY = 'intra.files.openFolders';
+
+/** Lower case without diacritics, so „zmluvy“ finds „Zmluvy a podmienky“ and „Zúčtovanie“ „zuct“. */
+const folded = (text: string) =>
+  text
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase();
+
+function stored<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw === null ? fallback : (JSON.parse(raw) as T);
+  } catch {
+    return fallback;
+  }
+}
+function store(key: string, value: unknown) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // A blocked storage only forgets the width and the open folders.
+  }
+}
+
+/** The tree's width, dragged at its right edge and remembered in this browser. */
+function useTreeWidth() {
+  const [width, setWidth] = useState(() => {
+    const value = stored<number>(WIDTH_KEY, TREE_WIDTH.initial);
+    return Math.min(TREE_WIDTH.max, Math.max(TREE_WIDTH.min, value));
+  });
+  const clamp = (value: number) => Math.min(TREE_WIDTH.max, Math.max(TREE_WIDTH.min, value));
+  const startDrag = (event: ReactPointerEvent) => {
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = width;
+    let last = startWidth;
+    const move = (e: PointerEvent) => {
+      last = clamp(startWidth + e.clientX - startX);
+      setWidth(last);
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      document.body.style.removeProperty('cursor');
+      document.body.style.removeProperty('user-select');
+      store(WIDTH_KEY, last);
+    };
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+  const nudge = (by: number) => {
+    const next = clamp(width + by);
+    setWidth(next);
+    store(WIDTH_KEY, next);
+  };
+  return { width, startDrag, nudge };
+}
+
 function TreeHeading({ children }: { children: ReactNode }) {
   return (
     <p className="mx-2.5 mt-3.5 mb-1.5 text-[11px] font-semibold tracking-[0.06em] text-tertiary uppercase">
@@ -198,9 +286,12 @@ function FolderTree({
   onTrash: () => void;
 }) {
   const tree = useQuery(trpc.file.tree.queryOptions());
+  const { width, startDrag, nudge } = useTreeWidth();
   const [typed, setTyped] = useState('');
   const [all, setAll] = useState(false);
-  const customerSearch = useDebounced(typed.trim(), 250);
+  const [open, setOpen] = useState<Set<string>>(() => new Set(stored<string[]>(OPEN_KEY, [])));
+  const query = typed.trim();
+  const customerSearch = useDebounced(query, 250);
   const customers = useQuery({
     ...trpc.file.customerFolders.queryOptions({
       search: customerSearch || undefined,
@@ -209,67 +300,167 @@ function FolderTree({
     placeholderData: keepPreviousData,
   });
 
-  const children = useMemo(() => {
+  const { children, parentOf } = useMemo(() => {
     const map = new Map<string, TreeFolder[]>();
+    const parents = new Map<string, string>();
     for (const folder of tree.data?.folders ?? []) {
       const list = map.get(folder.parentId!) ?? [];
       list.push(folder);
       map.set(folder.parentId!, list);
+      parents.set(folder.id, folder.parentId!);
     }
-    return map;
+    return { children: map, parentOf: parents };
   }, [tree.data]);
 
+  const setOpenFolders = (next: Set<string>) => {
+    setOpen(next);
+    store(OPEN_KEY, [...next]);
+  };
+  const toggle = (id: string) => {
+    const next = new Set(open);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setOpenFolders(next);
+  };
+
+  // The open folder's ancestors open with it, so the tree always shows where one is.
+  useEffect(() => {
+    const missing: string[] = [];
+    for (let id = parentOf.get(folderId); id && id !== COMPANY_ROOT_FOLDER_ID;) {
+      if (!open.has(id)) missing.push(id);
+      id = parentOf.get(id);
+    }
+    if (missing.length > 0) setOpenFolders(new Set([...open, ...missing]));
+    // Only a new folder or a reloaded tree asks for this.
+  }, [folderId, parentOf]);
+
+  /** While searching: the folders whose name matches, and their ancestors to reach them. */
+  const shown = useMemo(() => {
+    if (!query) return null;
+    const needle = folded(query);
+    const keep = new Set<string>();
+    for (const folder of tree.data?.folders ?? []) {
+      if (!folded(folder.name).includes(needle)) continue;
+      for (let id: string | undefined = folder.id; id && !keep.has(id); id = parentOf.get(id)) {
+        keep.add(id);
+      }
+    }
+    return keep;
+  }, [query, tree.data, parentOf]);
+
   const renderLevel = (parentId: string, depth: number): ReactNode =>
-    (children.get(parentId) ?? []).map((folder) => (
-      <li key={folder.id}>
-        <button
-          type="button"
-          onClick={() => onOpen(folder.id)}
-          aria-current={!trash && folder.id === folderId ? 'page' : undefined}
-          className={nodeClass(!trash && folder.id === folderId)}
-          style={{ paddingLeft: 10 + depth * 24 }}
-        >
-          <Folder className="size-4 shrink-0 opacity-80" aria-hidden />
-          <span className="truncate">{folder.name}</span>
-          {folder.fileCount > 0 ? (
-            <span className="ml-auto text-xs font-normal text-tertiary">{folder.fileCount}</span>
-          ) : null}
-        </button>
-        {children.has(folder.id) ? <ul>{renderLevel(folder.id, depth + 1)}</ul> : null}
-      </li>
-    ));
+    (children.get(parentId) ?? [])
+      .filter((folder) => !shown || shown.has(folder.id))
+      .map((folder) => {
+        const active = !trash && folder.id === folderId;
+        const hasChildren = children.has(folder.id);
+        const expanded = hasChildren && (shown !== null || open.has(folder.id));
+        return (
+          <li key={folder.id}>
+            <div
+              className={cn(nodeClass(active), 'gap-1 px-0 pr-2')}
+              style={{ paddingLeft: 4 + depth * INDENT }}
+            >
+              {hasChildren ? (
+                <button
+                  type="button"
+                  aria-expanded={expanded}
+                  aria-label={expanded ? t.tree.collapse(folder.name) : t.tree.expand(folder.name)}
+                  onClick={() => toggle(folder.id)}
+                  disabled={shown !== null}
+                  className="inline-flex size-5 shrink-0 items-center justify-center rounded text-tertiary hover:text-foreground disabled:opacity-60"
+                >
+                  <ChevronRight
+                    className={cn('size-3.5 transition-transform', expanded && 'rotate-90')}
+                    aria-hidden
+                  />
+                </button>
+              ) : (
+                <span className="size-5 shrink-0" aria-hidden />
+              )}
+              <button
+                type="button"
+                onClick={() => onOpen(folder.id)}
+                aria-current={active ? 'page' : undefined}
+                title={folder.name}
+                className="flex h-full min-w-0 flex-1 items-center gap-1.5 text-left"
+              >
+                <Folder className="size-4 shrink-0 opacity-80" aria-hidden />
+                <span className="truncate">{folder.name}</span>
+                {folder.fileCount > 0 ? (
+                  <span className="ml-auto pl-1 text-xs font-normal text-tertiary">
+                    {folder.fileCount}
+                  </span>
+                ) : null}
+              </button>
+            </div>
+            {expanded ? <ul>{renderLevel(folder.id, depth + 1)}</ul> : null}
+          </li>
+        );
+      });
+
+  const companyLevel = tree.isPending ? null : renderLevel(COMPANY_ROOT_FOLDER_ID, 0);
+  const iconButton =
+    'inline-flex size-6 items-center justify-center rounded-md text-tertiary hover:bg-[#f0f8f7] hover:text-foreground';
 
   return (
     <nav
       aria-label={t.tree.label}
-      className="w-full max-w-[280px] min-w-0 flex-[1_1_240px] rounded-2xl border border-border-subtle bg-white px-2 pt-1.5 pb-2.5 shadow-rest"
+      className="relative w-full min-w-0 shrink-0 rounded-2xl border border-border-subtle bg-white px-2 pt-2 pb-2.5 shadow-rest md:w-[var(--tree-width)]"
+      style={{ '--tree-width': `${width}px` } as CSSProperties}
     >
-      <TreeHeading>
-        <button
-          type="button"
-          className="tracking-[0.06em] uppercase hover:text-primary-text"
-          onClick={() => onOpen(COMPANY_ROOT_FOLDER_ID)}
-        >
-          {t.tree.company}
-        </button>
-      </TreeHeading>
-      {tree.isPending ? (
-        <p className="px-2.5 py-2 text-sm text-muted">{sk.common.loading}</p>
-      ) : (
-        <ul>{renderLevel(COMPANY_ROOT_FOLDER_ID, 0)}</ul>
-      )}
-
-      <TreeHeading>{t.tree.customers}</TreeHeading>
-      <label className="mx-1 mb-1 flex h-8 items-center gap-1.5 rounded-[9px] border border-border-subtle px-2.5 text-[13px] text-tertiary focus-within:border-primary">
+      <label className="mx-1 flex h-8 items-center gap-1.5 rounded-[9px] border border-border-subtle px-2.5 text-[13px] text-tertiary focus-within:border-primary">
         <Search className="size-3.5 shrink-0" aria-hidden />
-        <span className="sr-only">{t.tree.findCustomer}</span>
+        <span className="sr-only">{t.tree.findFolder}</span>
         <input
+          type="search"
           value={typed}
           onChange={(event) => setTyped(event.target.value)}
-          placeholder={t.tree.findCustomer}
+          placeholder={t.tree.findFolder}
           className="min-w-0 flex-1 bg-transparent text-foreground outline-none placeholder:text-tertiary"
         />
       </label>
+
+      <div className="flex items-center gap-1 pr-1">
+        <TreeHeading>
+          <button
+            type="button"
+            className="tracking-[0.06em] uppercase hover:text-primary-text"
+            onClick={() => onOpen(COMPANY_ROOT_FOLDER_ID)}
+          >
+            {t.tree.company}
+          </button>
+        </TreeHeading>
+        <span className="ml-auto mt-2 flex">
+          <button
+            type="button"
+            aria-label={t.tree.expandAll}
+            title={t.tree.expandAll}
+            className={iconButton}
+            onClick={() => setOpenFolders(new Set(children.keys()))}
+          >
+            <ChevronsUpDown className="size-3.5" aria-hidden />
+          </button>
+          <button
+            type="button"
+            aria-label={t.tree.collapseAll}
+            title={t.tree.collapseAll}
+            className={iconButton}
+            onClick={() => setOpenFolders(new Set())}
+          >
+            <ChevronsDownUp className="size-3.5" aria-hidden />
+          </button>
+        </span>
+      </div>
+      {tree.isPending ? (
+        <p className="px-2.5 py-2 text-sm text-muted">{sk.common.loading}</p>
+      ) : shown && shown.size === 0 ? (
+        <p className="px-2.5 py-1.5 text-[13px] text-muted">{t.tree.noFolder}</p>
+      ) : (
+        <ul>{companyLevel}</ul>
+      )}
+
+      <TreeHeading>{t.tree.customers}</TreeHeading>
       <ul>
         {(customers.data?.items ?? []).map((customer) => (
           <li key={customer.folderId}>
@@ -316,6 +507,23 @@ function FolderTree({
           <span className="ml-auto text-xs font-normal text-tertiary">{tree.data.trashCount}</span>
         ) : null}
       </button>
+      <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-label={t.tree.resize}
+        aria-valuenow={width}
+        aria-valuemin={TREE_WIDTH.min}
+        aria-valuemax={TREE_WIDTH.max}
+        tabIndex={0}
+        onPointerDown={startDrag}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowLeft') nudge(-20);
+          if (event.key === 'ArrowRight') nudge(20);
+        }}
+        className="absolute top-3 -right-3 bottom-3 hidden w-3 cursor-col-resize items-center justify-center outline-none md:flex [&:hover>span]:bg-primary [&:focus-visible>span]:bg-primary"
+      >
+        <span className="h-10 w-1 rounded-full bg-border transition-colors" aria-hidden />
+      </div>
     </nav>
   );
 }
@@ -350,6 +558,55 @@ function ContentsSection({
   const debounced = useDebounced(typed.trim(), 300);
   const [dragging, setDragging] = useState(false);
   const depth = useRef(0);
+  const searchBox = useRef<HTMLInputElement>(null);
+  const [photo, setPhoto] = useState<FileRow | null>(null);
+  const [dragged, setDragged] = useState<DragItem | null>(null);
+  const [over, setOver] = useState<string | null>(null);
+  const [drop, setDrop] = useState<{ item: DragItem; target: FolderRef } | null>(null);
+
+  /** A row dragged within the list, onto a folder's row (not a file from the computer). */
+  const dragFrom = (item: DragItem) =>
+    canWrite
+      ? {
+          draggable: true,
+          onDragStart: (event: DragEvent) => {
+            event.dataTransfer.setData(ITEM_TYPE, item.id);
+            event.dataTransfer.effectAllowed = 'copyMove';
+            setDragged(item);
+          },
+          onDragEnd: () => {
+            setDragged(null);
+            setOver(null);
+          },
+        }
+      : {};
+  const dropOn = (target: FolderRef) =>
+    canWrite
+      ? {
+          onDragOver: (event: DragEvent) => {
+            if (!dragged || dragged.id === target.id) return;
+            if (!event.dataTransfer.types.includes(ITEM_TYPE)) return;
+            event.preventDefault();
+            event.stopPropagation();
+            setOver(target.id);
+          },
+          onDragLeave: () => setOver((id) => (id === target.id ? null : id)),
+          onDrop: (event: DragEvent) => {
+            if (!dragged || dragged.id === target.id) return;
+            event.preventDefault();
+            event.stopPropagation();
+            setOver(null);
+            setDrop({ item: dragged, target });
+            setDragged(null);
+          },
+        }
+      : {};
+
+  // Opening „Súbory“ puts the cursor in the search, so one can type straight away.
+  useEffect(() => {
+    if (!params.file) searchBox.current?.focus({ preventScroll: true });
+    // Only on arrival, never while one works in the page.
+  }, []);
 
   useEffect(() => {
     if ((params.q ?? '') !== debounced) setSearch({ q: debounced || undefined });
@@ -438,6 +695,20 @@ function ContentsSection({
     );
   }
 
+  /** A click on a file: a photo shows here, a PDF in a new tab, anything else its detail. */
+  const openFile = (file: FileRow) => {
+    const ext = fileExtension(file.name);
+    if (ext && FILE_TYPES[ext].group === 'image' && FILE_TYPES[ext].preview) {
+      setPhoto(file);
+    } else if (canPreview(file.name)) {
+      void previewFile(file.id).catch((error: unknown) =>
+        toast('error', errorMessage(error, t.errors)),
+      );
+    } else {
+      onOpenFile(file.id);
+    }
+  };
+
   const fileMenu = (file: FileRow) => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -501,25 +772,39 @@ function ContentsSection({
       {(data?.folders ?? []).map((folder) => {
         const ref = { id: folder.id, name: folder.name, parentId: folderId };
         return (
-          <TableRow key={folder.id}>
+          <TableRow
+            key={folder.id}
+            onClick={() => onOpenFolder(folder.id)}
+            {...dragFrom({ kind: 'folder', id: folder.id, name: folder.name })}
+            {...dropOn({ id: folder.id, name: folder.name })}
+            className={cn(
+              over === folder.id && 'bg-primary-soft outline-2 -outline-offset-2 outline-primary',
+              dragged?.id === folder.id && 'opacity-50',
+            )}
+          >
             <TableCell>
               <div className="flex items-center gap-3">
                 <FolderTile />
                 <button
                   type="button"
-                  className="truncate font-semibold hover:text-primary-text hover:underline"
-                  onClick={() => onOpenFolder(folder.id)}
+                  className="truncate text-[15px] font-semibold hover:text-primary-text hover:underline"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onOpenFolder(folder.id);
+                  }}
                 >
                   {folder.name}
                 </button>
               </div>
             </TableCell>
-            <TableCell className="text-muted">{sk.common.none}</TableCell>
-            <TableCell className="text-muted">{formatDate(folder.updatedAt)}</TableCell>
-            <TableCell className="text-muted">{sk.common.none}</TableCell>
-            <TableCell className="text-muted">{t.folderFiles(folder.fileCount)}</TableCell>
+            <TableCell className="text-xs leading-[18px] text-tertiary">
+              {t.changedLine(formatDate(folder.updatedAt))}
+            </TableCell>
+            <TableCell className="text-xs whitespace-nowrap text-tertiary">
+              {t.folderFiles(folder.fileCount)}
+            </TableCell>
             <TableCell />
-            <TableCell className="text-right">
+            <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
               {canWrite || canDelete ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -562,44 +847,68 @@ function ContentsSection({
         );
       })}
       {(data?.files ?? []).map((file) => (
-        <TableRow key={file.id}>
+        <TableRow
+          key={file.id}
+          onClick={() => openFile(file)}
+          {...dragFrom({ kind: 'file', id: file.id, name: file.name })}
+          className={cn(dragged?.id === file.id && 'opacity-50')}
+        >
           <TableCell>
             <div className="flex min-w-0 items-center gap-3">
               <FileBadge name={file.name} />
               <div className="min-w-0">
                 <button
                   type="button"
-                  className="max-w-[28rem] truncate text-left font-semibold hover:text-primary-text hover:underline"
-                  onClick={() => onOpenFile(file.id)}
+                  className="block max-w-full truncate text-left text-[15px] font-semibold hover:text-primary-text hover:underline"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    openFile(file);
+                  }}
                 >
                   {file.name}
                 </button>
                 {searched ? (
                   <button
                     type="button"
-                    className="block text-xs text-muted hover:text-primary-text hover:underline"
-                    onClick={() => onOpenFolder(file.folderId)}
+                    className="block text-left text-xs text-muted hover:text-primary-text hover:underline"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onOpenFolder(file.folderId);
+                    }}
                   >
-                    {file.folderName}
+                    {file.folderPath ?? file.folderName}
                   </button>
                 ) : null}
               </div>
             </div>
           </TableCell>
-          <TableCell className="whitespace-nowrap text-muted">
-            {file.documentDate ? formatDate(file.documentDate) : sk.common.none}
+          <TableCell className="text-xs leading-[18px] whitespace-nowrap text-tertiary">
+            <p>{t.dateLine(file.documentDate ? formatDate(file.documentDate) : sk.common.none)}</p>
+            <p>
+              {t.changedLine(formatRecent(file.changedAt))} ·{' '}
+              <ChangedBy name={file.changedBy} via={file.changedVia} />
+            </p>
           </TableCell>
-          <TableCell className="text-muted">{formatRecent(file.changedAt)}</TableCell>
-          <TableCell className="text-muted">
-            <ChangedBy name={file.changedBy} via={file.changedVia} />
+          <TableCell className="text-xs whitespace-nowrap text-tertiary">
+            {formatSize(file.size)}
           </TableCell>
-          <TableCell className="text-muted">{formatSize(file.size)}</TableCell>
           <TableCell>
-            <span className="inline-flex h-[22px] items-center rounded-md border border-border-subtle bg-surface px-2 text-xs font-semibold text-muted">
+            <button
+              type="button"
+              aria-label={t.detailOf(file.name)}
+              title={t.detailOf(file.name)}
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpenFile(file.id);
+              }}
+              className="inline-flex h-[22px] items-center rounded-md border border-border-subtle bg-surface px-2 text-xs font-semibold text-muted hover:border-primary hover:text-primary-text"
+            >
               v{file.version}
-            </span>
+            </button>
           </TableCell>
-          <TableCell className="text-right">{fileMenu(file)}</TableCell>
+          <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
+            {fileMenu(file)}
+          </TableCell>
         </TableRow>
       ))}
     </>
@@ -616,8 +925,8 @@ function ContentsSection({
         dragging && 'ring-2 ring-primary',
       )}
     >
-      <div className="flex flex-wrap items-center gap-3 px-5 pt-[18px] pb-4">
-        <div className="min-w-0 flex-[1_1_260px]">
+      <div className="px-5 pt-[18px] pb-3">
+        <div className="min-w-0">
           {searched ? (
             <>
               <p className="text-[13px] font-medium text-muted">
@@ -647,10 +956,13 @@ function ContentsSection({
             </>
           )}
         </div>
-        <label className="flex h-9 flex-[0_1_280px] items-center gap-2 rounded-[10px] border border-border px-3 focus-within:border-primary">
+      </div>
+      <div className="flex flex-wrap items-center gap-2 px-5 pb-3">
+        <label className="flex h-9 min-w-[220px] flex-[0_1_320px] items-center gap-2 rounded-[10px] border border-border px-3 focus-within:border-primary">
           <Search className="size-[15px] shrink-0 text-tertiary" aria-hidden />
           <span className="sr-only">{t.searchLabel}</span>
           <input
+            ref={searchBox}
             type="search"
             value={typed}
             onChange={(event) => setTyped(event.target.value)}
@@ -658,8 +970,6 @@ function ContentsSection({
             className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-tertiary"
           />
         </label>
-      </div>
-      <div className="flex flex-wrap gap-2 px-5 pb-3">
         <FilterMenu
           label={t.filters.group}
           value={params.group}
@@ -722,15 +1032,14 @@ function ContentsSection({
           className="rounded-none border-0 shadow-none"
           columns={[
             t.columns.name,
-            t.columns.documentDate,
-            t.columns.changed,
-            t.columns.changedBy,
+            t.columns.dates,
             t.columns.size,
             t.columns.version,
             <span key="actions" className="sr-only">
               {t.columns.actions}
             </span>,
           ]}
+          columnClassNames={['w-1/2']}
           loading={contents.isPending}
           refreshing={contents.isPlaceholderData}
           message={message}
@@ -759,7 +1068,125 @@ function ContentsSection({
           )}
         </div>
       ) : null}
+      <DropDialog drop={drop} onClose={() => setDrop(null)} />
+      <PhotoViewer
+        file={photo}
+        onClose={() => setPhoto(null)}
+        onDetail={(id) => {
+          setPhoto(null);
+          onOpenFile(id);
+        }}
+      />
     </section>
+  );
+}
+
+const ITEM_TYPE = 'application/x-intra-item';
+type DragItem = { kind: 'file' | 'folder'; id: string; name: string };
+type FolderRef = { id: string; name: string };
+
+/** After a row was dropped on a folder: move it, copy it, or leave it. */
+function DropDialog({
+  drop,
+  onClose,
+}: {
+  drop: { item: DragItem; target: FolderRef } | null;
+  onClose: () => void;
+}) {
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const done = (message: string) => async () => {
+    onClose();
+    toast('success', message);
+    await queryClient.invalidateQueries(trpc.file.pathFilter());
+  };
+  const onError = (error: unknown) => toast('error', errorMessage(error, t.errors));
+  const moved = { onSuccess: done(t.drop.moved), onError };
+  const copied = { onSuccess: done(t.drop.copied), onError };
+  const moveFile = useMutation(trpc.file.move.mutationOptions(moved));
+  const moveFolder = useMutation(trpc.file.moveFolder.mutationOptions(moved));
+  const copyFile = useMutation(trpc.file.copyFile.mutationOptions(copied));
+  const copyFolder = useMutation(trpc.file.copyFolder.mutationOptions(copied));
+  const busy = [moveFile, moveFolder, copyFile, copyFolder].some((m) => m.isPending);
+
+  const run = (action: 'move' | 'copy') => {
+    if (!drop) return;
+    const { item, target } = drop;
+    if (item.kind === 'file') {
+      const input = { id: item.id, folderId: target.id };
+      if (action === 'move') moveFile.mutate(input);
+      else copyFile.mutate(input);
+    } else {
+      const input = { id: item.id, parentId: target.id };
+      if (action === 'move') moveFolder.mutate(input);
+      else copyFolder.mutate(input);
+    }
+  };
+
+  return (
+    <Dialog open={drop !== null} onOpenChange={(open) => (open || busy ? null : onClose())}>
+      <DialogContent>
+        <DialogTitle className="pr-10">
+          {drop ? t.drop.title(drop.item.name, drop.target.name) : null}
+        </DialogTitle>
+        <DialogDescription>{t.drop.text}</DialogDescription>
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button variant="secondary" disabled={busy} onClick={onClose}>
+            {sk.common.cancel}
+          </Button>
+          <Button variant="secondary" disabled={busy} onClick={() => run('copy')}>
+            {t.drop.copy}
+          </Button>
+          <Button disabled={busy} onClick={() => run('move')}>
+            {t.drop.move}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** A photo shown in the page, over the list: its name, the picture, and a way to its detail. */
+function PhotoViewer({
+  file,
+  onClose,
+  onDetail,
+}: {
+  file: FileRow | null;
+  onClose: () => void;
+  onDetail: (id: string) => void;
+}) {
+  const url = useQuery({
+    queryKey: ['file-photo', file?.id, file?.version],
+    queryFn: () => trpcClient.file.download.mutate({ id: file!.id, inline: true }),
+    enabled: file !== null,
+    staleTime: 4 * 60_000,
+  });
+  return (
+    <Dialog open={file !== null} onOpenChange={(open) => (open ? null : onClose())}>
+      <DialogContent size="lg" className="gap-3">
+        <DialogTitle className="truncate pr-10">{file?.name}</DialogTitle>
+        <DialogDescription className="sr-only">{file?.name}</DialogDescription>
+        <div className="flex min-h-[40vh] items-center justify-center rounded-xl bg-surface">
+          {url.data ? (
+            <img
+              src={url.data.url}
+              alt={file?.name ?? ''}
+              className="max-h-[75vh] max-w-full rounded-lg object-contain"
+            />
+          ) : (
+            <p className="text-sm text-muted">{url.isError ? t.imageFailed : t.imageLoading}</p>
+          )}
+        </div>
+        {file ? (
+          <div className="flex justify-end">
+            <Button variant="secondary" onClick={() => onDetail(file.id)}>
+              {t.detailOf(file.name)}
+            </Button>
+          </div>
+        ) : null}
+      </DialogContent>
+    </Dialog>
   );
 }
 

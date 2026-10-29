@@ -189,6 +189,20 @@ export const fileRouter = router({
       return { ok: true as const };
     }),
 
+  copyFile: authorizedProcedure('file.write')
+    .input(moveFileSchema)
+    .mutation(async ({ ctx, input }) => {
+      const copy = await run(() =>
+        filesService.copyFile(ctx.db, ctx.storage, ctx.session.userId, input.id, input.folderId),
+      );
+      ctx.audit.set({
+        entityType: 'file',
+        entityId: copy.fileId,
+        diff: { copiedFrom: input.id, folderId: input.folderId },
+      });
+      return copy;
+    }),
+
   restoreVersion: authorizedProcedure('file.write')
     .input(restoreVersionSchema)
     .mutation(async ({ ctx, input }) => {
@@ -255,6 +269,20 @@ export const fileRouter = router({
         diff: { fields: ['parentId'], parentId: input.parentId },
       });
       return { ok: true as const };
+    }),
+
+  copyFolder: authorizedProcedure('file.write')
+    .input(moveFolderSchema)
+    .mutation(async ({ ctx, input }) => {
+      const copy = await run(() =>
+        filesService.copyFolder(ctx.db, ctx.storage, ctx.session.userId, input.id, input.parentId),
+      );
+      ctx.audit.set({
+        entityType: 'folder',
+        entityId: copy.folderId,
+        diff: { copiedFrom: input.id, parentId: input.parentId, count: copy.files },
+      });
+      return copy;
     }),
 
   deleteFolder: authorizedProcedure('file.delete')
