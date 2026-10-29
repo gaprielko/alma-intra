@@ -1,5 +1,6 @@
 import {
   CUSTOMER_KINDS,
+  ORGANIZATION_ROLES,
   CUSTOMER_STATUSES,
   EMAIL_STATUSES,
   GENDERS,
@@ -22,6 +23,7 @@ import {
 import { users } from './users.js';
 
 export const organizationKind = pgEnum('organization_kind', CUSTOMER_KINDS);
+export const organizationRole = pgEnum('organization_role', ORGANIZATION_ROLES);
 export const customerStatus = pgEnum('customer_status', CUSTOMER_STATUSES);
 export const region = pgEnum('region', REGIONS);
 export const gender = pgEnum('gender', GENDERS);
@@ -87,6 +89,8 @@ export const organizations = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     kind: organizationKind('kind').notNull(),
+    /** Customer or partner; until the forms offer it, it follows the contact type „Zákazník“. */
+    role: organizationRole('role').notNull(),
     contactTypeId: uuid('contact_type_id')
       .notNull()
       .references(() => contactTypes.id),
@@ -117,6 +121,7 @@ export const organizations = pgTable(
     uniqueIndex('organizations_ico_unique')
       .on(t.ico)
       .where(sql`${t.deletedAt} is null`),
+    index('organizations_role_idx').on(t.role),
     index('organizations_status_idx').on(t.status),
     index('organizations_contact_type_idx').on(t.contactTypeId),
     index('organizations_owner_idx').on(t.ownerUserId),

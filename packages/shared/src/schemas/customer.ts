@@ -8,6 +8,10 @@ import { emailSchema, idSchema, PAGE_SIZE, phoneSchema } from './common.js';
 export const CUSTOMER_KINDS = ['organization', 'individual'] as const;
 export type CustomerKind = (typeof CUSTOMER_KINDS)[number];
 
+/** What an organization is to Alma: a customer, or a partner (docs/contacts-redesign.md). */
+export const ORGANIZATION_ROLES = ['customer', 'partner'] as const;
+export type OrganizationRole = (typeof ORGANIZATION_ROLES)[number];
+
 /** Where the business relationship stands; `not_interested` ends it without a sale. */
 export const CUSTOMER_STATUSES = [
   'lead',

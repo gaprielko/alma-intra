@@ -61,8 +61,18 @@ describe('contacts (organizations)', () => {
       'customer.create',
       organization('Partner bez stavu', { contactTypeId: typeOf('Partner'), status: 'interested' }),
     );
-    const got = await jana.call<{ status: string | null }>('customer.get', { id: partner.data.id });
+    const got = await jana.call<{ status: string | null; role: string }>('customer.get', {
+      id: partner.data.id,
+    });
     expect(got.data.status).toBeNull();
+    // Any type but „Zákazník“ is a partner; changing the type to „Zákazník“ makes a customer.
+    expect(got.data.role).toBe('partner');
+    const customer = await jana.call<{ id: string }>(
+      'customer.create',
+      organization('Zákazník s rolou'),
+    );
+    const asCustomer = await jana.call<{ role: string }>('customer.get', { id: customer.data.id });
+    expect(asCustomer.data.role).toBe('customer');
   });
 
   it('lists with products, filters by product and counts by status', async () => {

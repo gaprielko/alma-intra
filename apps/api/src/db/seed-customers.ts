@@ -308,6 +308,7 @@ export async function seedCustomers(
     const values: typeof organizations.$inferInsert = {
       id: customerId,
       kind: c.kind,
+      role: 'customer',
       contactTypeId: customerType!.id,
       name: c.name,
       ico: c.ico ?? null,

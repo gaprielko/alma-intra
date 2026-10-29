@@ -179,6 +179,7 @@ export async function listCustomers(db: Db | Tx, raw: CustomerListInput) {
       .select({
         id: organizations.id,
         kind: organizations.kind,
+        role: organizations.role,
         name: organizations.name,
         city: organizations.city,
         contactTypeName: contactTypes.name,
@@ -397,6 +398,8 @@ async function hasSalesStatus(tx: Tx, contactTypeId: string) {
 function columnsOf(input: CustomerInput, salesStatus: boolean) {
   const common = {
     contactTypeId: input.contactTypeId,
+    // Until the forms offer the role, „Zákazník“ makes a customer and any other type a partner.
+    role: salesStatus ? ('customer' as const) : ('partner' as const),
     status: salesStatus ? (input.status ?? null) : null,
     street: input.street ?? null,
     postalCode: input.postalCode ?? null,
