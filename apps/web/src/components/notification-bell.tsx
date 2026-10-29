@@ -85,7 +85,7 @@ export function NotificationBell({ collapsed }: { collapsed: boolean }) {
                             })
                           : item.customerId
                             ? navigate({
-                                to: '/customers/$customerId',
+                                to: '/organizations/$customerId',
                                 params: { customerId: item.customerId },
                               })
                             : undefined);

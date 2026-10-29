@@ -69,6 +69,14 @@ describe('Kontakty: persons on their own', () => {
       isPrimary: false,
     });
     expect(person.organizations.find((o) => o.id === other)).toMatchObject({ isPrimary: true });
+    // The organization's card says where else the person works („aj v …“).
+    const card = await jana.call<{ contacts: { id: string; elsewhere: { id: string }[] }[] }>(
+      'customer.get',
+      { id: HARMONIA },
+    );
+    expect(card.data.contacts.find((c) => c.id === made.data.id)?.elsewhere).toEqual([
+      expect.objectContaining({ id: other }),
+    ]);
     const atHarmonia = await jana.call<Page>('person.list', {
       organizationId: [HARMONIA],
       pageSize: 100,

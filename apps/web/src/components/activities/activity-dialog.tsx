@@ -69,6 +69,7 @@ export function ActivityDialog({
   customerName,
   activity,
   initialKind = 'meeting',
+  contact,
   onClose,
   onSaved,
 }: {
@@ -77,6 +78,8 @@ export function ActivityDialog({
   /** Edit this one; without it, a new activity. */
   activity?: Activity;
   initialKind?: ActivityKind;
+  /** A new activity recorded from a person's page: they take part. */
+  contact?: { id: string; name: string } | undefined;
   onClose: () => void;
   onSaved?: (id: string) => void;
 }) {
@@ -95,8 +98,12 @@ export function ActivityDialog({
     activity?.durationMin ? String(activity.durationMin) : '',
   );
   const [people, setPeople] = useState<Person[]>(
-    activity?.participants ??
-      (me && initialKind !== 'note' ? [{ kind: 'user', id: me.id, name: me.name }] : []),
+    activity?.participants ?? [
+      ...(contact ? [{ kind: 'contact' as const, id: contact.id, name: contact.name }] : []),
+      ...(me && initialKind !== 'note'
+        ? [{ kind: 'user' as const, id: me.id, name: me.name }]
+        : []),
+    ],
   );
   const [query, setQuery] = useState('');
   const [listOpen, setListOpen] = useState(false);

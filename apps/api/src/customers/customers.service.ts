@@ -289,15 +289,23 @@ async function personsOf(db: Db | Tx, organizationId: string) {
       contact: contacts,
       position: contactLinks.position,
       isPrimary: contactLinks.isPrimary,
+      // The person's other live organizations: „aj v …“ on the card.
+      elsewhere: sql<{ id: string; name: string; role: 'customer' | 'partner' }[]>`coalesce((
+        select json_agg(json_build_object('id', o.id, 'name', o.name, 'role', o.role)
+          order by o.name collate "sk-x-icu")
+        from contact_links l join organizations o on o.id = l.organization_id
+        where l.contact_id = ${contacts.id} and l.organization_id <> ${organizationId}
+          and o.deleted_at is null), '[]'::json)`,
     })
     .from(contactLinks)
     .innerJoin(contacts, eq(contacts.id, contactLinks.contactId))
     .where(and(eq(contactLinks.organizationId, organizationId), aliveContact))
     .orderBy(desc(contactLinks.isPrimary), asc(contacts.createdAt));
-  return rows.map(({ contact, position, isPrimary }) => ({
+  return rows.map(({ contact, position, isPrimary, elsewhere }) => ({
     ...omit(contact, 'deletedAt'),
     position,
     isPrimary,
+    elsewhere,
   }));
 }
 

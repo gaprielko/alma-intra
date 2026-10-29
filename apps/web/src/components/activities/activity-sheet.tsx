@@ -147,7 +147,7 @@ function Body({ activity: a, onClose }: { activity: Activity; onClose: () => voi
           <p className="text-[13px] font-medium text-muted">
             {t.kinds[a.kind]} ·{' '}
             <Link
-              to="/customers/$customerId"
+              to="/organizations/$customerId"
               params={{ customerId: a.customerId }}
               className="text-primary-text hover:underline"
               onClick={onClose}

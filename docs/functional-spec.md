@@ -162,7 +162,7 @@ in Kontakty.
   status with counts, kind, product, region, tag, owner; partners: kind, region, tag; persons:
   where they work, organization, e-mail state), sorting, paging 20/50/100, bulk e-mail, tag, status
   (customers), CSV, segments saved per tab.
-- **Organization detail** (`/customers/<id>`): header with role, status and quick actions; the
+- **Organization detail** (`/organizations/<id>`; old `/customers/<id>` links redirect): header with role, status and quick actions; the
   contact persons with their position, a new one or an existing one from Kontakty; the timeline;
   basics, classification and files; the „…“ menu changes the role, makes a document, deletes.
 - **Person detail** (`/contacts/<id>`): positions at their organizations, the person's own

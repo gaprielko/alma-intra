@@ -420,7 +420,7 @@ function Usage({ rows }: { rows: RouterOutputs['activity']['fileUsage'] }) {
         ) : (
           <li key={row.activityId}>
             <Link
-              to="/customers/$customerId"
+              to="/organizations/$customerId"
               params={{ customerId: row.customerId }}
               className="flex items-center gap-3 rounded-xl border border-border-subtle px-3.5 py-3 hover:bg-hover"
             >
