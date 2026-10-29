@@ -587,6 +587,16 @@
       "title": "Nastavenia · Ceny a DPH (sadzba DPH)",
       "page": "prod",
       "expand": "fill"
+    },
+    "EstProductDialog.dc.html": {
+      "x": 1520,
+      "y": 1420,
+      "w": 1440,
+      "h": 1300,
+      "title": "Prideliť produkt · rozsah, cena a výpočet s DPH",
+      "page": "est",
+      "expand": "fill",
+      "is_interactive": true
     }
   },
   "order": [
@@ -647,7 +657,8 @@
     "ProdDetail.dc.html",
     "ProdItemDialog.dc.html",
     "ProdItems.dc.html",
-    "ProdVatSettings.dc.html"
+    "ProdVatSettings.dc.html",
+    "EstProductDialog.dc.html"
   ],
   "notes": {
     "logotitle": {

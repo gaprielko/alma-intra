@@ -123,11 +123,11 @@ The card becomes a table that copes with dozens of persons [P-5]:
   activities and e-mails remain. The choice is remembered per user in the browser.
 - The existing type chips (Všetko, Aktivity, E-maily, Zmeny) work on top of it.
 
-### 4.4 Products (later)
+### 4.4 Products
 
-When products are assigned (a separate spec), the organization's detail lists its own products
-and, apart, **„Produkty prevádzok“** grouped by prevádzka [P-8]. The header's product chips show
-the union, marked „vrátane prevádzok“.
+Specified in [products.md](products.md) section 9.1: a Produkty card under the Prevádzky table,
+a table of the organization's products and, apart, those of its prevádzky, with counts, monthly and
+yearly price, with or without VAT, and a total [P-8].
 
 ---
 
