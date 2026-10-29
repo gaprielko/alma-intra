@@ -1252,7 +1252,7 @@ export async function organizationPersons(db: Db | Tx, organizationId: string) {
         atOrganization: false,
         establishments: [],
       } satisfies Person);
-    if (row.parentId) {
+    if (row.organizationId !== organizationId) {
       person.establishments.push({
         id: row.organizationId,
         name: row.organizationName,
