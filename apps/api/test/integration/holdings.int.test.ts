@@ -144,6 +144,25 @@ describe('a product at an organization or a prevádzka', () => {
     expect(held.data.find((h) => !h.holder.isEstablishment)!.items[0]!.count).toBe(2);
   });
 
+  it('the form without products leaves them; „Ceny produktov“ holds for the prevádzka', async () => {
+    await jana.call('customer.update', {
+      id: org,
+      customer: {
+        kind: 'organization',
+        name: 'Holding ADOS, s.r.o.',
+        role: 'customer',
+        tags: [],
+        pricesWithVat: false,
+      },
+    });
+    const held = await jana.call<Holding[]>('customer.holdings', { id: org });
+    expect(held.data.filter((h) => !h.holder.isEstablishment)).toHaveLength(1);
+    const own = await jana.call<{ pricesWithVat: boolean }>('customer.get', { id: org });
+    const ofEst = await jana.call<{ pricesWithVat: boolean }>('customer.get', { id: est });
+    expect(own.data.pricesWithVat).toBe(false);
+    expect(ofEst.data.pricesWithVat).toBe(false);
+  });
+
   it('ends a product: it stays, no longer active', async () => {
     await jana.call('customer.holdingEnd', { organizationId: est, productId: product });
     const held = await jana.call<Holding[]>('customer.holdings', { id: est });

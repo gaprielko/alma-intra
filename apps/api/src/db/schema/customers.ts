@@ -171,6 +171,11 @@ export const organizations = pgTable(
     note: text('note'),
     almaOrganizationId: text('alma_organization_id'),
     /**
+     * „Ceny produktov“: how prices are shown to this organization, with or without VAT. Set on the
+     * organization and valid for its prevádzky too; a private person always gets prices with VAT.
+     */
+    pricesWithVat: boolean('prices_with_vat').notNull().default(true),
+    /**
      * A prevádzka's organization (docs/establishments.md): NULL for an organization. One level
      * only; a prevádzka shares its organization's IČO, role, status, owner, source and tags.
      */
