@@ -2019,6 +2019,13 @@ export const sk = {
     attachments: (n: number) => plural(n, 'príloha', 'prílohy', 'príloh'),
     emptyUnassigned: 'Žiadne nepriradené e-maily. Odpovede na vaše e-maily sa priraďujú samy.',
     emptyAll: 'Zatiaľ žiadne prijaté e-maily.',
+    sync: 'Načítať nové',
+    synced: (n: number) =>
+      n === 0
+        ? 'Žiadne nové e-maily.'
+        : `Načítané: ${plural(n, 'nový e-mail', 'nové e-maily', 'nových e-mailov')}.`,
+    syncNotConfigured: 'Príjem e-mailov nie je nastavený.',
+    syncRefused: 'Resend načítanie odmietol. API kľúč musí mať oprávnenie Full access.',
     back: 'Prijaté',
     from: 'Od',
     to: 'Komu',

@@ -376,6 +376,7 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     customerId: uuid,
     contactId: uuid,
     status: oneOf(INBOUND_STATUSES),
+    synced: number,
   },
   folder: {
     parentId: uuid,

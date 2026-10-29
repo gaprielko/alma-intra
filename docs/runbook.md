@@ -152,7 +152,9 @@ option falls back to the colleague's own mailbox. The default is the company add
    key cannot). Replace `RESEND_API_KEY` with it.
 5. Coolify → Environment: `INBOUND_REPLY_DOMAIN=mail.alma-care.eu`, redeploy.
 6. Check: send an e-mail from Intra to your own address, answer it, and the answer appears in
-   Intra (Resend → Emails → Receiving shows it too). Received mail counts against the Resend
+   Intra (Resend → Emails → Receiving shows it too).
+   „Prijaté“ › „Načítať nové“ takes in the latest received e-mails Intra does not have yet, for
+   one a webhook call missed; with a „Sending access“ key it says the key may not read them. Received mail counts against the Resend
    quota like sent mail; Resend keeps it even while the webhook is down and retries the call.
 
 ### 5b. Claude access (E7)

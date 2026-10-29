@@ -8,7 +8,8 @@ import { TRPCError } from '@trpc/server';
 import { Logger } from '@nestjs/common';
 import { loadEnv } from '../config/env.js';
 import { saveInboundAttachments } from '../inbound/attachments.js';
-import { inboundSource } from '../inbound/inbound.js';
+import { InboundFetchError, inboundSource } from '../inbound/inbound.js';
+import { syncInbound } from '../inbound/intake.js';
 import * as inbound from '../inbound/inbound.service.js';
 import { describeError } from '../logging/describe-error.js';
 import { authorizedProcedure, router } from './trpc.js';
@@ -76,6 +77,22 @@ export const inboundRouter = router({
       ctx.audit.set({ entityType: 'inbound', entityId: input.id, diff: { campaignId } });
       return { campaignId };
     }),
+
+  /** „Načítať nové“: e-mails the provider received that Intra does not have yet. */
+  sync: authorizedProcedure('email.read').mutation(async ({ ctx }) => {
+    const source = inboundSource(loadEnv());
+    if (!source) throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'not_configured' });
+    const { added } = await syncInbound(ctx.db, ctx.storage, source, logger).catch(
+      (error: unknown) => {
+        if (!(error instanceof InboundFetchError)) throw error;
+        // Mostly a key without „Full access“: it may send, not read received mail.
+        logger.warn({ msg: 'received e-mails not synced', providerCode: error.providerCode });
+        throw new TRPCError({ code: 'BAD_GATEWAY', message: 'provider_refused' });
+      },
+    );
+    ctx.audit.set({ entityType: 'inbound', diff: { synced: added } });
+    return { added };
+  }),
 
   discard: authorizedProcedure('email.read')
     .input(inboundIdSchema)

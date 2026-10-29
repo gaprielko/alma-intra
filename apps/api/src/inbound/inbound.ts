@@ -50,6 +50,8 @@ export interface InboundSource {
   attachmentLinks(providerEmailId: string): Promise<InboundAttachmentLink[]>;
   /** The received e-mail as it came, to another address (once per key). */
   forward(providerEmailId: string, mail: { to: string; from: string }, key: string): Promise<void>;
+  /** The ids of the latest received e-mails, newest first (at most 100). */
+  recent(): Promise<string[]>;
 }
 
 /** The provider did not give the e-mail: the webhook answers 5xx and Resend tries again. */
@@ -63,7 +65,7 @@ export class InboundFetchError extends Error {
 /** The part of the Resend SDK we use, so a test can stand in for it. */
 export type ResendReceiving = Pick<
   Resend['emails']['receiving'],
-  'get' | 'attachments' | 'forward'
+  'get' | 'attachments' | 'forward' | 'list'
 >;
 
 const header = (headers: Record<string, string> | null, name: string) => {
@@ -116,6 +118,11 @@ export function resendInboundSource(
         { idempotencyKey: key },
       );
       if (error) throw new InboundFetchError(error.name);
+    },
+    async recent() {
+      const { data, error } = await receiving.list({ limit: 100 });
+      if (error) throw new InboundFetchError(error.name);
+      return data.data.map((email) => email.id);
     },
   };
 }

@@ -1,14 +1,17 @@
 import { sk } from '@intra/shared/i18n';
 import { INBOUND_VIEWS } from '@intra/shared/schemas';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Paperclip } from 'lucide-react';
+import { Paperclip, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import { z } from 'zod';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { TablePagination, TableShell } from '@/components/table-shell';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { RowLink, TableCell, TableRow } from '@/components/ui/table';
+import { useToast } from '@/components/ui/toast';
+import { errorMessage } from '@/lib/errors';
 import { formatRecent } from '@/lib/format';
 import { loadFailed } from '@/lib/query-view';
 import { trpc } from '@/lib/trpc';
@@ -31,6 +34,24 @@ function InboxPage() {
     placeholderData: keepPreviousData,
   });
   const rows = list.data?.items ?? [];
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const sync = useMutation(
+    trpc.inbound.sync.mutationOptions({
+      onSuccess: async ({ added }) => {
+        toast('success', t.synced(added));
+        await queryClient.invalidateQueries(trpc.inbound.pathFilter());
+      },
+      onError: (error) =>
+        toast(
+          'error',
+          errorMessage(error, {
+            not_configured: t.syncNotConfigured,
+            provider_refused: t.syncRefused,
+          }),
+        ),
+    }),
+  );
   const chip = (key: (typeof INBOUND_VIEWS)[number], label: string) => (
     <button
       key={key}
@@ -52,9 +73,22 @@ function InboxPage() {
   );
   return (
     <main className="max-w-[1440px] space-y-4 px-7 pt-5 pb-10">
-      <div role="group" aria-label={t.views.label} className="flex gap-2">
-        {chip('unassigned', t.views.unassigned(list.data?.unassigned ?? 0))}
-        {chip('all', t.views.all)}
+      <div className="flex items-center gap-2">
+        <div role="group" aria-label={t.views.label} className="flex gap-2">
+          {chip('unassigned', t.views.unassigned(list.data?.unassigned ?? 0))}
+          {chip('all', t.views.all)}
+        </div>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="ml-auto"
+          disabled={sync.isPending}
+          onClick={() => sync.mutate()}
+        >
+          <RefreshCw className={cn('size-3.5', sync.isPending && 'animate-spin')} aria-hidden />
+          {t.sync}
+        </Button>
       </div>
       {loadFailed(list) ? (
         <ErrorState onRetry={() => void list.refetch()} />

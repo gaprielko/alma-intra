@@ -16,19 +16,17 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
 import type { Request } from 'express';
 import { AuditTrail, writeAuditEvent } from '../audit/audit.js';
 import { loadEnv } from '../config/env.js';
 import { DB, type Db } from '../db/db.module.js';
-import { users } from '../db/schema/index.js';
 import { describeError } from '../logging/describe-error.js';
 import { transportFor } from '../mail/mailer.js';
 import type { MailTransport } from '../mail/transport.js';
 import { STORAGE } from '../storage/storage.module.js';
 import type { Storage } from '../storage/storage.js';
-import { saveInboundAttachments } from '../inbound/attachments.js';
-import { type InboundSource, inboundSource, receiveInbound } from '../inbound/inbound.js';
+import { type InboundSource, inboundSource } from '../inbound/inbound.js';
+import { takeInReceived } from '../inbound/intake.js';
 import {
   dropForUnsubscribed,
   drainCampaigns,
@@ -125,51 +123,13 @@ export class CampaignWebhookController {
   }
 
   /**
-   * A received e-mail: fetched from Resend (the event carries no body) and filed. Without a key
-   * nothing can be fetched; the 503 makes Resend keep it and try again later.
+   * A received e-mail, taken in by its id. Without a key nothing can be fetched; the 503 makes
+   * Resend keep it and try again later.
    */
   private async received(providerEmailId: string | undefined) {
     if (!providerEmailId) return;
     if (!this.inbound) throw new ServiceUnavailableException();
-    const email = await this.inbound.get(providerEmailId);
-    if (!email) return;
-    const filed = await receiveInbound(this.db, loadEnv(), email);
-    this.logger.log({ msg: 'e-mail received', inboundId: filed.id, matched: filed.matched });
-    // A copy into the colleague's own mailbox (D-27), so nothing is missed outside Intra.
-    if (filed.id && filed.userId) {
-      await this.forwardCopy(providerEmailId, filed.id, filed.userId).catch((error: unknown) =>
-        this.logger.warn({
-          msg: 'copy of a received e-mail not forwarded',
-          inboundId: filed.id,
-          ...describeError(error),
-        }),
-      );
-    }
-    // The e-mail is kept whatever happens to its attachments; a failure is retried on assigning.
-    if (filed.id && filed.matched) {
-      await saveInboundAttachments(this.db, this.storage, this.inbound, filed.id).catch(
-        (error: unknown) =>
-          this.logger.warn({
-            msg: 'attachments of a received e-mail not saved',
-            inboundId: filed.id,
-            ...describeError(error),
-          }),
-      );
-    }
-  }
-
-  private async forwardCopy(providerEmailId: string, inboundId: string, userId: string) {
-    const [user] = await this.db
-      .select({ email: users.email, status: users.status })
-      .from(users)
-      .where(eq(users.id, userId));
-    if (!user || user.status !== 'active' || !this.inbound) return;
-    const env = loadEnv();
-    await this.inbound.forward(
-      providerEmailId,
-      { to: user.email, from: `Alma Intra <${env.CAMPAIGN_FROM_ADDRESS}>` },
-      `inbound-copy/${inboundId}`,
-    );
+    await takeInReceived(this.db, this.storage, this.inbound, providerEmailId, this.logger);
   }
 
   @Post('u/:token')
