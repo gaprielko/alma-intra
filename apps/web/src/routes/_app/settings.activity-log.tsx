@@ -34,7 +34,7 @@ function SubjectLink({ row }: { row: Row }) {
   if (row.entityType === 'customer') {
     return (
       <Link
-        to="/customers/$customerId"
+        to="/organizations/$customerId"
         params={{ customerId: row.entityId }}
         className="text-primary-text hover:underline"
       >

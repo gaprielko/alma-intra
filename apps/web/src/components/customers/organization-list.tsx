@@ -270,7 +270,7 @@ export function OrganizationList({
           {t.exportAll}
         </Button>
         <Button asChild>
-          <Link to="/customers/new" search={{ role }}>
+          <Link to="/organizations/new" search={{ role }}>
             <Plus className="size-4" aria-hidden />
             {customers ? o.newCustomer : o.newPartner}
           </Link>
@@ -502,7 +502,7 @@ function OrganizationRow({
   checked: boolean;
   onToggle: () => void;
 }) {
-  const href = `/customers/${row.id}`;
+  const href = `/organizations/${row.id}`;
   const meta = [row.city, row.kind === 'individual' ? o.privatePerson : null]
     .filter(Boolean)
     .join(' · ');

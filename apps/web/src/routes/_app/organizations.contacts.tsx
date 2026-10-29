@@ -353,7 +353,7 @@ function PersonRow({
                 </span>
                 {org.kind === 'individual' ? null : (
                   <Link
-                    to="/customers/$customerId"
+                    to="/organizations/$customerId"
                     params={{ customerId: org.id }}
                     className="font-semibold text-primary-text hover:underline"
                   >

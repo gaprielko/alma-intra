@@ -246,7 +246,7 @@ function OrganizationsCard({ person: c }: { person: Person }) {
                 <p className="flex flex-wrap items-center gap-1.5">
                   <RoleChip organization={org} />
                   <Link
-                    to="/customers/$customerId"
+                    to="/organizations/$customerId"
                     params={{ customerId: org.id }}
                     className="font-semibold text-primary-text hover:underline"
                   >

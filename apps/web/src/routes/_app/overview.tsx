@@ -101,7 +101,7 @@ function NextStepsCard() {
                     <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted">
                       <KindMark kind={step.kind} size="sm" />
                       <Link
-                        to="/customers/$customerId"
+                        to="/organizations/$customerId"
                         params={{ customerId: step.customerId }}
                         className="hover:text-primary-text hover:underline"
                       >
@@ -232,7 +232,7 @@ function StaleCard({ contacts, days }: { contacts: Summary['staleContacts']; day
             {contacts.map((contact) => (
               <li key={contact.id} className="flex items-center gap-3 py-2.5">
                 <Link
-                  to="/customers/$customerId"
+                  to="/organizations/$customerId"
                   params={{ customerId: contact.id }}
                   className="mr-auto truncate text-sm font-medium hover:text-primary-text hover:underline"
                 >

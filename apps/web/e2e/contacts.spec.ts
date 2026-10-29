@@ -8,7 +8,7 @@ test('the overview opens after signing in', async ({ page }) => {
 
 test('a new contact is created and found in the list', async ({ page }) => {
   const name = `E2E test ${Date.now()}`;
-  await page.goto('/customers/new');
+  await page.goto('/organizations/new');
   await page.getByLabel('Názov', { exact: true }).fill(name);
   await page.getByRole('button', { name: 'Uložiť kontakt' }).click();
   await expect(page.getByRole('heading', { name })).toBeVisible();

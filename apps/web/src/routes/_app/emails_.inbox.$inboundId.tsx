@@ -157,7 +157,7 @@ function InboundPage() {
           {m.customerId ? (
             <Fact label={t.filedUnder}>
               <Link
-                to="/customers/$customerId"
+                to="/organizations/$customerId"
                 params={{ customerId: m.customerId }}
                 className="font-medium text-primary-text hover:underline"
               >
