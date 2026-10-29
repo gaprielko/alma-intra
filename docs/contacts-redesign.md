@@ -1,6 +1,6 @@
 # Kontakty redesign: customers, partners and contacts (draft)
 
-Status: **functionality and screens agreed** (2026-10-29). Phases 1 and 2 done (screens: the `Org*`,
+Status: **implemented** (2026-10-29, stages O1–O6). Phases 1 and 2 done (screens: the `Org*`,
 `ContactDetail` and `PersonDialog` boards in `design/`); phase 3, the implementation, goes in the
 stages of section 11. Once implemented, it replaces sections 4 and 5 of
 `functional-spec.md`.
@@ -191,6 +191,6 @@ Each stage is its own set of commits, leaves the app working and the tests green
 | O1 | Rename: table `customers` → `organizations`, `customer_*` columns and tables → `organization_*`, code identifiers likewise. A pure refactor. Done: `e118e11`. | none |
 | O2 | Data model: persons as standalone `contacts` + `contact_links` (position, primary), private persons moved into `contacts`, one person per e-mail (duplicates merged); `role` on organizations, derived from the contact type „Zákazník“ until the forms offer it. Done: `2002ab0`, `1a5bf24`. | almost none |
 | O3 | API: lists per role, persons list / detail / timeline, create and link persons, unique e-mail, role change, multi-select filters. Done: `de4abe6`, `853f4a7`, `5333c07`. | none |
-| O4 | Web lists: „Organizácie“ with the tabs Zákazníci, Partneri, Kontakty; multi-select dropdown filters. The forms choose the role; contact types become tags (D-4) and the partners' status and owner go (D-10). | new lists |
-| O5 | Web details: customer, partner, private person, contact detail with its timeline, person dialog, „Zmeniť na zákazníka“. | new details |
-| O6 | The rest: e-mail wizard recipients, template variables, segments per register, received e-mail matching, Claude's tools, dashboard, CSV, `functional-spec.md` sections 4 and 5 replaced. | everything consistent |
+| O4 | Web lists: „Organizácie“ with the tabs Zákazníci, Partneri, Kontakty; multi-select dropdown filters. The forms choose the role; contact types become tags (D-4) and the partners' status and owner go (D-10). Done: `f06b4b5`, `510c255`. | new lists |
+| O5 | Web details: customer, partner, private person, contact detail with its timeline, person dialog, „Zmeniť na zákazníka“. Done: `47ed007`, `3f892c6`, `4c3cb74` (details stay at `/customers/<id>`; persons at `/contacts/<id>`). | new details |
+| O6 | The rest: e-mail wizard recipients, template variables, segments per register, received e-mail matching, Claude's tools, dashboard, CSV, `functional-spec.md` sections 4 and 5 replaced. Done: `8c0358f`, `bcce4e5`, `4e87333`, this spec. Received e-mails needed no change (matched to persons since O2). | everything consistent |

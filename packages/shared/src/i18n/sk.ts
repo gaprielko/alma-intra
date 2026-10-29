@@ -219,7 +219,7 @@ export const sk = {
     nav: {
       label: 'Hlavná navigácia',
       overview: 'Prehľad',
-      customers: 'Kontakty',
+      customers: 'Organizácie',
       emails: 'E-maily',
       files: 'Súbory',
       settings: 'Nastavenia',
@@ -351,8 +351,10 @@ export const sk = {
       'unsubscribe.confirm': 'Odhlásenie z ponúk cez odkaz',
       'unsubscribe.oneClick': 'Odhlásenie z ponúk cez odkaz',
       'unsubscribe.undo': 'Prihlásenie späť k ponukám',
-      'mcp.customers_search': 'Claude hľadal kontakty',
-      'mcp.customers_get': 'Claude čítal kontakt',
+      'mcp.customers_search': 'Claude hľadal organizácie',
+      'mcp.customers_get': 'Claude čítal organizáciu',
+      'mcp.contacts_search': 'Claude hľadal osoby',
+      'mcp.contacts_get': 'Claude čítal osobu',
       'mcp.files_search': 'Claude hľadal súbory',
       'mcp.files_list_folder': 'Claude prezeral priečinok',
       'mcp.files_get_info': 'Claude čítal údaje súboru',
@@ -569,6 +571,148 @@ export const sk = {
       },
     },
   },
+  /** Organizácie: the tabs Zákazníci, Partneri and Kontakty (docs/contacts-redesign.md). */
+  organizations: {
+    title: 'Organizácie',
+    subtitle: 'Zákazníci, partneri a ich kontaktné osoby',
+    tabs: { customers: 'Zákazníci', partners: 'Partneri', contacts: 'Kontakty' },
+    newCustomer: 'Nový zákazník',
+    newPartner: 'Nový partner',
+    newPerson: 'Nová osoba',
+    privatePerson: 'Súkromná osoba',
+    openPerson: 'Otvoriť v Kontaktoch',
+    addNewPerson: 'Nová osoba',
+    addNewPersonHint: 'Vytvorí osobu a priradí ju sem',
+    addExistingPerson: 'Existujúca osoba z Kontaktov',
+    addExistingPersonHint: 'Napríklad ak už pracuje aj inde',
+    existingDialog: {
+      title: 'Priradiť existujúcu osobu',
+      search: 'Hľadať osobu',
+      searchPlaceholder: 'Meno, e-mail alebo organizácia',
+      empty: 'Nikto sa nenašiel.',
+    },
+    roleChange: {
+      toCustomer: 'Zmeniť na zákazníka',
+      toPartner: 'Zmeniť na partnera',
+      customerTitle: 'Zmeniť na zákazníka?',
+      customerText:
+        'História, osoby, súbory a štítky ostanú. Potom doplníte stav, zodpovednú osobu a produkty.',
+      partnerTitle: 'Zmeniť na partnera?',
+      partnerText:
+        'Partner nemá stav, zodpovednú osobu ani produkty: tieto údaje sa odstránia, v histórii zmien ostanú.',
+      done: 'Rola je zmenená.',
+    },
+    partnerColumn: 'Partner',
+    customerColumn: 'Zákazník',
+    statusFilter: 'Stav',
+    picked: (labels: string[]) =>
+      labels.length <= 2 ? labels.join(', ') : `${labels.length} vybrané`,
+    partnersEmpty: {
+      title: 'Zatiaľ žiadni partneri',
+      text: 'Pridajte organizácie a osoby, s ktorými spolupracujete: dodávateľov, inštitúcie, konzultantov.',
+    },
+    customersEmpty: {
+      title: 'Zatiaľ žiadni zákazníci',
+      text: 'Pridajte prvého zákazníka. Kontaktné osoby, e-maily a súbory sa budú viazať naňho.',
+    },
+    customersSelected: (n: number) =>
+      n === 1
+        ? '1 vybraný zákazník'
+        : n <= 4
+          ? `${n} vybraní zákazníci`
+          : `${n} vybraných zákazníkov`,
+    partnersSelected: (n: number) =>
+      n === 1 ? '1 vybraný partner' : n <= 4 ? `${n} vybraní partneri` : `${n} vybraných partnerov`,
+    persons: {
+      searchLabel: 'Hľadať osobu',
+      searchPlaceholder: 'Meno, e-mail, telefón alebo organizácia',
+      link: 'Väzba',
+      links: { customer: 'U zákazníkov', partner: 'U partnerov', none: 'Bez organizácie' },
+      organization: 'Organizácia',
+      emailState: 'Stav e-mailu',
+      emailStates: { unsubscribed: 'Odhlásení zo zasielania', invalid: 'Neplatný e-mail' },
+      columns: {
+        person: 'Osoba',
+        organizations: 'Organizácia a pozícia',
+        contact: 'E-mail a telefón',
+        lastContact: 'Posledný kontakt',
+      },
+      roles: { customer: 'Zákazník', partner: 'Partner' },
+      self: (role: string) => `Súkromná osoba · ${role}`,
+      noOrganization: 'Bez organizácie',
+      unsubscribed: 'Odhlásená zo zasielania',
+      invalid: 'Neplatný e-mail',
+      selected: (n: number) =>
+        n === 1 ? '1 vybraná osoba' : n <= 4 ? `${n} vybrané osoby` : `${n} vybraných osôb`,
+      back: 'Kontakty',
+      positionAt: (position: string | null, organization: string) =>
+        position ? `${position} v ${organization}` : organization,
+      personal: 'Osobné údaje',
+      fields: {
+        name: 'Meno',
+        form: 'Oslovovať',
+        salutation: 'Oslovenie v e-mailoch',
+        email: 'E-mail',
+        phone: 'Telefón',
+        bulk: 'Hromadné e-maily',
+        bulkOn: 'Dostáva',
+        bulkOff: 'Nedostáva, odhlásená zo zasielania',
+        note: 'Poznámka',
+      },
+      organizationsCard: 'Organizácie',
+      assign: 'Priradiť',
+      primary: 'hlavný kontakt',
+      makePrimary: 'Nastaviť ako hlavný kontakt',
+      unlink: 'Odobrať z organizácie',
+      unlinked: 'Osoba je odobratá z organizácie.',
+      linked: 'Osoba je priradená k organizácii.',
+      timeline: 'Časová os osoby',
+      timelineLead:
+        'Aktivity, ktorých sa zúčastnila, e-maily, ktoré jej odišli, a jej odpovede, zo všetkých jej organizácií.',
+      allOrganizations: 'Všetky organizácie',
+      delete: 'Odstrániť osobu',
+      deleteConfirm: {
+        title: 'Odstrániť osobu?',
+        text: 'Osoba zmizne z Kontaktov aj zo všetkých svojich organizácií. História aktivít a e-mailov ostane.',
+        confirm: 'Odstrániť osobu',
+      },
+      deleted: 'Osoba je odstránená.',
+      dialog: {
+        newTitle: 'Nová osoba',
+        editTitle: 'Upraviť osobu',
+        lead: 'Do Kontaktov, s jednou alebo viacerými organizáciami, alebo bez nich.',
+        organizations: 'Organizácie',
+        organizationsHint: 'Nepovinné. Osoba môže byť aj bez organizácie, napríklad konzultant.',
+        addOrganization: 'Priradiť k ďalšej organizácii',
+        removeOrganization: (name: string) => `Odobrať ${name}`,
+        exists: 'Osoba s týmto e-mailom už v Kontaktoch je',
+        existsText: (name: string) =>
+          `${name}. Jednu osobu netreba zakladať dvakrát: priraďte ju k ďalšej organizácii.`,
+        useExisting: 'Použiť existujúcu osobu',
+        submit: 'Uložiť osobu',
+        created: 'Osoba je pridaná.',
+        saved: 'Osoba je uložená.',
+        edit: 'Upraviť',
+      },
+      linkDialog: {
+        title: 'Priradiť k organizácii',
+        organization: 'Organizácia',
+        pick: 'Vyberte organizáciu',
+        position: 'Pozícia',
+        primary: 'Hlavný kontakt organizácie',
+        submit: 'Priradiť',
+      },
+      errors: {
+        NOT_FOUND: 'Osoba sa nenašla.',
+        CONTACT_EMAIL_TAKEN: 'Osoba s týmto e-mailom už v Kontaktoch je.',
+        NOT_ORGANIZATION: 'Súkromná osoba patrí len k svojmu záznamu.',
+      },
+      empty: {
+        title: 'Zatiaľ žiadne osoby',
+        text: 'Osoby pribudnú s kontaktnými osobami zákazníkov a partnerov, alebo ich pridajte samostatne.',
+      },
+    },
+  },
   customers: {
     title: 'Kontakty',
     subtitle: (total: number, customers: number) =>
@@ -673,7 +817,7 @@ export const sk = {
     csv: {
       name: 'Názov',
       kind: 'Druh',
-      contactType: 'Typ kontaktu',
+      role: 'Rola',
       products: 'Produkty',
       status: 'Stav',
       ico: 'IČO',
@@ -737,9 +881,7 @@ export const sk = {
       classification: {
         title: 'Zaradenie',
         lead: 'Stav obchodného vzťahu, kto má kontakt na starosti a podľa čoho ho nájdete.',
-        contactType: 'Typ kontaktu',
-        newContactType: 'Nový typ kontaktu',
-        newContactTypePlaceholder: 'Napríklad Konzultant',
+        role: 'Zákazník alebo partner',
         products: 'Produkty',
         noProducts: 'Zatiaľ žiadne produkty.',
         newProduct: 'Nový produkt',
@@ -913,15 +1055,12 @@ export const sk = {
   codeLists: {
     title: 'Číselníky',
     lists: {
-      contact_type: 'Typy kontaktov',
       product: 'Produkty',
       source: 'Zdroje kontaktov',
       template_category: 'Kategórie šablón',
       tags: 'Štítky',
     },
     leads: {
-      contact_type:
-        'Čím je kontakt pre Almu: zákazník, partner, dodávateľ. Každý kontakt má jeden typ. Obchodný stav sa vedie len pri zákazníkoch, preto sa typ Zákazník nedá odstrániť. Typ, ktorý niektorý kontakt má, sa dá len vypnúť.',
       product:
         'Čo Alma kontaktu ponúka. Kontakt môže mať viac produktov alebo žiadny. Produkt, ktorý má niektorý kontakt, sa nedá odstrániť, dá sa len vypnúť.',
       source:
@@ -940,19 +1079,16 @@ export const sk = {
     },
     noProduct: (n: number) => `Bez produktu · ${plural(n, 'kontakt', 'kontakty', 'kontaktov')}`,
     newItem: {
-      contact_type: 'Nový typ kontaktu',
       product: 'Nový produkt',
       source: 'Nový zdroj',
       template_category: 'Nová kategória',
     },
     newPlaceholder: {
-      contact_type: 'Nový typ kontaktu, napríklad Konzultant',
       product: 'Nový produkt, napríklad Stacionár',
       source: 'Nový zdroj, napríklad Veľtrh',
       template_category: 'Nová kategória, napríklad Poďakovanie',
     },
     add: {
-      contact_type: 'Pridať typ kontaktu',
       product: 'Pridať produkt',
       source: 'Pridať zdroj',
       template_category: 'Pridať kategóriu',

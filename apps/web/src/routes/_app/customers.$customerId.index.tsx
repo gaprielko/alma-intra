@@ -9,13 +9,14 @@ import {
 } from '@intra/shared/schemas';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { Mail, MoreHorizontal, Pencil, Plus, Reply } from 'lucide-react';
+import { Mail, MoreHorizontal, Pencil, Plus } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
-import { formatDay, KindMark } from '@/components/activities/activity-bits';
 import { ActivityDialog } from '@/components/activities/activity-dialog';
 import { ActivitySheet } from '@/components/activities/activity-sheet';
+import { ActivityItem, EmailItem, ReplyItem } from '@/components/activities/timeline-items';
 import { Avatar } from '@/components/avatar';
 import { ContactDialog, type Contact } from '@/components/customers/contact-dialog';
+import { ExistingPersonDialog } from '@/components/customers/existing-person-dialog';
 import {
   CustomerAvatar,
   CustomerStatusBadge,
@@ -59,6 +60,7 @@ function CustomerDetailPage() {
   const { customerId } = Route.useParams();
   const customer = useQuery(trpc.customer.get.queryOptions({ id: customerId }));
   const [deleting, setDeleting] = useState(false);
+  const [changingRole, setChangingRole] = useState(false);
   const [documenting, setDocumenting] = useState(false);
   const [recording, setRecording] = useState(false);
   const canRecord = useCan('activity.write');
@@ -76,7 +78,10 @@ function CustomerDetailPage() {
   if (customer.isPending) {
     return (
       <div className="min-w-0">
-        <PageHeader title={sk.common.loading} back={{ to: '/customers', label: t.back }} />
+        <PageHeader
+          title={sk.common.loading}
+          back={{ to: '/organizations/customers', label: t.back }}
+        />
         <div className="grid gap-5 p-7 xl:grid-cols-2">
           <CardSkeleton lines={5} />
           <CardSkeleton lines={5} />
@@ -87,7 +92,10 @@ function CustomerDetailPage() {
   if (loadFailed(customer)) {
     return (
       <div className="min-w-0">
-        <PageHeader title={sk.customers.title} back={{ to: '/customers', label: t.back }} />
+        <PageHeader
+          title={sk.customers.title}
+          back={{ to: '/organizations/customers', label: t.back }}
+        />
         <div className="p-10">
           <ErrorState
             text={errorMessage(customer.error, sk.customers.errors)}
@@ -99,7 +107,7 @@ function CustomerDetailPage() {
   }
   const c = customer.data;
   const meta = [
-    c.contactTypeName,
+    sk.organizations.persons.roles[c.role],
     c.kind === 'individual' ? sk.customers.kind.individual : null,
     c.city,
     c.ico ? t.ico(c.ico.replace(/^(\d{2})(\d{3})(\d{3})$/, '$1 $2 $3')) : null,
@@ -112,7 +120,11 @@ function CustomerDetailPage() {
       <PageHeader
         title={c.name}
         subtitle={meta}
-        back={{ to: '/customers', label: t.back }}
+        back={{
+          to: c.role === 'partner' ? '/organizations/partners' : '/organizations/customers',
+          label:
+            c.role === 'partner' ? sk.organizations.tabs.partners : sk.organizations.tabs.customers,
+        }}
         badge={c.status ? <CustomerStatusBadge status={c.status} /> : undefined}
       >
         {canSend ? (
@@ -144,6 +156,11 @@ function CustomerDetailPage() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => setChangingRole(true)}>
+              {c.role === 'customer'
+                ? sk.organizations.roleChange.toPartner
+                : sk.organizations.roleChange.toCustomer}
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => setDocumenting(true)}>
               {sk.documents.menu}
             </DropdownMenuItem>
@@ -171,6 +188,7 @@ function CustomerDetailPage() {
       </main>
 
       {deleting ? <DeleteCustomer customer={c} onClose={() => setDeleting(false)} /> : null}
+      {changingRole ? <ChangeRole customer={c} onClose={() => setChangingRole(false)} /> : null}
       {documenting ? (
         <CreateDocumentDialog customer={c} onClose={() => setDocumenting(false)} />
       ) : null}
@@ -245,7 +263,18 @@ function OrganizationCard({ customer: c }: { customer: Customer }) {
 function PersonCard({ customer: c }: { customer: Customer }) {
   return (
     <Card>
-      <CardHeader title={t.personal} />
+      <CardHeader
+        title={t.personal}
+        action={
+          c.personId ? (
+            <Button variant="secondary" size="sm" asChild>
+              <Link to="/contacts/$personId" params={{ personId: c.personId }}>
+                {sk.organizations.openPerson}
+              </Link>
+            </Button>
+          ) : null
+        }
+      />
       <Rows>
         <Row label={f.name}>{c.name}</Row>
         <Row label={f.kind}>{sk.customers.kind[c.kind]}</Row>
@@ -363,6 +392,7 @@ function ContactsCard({ customer: c }: { customer: Customer }) {
   const toast = useToast();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<Contact | 'new' | null>(null);
+  const [picking, setPicking] = useState(false);
   const [removing, setRemoving] = useState<Contact | null>(null);
   const refresh = () => queryClient.invalidateQueries(trpc.customer.pathFilter());
   const primary = useMutation(
@@ -395,10 +425,32 @@ function ContactsCard({ customer: c }: { customer: Customer }) {
           </>
         }
         action={
-          <Button variant="secondary" size="sm" onClick={() => setEditing('new')}>
-            <Plus className="size-3.5" aria-hidden />
-            {tc.add}
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="secondary" size="sm">
+                <Plus className="size-3.5" aria-hidden />
+                {tc.add}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => setEditing('new')}>
+                <span>
+                  <span className="block font-medium">{sk.organizations.addNewPerson}</span>
+                  <span className="block text-xs text-muted">
+                    {sk.organizations.addNewPersonHint}
+                  </span>
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setPicking(true)}>
+                <span>
+                  <span className="block font-medium">{sk.organizations.addExistingPerson}</span>
+                  <span className="block text-xs text-muted">
+                    {sk.organizations.addExistingPersonHint}
+                  </span>
+                </span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         }
       />
       {c.contacts.length === 0 ? (
@@ -419,13 +471,13 @@ function ContactsCard({ customer: c }: { customer: Customer }) {
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setEditing(contact)}
+                    <Link
+                      to="/contacts/$personId"
+                      params={{ personId: contact.id }}
                       className="text-left font-semibold hover:underline"
                     >
                       {name}
-                    </button>
+                    </Link>
                     {contact.isPrimary ? <Badge tone="info">{tc.primary}</Badge> : null}
                     {contact.unsubscribedAt ? (
                       <Badge tone="warning">{tc.unsubscribed}</Badge>
@@ -486,6 +538,9 @@ function ContactsCard({ customer: c }: { customer: Customer }) {
           })}
         </ul>
       )}
+      {picking ? (
+        <ExistingPersonDialog customerId={c.id} onClose={() => setPicking(false)} />
+      ) : null}
       {editing ? (
         <ContactDialog
           customerId={c.id}
@@ -806,140 +861,33 @@ function TimelineCard({ customer }: { customer: Customer }) {
   );
 }
 
-type TimelineActivity = Extract<
-  RouterOutputs['activity']['timeline'][number],
-  { type: 'activity' }
->['activity'];
-
-type TimelineEmail = Extract<
-  RouterOutputs['activity']['timeline'][number],
-  { type: 'email' }
->['email'];
-
-/** A sent e-mail in the timeline: the subject, to whom, its delivery; opens the campaign. */
-function EmailItem({ item }: { item: TimelineEmail }) {
-  return (
-    <li className="relative">
-      <span
-        aria-hidden
-        className="absolute top-0 -left-[41px] inline-flex size-7 items-center justify-center rounded-full bg-[#e9eef6] text-[#334e7b]"
-      >
-        <Mail className="size-3.5" />
-      </span>
-      <Link
-        to="/emails/sent/$campaignId"
-        params={{ campaignId: item.campaignId }}
-        className="block rounded-lg hover:bg-hover/60"
-      >
-        <p className="flex flex-wrap items-center gap-2 text-sm font-semibold">
-          {a.timeline.email(item.subject ?? '')}
-          <Badge tone={EMAIL_TONE[item.status]} dot>
-            {sk.campaigns.status[item.status]}
-          </Badge>
-        </p>
-        <p className="text-xs text-muted">
-          {a.timeline.emailBy(item.sender, item.toName ?? sk.common.none, formatRecent(item.at))}
-        </p>
-      </Link>
-    </li>
+/** „Zmeniť na zákazníka“ / „Zmeniť na partnera“ (D-5), asked first: a partner loses status, owner and products. */
+function ChangeRole({ customer, onClose }: { customer: Customer; onClose: () => void }) {
+  const r = sk.organizations.roleChange;
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const toPartner = customer.role === 'customer';
+  const change = useMutation(
+    trpc.customer.setRole.mutationOptions({
+      onSuccess: async () => {
+        toast('success', r.done);
+        await queryClient.invalidateQueries(trpc.customer.pathFilter());
+        onClose();
+      },
+      onError: (error) => toast('error', errorMessage(error, sk.customers.errors)),
+    }),
   );
-}
-
-type TimelineReply = Extract<
-  RouterOutputs['activity']['timeline'][number],
-  { type: 'reply' }
->['reply'];
-
-/** A received e-mail in the timeline: the subject, who wrote, the first words; opens it. */
-function ReplyItem({ item }: { item: TimelineReply }) {
   return (
-    <li className="relative">
-      <span
-        aria-hidden
-        className="absolute top-0 -left-[41px] inline-flex size-7 items-center justify-center rounded-full bg-[#e6f4ef] text-[#1d6b52]"
-      >
-        <Reply className="size-3.5" />
-      </span>
-      <Link
-        to="/emails/inbox/$inboundId"
-        params={{ inboundId: item.id }}
-        className="block rounded-lg hover:bg-hover/60"
-      >
-        <p className="text-sm font-semibold">
-          {a.timeline.reply(item.subject || sk.inbound.noSubject)}
-        </p>
-        <p className="text-xs text-muted">
-          {a.timeline.replyFrom(item.fromName ?? item.fromEmail, formatRecent(item.at))}
-          {item.attachmentCount > 0 ? ` · ${sk.inbound.attachments(item.attachmentCount)}` : ''}
-        </p>
-        {item.preview ? (
-          <p className="mt-1 line-clamp-2 text-sm text-muted">{item.preview}</p>
-        ) : null}
-      </Link>
-    </li>
-  );
-}
-
-const EMAIL_TONE = {
-  draft: 'neutral',
-  skipped: 'neutral',
-  queued: 'info',
-  sent: 'info',
-  delivered: 'success',
-  bounced: 'danger',
-  complained: 'danger',
-  failed: 'danger',
-} as const;
-
-/** One activity in the timeline: its mark, a heading, who and when, the start of the notes. */
-function ActivityItem({ item, onOpen }: { item: TimelineActivity; onOpen: () => void }) {
-  const contacts = item.participants.filter((p) => p.kind === 'contact').map((p) => p.name);
-  const heading = [
-    item.subject ?? a.kinds[item.kind],
-    item.kind === 'note' || contacts.length === 0 ? null : a.timeline.with(contacts.join(', ')),
-    item.durationMin ? a.duration.format(item.durationMin) : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
-  return (
-    <li className="relative">
-      <span className="absolute -left-[41px] top-0">
-        <KindMark kind={item.kind} size="sm" />
-      </span>
-      <button
-        type="button"
-        onClick={onOpen}
-        className="block w-full rounded-lg text-left hover:bg-hover/60 focus-visible:outline-2 focus-visible:outline-primary"
-      >
-        <p className="text-sm font-semibold">
-          {item.subject ? `${a.kinds[item.kind]}: ` : ''}
-          {heading}
-        </p>
-        <p className="text-xs text-muted">
-          {a.timeline.by(item.author ?? sk.common.none, formatRecent(item.occurredAt))}
-        </p>
-        {item.bodyText ? (
-          <p className="mt-1 line-clamp-3 text-sm whitespace-pre-line text-foreground/90">
-            {item.bodyText}
-          </p>
-        ) : null}
-        {item.nextStepText ? (
-          <p
-            className={cn(
-              'mt-1 text-[13px] font-medium',
-              item.nextStepDoneAt ? 'text-muted line-through' : 'text-primary-text',
-            )}
-          >
-            {item.nextStepDue
-              ? a.timeline.nextStepDue(item.nextStepText, formatDay(item.nextStepDue))
-              : a.timeline.nextStep(item.nextStepText)}
-          </p>
-        ) : null}
-        {item.attachmentCount > 0 ? (
-          <p className="mt-1 text-xs text-muted">{a.timeline.attachments(item.attachmentCount)}</p>
-        ) : null}
-      </button>
-    </li>
+    <ConfirmDialog
+      open
+      onOpenChange={(open) => !open && onClose()}
+      title={toPartner ? r.partnerTitle : r.customerTitle}
+      description={toPartner ? r.partnerText : r.customerText}
+      confirmLabel={toPartner ? r.toPartner : r.toCustomer}
+      destructive={toPartner}
+      pending={change.isPending}
+      onConfirm={() => change.mutate({ id: customer.id, role: toPartner ? 'partner' : 'customer' })}
+    />
   );
 }
 
@@ -953,7 +901,7 @@ function DeleteCustomer({ customer, onClose }: { customer: Customer; onClose: ()
       onSuccess: async () => {
         toast('success', c.done);
         await queryClient.invalidateQueries(trpc.customer.list.pathFilter());
-        await navigate({ to: '/customers' });
+        await navigate({ to: '/organizations/customers' });
       },
       onError: (error) => {
         toast('error', errorMessage(error, sk.customers.errors));

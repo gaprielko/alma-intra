@@ -155,11 +155,6 @@ export async function recipientCandidates(db: Db | Tx, customerIds: string[]) {
       kind: customer.kind,
       city: customer.city,
       status: customer.status,
-      /**
-       * Before stage O2 a private person was their own recipient; now they are their record's
-       * person, among the contacts.
-       */
-      self: null as { email: string | null; skipReason: SkipReason | null } | null,
       contacts: people
         .filter((p) => p.customerId === customer.id)
         .map((p) => ({
@@ -177,7 +172,6 @@ function defaultRecipients(
   candidates: Awaited<ReturnType<typeof recipientCandidates>>,
 ): { customerId: string; contactId: string | null }[] {
   return candidates.flatMap((customer): { customerId: string; contactId: string | null }[] => {
-    if (customer.self) return [{ customerId: customer.id, contactId: null }];
     const primary = customer.contacts.find((c) => c.isPrimary) ?? customer.contacts[0];
     return primary ? [{ customerId: customer.id, contactId: primary.id }] : [];
   });
@@ -249,9 +243,7 @@ export async function reuseCampaign(db: Db, userId: string, id: string) {
     const kept = messages.filter((m) => {
       const customer = candidates.find((c) => c.id === m.organizationId);
       if (!customer) return false;
-      return m.contactId
-        ? customer.contacts.some((c) => c.id === m.contactId)
-        : customer.self !== null;
+      return m.contactId !== null && customer.contacts.some((c) => c.id === m.contactId);
     });
     const ownIds = [...new Set(kept.flatMap((m) => m.ownFileIds))];
     const live = new Set(
@@ -295,9 +287,8 @@ async function writeRecipients(
   for (const r of unique) {
     const customer = candidates.find((c) => c.id === r.customerId);
     if (!customer) throw new CampaignError('CUSTOMER_NOT_FOUND');
-    const ok = r.contactId
-      ? customer.contacts.some((c) => c.id === r.contactId)
-      : customer.self !== null;
+    // Every recipient is a person since stage O2, a private person included.
+    const ok = r.contactId !== null && customer.contacts.some((c) => c.id === r.contactId);
     if (!ok) throw new CampaignError('CONTACT_NOT_OF_CUSTOMER');
   }
   const existing = await tx

@@ -2,7 +2,6 @@ import type { CodeList } from '@intra/shared/schemas';
 import { and, asc, eq, isNull, ne, sql } from 'drizzle-orm';
 import type { Db, Tx } from '../db/db.module.js';
 import {
-  contactTypes,
   organizationProducts,
   organizations,
   organizationSources,
@@ -21,33 +20,28 @@ export class CodeListError extends Error {
 }
 
 const TABLES = {
-  contact_type: contactTypes,
   product: products,
   source: organizationSources,
   template_category: templateCategories,
 } as const;
 /**
- * What uses an item held in a column: organizations for their contact type and source, templates for
- * their category. A product is held in `organization_products` instead.
+ * What uses an item held in a column: organizations for their source, templates for their
+ * category. A product is held in `organization_products` instead.
  */
 const USED_BY = {
-  contact_type: organizations.contactTypeId,
   source: organizations.sourceId,
   template_category: emailTemplates.categoryId,
 } as const;
 // Raw names for the correlated count: Drizzle writes columns bare in a single-table query.
 const TABLE_NAMES = {
-  contact_type: 'contact_types',
   source: 'organization_sources',
   template_category: 'template_categories',
 } as const;
 const USED_BY_TABLE = {
-  contact_type: 'customers',
-  source: 'customers',
+  source: 'organizations',
   template_category: 'email_templates',
 } as const;
 const USED_BY_COLUMN = {
-  contact_type: 'contact_type_id',
   source: 'source_id',
   template_category: 'category_id',
 } as const;
@@ -94,11 +88,8 @@ export async function listItems(db: Db | Tx, list: CodeList) {
       active: table.active,
       position: table.position,
       customers: usageCount(list),
-      /** An item the app relies on („Zákazník“): renamed, switched off, never deleted. */
-      system:
-        list === 'contact_type'
-          ? sql<boolean>`${contactTypes.systemKey} is not null`
-          : sql<boolean>`false`,
+      /** No list has items the app relies on since the contact types went (stage O4). */
+      system: sql<boolean>`false`,
     })
     .from(table)
     .orderBy(asc(table.position), sql`${table.name} collate "sk-x-icu"`);
@@ -163,13 +154,6 @@ export async function updateItem(
 export async function deleteItem(db: Db, list: CodeList, id: string) {
   const table = TABLES[list];
   await db.transaction(async (tx) => {
-    if (list === 'contact_type') {
-      const [item] = await tx
-        .select({ systemKey: contactTypes.systemKey })
-        .from(contactTypes)
-        .where(eq(contactTypes.id, id));
-      if (item?.systemKey) throw new CodeListError('SYSTEM_ITEM');
-    }
     const [used] =
       list === 'template_category'
         ? await tx

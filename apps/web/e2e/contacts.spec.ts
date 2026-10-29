@@ -22,3 +22,40 @@ test('the activity log names what was just done', async ({ page }) => {
   await page.goto('/settings/activity-log');
   await expect(page.getByText('Nový kontakt').first()).toBeVisible();
 });
+
+test('Organizácie: three tabs, and a filter of several statuses', async ({ page }) => {
+  await page.goto('/organizations');
+  await expect(page).toHaveURL(/\/organizations\/customers/);
+  await page.getByRole('button', { name: 'Stav', exact: true }).click();
+  await page.getByRole('menuitemcheckbox', { name: /Oslovený/ }).click();
+  // The menu stays open for the next value.
+  await page.getByRole('menuitemcheckbox', { name: /Aktívna spolupráca/ }).click();
+  await page.keyboard.press('Escape');
+  await expect(page.getByText('Stav: Oslovený, Aktívna spolupráca')).toBeVisible();
+  await page
+    .getByRole('link', { name: /Kontakty/ })
+    .first()
+    .click();
+  await expect(page.getByRole('columnheader', { name: /Organizácia a pozícia/i })).toBeVisible();
+  await page.getByRole('link', { name: /Partneri/ }).click();
+  await expect(page.getByRole('columnheader', { name: /Partner/i })).toBeVisible();
+});
+
+test('a person opens from Kontakty with their organizations and own timeline', async ({ page }) => {
+  await page.goto('/organizations/contacts?q=T%C3%B3thov%C3%A1');
+  await page.getByRole('link', { name: 'Mgr. Eva Tóthová' }).click();
+  await expect(page.getByRole('heading', { name: 'Mgr. Eva Tóthová' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Časová os osoby' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'ADOS Harmónia, s.r.o.' }).first()).toBeVisible();
+});
+
+test('a new person is created in Kontakty and opens on their page', async ({ page }) => {
+  const last = `E2E${Date.now()}`;
+  await page.goto('/organizations/contacts');
+  await page.getByRole('button', { name: 'Nová osoba' }).click();
+  await page.getByLabel('Meno', { exact: true }).fill('Test');
+  await page.getByLabel('Priezvisko').fill(last);
+  await page.getByRole('button', { name: 'Uložiť osobu' }).click();
+  await expect(page.getByRole('heading', { name: `Test ${last}` })).toBeVisible();
+  await expect(page.getByText('Bez organizácie')).toBeVisible();
+});

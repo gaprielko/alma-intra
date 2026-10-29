@@ -43,20 +43,6 @@ export const codeListColumns = () => ({
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-/**
- * What a record of the list is to Alma: a customer, a partner, a supplier, … Every record has one.
- * `systemKey` marks the items the app relies on: „Zákazník“ (`customer`) is the only type with a
- * sales status; it can be renamed, never deleted.
- */
-export const contactTypes = pgTable(
-  'contact_types',
-  { ...codeListColumns(), systemKey: text('system_key') },
-  (t) => [
-    uniqueIndex('contact_types_name_unique').on(sql`lower(${t.name})`),
-    uniqueIndex('contact_types_system_key_unique').on(t.systemKey),
-  ],
-);
-
 /** What Alma offers a record (ADOS, DOS, Stacionár, …): none, one or several. */
 export const products = pgTable('products', codeListColumns(), (t) => [
   uniqueIndex('products_name_unique').on(sql`lower(${t.name})`),
@@ -89,11 +75,8 @@ export const organizations = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     kind: organizationKind('kind').notNull(),
-    /** Customer or partner; until the forms offer it, it follows the contact type „Zákazník“. */
+    /** Customer or partner (D-1): a partner has no status, owner or products. */
     role: organizationRole('role').notNull(),
-    contactTypeId: uuid('contact_type_id')
-      .notNull()
-      .references(() => contactTypes.id),
     name: text('name').notNull(),
     ico: text('ico'),
     dic: text('dic'),
@@ -123,7 +106,6 @@ export const organizations = pgTable(
       .where(sql`${t.deletedAt} is null`),
     index('organizations_role_idx').on(t.role),
     index('organizations_status_idx').on(t.status),
-    index('organizations_contact_type_idx').on(t.contactTypeId),
     index('organizations_owner_idx').on(t.ownerUserId),
     check('organizations_name_length', sql`char_length(${t.name}) between 1 and 200`),
   ],

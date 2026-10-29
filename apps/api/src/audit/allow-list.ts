@@ -324,6 +324,7 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
   /** What Claude did through MCP for a user: the tool's ids and counts, never its text. */
   mcp: {
     customerId: uuid,
+    contactId: uuid,
     fileId: uuid,
     folderId: uuid,
     versionId: uuid,

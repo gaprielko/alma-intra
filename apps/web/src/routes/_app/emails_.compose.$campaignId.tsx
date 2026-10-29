@@ -263,11 +263,9 @@ function RecipientsStep({ campaign, onNext }: { campaign: Campaign; onNext: () =
     setChosen(
       new Set(
         customers.flatMap((customer) =>
-          customer.self
-            ? [keyOf({ customerId: customer.id, contactId: null })]
-            : customer.contacts
-                .filter((p) => mode === 'all' || p.isPrimary)
-                .map((p) => keyOf({ customerId: customer.id, contactId: p.id })),
+          customer.contacts
+            .filter((p) => mode === 'all' || p.isPrimary)
+            .map((p) => keyOf({ customerId: customer.id, contactId: p.id })),
         ),
       ),
     );
@@ -302,11 +300,9 @@ function RecipientsStep({ campaign, onNext }: { campaign: Campaign; onNext: () =
       for (const customer of customers) {
         const has = [...next].some((key) => key.startsWith(`${customer.id}:`));
         if (has) continue;
-        if (customer.self) next.add(keyOf({ customerId: customer.id, contactId: null }));
-        else {
-          const primary = customer.contacts.find((p) => p.isPrimary) ?? customer.contacts[0];
-          if (primary) next.add(keyOf({ customerId: customer.id, contactId: primary.id }));
-        }
+        // A private person is their record's primary contact (stage O2).
+        const primary = customer.contacts.find((p) => p.isPrimary) ?? customer.contacts[0];
+        if (primary) next.add(keyOf({ customerId: customer.id, contactId: primary.id }));
       }
       return next;
     });
@@ -314,13 +310,9 @@ function RecipientsStep({ campaign, onNext }: { campaign: Campaign; onNext: () =
 
   type Picked = { customerId: string; contactId: string | null; skip: SkipReason | null };
   const selected = customers.flatMap((customer): Picked[] =>
-    customer.self
-      ? chosen.has(keyOf({ customerId: customer.id, contactId: null }))
-        ? [{ customerId: customer.id, contactId: null, skip: customer.self.skipReason }]
-        : []
-      : customer.contacts
-          .filter((p) => chosen.has(keyOf({ customerId: customer.id, contactId: p.id })))
-          .map((p) => ({ customerId: customer.id, contactId: p.id, skip: p.skipReason })),
+    customer.contacts
+      .filter((p) => chosen.has(keyOf({ customerId: customer.id, contactId: p.id })))
+      .map((p) => ({ customerId: customer.id, contactId: p.id, skip: p.skipReason })),
   );
   const skipped = selected.filter((s) => s.skip).length;
   const r = t.recipients;
@@ -431,15 +423,7 @@ function RecipientsStep({ campaign, onNext }: { campaign: Campaign; onNext: () =
                   <X className="size-4" aria-hidden />
                 </button>
               </div>
-              {customer.self ? (
-                <PersonRow
-                  checked={chosen.has(keyOf({ customerId: customer.id, contactId: null }))}
-                  onToggle={() => toggle(keyOf({ customerId: customer.id, contactId: null }))}
-                  name={customer.name}
-                  email={customer.self.email}
-                  skip={customer.self.skipReason}
-                />
-              ) : customer.contacts.length === 0 ? (
+              {customer.contacts.length === 0 ? (
                 <p className="text-[13px] text-muted">
                   {r.noContact}. {r.noContactHint}
                 </p>
