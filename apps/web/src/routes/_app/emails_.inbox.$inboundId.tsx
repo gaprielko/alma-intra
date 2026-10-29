@@ -241,8 +241,9 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
 }
 
 /**
- * Files the e-mail under a contact: search it by name, then pick the person who wrote (the one
- * with the sender's address is offered first) or none.
+ * Files the e-mail under an organization and optionally the person who wrote. Either the
+ * organization is found and then its person picked (the one with the sender's address first), or
+ * the person is found and then one of their organizations (the primary one first).
  */
 function AssignDialog({
   inboundId,
@@ -259,22 +260,35 @@ function AssignDialog({
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [picked, setPicked] = useState(current);
+  const [person, setPerson] = useState<{
+    id: string;
+    name: string;
+    organizations: { id: string; name: string }[];
+  } | null>(null);
   const [contactId, setContactId] = useState<string | null>(null);
+  const term = search.trim();
   const found = useQuery({
-    ...trpc.customer.list.queryOptions({ search: search.trim() || undefined, pageSize: 8 }),
-    enabled: search.trim().length >= 2,
+    ...trpc.customer.list.queryOptions({ search: term || undefined, pageSize: 6 }),
+    enabled: term.length >= 2,
   });
+  const foundPeople = useQuery({
+    ...trpc.person.list.queryOptions({ search: term || undefined, pageSize: 6 }),
+    enabled: term.length >= 2,
+  });
+  // A private person is found as a person; the organizations list shows companies only.
+  const companies = (found.data?.items ?? []).filter((row) => row.kind === 'organization');
   const customer = useQuery({
     ...trpc.customer.get.queryOptions({ id: picked?.id ?? '' }),
-    enabled: picked !== null,
+    enabled: picked !== null && person === null,
   });
   const people = customer.data?.kind === 'organization' ? customer.data.contacts : [];
-  // The person with the sender's address, once the customer is loaded.
+  // The person with the sender's address, once the organization is loaded.
   useEffect(() => {
+    if (person) return;
     const loaded = customer.data?.kind === 'organization' ? customer.data.contacts : [];
     const writer = loaded.find((p) => p.email?.toLowerCase() === fromEmail);
     setContactId(writer?.id ?? null);
-  }, [customer.data, fromEmail]);
+  }, [customer.data, fromEmail, person]);
   const assign = useMutation(
     trpc.inbound.assign.mutationOptions({
       onSuccess: async () => {
@@ -287,6 +301,31 @@ function AssignDialog({
     }),
   );
   const d = t.assignDialog;
+  const row = (
+    key: string,
+    active: boolean,
+    onPick: (() => void) | null,
+    icon: ReactNode,
+    label: string,
+    note: string,
+  ) => (
+    <li key={key}>
+      <button
+        type="button"
+        aria-pressed={active}
+        disabled={!onPick}
+        onClick={onPick ?? undefined}
+        className={cn(
+          'flex h-10 w-full items-center gap-2.5 px-3 text-left text-sm hover:bg-hover disabled:opacity-50',
+          active && 'bg-primary-soft font-semibold text-primary-text',
+        )}
+      >
+        {icon}
+        <span className="truncate">{label}</span>
+        <span className="ml-auto shrink-0 truncate text-xs text-muted">{note}</span>
+      </button>
+    </li>
+  );
   return (
     <Dialog open onOpenChange={(open) => (open ? null : onClose())}>
       <DialogContent>
@@ -301,32 +340,84 @@ function AssignDialog({
             autoFocus
             onChange={(event) => setSearch(event.target.value)}
           />
-          {search.trim().length >= 2 ? (
-            <ul className="max-h-56 overflow-y-auto rounded-xl border border-border-subtle">
-              {(found.data?.items ?? []).map((row) => (
-                <li key={row.id}>
-                  <button
-                    type="button"
-                    aria-pressed={picked?.id === row.id}
-                    onClick={() => setPicked({ id: row.id, name: row.name })}
-                    className={cn(
-                      'flex h-10 w-full items-center gap-2.5 px-3 text-left text-sm hover:bg-hover',
-                      picked?.id === row.id && 'bg-primary-soft font-semibold text-primary-text',
+          {term.length >= 2 ? (
+            <div className="max-h-64 overflow-y-auto rounded-xl border border-border-subtle">
+              {companies.length > 0 ? (
+                <>
+                  <p className="px-3 pt-2 pb-1 text-xs font-semibold text-muted">
+                    {d.organizations}
+                  </p>
+                  <ul>
+                    {companies.map((o) =>
+                      row(
+                        o.id,
+                        person === null && picked?.id === o.id,
+                        () => {
+                          setPerson(null);
+                          setPicked({ id: o.id, name: o.name });
+                        },
+                        <Building2 className="size-4 shrink-0 text-muted" aria-hidden />,
+                        o.name,
+                        o.city ?? '',
+                      ),
                     )}
-                  >
-                    {row.kind === 'organization' ? (
-                      <Building2 className="size-4 shrink-0 text-muted" aria-hidden />
-                    ) : (
-                      <UserRound className="size-4 shrink-0 text-muted" aria-hidden />
-                    )}
-                    <span className="truncate">{row.name}</span>
-                    <span className="ml-auto shrink-0 text-xs text-muted">{row.city}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+                  </ul>
+                </>
+              ) : null}
+              {(foundPeople.data?.items ?? []).length > 0 ? (
+                <>
+                  <p className="px-3 pt-2 pb-1 text-xs font-semibold text-muted">{d.persons}</p>
+                  <ul>
+                    {(foundPeople.data?.items ?? []).map((p) => {
+                      const name = personName(p);
+                      const home = p.organizations[0];
+                      return row(
+                        p.id,
+                        person?.id === p.id,
+                        home
+                          ? () => {
+                              setPerson({ id: p.id, name, organizations: p.organizations });
+                              setPicked({ id: home.id, name: home.name });
+                              setContactId(p.id);
+                            }
+                          : null,
+                        <UserRound className="size-4 shrink-0 text-muted" aria-hidden />,
+                        name,
+                        home ? (p.email ?? '') : d.noOrganization,
+                      );
+                    })}
+                  </ul>
+                </>
+              ) : null}
+              {found.isSuccess &&
+              foundPeople.isSuccess &&
+              companies.length === 0 &&
+              foundPeople.data.items.length === 0 ? (
+                <p className="px-3 py-2.5 text-sm text-muted">{d.nothing}</p>
+              ) : null}
+            </div>
           ) : null}
-          {picked ? (
+          {person && picked ? (
+            <fieldset className="space-y-1.5">
+              <legend className="mb-1 text-sm font-medium">
+                {person.name}
+                {person.organizations.length > 1 ? ` · ${d.organization}` : ` · ${picked.name}`}
+              </legend>
+              {person.organizations.length > 1
+                ? person.organizations.map((o) => (
+                    <label key={o.id} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        name="organization"
+                        checked={picked.id === o.id}
+                        onChange={() => setPicked({ id: o.id, name: o.name })}
+                      />
+                      {o.name}
+                    </label>
+                  ))
+                : null}
+            </fieldset>
+          ) : picked ? (
             <fieldset className="space-y-1.5">
               <legend className="mb-1 text-sm font-medium">
                 {picked.name}
