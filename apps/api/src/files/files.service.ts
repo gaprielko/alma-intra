@@ -331,7 +331,13 @@ export async function folderContents(db: Db, input: FolderContentsInput) {
     const rows = await fileRows(db, where)
       .orderBy(desc(fileVersions.createdAt))
       .limit(SEARCH_LIMIT);
-    return { path, folders: [], files: rows, searched: true };
+    // Where each found file is, from the root: „Firemné dokumenty / Produkty / ADOS“.
+    const paths = new Map<string, string>();
+    for (const folderId of new Set(rows.map((row) => row.folderId))) {
+      paths.set(folderId, (await folderPath(db, folderId)).map((step) => step.name).join(' / '));
+    }
+    const found = rows.map((row) => ({ ...row, folderPath: paths.get(row.folderId) ?? null }));
+    return { path, folders: [], files: found, searched: true };
   }
 
   where.push(eq(files.folderId, input.folderId));
@@ -349,7 +355,8 @@ export async function folderContents(db: Db, input: FolderContentsInput) {
       .orderBy(collated(sql`${folders.name}`)),
     fileRows(db, where).orderBy(collated(sql`${files.name}`)),
   ]);
-  return { path, folders: sub, files: rows, searched: false };
+  const here = rows.map((row) => ({ ...row, folderPath: null as string | null }));
+  return { path, folders: sub, files: here, searched: false };
 }
 
 /** The colleagues who changed a file, for the author filter. */
@@ -752,6 +759,104 @@ export async function moveFile(db: Db, id: string, folderId: string) {
     await tx.update(files).set({ folderId, updatedAt: new Date() }).where(eq(files.id, id));
     return { from: file.folderId, customerId: target[0]!.customerId };
   });
+}
+
+/**
+ * A copy of a file into a folder: a new file with the same name, description and all its
+ * versions (their numbers, dates and notes), each with an object of its own. Trash and the
+ * activities or e-mails that used the original stay with the original.
+ */
+export async function copyFile(
+  db: Db,
+  storage: Storage | null,
+  userId: string,
+  id: string,
+  folderId: string,
+) {
+  const file = await liveFile(db, id);
+  await folderPath(db, folderId);
+  const bucket = requireStorage(storage);
+  return copyFileInto(db, bucket, userId, file, folderId);
+}
+
+async function copyFileInto(
+  db: Db,
+  bucket: Storage,
+  userId: string,
+  file: { id: string; name: string; description: string | null; currentVersionId: string | null },
+  folderId: string,
+) {
+  const versions = await db
+    .select()
+    .from(fileVersions)
+    .where(and(eq(fileVersions.fileId, file.id), eq(fileVersions.status, 'uploaded')))
+    .orderBy(asc(fileVersions.number));
+  const fileId = randomUUID();
+  const copies = versions.map((version) => ({
+    ...version,
+    id: randomUUID(),
+    fileId,
+    storageKey: storageKey(fileId, randomUUID()),
+    createdByUserId: version.createdByUserId,
+  }));
+  for (const [i, version] of versions.entries()) {
+    await bucket.copy(version.storageKey, copies[i]!.storageKey);
+  }
+  const current =
+    copies[versions.findIndex((v) => v.id === file.currentVersionId)] ?? copies.at(-1);
+  await db.transaction(async (tx) => {
+    await tx.insert(files).values({
+      id: fileId,
+      folderId,
+      name: file.name,
+      description: file.description,
+      createdByUserId: userId,
+    });
+    if (copies.length > 0) await tx.insert(fileVersions).values(copies);
+    await tx
+      .update(files)
+      .set({ currentVersionId: current?.id ?? null })
+      .where(eq(files.id, fileId));
+  });
+  return { fileId };
+}
+
+/**
+ * A copy of a folder with everything in it under another folder of the same tree. A folder of
+ * that name already there refuses (NAME_TAKEN); never into itself or below itself.
+ */
+export async function copyFolder(
+  db: Db,
+  storage: Storage | null,
+  userId: string,
+  id: string,
+  parentId: string,
+) {
+  const [folder] = await db.select().from(folders).where(eq(folders.id, id));
+  if (!folder) throw new FileError('NOT_FOUND');
+  await folderPath(db, id);
+  if (folder.parentId === null) throw new FileError('ROOT_FOLDER');
+  const target = await folderPath(db, parentId);
+  if (target.some((step) => step.id === id)) throw new FileError('MOVE_INTO_ITSELF');
+  if (target[0]!.customerId !== folder.organizationId) throw new FileError('OTHER_TREE');
+  const bucket = requireStorage(storage);
+  let copied = 0;
+  const copyInto = async (sourceId: string, name: string, into: string): Promise<string> => {
+    const { id: newId } = await createFolder(db, userId, into, name);
+    const inside = await db
+      .select()
+      .from(files)
+      .where(and(eq(files.folderId, sourceId), live));
+    for (const file of inside) {
+      await copyFileInto(db, bucket, userId, file, newId);
+      copied += 1;
+    }
+    const subs = await db.select().from(folders).where(eq(folders.parentId, sourceId));
+    for (const sub of subs) await copyInto(sub.id, sub.name!, newId);
+    return newId;
+  };
+  const folderId = await copyInto(id, folder.name!, parentId);
+  return { folderId, files: copied };
 }
 
 /**

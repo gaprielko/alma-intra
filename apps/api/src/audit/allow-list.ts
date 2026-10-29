@@ -222,6 +222,7 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     restored: flag,
     inline: flag,
     uploadRefused: oneOf(['UPLOAD_MISSING', 'UPLOAD_MISMATCH']),
+    copiedFrom: uuid,
   },
   /**
    * An activity: its customer and kind, which fields changed, how many people and files. Never a
@@ -346,6 +347,8 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     customerId: uuid,
     fields: subsetOf(['name', 'parentId']),
     deleted: flag,
+    copiedFrom: uuid,
+    count: number,
   },
 };
 
