@@ -1,9 +1,11 @@
 import { COMPANY_ROOT_FOLDER_ID } from '@intra/shared/schemas';
 import { sql } from 'drizzle-orm';
+import { Logger } from '@nestjs/common';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { drainCampaigns } from '../../src/campaigns/delivery.js';
 import { loadEnv } from '../../src/config/env.js';
-import { receiveInbound } from '../../src/inbound/inbound.js';
+import { type InboundSource, receiveInbound } from '../../src/inbound/inbound.js';
+import { syncInbound } from '../../src/inbound/intake.js';
 import { memoryTransport, outbox } from '../../src/mail/transport.js';
 import { storageKey } from '../../src/storage/storage.js';
 import { browser, JANA, startApi } from './client.js';
@@ -200,6 +202,37 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     });
     const found = await jana.call<{ ids: string[] }>('segment.customerIds', { id: made.data.id });
     expect(found.data.ids).toContain(HARMONIA);
+  });
+
+  it('takes in the received e-mails Intra does not have yet, once', async () => {
+    const id = `test-sync-${Date.now()}`;
+    const forwarded: string[] = [];
+    const source: InboundSource = {
+      recent: async () => [id],
+      get: async (providerEmailId) => ({
+        providerEmailId,
+        from: 'Eva Tóthová <eva.tothova@adosharmonia.sk>',
+        to: ['info@mail.alma-care.eu'],
+        cc: [],
+        receivedFor: [],
+        subject: 'Otázka',
+        html: null,
+        text: 'Dobrý deň',
+        headerMessageId: null,
+        inReplyTo: null,
+        references: null,
+        attachments: [],
+        receivedAt: new Date(),
+      }),
+      attachmentLinks: async () => [],
+      forward: async (providerEmailId) => {
+        forwarded.push(providerEmailId);
+      },
+    };
+    const logger = new Logger('test');
+    expect(await syncInbound(api.db, null, source, logger)).toEqual({ added: 1 });
+    expect(await syncInbound(api.db, null, source, logger)).toEqual({ added: 0 });
+    expect(forwarded).toEqual([id]);
   });
 
   it('files a reply by the sender and tells whoever has the contact in hand', async () => {

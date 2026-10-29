@@ -118,4 +118,25 @@ describe('resendInboundSource', () => {
       InboundFetchError,
     );
   });
+
+  it('lists the latest received e-mails and throws when the key may not read them', async () => {
+    const listed = {
+      list: () =>
+        Promise.resolve({
+          data: { object: 'list', has_more: false, data: [received] },
+          error: null,
+        }),
+    } as unknown as ResendReceiving;
+    expect(await resendInboundSource('re_x', listed).recent()).toEqual(['em_1']);
+    const refused = {
+      list: () =>
+        Promise.resolve({
+          data: null,
+          error: { name: 'restricted_api_key', statusCode: 401, message: '' },
+        }),
+    } as unknown as ResendReceiving;
+    await expect(resendInboundSource('re_x', refused).recent()).rejects.toBeInstanceOf(
+      InboundFetchError,
+    );
+  });
 });
