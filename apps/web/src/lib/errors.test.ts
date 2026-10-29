@@ -19,6 +19,24 @@ describe('errorMessage', () => {
     expect(errorMessage(refusal('x', 'INTERNAL_SERVER_ERROR'), {}, 'Iné.')).toBe('Iné.');
   });
 
+  it('names the refused fields, also those no field of the screen shows', () => {
+    const refused = new TRPCClientError('invalid', {
+      result: {
+        error: {
+          data: {
+            code: 'BAD_REQUEST',
+            zodError: {
+              fieldErrors: { 'customer.postalCode': ['x'], 'firstContact.phone': ['y'] },
+            },
+          },
+        },
+      },
+    });
+    expect(errorMessage(refused, { BAD_REQUEST: 'Chyba.' })).toBe(
+      'Skontrolujte zadané údaje: PSČ, telefón (prvá kontaktná osoba).',
+    );
+  });
+
   it('reads the reason and the code', () => {
     const taken = refusal('ICO_TAKEN', 'CONFLICT');
     expect(errorReason(taken)).toBe('ICO_TAKEN');
