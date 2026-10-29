@@ -5,7 +5,7 @@ export const idSchema = z.string().uuid();
 /** A malformed address says so under the field (`invalid_email`), not „Neplatná hodnota“. */
 export const emailSchema = z.string().trim().toLowerCase().email('invalid_email');
 
-/** Slovak numbers in the one shape the app keeps: `+421 911 115 502`. */
+/** Slovak numbers in the one shape the app keeps: `+421 912 345 678`. */
 const SLOVAK_PHONE = /^\+421 \d{3} \d{3} \d{3}$/;
 /** A foreign number: `+` and its country code, then groups of digits; 8 to 15 digits in all. */
 const FOREIGN_PHONE = /^\+(?!421)\d{1,3}(?: \d{1,4})+$/;
@@ -13,8 +13,8 @@ const FOREIGN_PHONE = /^\+(?!421)\d{1,3}(?: \d{1,4})+$/;
 const groupsOf3 = (digits: string) => digits.match(/\d{1,3}/g) ?? [];
 
 /**
- * A phone number in the app's shape, from however it was typed: `0911115502`, `00421 911115502`
- * and `+421911115502` all become `+421 911 115 502`. A foreign number keeps the person's own
+ * A phone number in the app's shape, from however it was typed: `0912345678`, `00421 912345678`
+ * and `+421912345678` all become `+421 912 345 678`. A foreign number keeps the person's own
  * grouping after its `+`. Partial input is grouped as far as it goes, so the field can format
  * while somebody types.
  */
@@ -39,7 +39,7 @@ export function formatPhone(raw: string): string {
 }
 
 /**
- * A phone number, stored as `+421 911 115 502` (a foreign one as `+<code> <digits>`). Whatever
+ * A phone number, stored as `+421 912 345 678` (a foreign one as `+<code> <digits>`). Whatever
  * the person typed is formatted first; what still does not fit is refused (`invalid_phone`).
  */
 export const phoneSchema = z

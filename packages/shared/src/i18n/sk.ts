@@ -11,6 +11,7 @@ export const plural = (n: number, one: string, few: string, many: string) =>
 
 export const sk = {
   common: {
+    phoneCountry: 'Predvoľba krajiny',
     save: 'Uložiť',
     saveChanges: 'Uložiť zmeny',
     saving: 'Ukladám…',
@@ -58,7 +59,7 @@ export const sk = {
     required: 'Povinné pole',
     invalid: 'Neplatná hodnota',
     invalid_email: 'Neplatný e-mail',
-    invalid_phone: 'Zadajte číslo v tvare +421 911 115 502',
+    invalid_phone: 'Zadajte celé telefónne číslo s predvoľbou krajiny',
     invalid_totp_code: 'Zadajte 6 číslic z aplikácie',
     too_short: 'Príliš krátke',
     too_long: 'Príliš dlhé',
