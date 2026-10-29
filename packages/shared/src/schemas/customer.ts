@@ -160,17 +160,29 @@ export const CUSTOMER_SORTS = ['name', 'status', 'createdAt', 'updatedAt', 'last
 export type CustomerSort = (typeof CUSTOMER_SORTS)[number];
 
 /** The filters of the list; also what a CSV export and (later) a saved segment are made of. */
+/**
+ * One value or several (D-12): every dropdown filter of the lists takes any number of them. A
+ * single value, as saved segments and older links have it, reads as a list of one.
+ */
+const oneOrMore = <T extends z.ZodTypeAny>(item: T) =>
+  z
+    .union([item, z.array(item).min(1).max(50)])
+    .transform((value): z.output<T>[] => (Array.isArray(value) ? value : [value]))
+    .optional();
+
 export const customerFilterSchema = z.object({
   search: z.string().trim().max(100).optional(),
-  /** A status, or `none` for the records without one. */
-  status: z.enum(CUSTOMER_STATUSES).or(z.literal('none')).optional(),
-  kind: z.enum(CUSTOMER_KINDS).optional(),
-  contactTypeId: idSchema.optional(),
-  /** A product, or `none` for the records without any. */
-  productId: idSchema.or(z.literal('none')).optional(),
-  region: z.enum(REGIONS).optional(),
-  tagId: idSchema.optional(),
-  ownerUserId: idSchema.optional(),
+  /** Customers or partners (docs/contacts-redesign.md). */
+  role: z.enum(ORGANIZATION_ROLES).optional(),
+  /** Statuses, `none` for the records without one. */
+  status: oneOrMore(z.enum(CUSTOMER_STATUSES).or(z.literal('none'))),
+  kind: oneOrMore(z.enum(CUSTOMER_KINDS)),
+  contactTypeId: oneOrMore(idSchema),
+  /** Products, `none` for the records without any. */
+  productId: oneOrMore(idSchema.or(z.literal('none'))),
+  region: oneOrMore(z.enum(REGIONS)),
+  tagId: oneOrMore(idSchema),
+  ownerUserId: oneOrMore(idSchema),
 });
 export type CustomerFilter = z.infer<typeof customerFilterSchema>;
 

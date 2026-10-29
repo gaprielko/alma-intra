@@ -86,6 +86,21 @@ describe('contacts (organizations)', () => {
     expect(sum).toBe(page.data.counts.all);
   });
 
+  it('filters by several values at once and by role (D-12)', async () => {
+    const both = await jana.call<Page>('customer.list', {
+      status: ['customer', 'interested'],
+      pageSize: 100,
+    });
+    expect(both.data.items.length).toBeGreaterThan(0);
+    expect(both.data.items.every((c) => ['customer', 'interested'].includes(c.status!))).toBe(true);
+    expect(both.data.total).toBe(both.data.counts.customer! + both.data.counts.interested!);
+    const partners = await jana.call<{ items: { role: string }[] }>('customer.list', {
+      role: 'partner',
+      pageSize: 100,
+    });
+    expect(partners.data.items.every((c) => c.role === 'partner')).toBe(true);
+  });
+
   it('records changes with ids and names them in the history', async () => {
     const made = await jana.call<{ id: string }>('customer.create', organization('História, a.s.'));
     const ados = options.products.find((p) => p.name === 'ADOS')!;

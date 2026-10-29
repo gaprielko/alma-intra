@@ -266,13 +266,14 @@ function CustomersPage() {
                     onApply={(segment) =>
                       setSearch({
                         q: segment.search,
-                        status: segment.status,
-                        kind: segment.kind,
-                        contactType: segment.contactTypeId,
-                        product: segment.productId,
-                        region: segment.region,
-                        tag: segment.tagId,
-                        owner: segment.ownerUserId,
+                        // One value each until the multi-select filters (stage O4).
+                        status: segment.status?.[0],
+                        kind: segment.kind?.[0],
+                        contactType: segment.contactTypeId?.[0],
+                        product: segment.productId?.[0],
+                        region: segment.region?.[0],
+                        tag: segment.tagId?.[0],
+                        owner: segment.ownerUserId?.[0],
                       })
                     }
                   />

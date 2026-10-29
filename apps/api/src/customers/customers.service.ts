@@ -72,35 +72,55 @@ const CUSTOMER_ID = sql.raw('"organizations"."id"');
 /** `%text%` for ILIKE, with the wildcards somebody typed taken literally. */
 const likePattern = (text: string) => `%${text.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
-/** The status filter: one status, or the records without one. */
-const statusWhere = (status: CustomerFilter['status']) =>
-  status === 'none'
-    ? [isNull(organizations.status)]
-    : status
-      ? [eq(organizations.status, status)]
-      : [];
+/** Any of the values, `none` standing for an empty column. */
+function anyOf<T extends string>(column: AnyColumn, values: readonly (T | 'none')[] | undefined) {
+  if (!values || values.length === 0) return [];
+  const listed = values.filter((v): v is T => v !== 'none');
+  const parts = [
+    ...(listed.length > 0 ? [inArray(column, listed)] : []),
+    ...(values.includes('none') ? [isNull(column)] : []),
+  ];
+  return [parts.length === 1 ? parts[0]! : or(...parts)!];
+}
+
+/** The status filter: statuses, `none` for the records without one. */
+const statusWhere = (status: CustomerFilter['status']) => anyOf(organizations.status, status);
+
+/** The records linked to any of the ids in a join table, or (`none`) to none at all. */
+function linkedTo(
+  table: 'organization_products' | 'organization_tags',
+  column: string,
+  values: readonly string[] | undefined,
+) {
+  if (!values || values.length === 0) return [];
+  const ids = values.filter((v) => v !== 'none');
+  const parts: SQL[] = [];
+  if (ids.length > 0) {
+    parts.push(
+      sql`exists (select 1 from ${sql.raw(table)} x where x.organization_id = ${CUSTOMER_ID} and x.${sql.raw(column)} in (${sql.join(
+        ids.map((id) => sql`${id}`),
+        sql`, `,
+      )}))`,
+    );
+  }
+  if (values.includes('none')) {
+    parts.push(
+      sql`not exists (select 1 from ${sql.raw(table)} x where x.organization_id = ${CUSTOMER_ID})`,
+    );
+  }
+  return [parts.length === 1 ? parts[0]! : or(...parts)!];
+}
 
 /** The filters of the list as a WHERE clause; `status` is left to the caller (the chips count without it). */
 function filterWhere(filter: CustomerFilter): SQL[] {
   const where: SQL[] = [alive];
-  if (filter.kind) where.push(eq(organizations.kind, filter.kind));
-  if (filter.contactTypeId) where.push(eq(organizations.contactTypeId, filter.contactTypeId));
-  if (filter.productId === 'none') {
-    where.push(
-      sql`not exists (select 1 from organization_products cp where cp.organization_id = ${CUSTOMER_ID})`,
-    );
-  } else if (filter.productId) {
-    where.push(
-      sql`exists (select 1 from organization_products cp where cp.organization_id = ${CUSTOMER_ID} and cp.product_id = ${filter.productId})`,
-    );
-  }
-  if (filter.region) where.push(eq(organizations.region, filter.region));
-  if (filter.ownerUserId) where.push(eq(organizations.ownerUserId, filter.ownerUserId));
-  if (filter.tagId) {
-    where.push(
-      sql`exists (select 1 from organization_tags ct where ct.organization_id = ${CUSTOMER_ID} and ct.tag_id = ${filter.tagId})`,
-    );
-  }
+  if (filter.role) where.push(eq(organizations.role, filter.role));
+  where.push(...anyOf(organizations.kind, filter.kind));
+  where.push(...anyOf(organizations.contactTypeId, filter.contactTypeId));
+  where.push(...linkedTo('organization_products', 'product_id', filter.productId));
+  where.push(...anyOf(organizations.region, filter.region));
+  where.push(...anyOf(organizations.ownerUserId, filter.ownerUserId));
+  where.push(...linkedTo('organization_tags', 'tag_id', filter.tagId));
   if (filter.search) {
     const pattern = likePattern(filter.search);
     const digits = filter.search.replace(/\s/g, '');
@@ -221,7 +241,9 @@ export async function listCustomers(db: Db | Tx, raw: CustomerListInput) {
     counts.all += row.count;
   }
   // A page past the end has no rows to carry the window count: the counts say how many there are.
-  const total = items[0]?.total ?? (input.status ? counts[input.status] : counts.all);
+  const total =
+    items[0]?.total ??
+    (input.status ? input.status.reduce((sum, status) => sum + counts[status], 0) : counts.all);
   return {
     items: items.map((item) => omit(item, 'total')),
     total,
