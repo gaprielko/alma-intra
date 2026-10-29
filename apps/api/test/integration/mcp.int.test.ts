@@ -60,6 +60,17 @@ describe('Claude through MCP', () => {
     expect(names.some((n) => /delete|send/.test(n))).toBe(false);
   });
 
+  it('finds a person in Kontakty with their organizations and reads their own timeline', async () => {
+    const found = await tool('contacts_search', { query: 'Tóthová' });
+    const people = JSON.parse(found.text) as {
+      id: string;
+      organizations: { name: string; position: string | null }[];
+    }[];
+    expect(people[0]!.organizations[0]).toMatchObject({ name: 'ADOS Harmónia, s.r.o.' });
+    const person = await tool('contacts_get', { contactId: people[0]!.id });
+    expect(JSON.parse(person.text)).toHaveProperty('timeline');
+  });
+
   it('finds a customer and writes a file there as a new version, never over it', async () => {
     const found = JSON.parse((await tool('customers_search', { query: 'Harmónia' })).text) as {
       id: string;

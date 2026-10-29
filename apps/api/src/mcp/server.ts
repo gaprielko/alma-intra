@@ -3,9 +3,10 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { eq } from 'drizzle-orm';
 import type { Request } from 'express';
 import { z } from 'zod';
-import { timeline } from '../activities/activities.service.js';
+import { timeline, timelineOf } from '../activities/activities.service.js';
 import { AuditTrail, writeAuditEvent } from '../audit/audit.js';
 import { getCustomer, listCustomers } from '../customers/customers.service.js';
+import { getPerson, listPersons } from '../customers/persons.service.js';
 import type { Db } from '../db/db.module.js';
 import { fileVersions } from '../db/schema/index.js';
 import {
@@ -105,10 +106,11 @@ export function buildMcpServer(ctx: McpContext) {
   server.registerTool(
     'customers_search',
     {
-      title: 'Search customers',
+      title: 'Search organizations',
       description:
-        'Finds organizations (organizations or private persons) by name, IČO, or a contact ' +
-        "person's name or e-mail. Returns ids for customers_get and files_list_folder.",
+        'Finds customers and partners (role), organizations or private persons (kind), by name, ' +
+        "IČO, or a contact person's name or e-mail. Returns ids for customers_get and " +
+        'files_list_folder.',
       inputSchema: {
         query: z.string().min(1).max(100),
         limit: z.number().int().min(1).max(50).optional(),
@@ -141,10 +143,11 @@ export function buildMcpServer(ctx: McpContext) {
   server.registerTool(
     'customers_get',
     {
-      title: 'Get a customer',
+      title: 'Get an organization',
       description:
-        'One customer with its details, contact persons and the newest 20 items of its timeline ' +
-        '(activities, notes, e-mails sent and received).',
+        'One customer or partner with its details, its contact persons (with their position ' +
+        'there) and the newest 20 items of its timeline (activities, notes, e-mails sent and ' +
+        'received).',
       inputSchema: { customerId: z.string().uuid() },
       annotations: READ_ONLY,
     },
@@ -162,6 +165,58 @@ export function buildMcpServer(ctx: McpContext) {
         },
         diff: { customerId },
       };
+    }),
+  );
+
+  server.registerTool(
+    'contacts_search',
+    {
+      title: 'Search contacts (persons)',
+      description:
+        'Finds persons in Kontakty by name, e-mail, phone or organization. A person may work at ' +
+        'several organizations (with a position at each) or at none. Returns ids for contacts_get.',
+      inputSchema: {
+        query: z.string().min(1).max(100),
+        limit: z.number().int().min(1).max(50).optional(),
+      },
+      annotations: READ_ONLY,
+    },
+    tool(
+      'contacts_search',
+      'read',
+      async ({ query, limit }: { query: string; limit?: number | undefined }) => {
+        const page = await listPersons(ctx.db, { search: query, pageSize: limit ?? 20 });
+        return {
+          result: page.items.map((p) => ({
+            id: p.id,
+            name: p.name,
+            email: p.email,
+            phone: p.phone,
+            unsubscribed: p.unsubscribedAt !== null,
+            organizations: p.organizations,
+            lastContactAt: p.lastContactAt,
+          })),
+          diff: { count: page.items.length },
+        };
+      },
+    ),
+  );
+
+  server.registerTool(
+    'contacts_get',
+    {
+      title: 'Get a contact (person)',
+      description:
+        "One person with their organizations and positions, and the newest 20 items of the person's " +
+        'own timeline: activities they took part in, e-mails sent to them and their replies.',
+      inputSchema: { contactId: z.string().uuid() },
+      annotations: READ_ONLY,
+    },
+    tool('contacts_get', 'read', async ({ contactId }: { contactId: string }) => {
+      const person = await getPerson(ctx.db, contactId).catch(() => null);
+      if (!person) throw new FileError('NOT_FOUND');
+      const recent = (await timelineOf(ctx.db, { contactId }, 'all')).slice(0, 20);
+      return { result: { ...person, timeline: recent }, diff: { contactId } };
     }),
   );
 
