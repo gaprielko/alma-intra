@@ -242,8 +242,10 @@ export function buildMcpServer(ctx: McpContext) {
     {
       title: 'Read a file',
       description:
-        'The text of a TXT, MD, CSV or DOCX file (its current version). For PDF, XLSX, PPTX or ' +
-        'images use files_download_url and open the file with your own tools.',
+        'The text of a TXT, MD, CSV, DOCX, PDF or XLSX file (its current version): a PDF page by ' +
+        'page (a scan without a text layer gives no text), an XLSX sheet by sheet with ' +
+        'tab-separated cells. For PPTX, images or a scanned PDF use files_download_url and open ' +
+        'the file with your own tools.',
       inputSchema: { fileId: z.string().uuid() },
       annotations: READ_ONLY,
     },
@@ -253,7 +255,7 @@ export function buildMcpServer(ctx: McpContext) {
       if (file.deletedAt || !current) throw new FileError('NOT_FOUND');
       if (!ctx.storage) throw new FileError('STORAGE_NOT_CONFIGURED');
       const key = await keyOf(ctx.db, current.id);
-      const extracted = extractText(file.name, await ctx.storage.read(key));
+      const extracted = await extractText(file.name, await ctx.storage.read(key));
       return {
         result: extracted
           ? { name: file.name, version: current.number, ...extracted }
