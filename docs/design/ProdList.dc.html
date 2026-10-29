@@ -134,7 +134,7 @@ tr:first-child td{border-top:0}
             </tbody>
           </table>
         </div>
-        <div class="foot"><span>3 produkty</span><span>{{ footNote }} · DPH 23 % podľa <a href="ProdVatSettings.dc.html">Nastavení</a></span></div>
+        <div class="foot"><span>3 produkty</span></div>
       </section>
     </div>
   </main>
@@ -174,7 +174,6 @@ class Component extends DCLogic {
       showNet: () => this.setState({ gross: false }),
       baseHead: g ? 'Základná cena s DPH' : 'Základná cena bez DPH',
       extraHead: g ? 'Príplatky s DPH' : 'Príplatky bez DPH',
-      footNote: g ? 'Ceny s DPH' : 'Ceny bez DPH',
     };
   }
 }
