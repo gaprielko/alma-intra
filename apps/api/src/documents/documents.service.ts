@@ -161,7 +161,7 @@ export async function createDocument(
       .where(
         and(
           eq(contacts.id, input.contactId),
-          eq(contacts.customerId, input.customerId),
+          sql`exists (select 1 from contact_links l where l.contact_id = ${contacts.id} and l.organization_id = ${input.customerId})`,
           isNull(contacts.deletedAt),
         ),
       );
@@ -169,7 +169,7 @@ export async function createDocument(
   }
   const { values } = await valuesFor(
     db,
-    input.contactId ? { contactId: input.contactId } : { customerId: input.customerId },
+    { contactId: input.contactId ?? undefined, customerId: input.customerId },
     userId,
     {},
   );

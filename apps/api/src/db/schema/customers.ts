@@ -1,5 +1,6 @@
 import {
   CUSTOMER_KINDS,
+  ORGANIZATION_ROLES,
   CUSTOMER_STATUSES,
   EMAIL_STATUSES,
   GENDERS,
@@ -21,7 +22,8 @@ import {
 } from 'drizzle-orm/pg-core';
 import { users } from './users.js';
 
-export const customerKind = pgEnum('customer_kind', CUSTOMER_KINDS);
+export const organizationKind = pgEnum('organization_kind', CUSTOMER_KINDS);
+export const organizationRole = pgEnum('organization_role', ORGANIZATION_ROLES);
 export const customerStatus = pgEnum('customer_status', CUSTOMER_STATUSES);
 export const region = pgEnum('region', REGIONS);
 export const gender = pgEnum('gender', GENDERS);
@@ -30,7 +32,7 @@ export const emailStatus = pgEnum('email_status', EMAIL_STATUSES);
 export const unsubscribeSource = pgEnum('unsubscribe_source', ['manual', 'link']);
 
 /**
- * A code list of Settings › Číselníky: a name, an order and whether new customers are offered it.
+ * A code list of Settings › Číselníky: a name, an order and whether new organizations are offered it.
  * An item somebody uses is never deleted, only switched off.
  */
 export const codeListColumns = () => ({
@@ -61,8 +63,8 @@ export const products = pgTable('products', codeListColumns(), (t) => [
 ]);
 
 /** Where a customer came from: a referral, a conference, the web. */
-export const customerSources = pgTable('customer_sources', codeListColumns(), (t) => [
-  uniqueIndex('customer_sources_name_unique').on(sql`lower(${t.name})`),
+export const organizationSources = pgTable('organization_sources', codeListColumns(), (t) => [
+  uniqueIndex('organization_sources_name_unique').on(sql`lower(${t.name})`),
 ]);
 
 /** Free tags for segmentation („pilot 2027“); made where a customer gets one. */
@@ -82,11 +84,13 @@ export const tags = pgTable(
  * company's name, or the person's name built from its parts. Soft deleted: the communication
  * history keeps pointing at it.
  */
-export const customers = pgTable(
-  'customers',
+export const organizations = pgTable(
+  'organizations',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    kind: customerKind('kind').notNull(),
+    kind: organizationKind('kind').notNull(),
+    /** Customer or partner; until the forms offer it, it follows the contact type „Zákazník“. */
+    role: organizationRole('role').notNull(),
     contactTypeId: uuid('contact_type_id')
       .notNull()
       .references(() => contactTypes.id),
@@ -104,93 +108,75 @@ export const customers = pgTable(
     email: text('email'),
     phone: text('phone'),
     ownerUserId: uuid('owner_user_id').references(() => users.id),
-    sourceId: uuid('source_id').references(() => customerSources.id),
+    sourceId: uuid('source_id').references(() => organizationSources.id),
     note: text('note'),
     almaOrganizationId: text('alma_organization_id'),
-    // A private person only.
-    titleBefore: text('title_before'),
-    firstName: text('first_name'),
-    lastName: text('last_name'),
-    titleAfter: text('title_after'),
-    gender: gender('gender'),
-    salutation: text('salutation'),
-    emailStatus: emailStatus('email_status').notNull().default('ok'),
-    unsubscribedAt: timestamp('unsubscribed_at', { withTimezone: true }),
-    unsubscribeSource: unsubscribeSource('unsubscribe_source'),
     createdByUserId: uuid('created_by_user_id').references(() => users.id),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
   },
   (t) => [
-    // IČO is unique among the customers in the list; a deleted one does not block a new one.
-    uniqueIndex('customers_ico_unique')
+    // IČO is unique among the organizations in the list; a deleted one does not block a new one.
+    uniqueIndex('organizations_ico_unique')
       .on(t.ico)
       .where(sql`${t.deletedAt} is null`),
-    index('customers_status_idx').on(t.status),
-    index('customers_contact_type_idx').on(t.contactTypeId),
-    index('customers_owner_idx').on(t.ownerUserId),
-    check('customers_name_length', sql`char_length(${t.name}) between 1 and 200`),
-    check(
-      'customers_person_named',
-      sql`${t.kind} = 'organization' or (${t.firstName} is not null and ${t.lastName} is not null)`,
-    ),
+    index('organizations_role_idx').on(t.role),
+    index('organizations_status_idx').on(t.status),
+    index('organizations_contact_type_idx').on(t.contactTypeId),
+    index('organizations_owner_idx').on(t.ownerUserId),
+    check('organizations_name_length', sql`char_length(${t.name}) between 1 and 200`),
   ],
 );
 
-export const customerTags = pgTable(
-  'customer_tags',
+export const organizationTags = pgTable(
+  'organization_tags',
   {
-    customerId: uuid('customer_id')
+    organizationId: uuid('organization_id')
       .notNull()
-      .references(() => customers.id),
+      .references(() => organizations.id),
     tagId: uuid('tag_id')
       .notNull()
       .references(() => tags.id, { onDelete: 'cascade' }),
   },
   (t) => [
-    primaryKey({ columns: [t.customerId, t.tagId] }),
-    index('customer_tags_tag_idx').on(t.tagId),
+    primaryKey({ columns: [t.organizationId, t.tagId] }),
+    index('organization_tags_tag_idx').on(t.tagId),
   ],
 );
 
-export const customerProducts = pgTable(
-  'customer_products',
+export const organizationProducts = pgTable(
+  'organization_products',
   {
-    customerId: uuid('customer_id')
+    organizationId: uuid('organization_id')
       .notNull()
-      .references(() => customers.id),
+      .references(() => organizations.id),
     productId: uuid('product_id')
       .notNull()
       .references(() => products.id),
   },
   (t) => [
-    primaryKey({ columns: [t.customerId, t.productId] }),
-    index('customer_products_product_idx').on(t.productId),
+    primaryKey({ columns: [t.organizationId, t.productId] }),
+    index('organization_products_product_idx').on(t.productId),
   ],
 );
 
 /**
- * A person at an organization customer. One primary contact per customer, the default recipient;
- * an e-mail address once per customer. Soft deleted, like the customer.
+ * A natural person (Kontakty): a contact person of customers or partners, a private-person
+ * customer or partner itself, or nobody's (D-2). Where they work is `contact_links`. Soft deleted.
  */
 export const contacts = pgTable(
   'contacts',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    customerId: uuid('customer_id')
-      .notNull()
-      .references(() => customers.id),
     titleBefore: text('title_before'),
     firstName: text('first_name').notNull(),
     lastName: text('last_name').notNull(),
     titleAfter: text('title_after'),
     gender: gender('gender'),
     salutation: text('salutation'),
-    position: text('position'),
     email: text('email'),
     phone: text('phone'),
-    isPrimary: boolean('is_primary').notNull().default(false),
     emailStatus: emailStatus('email_status').notNull().default('ok'),
     unsubscribedAt: timestamp('unsubscribed_at', { withTimezone: true }),
     unsubscribeSource: unsubscribeSource('unsubscribe_source'),
@@ -200,12 +186,36 @@ export const contacts = pgTable(
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
   },
   (t) => [
-    index('contacts_customer_idx').on(t.customerId),
-    uniqueIndex('contacts_primary_unique')
-      .on(t.customerId)
-      .where(sql`${t.isPrimary} and ${t.deletedAt} is null`),
+    // One person is entered once (D-7): an e-mail belongs to one live person.
     uniqueIndex('contacts_email_unique')
-      .on(t.customerId, sql`lower(${t.email})`)
+      .on(sql`lower(${t.email})`)
       .where(sql`${t.deletedAt} is null and ${t.email} is not null`),
+  ],
+);
+
+/**
+ * A person at an organization (D-3): their position there and whether they are its primary
+ * contact, the default recipient. A person may have none (D-2) or several. A private-person
+ * customer or partner is linked to its own person as the primary contact.
+ */
+export const contactLinks = pgTable(
+  'contact_links',
+  {
+    contactId: uuid('contact_id')
+      .notNull()
+      .references(() => contacts.id),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id),
+    position: text('position'),
+    isPrimary: boolean('is_primary').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.contactId, t.organizationId] }),
+    index('contact_links_organization_idx').on(t.organizationId),
+    uniqueIndex('contact_links_primary_unique')
+      .on(t.organizationId)
+      .where(sql`${t.isPrimary}`),
   ],
 );

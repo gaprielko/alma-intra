@@ -65,6 +65,7 @@ export const PAGE_SIZE = 20;
 /** The areas of the activity log's filter (D-16), as the audit trail names them. */
 export const AUDIT_AREAS = [
   'customer',
+  'person',
   'activity',
   'file',
   'folder',

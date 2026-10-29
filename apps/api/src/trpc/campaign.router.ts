@@ -39,7 +39,7 @@ async function run<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 /**
- * E-mails to customers (spec 6.4–6.8): the wizard's draft step by step, the preview per
+ * E-mails to organizations (spec 6.4–6.8): the wizard's draft step by step, the preview per
  * recipient, a test to oneself, sending, and the sent overview.
  */
 export const campaignRouter = router({

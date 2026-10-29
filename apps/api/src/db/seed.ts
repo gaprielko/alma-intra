@@ -26,7 +26,7 @@ export const SEED_USERS = {
 
 /**
  * Development and test data: three active colleagues with a password and a second factor, one
- * invitation not accepted yet and one deactivated account, and ten customers with their contacts
+ * invitation not accepted yet and one deactivated account, and ten organizations with their contacts
  * (`seed-customers.ts`) with their folders, and the company's folders. Idempotent: rows are upserted by id.
  */
 export async function seed(db: Db, encryptionKey: string) {

@@ -5,7 +5,7 @@ import {
   richTextToPlain,
   type TimelineFilter,
 } from '@intra/shared/schemas';
-import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
+import { type AnyColumn, and, asc, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import type { Db, Tx } from '../db/db.module.js';
 import {
@@ -17,8 +17,9 @@ import {
   campaigns,
   messageAttachments,
   inboundMessages,
+  contactLinks,
   contacts,
-  customers,
+  organizations,
   files,
   fileVersions,
   folders,
@@ -49,9 +50,9 @@ const preview = (text: string | null) =>
 
 async function liveCustomer(tx: Db | Tx, customerId: string) {
   const [row] = await tx
-    .select({ id: customers.id, name: customers.name })
-    .from(customers)
-    .where(and(eq(customers.id, customerId), isNull(customers.deletedAt)));
+    .select({ id: organizations.id, name: organizations.name })
+    .from(organizations)
+    .where(and(eq(organizations.id, customerId), isNull(organizations.deletedAt)));
   if (!row) throw new ActivityError('CUSTOMER_NOT_FOUND');
   return row;
 }
@@ -67,7 +68,7 @@ async function checkParticipants(tx: Tx, customerId: string, input: ActivityValu
       .where(
         and(
           inArray(contacts.id, contactIds),
-          eq(contacts.customerId, customerId),
+          sql`exists (select 1 from contact_links l where l.contact_id = ${contacts.id} and l.organization_id = ${customerId})`,
           isNull(contacts.deletedAt),
         ),
       );
@@ -167,7 +168,7 @@ export async function createActivity(
     const versionIds = await resolveAttachments(tx, input);
     const [created] = await tx
       .insert(activities)
-      .values({ ...columnsOf(input), customerId, authorUserId: userId })
+      .values({ ...columnsOf(input), organizationId: customerId, authorUserId: userId })
       .returning({ id: activities.id });
     await writeLinks(tx, created!.id, people, versionIds);
     return {
@@ -201,8 +202,8 @@ export async function updateActivity(db: Db, id: string, input: ActivityValues) 
       .where(and(eq(activities.id, id), alive))
       .for('update');
     if (!current) throw new ActivityError('NOT_FOUND');
-    await liveCustomer(tx, current.customerId);
-    const people = await checkParticipants(tx, current.customerId, input);
+    await liveCustomer(tx, current.organizationId);
+    const people = await checkParticipants(tx, current.organizationId, input);
     const keptRows = await tx
       .select({ id: activityAttachments.fileVersionId })
       .from(activityAttachments)
@@ -218,7 +219,7 @@ export async function updateActivity(db: Db, id: string, input: ActivityValues) 
       .where(eq(activities.id, id));
     await writeLinks(tx, id, people, versionIds);
     return {
-      customerId: current.customerId,
+      customerId: current.organizationId,
       fields,
       contacts: people.contactIds.length,
       attachments: versionIds.length,
@@ -231,7 +232,7 @@ export async function deleteActivity(db: Db, id: string) {
     .update(activities)
     .set({ deletedAt: new Date() })
     .where(and(eq(activities.id, id), alive))
-    .returning({ customerId: activities.customerId });
+    .returning({ customerId: activities.organizationId });
   if (!row) throw new ActivityError('NOT_FOUND');
   return row;
 }
@@ -246,7 +247,7 @@ export async function setNextStepDone(db: Db, userId: string, id: string, done: 
         : { nextStepDoneAt: null, nextStepDoneByUserId: null },
     )
     .where(and(eq(activities.id, id), alive, isNotNull(activities.nextStepText)))
-    .returning({ customerId: activities.customerId });
+    .returning({ customerId: activities.organizationId });
   if (!row) throw new ActivityError('NOT_FOUND');
   return row;
 }
@@ -307,8 +308,8 @@ export async function getActivity(db: Db, id: string) {
   const [row] = await db
     .select({
       id: activities.id,
-      customerId: activities.customerId,
-      customerName: customers.name,
+      customerId: activities.organizationId,
+      customerName: organizations.name,
       kind: activities.kind,
       occurredAt: activities.occurredAt,
       durationMin: activities.durationMin,
@@ -325,11 +326,11 @@ export async function getActivity(db: Db, id: string) {
       updatedAt: activities.updatedAt,
     })
     .from(activities)
-    .innerJoin(customers, eq(customers.id, activities.customerId))
+    .innerJoin(organizations, eq(organizations.id, activities.organizationId))
     .leftJoin(author, eq(author.id, activities.authorUserId))
     .leftJoin(assignee, eq(assignee.id, activities.nextStepUserId))
     .leftJoin(doneBy, eq(doneBy.id, activities.nextStepDoneByUserId))
-    .where(and(eq(activities.id, id), alive, isNull(customers.deletedAt)));
+    .where(and(eq(activities.id, id), alive, isNull(organizations.deletedAt)));
   if (!row) throw new ActivityError('NOT_FOUND');
   const participants = (await participantsOf(db, [id])).get(id) ?? [];
   const attachments = await db
@@ -380,6 +381,25 @@ const TIMELINE_LIMIT = 100;
  */
 export async function timeline(db: Db, customerId: string, filter: TimelineFilter) {
   await liveCustomer(db, customerId);
+  return timelineOf(db, { customerId }, filter);
+}
+
+/**
+ * The timeline of an organization, or of one person (D-8): only the activities they took part in,
+ * the e-mails sent to them and their replies, from all their organizations, each item naming its
+ * organization. A person's changes are not in it.
+ */
+export async function timelineOf(
+  db: Db,
+  scope: { customerId: string } | { contactId: string },
+  filter: TimelineFilter,
+) {
+  const customerId = 'customerId' in scope ? scope.customerId : null;
+  const contactId = 'contactId' in scope ? scope.contactId : null;
+  const activityScope = customerId
+    ? eq(activities.organizationId, customerId)
+    : sql`exists (select 1 from activity_participants p
+        where p.activity_id = ${activities.id} and p.contact_id = ${contactId})`;
   const kindFilter =
     filter === 'notes'
       ? [eq(activities.kind, 'note')]
@@ -402,10 +422,11 @@ export async function timeline(db: Db, customerId: string, filter: TimelineFilte
           author: author.name,
           attachmentCount: sql<number>`(select count(*)::int from activity_attachments aa
             where aa.activity_id = "activities"."id")`,
+          organization: organizationJson(activities.organizationId),
         })
         .from(activities)
         .leftJoin(author, eq(author.id, activities.authorUserId))
-        .where(and(eq(activities.customerId, customerId), alive, ...kindFilter))
+        .where(and(activityScope, alive, ...kindFilter))
         .orderBy(desc(activities.occurredAt))
         .limit(TIMELINE_LIMIT)
     : [];
@@ -434,13 +455,16 @@ export async function timeline(db: Db, customerId: string, filter: TimelineFilte
               toName: campaignMessages.toName,
               at: sql<Date>`coalesce(${campaignMessages.sentAt}, ${campaignMessages.queuedAt})`,
               sender: users.name,
+              organization: organizationJson(campaignMessages.organizationId),
             })
             .from(campaignMessages)
             .innerJoin(campaigns, eq(campaigns.id, campaignMessages.campaignId))
             .innerJoin(users, eq(users.id, campaigns.senderUserId))
             .where(
               and(
-                eq(campaignMessages.customerId, customerId),
+                customerId
+                  ? eq(campaignMessages.organizationId, customerId)
+                  : eq(campaignMessages.contactId, contactId!),
                 isNotNull(campaignMessages.queuedAt),
               ),
             )
@@ -460,11 +484,14 @@ export async function timeline(db: Db, customerId: string, filter: TimelineFilte
                 '\\s+', ' ', 'g'), 200)`,
               at: inboundMessages.receivedAt,
               attachmentCount: sql<number>`jsonb_array_length(${inboundMessages.attachments})`,
+              organization: organizationJson(inboundMessages.organizationId),
             })
             .from(inboundMessages)
             .where(
               and(
-                eq(inboundMessages.customerId, customerId),
+                customerId
+                  ? eq(inboundMessages.organizationId, customerId)
+                  : eq(inboundMessages.contactId, contactId!),
                 eq(inboundMessages.status, 'assigned'),
               ),
             )
@@ -472,7 +499,7 @@ export async function timeline(db: Db, customerId: string, filter: TimelineFilte
             .limit(TIMELINE_LIMIT)
         ).map((reply) => ({ type: 'reply' as const, at: reply.at, reply }))
       : []),
-    ...(filter === 'all' || filter === 'changes'
+    ...(customerId && (filter === 'all' || filter === 'changes')
       ? (await customerHistory(db, customerId))
           // A download of the CSV is not news about the customer.
           .filter((event) => event.diff?.exported !== true)
@@ -484,6 +511,12 @@ export async function timeline(db: Db, customerId: string, filter: TimelineFilte
     .slice(0, TIMELINE_LIMIT);
 }
 
+/** The organization a timeline item belongs to, for a person's timeline that spans several. */
+const organizationJson = (column: AnyColumn) =>
+  sql<{ id: string; name: string; role: 'customer' | 'partner' } | null>`(select
+    json_build_object('id', o.id, 'name', o.name, 'role', o.role)
+    from organizations o where o.id = ${column})`;
+
 /** „Moje ďalšie kroky“: the open next steps of one person, the ones due first. */
 export async function myNextSteps(db: Db, userId: string) {
   return db
@@ -493,18 +526,18 @@ export async function myNextSteps(db: Db, userId: string) {
       due: activities.nextStepDue,
       kind: activities.kind,
       occurredAt: activities.occurredAt,
-      customerId: customers.id,
-      customerName: customers.name,
+      customerId: organizations.id,
+      customerName: organizations.name,
     })
     .from(activities)
-    .innerJoin(customers, eq(customers.id, activities.customerId))
+    .innerJoin(organizations, eq(organizations.id, activities.organizationId))
     .where(
       and(
         eq(activities.nextStepUserId, userId),
         isNotNull(activities.nextStepText),
         isNull(activities.nextStepDoneAt),
         alive,
-        isNull(customers.deletedAt),
+        isNull(organizations.deletedAt),
       ),
     )
     .orderBy(sql`${activities.nextStepDue} asc nulls last`, asc(activities.occurredAt))
@@ -522,11 +555,12 @@ export async function activityOptions(db: Db, customerId: string) {
         firstName: contacts.firstName,
         lastName: contacts.lastName,
         titleAfter: contacts.titleAfter,
-        position: contacts.position,
+        position: contactLinks.position,
       })
-      .from(contacts)
-      .where(and(eq(contacts.customerId, customerId), isNull(contacts.deletedAt)))
-      .orderBy(desc(contacts.isPrimary), asc(contacts.lastName)),
+      .from(contactLinks)
+      .innerJoin(contacts, eq(contacts.id, contactLinks.contactId))
+      .where(and(eq(contactLinks.organizationId, customerId), isNull(contacts.deletedAt)))
+      .orderBy(desc(contactLinks.isPrimary), asc(contacts.lastName)),
     db
       .select({ id: users.id, name: users.name })
       .from(users)
@@ -555,7 +589,7 @@ export async function pickableFiles(
   else if (scope === 'customer') throw new ActivityError('CUSTOMER_NOT_FOUND');
   const where = [
     isNull(files.deletedAt),
-    scope === 'customer' ? eq(folders.customerId, customerId!) : isNull(folders.customerId),
+    scope === 'customer' ? eq(folders.organizationId, customerId!) : isNull(folders.organizationId),
   ];
   if (search) {
     where.push(sql`${files.name} ilike ${`%${search.replace(/[\\%_]/g, (c) => `\\${c}`)}%`}`);
@@ -565,13 +599,13 @@ export async function pickableFiles(
       ? await db
           .select({ id: folders.id })
           .from(folders)
-          .where(and(eq(folders.customerId, customerId!), isNull(folders.parentId)))
+          .where(and(eq(folders.organizationId, customerId!), isNull(folders.parentId)))
       : [{ id: COMPANY_ROOT_FOLDER_ID }];
   const rows = await db
     .select({
       id: files.id,
       name: files.name,
-      folderName: sql<string>`coalesce(${folders.name}, ${customers.name})`,
+      folderName: sql<string>`coalesce(${folders.name}, ${organizations.name})`,
       size: fileVersions.size,
       version: sql<number>`${fileVersions.number}`,
       changedAt: fileVersions.createdAt,
@@ -579,7 +613,7 @@ export async function pickableFiles(
     .from(files)
     .innerJoin(fileVersions, eq(fileVersions.id, files.currentVersionId))
     .innerJoin(folders, eq(folders.id, files.folderId))
-    .leftJoin(customers, eq(customers.id, folders.customerId))
+    .leftJoin(organizations, eq(organizations.id, folders.organizationId))
     .where(and(...where))
     .orderBy(desc(fileVersions.createdAt))
     .limit(PICKER_LIMIT);
@@ -664,15 +698,15 @@ function activityUsage(db: Db, fileId: string) {
       kind: activities.kind,
       subject: activities.subject,
       occurredAt: activities.occurredAt,
-      customerId: customers.id,
-      customerName: customers.name,
+      customerId: organizations.id,
+      customerName: organizations.name,
       version: sql<number>`${fileVersions.number}`,
     })
     .from(activityAttachments)
     .innerJoin(fileVersions, eq(fileVersions.id, activityAttachments.fileVersionId))
     .innerJoin(activities, eq(activities.id, activityAttachments.activityId))
-    .innerJoin(customers, eq(customers.id, activities.customerId))
-    .where(and(eq(fileVersions.fileId, fileId), alive, isNull(customers.deletedAt)))
+    .innerJoin(organizations, eq(organizations.id, activities.organizationId))
+    .where(and(eq(fileVersions.fileId, fileId), alive, isNull(organizations.deletedAt)))
     .orderBy(desc(activities.occurredAt))
     .limit(50);
 }
@@ -690,12 +724,12 @@ export async function remindDueNextSteps(db: Db, today: string) {
         and a.deleted_at is null and a.next_step_user_id is not null
         and a.next_step_due <= ${today}::date
         and a.next_step_reminded_for is distinct from a.next_step_due
-        and exists (select 1 from customers c where c.id = a.customer_id and c.deleted_at is null)
+        and exists (select 1 from organizations c where c.id = a.organization_id and c.deleted_at is null)
         and exists (select 1 from users u where u.id = a.next_step_user_id and u.status = 'active')
-      returning a.id, a.customer_id, a.next_step_user_id, a.next_step_text
+      returning a.id, a.organization_id, a.next_step_user_id, a.next_step_text
     ), notified as (
-      insert into notifications (user_id, kind, ref_id, customer_id, subject)
-      select next_step_user_id, 'next_step', id, customer_id, next_step_text from claimed
+      insert into notifications (user_id, kind, ref_id, organization_id, subject)
+      select next_step_user_id, 'next_step', id, organization_id, next_step_text from claimed
       returning 1
     )
     select count(*)::int as count from notified`);

@@ -43,7 +43,7 @@ export const CAMPAIGN_TRANSPORT = Symbol('CAMPAIGN_TRANSPORT');
 export const INBOUND_SOURCE = Symbol('INBOUND_SOURCE');
 const POLL_INTERVAL_MS = 5_000;
 
-/** Sends the queued e-mails to customers inside the API process. Tests drain by hand. */
+/** Sends the queued e-mails to organizations inside the API process. Tests drain by hand. */
 @Injectable()
 export class CampaignWorker implements OnModuleInit, OnApplicationShutdown {
   private readonly logger = new Logger('campaign-sender');

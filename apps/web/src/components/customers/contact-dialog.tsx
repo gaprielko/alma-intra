@@ -140,7 +140,7 @@ export function ContactDialog({
             onSubmit={(event) =>
               void form.handleSubmit((values) =>
                 contact
-                  ? update.mutate({ id: contact.id, ...values })
+                  ? update.mutate({ id: contact.id, customerId, ...values })
                   : create.mutate({ customerId, contact: values.contact }),
               )(event)
             }

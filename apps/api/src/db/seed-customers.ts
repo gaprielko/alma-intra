@@ -2,12 +2,13 @@ import { eq, sql } from 'drizzle-orm';
 import type { Tx } from './db.module.js';
 import { COMPANY_ROOT_FOLDER_ID } from '@intra/shared/schemas';
 import {
+  contactLinks,
   contacts,
   contactTypes,
-  customers,
-  customerSources,
-  customerProducts,
-  customerTags,
+  organizations,
+  organizationSources,
+  organizationProducts,
+  organizationTags,
   folders,
   tags,
 } from './schema/index.js';
@@ -37,9 +38,9 @@ interface SeedCustomer {
   name: string;
   kind: 'organization' | 'individual';
   ados: boolean;
-  status: (typeof customers.$inferInsert)['status'];
+  status: (typeof organizations.$inferInsert)['status'];
   city: string;
-  region: (typeof customers.$inferInsert)['region'];
+  region: (typeof organizations.$inferInsert)['region'];
   owner: string;
   source?: number;
   tags?: number[];
@@ -53,14 +54,14 @@ interface SeedCustomer {
   people: Person[];
 }
 
-/** Development customers, as on the designs. Upserted by fixed ids, like the users. */
+/** Development organizations, as on the designs. Upserted by fixed ids, like the users. */
 export async function seedCustomers(
   tx: Tx,
   owners: { jana: string; peter: string; lucia: string },
 ) {
   for (const [i, name] of SOURCES.entries()) {
     await tx
-      .insert(customerSources)
+      .insert(organizationSources)
       .values({ id: id('b', i + 1), name, position: i + 1 })
       .onConflictDoNothing();
   }
@@ -304,9 +305,10 @@ export async function seedCustomers(
   for (const [i, c] of list.entries()) {
     const customerId = id('d', i + 1);
     const self = c.kind === 'individual' ? c.people[0]! : undefined;
-    const values: typeof customers.$inferInsert = {
+    const values: typeof organizations.$inferInsert = {
       id: customerId,
       kind: c.kind,
+      role: 'customer',
       contactTypeId: customerType!.id,
       name: c.name,
       ico: c.ico ?? null,
@@ -316,45 +318,48 @@ export async function seedCustomers(
       city: c.city,
       region: c.region,
       web: c.web ?? null,
-      email: c.email ?? null,
-      phone: c.phone ?? null,
+      // A private person's e-mail and phone are their person's.
+      email: self ? null : (c.email ?? null),
+      phone: self ? null : (c.phone ?? null),
       ownerUserId: c.owner,
       sourceId: c.source === undefined ? null : id('b', c.source + 1),
       note: c.note ?? null,
-      firstName: self?.firstName ?? null,
-      lastName: self?.lastName ?? null,
-      gender: self?.gender ?? null,
-      salutation: self?.salutation ?? null,
       createdByUserId: owners.jana,
       deletedAt: null,
     };
     await tx
-      .insert(customers)
+      .insert(organizations)
       .values(values)
-      .onConflictDoUpdate({ target: customers.id, set: { ...values, updatedAt: sql`now()` } });
-    await tx.insert(folders).values({ customerId }).onConflictDoNothing();
-    await tx.delete(customerTags).where(sql`${customerTags.customerId} = ${customerId}`);
+      .onConflictDoUpdate({ target: organizations.id, set: { ...values, updatedAt: sql`now()` } });
+    await tx.insert(folders).values({ organizationId: customerId }).onConflictDoNothing();
+    await tx
+      .delete(organizationTags)
+      .where(sql`${organizationTags.organizationId} = ${customerId}`);
     for (const tag of c.tags ?? []) {
-      await tx.insert(customerTags).values({ customerId, tagId: id('c', tag + 1) });
+      await tx
+        .insert(organizationTags)
+        .values({ organizationId: customerId, tagId: id('c', tag + 1) });
     }
-    await tx.delete(customerProducts).where(sql`${customerProducts.customerId} = ${customerId}`);
+    await tx
+      .delete(organizationProducts)
+      .where(sql`${organizationProducts.organizationId} = ${customerId}`);
     if (c.ados) {
-      await tx.insert(customerProducts).values({ customerId, productId: ADOS_PRODUCT_ID });
+      await tx
+        .insert(organizationProducts)
+        .values({ organizationId: customerId, productId: ADOS_PRODUCT_ID });
     }
-    if (c.kind !== 'organization') continue;
-    for (const [j, p] of c.people.entries()) {
+    const people = self ? [{ ...self, email: c.email ?? self.email, phone: c.phone }] : c.people;
+    for (const [j, p] of people.entries()) {
+      const contactId = id('e', (i + 1) * 10 + j);
       const contact: typeof contacts.$inferInsert = {
-        id: id('e', (i + 1) * 10 + j),
-        customerId,
+        id: contactId,
         titleBefore: p.titleBefore ?? null,
         firstName: p.firstName,
         lastName: p.lastName,
         gender: p.gender,
         salutation: p.salutation,
-        position: p.position ?? null,
         email: p.email,
         phone: p.phone ?? null,
-        isPrimary: j === 0,
         unsubscribedAt: p.unsubscribed ? new Date('2026-09-03T08:00:00Z') : null,
         unsubscribeSource: p.unsubscribed ? 'link' : null,
         deletedAt: null,
@@ -363,6 +368,14 @@ export async function seedCustomers(
         .insert(contacts)
         .values(contact)
         .onConflictDoUpdate({ target: contacts.id, set: { ...contact, updatedAt: sql`now()` } });
+      const link = { position: p.position ?? null, isPrimary: j === 0 };
+      await tx
+        .insert(contactLinks)
+        .values({ contactId, organizationId: customerId, ...link })
+        .onConflictDoUpdate({
+          target: [contactLinks.contactId, contactLinks.organizationId],
+          set: link,
+        });
     }
   }
 }

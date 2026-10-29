@@ -25,7 +25,7 @@ const envSchema = z.object({
   /** Where an answer to a system e-mail goes. Empty sends no Reply-To. Checked at boot. */
   MAIL_REPLY_TO: z.union([z.literal(''), z.string().email()]).default('info@alma-care.eu'),
   /**
-   * The shared sending address of e-mails to customers (D-17a): the From shows the colleague's
+   * The shared sending address of e-mails to organizations (D-17a): the From shows the colleague's
    * name with it. Its domain must be verified in Resend.
    */
   /**

@@ -28,7 +28,7 @@ export interface Context {
   breachCheck: BreachCheck | null;
   /** Object storage for the Files module; `null` when no S3 variables are set. */
   storage: Storage | null;
-  /** The provider e-mails to customers go through (the test e-mail is sent at once). */
+  /** The provider e-mails to organizations go through (the test e-mail is sent at once). */
   campaignTransport: MailTransport;
   requestId: string;
   /**

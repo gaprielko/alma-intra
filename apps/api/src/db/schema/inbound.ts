@@ -2,7 +2,7 @@ import { INBOUND_STATUSES } from '@intra/shared/schemas';
 import { sql } from 'drizzle-orm';
 import { index, jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { campaignMessages } from './campaigns.js';
-import { contacts, customers } from './customers.js';
+import { contacts, organizations } from './customers.js';
 import { users } from './users.js';
 
 export const inboundStatus = pgEnum('inbound_status', INBOUND_STATUSES);
@@ -21,7 +21,7 @@ export const inboundMessages = pgTable(
     providerEmailId: text('provider_email_id').notNull().unique(),
     /** Our e-mail it answers, when its token matched. */
     messageId: uuid('message_id').references(() => campaignMessages.id),
-    customerId: uuid('customer_id').references(() => customers.id),
+    organizationId: uuid('organization_id').references(() => organizations.id),
     contactId: uuid('contact_id').references(() => contacts.id),
     /** The colleague it is for: the sender of our e-mail. */
     userId: uuid('user_id').references(() => users.id),
@@ -60,7 +60,7 @@ export const inboundMessages = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    index('inbound_messages_customer_idx').on(t.customerId, t.receivedAt),
+    index('inbound_messages_organization_idx').on(t.organizationId, t.receivedAt),
     index('inbound_messages_message_idx').on(t.messageId),
     index('inbound_messages_unassigned_idx')
       .on(t.receivedAt)

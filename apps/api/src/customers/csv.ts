@@ -30,7 +30,7 @@ const day = (date: Date) => dayFormat.format(date);
 const BOM = String.fromCharCode(0xfeff);
 
 /**
- * The customers as CSV for Excel in Slovak: semicolons, a BOM so the accents survive, CRLF lines.
+ * The organizations as CSV for Excel in Slovak: semicolons, a BOM so the accents survive, CRLF lines.
  * Headers and values in the words of the app, never the codes.
  */
 export function toCsv(rows: Row[]): string {

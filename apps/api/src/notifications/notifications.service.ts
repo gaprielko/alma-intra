@@ -28,9 +28,9 @@ export async function listNotifications(db: Db, userId: string) {
         id: notifications.id,
         kind: notifications.kind,
         refId: notifications.refId,
-        customerId: notifications.customerId,
-        customerName: sql<string | null>`(select c.name from customers c
-          where c.id = ${notifications.customerId})`,
+        customerId: notifications.organizationId,
+        customerName: sql<string | null>`(select c.name from organizations c
+          where c.id = ${notifications.organizationId})`,
         subject: notifications.subject,
         readAt: notifications.readAt,
         createdAt: notifications.createdAt,

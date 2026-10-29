@@ -14,7 +14,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { contacts, customers } from './customers.js';
+import { contacts, organizations } from './customers.js';
 import { fileVersions } from './files.js';
 import { users } from './users.js';
 
@@ -29,9 +29,9 @@ export const activities = pgTable(
   'activities',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    customerId: uuid('customer_id')
+    organizationId: uuid('organization_id')
       .notNull()
-      .references(() => customers.id),
+      .references(() => organizations.id),
     kind: activityKind('kind').notNull(),
     occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),
     durationMin: integer('duration_min'),
@@ -51,7 +51,7 @@ export const activities = pgTable(
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
   },
   (t) => [
-    index('activities_customer_idx').on(t.customerId, t.occurredAt),
+    index('activities_organization_idx').on(t.organizationId, t.occurredAt),
     // „Moje ďalšie kroky“: the open next steps of one person.
     index('activities_next_step_idx')
       .on(t.nextStepUserId, t.nextStepDue)

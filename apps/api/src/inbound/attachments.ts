@@ -32,7 +32,7 @@ export async function saveInboundAttachments(
 ) {
   const [row] = await db
     .select({
-      customerId: inboundMessages.customerId,
+      customerId: inboundMessages.organizationId,
       providerEmailId: inboundMessages.providerEmailId,
       attachments: inboundMessages.attachments,
     })

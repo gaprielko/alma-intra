@@ -6,6 +6,7 @@ import {
   FILE_GROUPS,
   HEADER_STYLES,
   INBOUND_STATUSES,
+  ORGANIZATION_ROLES,
   SECOND_STEPS,
   USER_STATUSES,
 } from '@intra/shared/schemas';
@@ -96,7 +97,7 @@ const CUSTOMER_FIELDS = [
   'receivesBulk',
 ];
 
-/** Up to a page of customers a bulk action named; ids only. */
+/** Up to a page of organizations a bulk action named; ids only. */
 const uuidList: Rule = (v) => Array.isArray(v) && v.length <= 100 && v.every((id) => uuid(id));
 
 const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
@@ -133,12 +134,23 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
    */
   customer: {
     kind: oneOf(CUSTOMER_KINDS),
+    role: oneOf(ORGANIZATION_ROLES),
     status: oneOf(CUSTOMER_STATUSES),
     ownerUserId: uuid,
     firstContact: flag,
     fields: subsetOf(CUSTOMER_FIELDS),
     deleted: flag,
-    contact: oneOf(['created', 'updated', 'primary', 'deleted', 'unsubscribed', 'resubscribed']),
+    contact: oneOf([
+      'created',
+      'updated',
+      'primary',
+      'deleted',
+      'unsubscribed',
+      'resubscribed',
+      'linked',
+      'unlinked',
+    ]),
+    primary: flag,
     reason: oneOf(['too_many', 'not_interested', 'left_position', 'other']),
     contactId: uuid,
     ids: uuidList,
@@ -156,6 +168,7 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     resultCount: number,
     filters: subsetOf([
       'search',
+      'role',
       'status',
       'kind',
       'contactTypeId',
@@ -163,6 +176,27 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
       'region',
       'tagId',
       'ownerUserId',
+    ]),
+  },
+  /**
+   * A person of Kontakty: created or deleted, which of their fields changed (names), at how many
+   * organizations. Never a name, an e-mail, a phone or a note.
+   */
+  person: {
+    created: flag,
+    deleted: flag,
+    count: number,
+    fields: subsetOf([
+      'titleBefore',
+      'firstName',
+      'lastName',
+      'titleAfter',
+      'gender',
+      'salutation',
+      'email',
+      'phone',
+      'note',
+      'receivesBulk',
     ]),
   },
   /** Settings › Číselníky: which list, which fields, switched on or off. Names are not kept. */
@@ -243,7 +277,7 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     headerStyle: oneOf(HEADER_STYLES),
   },
   email_image: { size: number },
-  /** An e-mail to customers: how many recipients, the template; never a text or an address. */
+  /** An e-mail to organizations: how many recipients, the template; never a text or an address. */
   campaign: {
     count: number,
     skipped: number,
@@ -267,6 +301,7 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     deleted: flag,
     filters: subsetOf([
       'search',
+      'role',
       'status',
       'kind',
       'contactTypeId',

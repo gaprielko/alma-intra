@@ -1,7 +1,7 @@
 import { NOTIFICATION_KINDS } from '@intra/shared/schemas';
 import { sql } from 'drizzle-orm';
 import { index, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
-import { customers } from './customers.js';
+import { organizations } from './customers.js';
 import { users } from './users.js';
 
 export const notificationKind = pgEnum('notification_kind', NOTIFICATION_KINDS);
@@ -21,7 +21,7 @@ export const notifications = pgTable(
       .references(() => users.id),
     kind: notificationKind('kind').notNull(),
     refId: uuid('ref_id').notNull(),
-    customerId: uuid('customer_id').references(() => customers.id),
+    organizationId: uuid('organization_id').references(() => organizations.id),
     /** The subject of the e-mail it is about, for the line in the list. */
     subject: text('subject'),
     readAt: timestamp('read_at', { withTimezone: true }),

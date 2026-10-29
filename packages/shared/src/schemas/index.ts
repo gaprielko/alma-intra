@@ -8,3 +8,4 @@ export * from './activity.js';
 export * from './email-template.js';
 export * from './campaign.js';
 export * from './inbound.js';
+export * from './person.js';

@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { browser, JANA, startApi } from './client.js';
 
@@ -11,7 +12,7 @@ type Page = {
   counts: Record<string, number>;
 };
 
-describe('contacts (customers)', () => {
+describe('contacts (organizations)', () => {
   let api: Awaited<ReturnType<typeof startApi>>;
   let jana: ReturnType<typeof browser>;
   let options: Options;
@@ -60,8 +61,18 @@ describe('contacts (customers)', () => {
       'customer.create',
       organization('Partner bez stavu', { contactTypeId: typeOf('Partner'), status: 'interested' }),
     );
-    const got = await jana.call<{ status: string | null }>('customer.get', { id: partner.data.id });
+    const got = await jana.call<{ status: string | null; role: string }>('customer.get', {
+      id: partner.data.id,
+    });
     expect(got.data.status).toBeNull();
+    // Any type but „Zákazník“ is a partner; changing the type to „Zákazník“ makes a customer.
+    expect(got.data.role).toBe('partner');
+    const customer = await jana.call<{ id: string }>(
+      'customer.create',
+      organization('Zákazník s rolou'),
+    );
+    const asCustomer = await jana.call<{ role: string }>('customer.get', { id: customer.data.id });
+    expect(asCustomer.data.role).toBe('customer');
   });
 
   it('lists with products, filters by product and counts by status', async () => {
@@ -73,6 +84,47 @@ describe('contacts (customers)', () => {
       .filter(([key]) => key !== 'all')
       .reduce((n, [, count]) => n + count, 0);
     expect(sum).toBe(page.data.counts.all);
+  });
+
+  it('turns a customer into a partner and back, keeping what is shared (D-5)', async () => {
+    const ados = options.products.find((p) => p.name === 'ADOS')!;
+    const made = await jana.call<{ id: string }>(
+      'customer.create',
+      organization('Mení rolu, s.r.o.', {
+        status: 'interested',
+        productIds: [ados.id],
+        tags: ['stála'],
+      }),
+    );
+    expect(
+      (await jana.call('customer.setRole', { id: made.data.id, role: 'partner' })).code,
+    ).toBeUndefined();
+    type Got = {
+      role: string;
+      status: string | null;
+      products: unknown[];
+      tags: { name: string }[];
+    };
+    const partner = (await jana.call<Got>('customer.get', { id: made.data.id })).data;
+    expect(partner).toMatchObject({ role: 'partner', status: null, products: [] });
+    expect(partner.tags.map((t) => t.name)).toEqual(['stála']);
+    await jana.call('customer.setRole', { id: made.data.id, role: 'customer' });
+    expect((await jana.call<Got>('customer.get', { id: made.data.id })).data.role).toBe('customer');
+  });
+
+  it('filters by several values at once and by role (D-12)', async () => {
+    const both = await jana.call<Page>('customer.list', {
+      status: ['customer', 'interested'],
+      pageSize: 100,
+    });
+    expect(both.data.items.length).toBeGreaterThan(0);
+    expect(both.data.items.every((c) => ['customer', 'interested'].includes(c.status!))).toBe(true);
+    expect(both.data.total).toBe(both.data.counts.customer! + both.data.counts.interested!);
+    const partners = await jana.call<{ items: { role: string }[] }>('customer.list', {
+      role: 'partner',
+      pageSize: 100,
+    });
+    expect(partners.data.items.every((c) => c.role === 'partner')).toBe(true);
   });
 
   it('records changes with ids and names them in the history', async () => {
@@ -104,6 +156,50 @@ describe('contacts (customers)', () => {
       contact: person,
     });
     expect(again.message).toBe('CONTACT_EMAIL_TAKEN');
+    // One person per e-mail anywhere (D-7), not only within one organization.
+    const other = await jana.call<{ id: string }>('customer.create', organization('Iné osoby'));
+    const elsewhere = await jana.call('customer.contactCreate', {
+      customerId: other.data.id,
+      contact: { ...person, email: 'EVA.NOVA@example.org' },
+    });
+    expect(elsewhere.message).toBe('CONTACT_EMAIL_TAKEN');
+  });
+
+  it('a private person is a person of their own, the primary contact and the recipient', async () => {
+    const made = await jana.call<{ id: string }>('customer.create', {
+      customer: {
+        kind: 'individual',
+        firstName: 'Oľga',
+        lastName: 'Súkromná',
+        email: 'olga.sukromna@example.org',
+        contactTypeId: typeOf('customer'),
+        receivesBulk: true,
+        tags: [],
+        productIds: [],
+      },
+    });
+    expect(made.code).toBeUndefined();
+    const detail = await jana.call<{ name: string; firstName: string; email: string }>(
+      'customer.get',
+      { id: made.data.id },
+    );
+    expect(detail.data).toMatchObject({
+      name: 'Oľga Súkromná',
+      firstName: 'Oľga',
+      email: 'olga.sukromna@example.org',
+    });
+    const person = await api.db.execute<{ is_primary: boolean; email: string }>(
+      sql`select l.is_primary, c.email from contact_links l join contacts c on c.id = l.contact_id
+        where l.organization_id = ${made.data.id}`,
+    );
+    expect(person.rows).toEqual([{ is_primary: true, email: 'olga.sukromna@example.org' }]);
+    const candidates = await jana.call<
+      { self: unknown; contacts: { name: string; isPrimary: boolean }[] }[]
+    >('campaign.candidates', { customerIds: [made.data.id] });
+    expect(candidates.data[0]!.self).toBeNull();
+    expect(candidates.data[0]!.contacts).toEqual([
+      expect.objectContaining({ name: 'Oľga Súkromná', isPrimary: true }),
+    ]);
   });
 
   it('finds a contact without its diacritics', async () => {

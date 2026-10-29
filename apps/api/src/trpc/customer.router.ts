@@ -8,12 +8,13 @@ import {
   customerListSchema,
   exportCustomersSchema,
   icoLookupSchema,
+  setRoleSchema,
   updateContactSchema,
   updateCustomerSchema,
 } from '@intra/shared/schemas';
 import { TRPCError } from '@trpc/server';
 import { lookupCompany, RegisterUnavailableError } from '../customers/business-register.js';
-import * as customers from '../customers/customers.service.js';
+import * as organizations from '../customers/customers.service.js';
 import { toCsv } from '../customers/csv.js';
 import type { Context } from './context.js';
 import { authorizedProcedure, router } from './trpc.js';
@@ -23,7 +24,7 @@ async function run<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
   } catch (error) {
-    if (!(error instanceof customers.CustomerError)) throw error;
+    if (!(error instanceof organizations.CustomerError)) throw error;
     const code =
       error.code === 'NOT_FOUND'
         ? 'NOT_FOUND'
@@ -45,18 +46,20 @@ const auditCustomer = (ctx: Context, id: string, diff?: Record<string, unknown>)
 export const customerRouter = router({
   list: authorizedProcedure('customer.read')
     .input(customerListSchema)
-    .query(({ ctx, input }) => customers.listCustomers(ctx.db, input)),
+    .query(({ ctx, input }) => organizations.listCustomers(ctx.db, input)),
 
   get: authorizedProcedure('customer.read')
     .input(customerIdSchema)
-    .query(({ ctx, input }) => run(() => customers.getCustomer(ctx.db, input.id))),
+    .query(({ ctx, input }) => run(() => organizations.getCustomer(ctx.db, input.id))),
 
   history: authorizedProcedure('customer.read')
     .input(customerIdSchema)
-    .query(({ ctx, input }) => customers.customerHistory(ctx.db, input.id)),
+    .query(({ ctx, input }) => organizations.customerHistory(ctx.db, input.id)),
 
   /** Types, sources, tags and colleagues for the forms and the filters. */
-  options: authorizedProcedure('customer.read').query(({ ctx }) => customers.formOptions(ctx.db)),
+  options: authorizedProcedure('customer.read').query(({ ctx }) =>
+    organizations.formOptions(ctx.db),
+  ),
 
   /** The name and seat of a company from the business register, to fill the form with. */
   lookupIco: authorizedProcedure('customer.write')
@@ -73,7 +76,9 @@ export const customerRouter = router({
   create: authorizedProcedure('customer.write')
     .input(createCustomerSchema)
     .mutation(async ({ ctx, input }) => {
-      const created = await run(() => customers.createCustomer(ctx.db, ctx.session.userId, input));
+      const created = await run(() =>
+        organizations.createCustomer(ctx.db, ctx.session.userId, input),
+      );
       auditCustomer(ctx, created.id, {
         kind: input.customer.kind,
         // As stored: a type other than „Zákazník“ has none.
@@ -89,7 +94,9 @@ export const customerRouter = router({
   update: authorizedProcedure('customer.write')
     .input(updateCustomerSchema)
     .mutation(async ({ ctx, input }) => {
-      const change = await run(() => customers.updateCustomer(ctx.db, input.id, input.customer));
+      const change = await run(() =>
+        organizations.updateCustomer(ctx.db, input.id, input.customer),
+      );
       auditCustomer(ctx, input.id, {
         fields: change.fields.filter((f) => f !== 'status' && f !== 'ownerUserId'),
         ...(change.status.before !== change.status.after ? { status: change.status } : {}),
@@ -113,7 +120,7 @@ export const customerRouter = router({
   delete: authorizedProcedure('customer.delete')
     .input(customerIdSchema)
     .mutation(async ({ ctx, input }) => {
-      await run(() => customers.deleteCustomer(ctx.db, input.id));
+      await run(() => organizations.deleteCustomer(ctx.db, input.id));
       auditCustomer(ctx, input.id, { deleted: true });
       return { ok: true as const };
     }),
@@ -121,7 +128,7 @@ export const customerRouter = router({
   bulkAddTag: authorizedProcedure('customer.write')
     .input(bulkTagSchema)
     .mutation(async ({ ctx, input }) => {
-      const { ids, tagId } = await customers.bulkAddTag(ctx.db, input.ids, input.tag);
+      const { ids, tagId } = await organizations.bulkAddTag(ctx.db, input.ids, input.tag);
       ctx.audit.set({
         entityType: 'customer',
         diff: { ids, count: ids.length, tagAdded: true, tagId },
@@ -132,7 +139,7 @@ export const customerRouter = router({
   bulkSetStatus: authorizedProcedure('customer.write')
     .input(bulkStatusSchema)
     .mutation(async ({ ctx, input }) => {
-      const ids = await customers.bulkSetStatus(ctx.db, input.ids, input.status);
+      const ids = await organizations.bulkSetStatus(ctx.db, input.ids, input.status);
       ctx.audit.set({
         entityType: 'customer',
         diff: { ids, count: ids.length, status: { after: input.status } },
@@ -147,7 +154,7 @@ export const customerRouter = router({
   exportCsv: authorizedProcedure('customer.export')
     .input(exportCustomersSchema)
     .mutation(async ({ ctx, input }) => {
-      const rows = await customers.exportRows(ctx.db, input);
+      const rows = await organizations.exportRows(ctx.db, input);
       ctx.audit.set({
         entityType: 'customer',
         diff: {
@@ -162,11 +169,25 @@ export const customerRouter = router({
       return { csv: toCsv(rows), count: rows.length };
     }),
 
+  /** „Zmeniť na zákazníka“ / „Zmeniť na partnera“ (D-5). */
+  setRole: authorizedProcedure('customer.write')
+    .input(setRoleSchema)
+    .mutation(async ({ ctx, input }) => {
+      const change = await run(() => organizations.setRole(ctx.db, input.id, input.role));
+      if (change.changed) {
+        auditCustomer(ctx, input.id, {
+          role: input.role,
+          ...(change.productsRemoved.length > 0 ? { productsRemoved: change.productsRemoved } : {}),
+        });
+      }
+      return { ok: true as const };
+    }),
+
   contactCreate: authorizedProcedure('customer.write')
     .input(createContactSchema)
     .mutation(async ({ ctx, input }) => {
       const created = await run(() =>
-        customers.createContact(ctx.db, input.customerId, input.contact),
+        organizations.createContact(ctx.db, input.customerId, input.contact),
       );
       auditCustomer(ctx, input.customerId, { contact: 'created', contactId: created.id });
       return created;
@@ -176,7 +197,13 @@ export const customerRouter = router({
     .input(updateContactSchema)
     .mutation(async ({ ctx, input }) => {
       const change = await run(() =>
-        customers.updateContact(ctx.db, input.id, input.contact, input.receivesBulk),
+        organizations.updateContact(
+          ctx.db,
+          input.id,
+          input.customerId,
+          input.contact,
+          input.receivesBulk,
+        ),
       );
       auditCustomer(ctx, change.customerId, {
         contact: 'updated',
@@ -189,7 +216,9 @@ export const customerRouter = router({
   contactSetPrimary: authorizedProcedure('customer.write')
     .input(contactIdSchema)
     .mutation(async ({ ctx, input }) => {
-      const { customerId } = await run(() => customers.setPrimaryContact(ctx.db, input.id));
+      const { customerId } = await run(() =>
+        organizations.setPrimaryContact(ctx.db, input.id, input.customerId),
+      );
       auditCustomer(ctx, customerId, { contact: 'primary', contactId: input.id });
       return { ok: true as const };
     }),
@@ -197,7 +226,9 @@ export const customerRouter = router({
   contactDelete: authorizedProcedure('customer.write')
     .input(contactIdSchema)
     .mutation(async ({ ctx, input }) => {
-      const { customerId } = await run(() => customers.deleteContact(ctx.db, input.id));
+      const { customerId } = await run(() =>
+        organizations.deleteContact(ctx.db, input.id, input.customerId),
+      );
       auditCustomer(ctx, customerId, { contact: 'deleted', contactId: input.id });
       return { ok: true as const };
     }),

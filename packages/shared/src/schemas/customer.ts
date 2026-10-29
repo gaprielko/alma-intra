@@ -8,6 +8,10 @@ import { emailSchema, idSchema, PAGE_SIZE, phoneSchema } from './common.js';
 export const CUSTOMER_KINDS = ['organization', 'individual'] as const;
 export type CustomerKind = (typeof CUSTOMER_KINDS)[number];
 
+/** What an organization is to Alma: a customer, or a partner (docs/contacts-redesign.md). */
+export const ORGANIZATION_ROLES = ['customer', 'partner'] as const;
+export type OrganizationRole = (typeof ORGANIZATION_ROLES)[number];
+
 /** Where the business relationship stands; `not_interested` ends it without a sale. */
 export const CUSTOMER_STATUSES = [
   'lead',
@@ -156,17 +160,29 @@ export const CUSTOMER_SORTS = ['name', 'status', 'createdAt', 'updatedAt', 'last
 export type CustomerSort = (typeof CUSTOMER_SORTS)[number];
 
 /** The filters of the list; also what a CSV export and (later) a saved segment are made of. */
+/**
+ * One value or several (D-12): every dropdown filter of the lists takes any number of them. A
+ * single value, as saved segments and older links have it, reads as a list of one.
+ */
+export const oneOrMore = <T extends z.ZodTypeAny>(item: T) =>
+  z
+    .union([item, z.array(item).min(1).max(50)])
+    .transform((value): z.output<T>[] => (Array.isArray(value) ? value : [value]))
+    .optional();
+
 export const customerFilterSchema = z.object({
   search: z.string().trim().max(100).optional(),
-  /** A status, or `none` for the records without one. */
-  status: z.enum(CUSTOMER_STATUSES).or(z.literal('none')).optional(),
-  kind: z.enum(CUSTOMER_KINDS).optional(),
-  contactTypeId: idSchema.optional(),
-  /** A product, or `none` for the records without any. */
-  productId: idSchema.or(z.literal('none')).optional(),
-  region: z.enum(REGIONS).optional(),
-  tagId: idSchema.optional(),
-  ownerUserId: idSchema.optional(),
+  /** Customers or partners (docs/contacts-redesign.md). */
+  role: z.enum(ORGANIZATION_ROLES).optional(),
+  /** Statuses, `none` for the records without one. */
+  status: oneOrMore(z.enum(CUSTOMER_STATUSES).or(z.literal('none'))),
+  kind: oneOrMore(z.enum(CUSTOMER_KINDS)),
+  contactTypeId: oneOrMore(idSchema),
+  /** Products, `none` for the records without any. */
+  productId: oneOrMore(idSchema.or(z.literal('none'))),
+  region: oneOrMore(z.enum(REGIONS)),
+  tagId: oneOrMore(idSchema),
+  ownerUserId: oneOrMore(idSchema),
 });
 export type CustomerFilter = z.infer<typeof customerFilterSchema>;
 
@@ -181,6 +197,9 @@ export type CustomerListInput = z.input<typeof customerListSchema>;
 /** Several customers picked in the list. */
 const selection = z.array(idSchema).min(1).max(100);
 
+/** „Zmeniť na zákazníka“ / „Zmeniť na partnera“ (D-5). */
+export const setRoleSchema = z.object({ id: idSchema, role: z.enum(ORGANIZATION_ROLES) });
+
 export const bulkTagSchema = z.object({ ids: selection, tag: z.string().trim().min(1).max(40) });
 export const bulkStatusSchema = z.object({ ids: selection, status: z.enum(CUSTOMER_STATUSES) });
 
@@ -192,11 +211,14 @@ export const exportCustomersSchema = customerFilterSchema.extend({
 export const createContactSchema = z.object({ customerId: idSchema, contact: contactSchema });
 export const updateContactSchema = z.object({
   id: idSchema,
+  /** The organization the person is edited at: the position is theirs there. */
+  customerId: idSchema,
   contact: contactSchema,
   /** Off: no marketing e-mails; replies still go to them. */
   receivesBulk: z.boolean(),
 });
-export const contactIdSchema = z.object({ id: idSchema });
+/** A person at one organization (a person may belong to several). */
+export const contactIdSchema = z.object({ id: idSchema, customerId: idSchema });
 
 /** Contact types, products and sources: a name each, offered in the forms while active. */
 export const CODE_LISTS = ['contact_type', 'product', 'source', 'template_category'] as const;

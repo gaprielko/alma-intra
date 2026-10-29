@@ -10,8 +10,9 @@ import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm
 import { alias } from 'drizzle-orm/pg-core';
 import type { Db, Tx } from '../db/db.module.js';
 import {
+  contactLinks,
   contacts,
-  customers,
+  organizations,
   emailLook,
   emailTemplateAttachments,
   emailTemplates,
@@ -259,7 +260,7 @@ export async function updateLook(db: Db, userId: string, look: EmailLook) {
   return { fields };
 }
 
-/** The contacts a preview can be filled for: primary contacts and private persons. */
+/** The persons a preview can be filled for: the primary contacts (a private person included). */
 export async function previewContacts(db: Db) {
   const rows = await db
     .select({
@@ -268,14 +269,19 @@ export async function previewContacts(db: Db) {
       firstName: contacts.firstName,
       lastName: contacts.lastName,
       titleAfter: contacts.titleAfter,
-      customerName: customers.name,
+      customerName: organizations.name,
     })
-    .from(contacts)
-    .innerJoin(customers, eq(customers.id, contacts.customerId))
+    .from(contactLinks)
+    .innerJoin(contacts, eq(contacts.id, contactLinks.contactId))
+    .innerJoin(organizations, eq(organizations.id, contactLinks.organizationId))
     .where(
-      and(isNull(contacts.deletedAt), isNull(customers.deletedAt), eq(contacts.isPrimary, true)),
+      and(
+        isNull(contacts.deletedAt),
+        isNull(organizations.deletedAt),
+        eq(contactLinks.isPrimary, true),
+      ),
     )
-    .orderBy(sql`${customers.name} collate "sk-x-icu"`)
+    .orderBy(sql`${organizations.name} collate "sk-x-icu"`)
     .limit(200);
   return rows.map((row) => ({
     id: row.id,
@@ -285,12 +291,15 @@ export async function previewContacts(db: Db) {
 }
 
 /**
- * The values of the variables for one contact and one sender. A value that is empty stays
- * missing: the preview marks it, sending refuses it.
+ * The values of the variables for one person, at one organization, and one sender. A value that
+ * is empty stays missing: the preview marks it, sending refuses it.
  */
 export async function valuesFor(
   db: Db | Tx,
-  /** A contact; or, for a private person, the customer alone (no `contactId`). */
+  /**
+   * The person, and the organization they are written to at (a person may be at several); without
+   * it, their primary or oldest one.
+   */
   recipient: { contactId?: string | undefined; customerId?: string | undefined },
   senderUserId: string,
   custom: Readonly<Record<string, string>>,
@@ -298,29 +307,6 @@ export async function valuesFor(
   const values: Record<string, string | undefined> = {};
   let customerName: string | undefined;
   const contactId = recipient.contactId;
-  if (!contactId && recipient.customerId) {
-    const [row] = await db
-      .select({
-        titleBefore: customers.titleBefore,
-        firstName: customers.firstName,
-        lastName: customers.lastName,
-        titleAfter: customers.titleAfter,
-        salutation: customers.salutation,
-        name: customers.name,
-        city: customers.city,
-      })
-      .from(customers)
-      .where(eq(customers.id, recipient.customerId));
-    if (row) {
-      values.salutation = row.salutation ?? undefined;
-      values['contact.firstName'] = row.firstName ?? undefined;
-      values['contact.lastName'] = row.lastName ?? undefined;
-      values['contact.fullName'] = row.name;
-      values['customer.name'] = row.name;
-      values['customer.city'] = row.city ?? undefined;
-      customerName = row.name;
-    }
-  }
   if (contactId) {
     const [row] = await db
       .select({
@@ -329,22 +315,41 @@ export async function valuesFor(
         lastName: contacts.lastName,
         titleAfter: contacts.titleAfter,
         salutation: contacts.salutation,
-        position: contacts.position,
-        customerName: customers.name,
-        city: customers.city,
+        position: contactLinks.position,
+        customerName: organizations.name,
+        city: organizations.city,
       })
       .from(contacts)
-      .innerJoin(customers, eq(customers.id, contacts.customerId))
-      .where(and(eq(contacts.id, contactId), isNull(contacts.deletedAt)));
+      .leftJoin(
+        contactLinks,
+        and(
+          eq(contactLinks.contactId, contacts.id),
+          recipient.customerId ? eq(contactLinks.organizationId, recipient.customerId) : sql`true`,
+        ),
+      )
+      .leftJoin(organizations, eq(organizations.id, contactLinks.organizationId))
+      .where(and(eq(contacts.id, contactId), isNull(contacts.deletedAt)))
+      .orderBy(desc(contactLinks.isPrimary), asc(contactLinks.createdAt))
+      .limit(1);
     if (row) {
       values.salutation = row.salutation ?? undefined;
       values['contact.firstName'] = row.firstName;
       values['contact.lastName'] = row.lastName;
       values['contact.fullName'] = personName(row);
       values['contact.position'] = row.position ?? undefined;
-      values['customer.name'] = row.customerName;
+      values['customer.name'] = row.customerName ?? undefined;
       values['customer.city'] = row.city ?? undefined;
-      customerName = row.customerName;
+      customerName = row.customerName ?? undefined;
+    }
+  } else if (recipient.customerId) {
+    const [row] = await db
+      .select({ name: organizations.name, city: organizations.city })
+      .from(organizations)
+      .where(eq(organizations.id, recipient.customerId));
+    if (row) {
+      values['customer.name'] = row.name;
+      values['customer.city'] = row.city ?? undefined;
+      customerName = row.name;
     }
   }
   const [sender] = await db
