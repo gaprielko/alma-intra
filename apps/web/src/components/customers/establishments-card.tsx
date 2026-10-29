@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { MoreHorizontal, Plus, Store } from 'lucide-react';
 import { useState } from 'react';
+import { ActivityDialog } from '@/components/activities/activity-dialog';
 import { ProductChip } from '@/components/customers/customer-bits';
 import { EstablishmentDialog } from '@/components/customers/establishment-dialog';
 import { Button } from '@/components/ui/button';
@@ -61,6 +62,7 @@ export function EstablishmentsCard({
   const list = useQuery(trpc.customer.establishments.queryOptions({ id: parentId }));
   const [adding, setAdding] = useState(false);
   const [removing, setRemoving] = useState<Establishment | null>(null);
+  const [recording, setRecording] = useState<Establishment | null>(null);
   const remove = useMutation(
     trpc.customer.delete.mutationOptions({
       onSuccess: async () => {
@@ -161,6 +163,9 @@ export function EstablishmentsCard({
                           {e.edit}
                         </Link>
                       </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => setRecording(row)}>
+                        {sk.activities.record}
+                      </DropdownMenuItem>
                       <DropdownMenuItem destructive onSelect={() => setRemoving(row)}>
                         {e.delete}
                       </DropdownMenuItem>
@@ -178,6 +183,13 @@ export function EstablishmentsCard({
           parentId={parentId}
           parentName={parentName}
           onClose={() => setAdding(false)}
+        />
+      ) : null}
+      {recording ? (
+        <ActivityDialog
+          customerId={recording.id}
+          customerName={recording.name}
+          onClose={() => setRecording(null)}
         />
       ) : null}
       {removing ? (
