@@ -8,6 +8,7 @@ import {
 } from '@intra/shared/schemas';
 import { sql } from 'drizzle-orm';
 import {
+  type AnyPgColumn,
   boolean,
   check,
   index,
@@ -94,6 +95,11 @@ export const organizations = pgTable(
     sourceId: uuid('source_id').references(() => organizationSources.id),
     note: text('note'),
     almaOrganizationId: text('alma_organization_id'),
+    /**
+     * A prevádzka's organization (docs/establishments.md): NULL for an organization. One level
+     * only; a prevádzka shares its organization's IČO, role, status, owner, source and tags.
+     */
+    parentId: uuid('parent_id').references((): AnyPgColumn => organizations.id),
     createdByUserId: uuid('created_by_user_id').references(() => users.id),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -107,6 +113,8 @@ export const organizations = pgTable(
     index('organizations_role_idx').on(t.role),
     index('organizations_status_idx').on(t.status),
     index('organizations_owner_idx').on(t.ownerUserId),
+    index('organizations_parent_idx').on(t.parentId),
+    check('organizations_parent_not_self', sql`${t.parentId} <> ${t.id}`),
     check('organizations_name_length', sql`char_length(${t.name}) between 1 and 200`),
   ],
 );

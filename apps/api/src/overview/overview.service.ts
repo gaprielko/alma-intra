@@ -17,7 +17,14 @@ export async function overviewSummary(db: Db, userId: string) {
     db
       .select({ status: organizations.status, count: sql<number>`count(*)`.mapWith(Number) })
       .from(organizations)
-      .where(and(isNull(organizations.deletedAt), eq(organizations.role, 'customer')))
+      .where(
+        and(
+          isNull(organizations.deletedAt),
+          // Organizations only: a prevádzka shares its organization's status.
+          isNull(organizations.parentId),
+          eq(organizations.role, 'customer'),
+        ),
+      )
       .groupBy(organizations.status),
     db
       .select({ count: sql<number>`count(*)`.mapWith(Number) })

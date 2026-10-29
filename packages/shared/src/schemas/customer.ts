@@ -220,6 +220,42 @@ export const updateContactSchema = z.object({
 /** A person at one organization (a person may belong to several). */
 export const contactIdSchema = z.object({ id: idSchema, customerId: idSchema });
 
+/** A prevádzka's own fields (docs/establishments.md); the rest is its organization's. */
+export const establishmentSchema = z.object({
+  name: z.string().trim().min(2).max(200),
+  street: optionalText(160),
+  postalCode: optionalText(12),
+  city: optionalText(80),
+  region: z.enum(REGIONS).optional().nullable(),
+  email: optionalEmail,
+  phone: optionalPhone,
+  almaOrganizationId: optionalText(80),
+  note: optionalText(4000),
+});
+export type EstablishmentInput = z.infer<typeof establishmentSchema>;
+
+/**
+ * Its primary contact: a person already in Kontakty (the organization's or anyone's) with a
+ * position at the prevádzka, or a new person.
+ */
+export const establishmentPrimarySchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('existing'), contactId: idSchema, position: optionalText(120) }),
+  z.object({ kind: z.literal('new'), contact: contactSchema }),
+]);
+export type EstablishmentPrimaryInput = z.infer<typeof establishmentPrimarySchema>;
+
+export const createEstablishmentSchema = z.object({
+  parentId: idSchema,
+  establishment: establishmentSchema,
+  primary: establishmentPrimarySchema.optional(),
+});
+export type CreateEstablishmentInput = z.infer<typeof createEstablishmentSchema>;
+
+export const updateEstablishmentSchema = z.object({
+  id: idSchema,
+  establishment: establishmentSchema,
+});
+
 /** Contact types, products and sources: a name each, offered in the forms while active. */
 export const CODE_LISTS = ['product', 'source', 'template_category'] as const;
 export type CodeList = (typeof CODE_LISTS)[number];

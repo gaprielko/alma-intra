@@ -218,6 +218,13 @@
       "when": 1793291666719,
       "tag": "0030_user_titles",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1793300574371,
+      "tag": "0031_establishments",
+      "breakpoints": true
     }
   ]
 }
