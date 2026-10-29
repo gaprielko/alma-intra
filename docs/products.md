@@ -173,6 +173,7 @@ organization_products       (today's link, extended) [R-10]
   valid_from, valid_to      valid_to NULL = ongoing; ending is setting valid_to, never deleting
   pricing                   'list' (the product's price list) | 'discount' | 'fixed'
   discount_percent          with 'discount'
+  discount_months           with 'discount': how many months from valid_from; NULL = permanent
   fixed_price, fixed_price_gross   with 'fixed': the monthly (or yearly) price, without and with VAT
   note
 organization_product_counts how many of each item it has
@@ -183,7 +184,7 @@ organization_product_counts how many of each item it has
   included number, cannot exceed the maximum; one-off items count once.
 - **Price** [R-7, R-11]: by default it follows the product's current price list, so a price change
   reaches every customer on it (and shows in their history of changes); a **discount** in % keeps
-  following it; a **fixed price** is agreed with the customer and stays until changed.
+  following it, either **permanent** or for a number of months (then the list price applies); a **fixed price** is agreed with the customer and stays until changed.
 - A product is held at most once at a time per organization or prevádzka.
 - **Prideliť produkt** (dialog): for whom (the organization or one of its prevádzky), the product
   (a searchable list, by name and description, with the starting price; products no longer offered

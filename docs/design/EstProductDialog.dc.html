@@ -133,12 +133,28 @@ tr:first-child td{border-top:0}
         <label class="field" style="grid-column: span 3"><span>Do (nepovinné)</span><input value="" placeholder="neurčito"></label>
         <div style="grid-column: span 4; display: flex; flex-direction: column; gap: 6px"><span class="meta" style="font-weight: 500">Cena</span><div class="seg" style="flex-wrap: nowrap; align-self: flex-start"><button type="button">Podľa cenníka</button><button type="button" class="on">Zľava</button><button type="button">Pevná cena</button></div></div>
         <label class="field" style="grid-column: span 2"><span>Zľava (%)</span><input value="10"></label>
+        <div style="grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 10px 14px; border: 1px solid #dfe8e6; border-radius: 12px">
+          <span class="meta" style="font-weight: 500">Trvanie zľavy</span>
+          <label style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; cursor: pointer">Trvalá
+            <button type="button" class="switch switch-sm" role="switch" aria-label="Trvalá zľava" aria-checked="{{ permanent }}" onClick="{{ togglePermanent }}" style="background: {{ switchBg }}"><i style="left: {{ knobLeft }}"></i></button>
+          </label>
+          <sc-if value="{{ limited }}" hint-placeholder-val="{{ true }}">
+            <span style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px">
+              <button type="button" class="step" aria-label="Menej mesiacov" onClick="{{ monthsDec }}">−</button>
+              <strong style="min-width: 22px; text-align: center">{{ months }}</strong>
+              <button type="button" class="step" aria-label="Viac mesiacov" onClick="{{ monthsInc }}">+</button>
+              mesiacov
+            </span>
+            <span class="meta" style="margin-left: auto">{{ until }}</span>
+          </sc-if>
+        </div>
         <div style="grid-column: 1 / -1; background: #f7faf9; border-radius: 12px; padding: 12px 14px">
           <table style="font-size: 14px">
             <thead><tr><th style="background: transparent; padding-left: 0; border-top: 0">Cena</th><th style="background: transparent; text-align: right; border-top: 0">s DPH 23 %</th><th style="background: transparent; text-align: right; padding-right: 0; border-top: 0">bez DPH</th></tr></thead>
             <tbody>
-              <tr><td style="padding-left: 0; font-weight: 600">Mesačne</td><td style="text-align: right"><strong style="font-size: 16px">{{ mG }}</strong></td><td style="text-align: right; padding-right: 0">{{ m }}</td></tr>
-              <tr><td style="padding-left: 0; font-weight: 600">Ročne</td><td style="text-align: right"><strong>{{ yG }}</strong></td><td style="text-align: right; padding-right: 0">{{ y }}</td></tr>
+              <tr><td style="padding-left: 0; font-weight: 600">Mesačne so zľavou</td><td style="text-align: right"><strong style="font-size: 16px">{{ mG }}</strong></td><td style="text-align: right; padding-right: 0">{{ m }}</td></tr>
+              <sc-if value="{{ limited }}" hint-placeholder-val="{{ true }}"><tr><td style="padding-left: 0; font-weight: 600">Mesačne po zľave</td><td style="text-align: right">{{ fullG }}</td><td style="text-align: right; padding-right: 0">{{ full }}</td></tr></sc-if>
+              <tr><td style="padding-left: 0; font-weight: 600">{{ yearLabel }}</td><td style="text-align: right"><strong>{{ yG }}</strong></td><td style="text-align: right; padding-right: 0">{{ y }}</td></tr>
               <tr><td style="padding-left: 0; font-weight: 600">Jednorazovo</td><td style="text-align: right">{{ oG }}</td><td style="text-align: right; padding-right: 0">{{ o }}</td></tr>
             </tbody>
           </table>
@@ -157,7 +173,7 @@ tr:first-child td{border-top:0}
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { admin: 1, sestra: 4, superadmin: 0, impl: 1 };
+    this.state = { admin: 1, sestra: 4, superadmin: 0, impl: 1, permanent: false, months: 6 };
   }
   renderVals() {
     const vat = 0.23;
@@ -184,13 +200,28 @@ class Component extends DCLogic {
         inc: () => this.setState({ [it.key]: Math.min(it.max, count + 1) }),
       };
     });
+    const { permanent, months } = this.state;
     const m = cents(month * (1 - discount));
     const o = cents(once * (1 - discount));
+    // The first 12 months: discounted ones, then the list price.
+    const discounted = permanent ? 12 : Math.min(12, months);
+    const year = cents(discounted * m + (12 - discounted) * month);
+    const monthNames = ['januára', 'februára', 'marca', 'apríla', 'mája', 'júna', 'júla', 'augusta', 'septembra', 'októbra', 'novembra', 'decembra'];
+    const end = new Date(2026, 10 + months, 0);
     return {
       items,
       m: eur(m), mG: eur(cents(m * (1 + vat))),
-      y: eur(cents(m * 12)), yG: eur(cents(m * 12 * (1 + vat))),
+      full: eur(month), fullG: eur(cents(month * (1 + vat))),
+      y: eur(year), yG: eur(cents(year * (1 + vat))),
+      yearLabel: permanent ? 'Ročne' : 'Prvých 12 mesiacov',
       o: eur(o), oG: eur(cents(o * (1 + vat))),
+      permanent, limited: !permanent, months,
+      until: 'zľava do ' + end.getDate() + '. ' + (end.getMonth() + 1) + '. ' + end.getFullYear() + ', potom podľa cenníka',
+      switchBg: permanent ? '#0f8b8d' : '#b9c8c5',
+      knobLeft: permanent ? '16px' : '2px',
+      togglePermanent: () => this.setState({ permanent: !permanent }),
+      monthsDec: () => this.setState({ months: Math.max(1, months - 1) }),
+      monthsInc: () => this.setState({ months: Math.min(60, months + 1) }),
     };
   }
 }
