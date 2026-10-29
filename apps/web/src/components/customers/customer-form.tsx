@@ -11,11 +11,12 @@ import {
 } from '@intra/shared/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Building2, Plus, Search, UserRound } from 'lucide-react';
+import { Building2, Info, Plus, Search, UserRound } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
 import { LeaveGuard } from '@/components/leave-guard';
 import { type Resolver, useForm, useFormContext, useWatch } from 'react-hook-form';
 import { TagChip } from '@/components/customers/customer-bits';
+import { HoldingsCard } from '@/components/customers/holdings-card';
 import {
   emptyPerson,
   PersonFields,
@@ -34,6 +35,7 @@ import {
 } from '@/components/ui/form';
 import { FormSection } from '@/components/ui/form-section';
 import { Input, Textarea } from '@/components/ui/input';
+import { SegmentedChoice } from '@/components/ui/segmented';
 import { Select, SelectItem } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/toast';
@@ -63,7 +65,8 @@ export interface CustomerFormValues {
     dic: string;
     icDph: string;
     web: string;
-    productIds: string[];
+    /** „Ceny produktov“: an organization's prices with VAT or without. */
+    pricesWithVat: boolean;
     /** Empty: „Bez zaradenia“. */
     status: (typeof CUSTOMER_STATUSES)[number] | '';
     street: string;
@@ -95,7 +98,7 @@ export function emptyCustomer(
       dic: '',
       icDph: '',
       web: '',
-      productIds: [],
+      pricesWithVat: true,
       status: '',
       street: '',
       postalCode: '',
@@ -180,6 +183,7 @@ function Section({
 export function CustomerForm({
   initial,
   editing,
+  customerId,
   submitLabel = t.submit,
   pending,
   onSubmit,
@@ -188,6 +192,8 @@ export function CustomerForm({
 }: {
   initial: CustomerFormValues;
   editing: boolean;
+  /** The saved record being edited: its products are assigned right in the form. */
+  customerId?: string | undefined;
   submitLabel?: string;
   pending: boolean;
   onSubmit: (input: CreateCustomerInput) => void;
@@ -257,7 +263,7 @@ export function CustomerForm({
               </SelectField>
             </div>
           </Section>
-          <Classification />
+          <Classification customerId={customerId} customerName={initial.customer.name} />
           {kind === 'organization' && !editing ? (
             <Section title={t.firstContact.title} lead={t.firstContact.lead}>
               {withFirstContact ? (
@@ -395,11 +401,38 @@ function OrganizationBasics() {
         <IcoField />
         <TextField name="customer.dic" label={t.basics.dic} />
         <TextField name="customer.icDph" label={t.basics.icDph} />
+        <PricesWithVatField />
         <TextField name="customer.web" label={t.basics.web} autoComplete="url" />
         <TextField name="customer.email" label={t.basics.email} type="email" />
         <TextField name="customer.phone" label={t.basics.phone} type="tel" />
       </div>
     </Section>
+  );
+}
+
+/** „Ceny produktov“: with or without VAT, for the organization and all its prevádzky. */
+function PricesWithVatField() {
+  const { control } = useFormContext<CustomerFormValues>();
+  return (
+    <FormField
+      control={control}
+      name="customer.pricesWithVat"
+      render={({ field }) => (
+        <FormItem className="flex flex-wrap items-center gap-x-3.5 gap-y-2 rounded-xl border border-border-subtle px-3.5 py-2.5 @md:col-span-2">
+          <FormLabel className="m-0">{t.basics.prices}</FormLabel>
+          <SegmentedChoice
+            label={t.basics.prices}
+            value={field.value ? 'gross' : 'net'}
+            onChange={(key) => field.onChange(key === 'gross')}
+            options={[
+              { key: 'gross', label: sk.products.gross },
+              { key: 'net', label: sk.products.net },
+            ]}
+          />
+          <span className="text-xs text-muted">{t.basics.pricesHint}</span>
+        </FormItem>
+      )}
+    />
   );
 }
 
@@ -616,10 +649,22 @@ function CodeListField({
   );
 }
 
-function Classification() {
+/**
+ * Zaradenie. A customer's products are listed here once the record exists (each assigned in the
+ * same dialog as in the detail); a new one gets them after it is saved.
+ */
+function Classification({
+  customerId,
+  customerName,
+}: {
+  customerId: string | undefined;
+  customerName: string;
+}) {
   const { control } = useFormContext<CustomerFormValues>();
   const options = useQuery(trpc.customer.options.queryOptions());
   const role = useWatch({ control, name: 'customer.role' });
+  const kind = useWatch({ control, name: 'customer.kind' });
+  const pricesWithVat = useWatch({ control, name: 'customer.pricesWithVat' });
   // Status, owner and products are a customer's (D-6, D-10); a partner has none.
   const customer = role === 'customer';
   const c = t.classification;
@@ -664,7 +709,20 @@ function Classification() {
         />
         {customer ? (
           <div className="@md:col-span-3">
-            <ProductsField items={options.data?.products} />
+            {customerId ? (
+              <HoldingsCard
+                embedded
+                customerId={customerId}
+                customerName={customerName}
+                isEstablishment={false}
+                withVat={kind === 'individual' || pricesWithVat}
+              />
+            ) : (
+              <p className="flex items-center gap-2.5 rounded-xl border border-dashed border-border px-3.5 py-3 text-sm text-muted">
+                <Info className="size-4 shrink-0" aria-hidden />
+                {c.productsAfterSave}
+              </p>
+            )}
           </div>
         ) : null}
         <div className="@md:col-span-2">
@@ -686,115 +744,6 @@ function Classification() {
         />
       </div>
     </Section>
-  );
-}
-
-/**
- * The products as chips to switch on and off (ADOS, DOS, …), and „Nový produkt“ to add one to the
- * code list on the spot, switched on.
- */
-function ProductsField({
-  items,
-}: {
-  items: { id: string; name: string; active: boolean }[] | undefined;
-}) {
-  const { control, getValues, setValue } = useFormContext<CustomerFormValues>();
-  const picked = useWatch({ control, name: 'customer.productIds' });
-  const c = t.classification;
-  const toast = useToast();
-  const queryClient = useQueryClient();
-  const [adding, setAdding] = useState(false);
-  const [text, setText] = useState('');
-  const toggle = (id: string) => {
-    const current = getValues('customer.productIds');
-    setValue(
-      'customer.productIds',
-      current.includes(id) ? current.filter((p) => p !== id) : [...current, id],
-      { shouldDirty: true },
-    );
-  };
-  const create = useMutation(
-    trpc.codeList.create.mutationOptions({
-      onSuccess: async (created) => {
-        await queryClient.invalidateQueries(trpc.customer.options.pathFilter());
-        setValue('customer.productIds', [...getValues('customer.productIds'), created.id], {
-          shouldDirty: true,
-        });
-        setAdding(false);
-        setText('');
-      },
-      onError: (error) => toast('error', errorMessage(error, sk.codeLists.errors)),
-    }),
-  );
-  const add = () => {
-    if (text.trim()) create.mutate({ list: 'product', name: text.trim() });
-  };
-  // The switched-on products, and any switched off since that the record still has.
-  const shown = (items ?? []).filter((item) => item.active || picked.includes(item.id));
-  return (
-    <fieldset className="space-y-2">
-      <legend className="mb-2 text-sm font-medium">{c.products}</legend>
-      <div className="flex flex-wrap items-center gap-2">
-        {shown.length === 0 && !adding ? (
-          <span className="text-sm text-muted">{c.noProducts}</span>
-        ) : null}
-        {shown.map((item) => {
-          const on = picked.includes(item.id);
-          return (
-            <button
-              key={item.id}
-              type="button"
-              aria-pressed={on}
-              onClick={() => toggle(item.id)}
-              className={cn(
-                'inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium whitespace-nowrap transition-colors',
-                on
-                  ? 'border-primary bg-primary-soft font-semibold text-primary-text'
-                  : 'border-border bg-white hover:bg-hover',
-              )}
-            >
-              {item.name}
-            </button>
-          );
-        })}
-        {adding ? null : (
-          <Button type="button" variant="ghost" size="sm" onClick={() => setAdding(true)}>
-            <Plus className="size-3.5" aria-hidden />
-            {c.newProduct}
-          </Button>
-        )}
-      </div>
-      {adding ? (
-        <div className="flex gap-2">
-          <Input
-            aria-label={c.newProduct}
-            autoFocus
-            maxLength={80}
-            placeholder={c.newProductPlaceholder}
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                add();
-              }
-              if (event.key === 'Escape') setAdding(false);
-            }}
-          />
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={!text.trim() || create.isPending}
-            onClick={add}
-          >
-            {t.basics.addItem}
-          </Button>
-          <Button type="button" variant="ghost" onClick={() => setAdding(false)}>
-            {sk.common.cancel}
-          </Button>
-        </div>
-      ) : null}
-    </fieldset>
   );
 }
 

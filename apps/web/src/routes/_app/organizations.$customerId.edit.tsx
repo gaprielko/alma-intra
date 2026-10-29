@@ -38,7 +38,7 @@ function valuesOf(c: Customer): CustomerFormValues {
       web: c.web ?? '',
       email: c.email ?? '',
       phone: c.phone ?? '',
-      productIds: c.products.map((product) => product.id),
+      pricesWithVat: c.pricesWithVat,
       status: c.status ?? '',
       street: c.street ?? '',
       postalCode: c.postalCode ?? '',
@@ -102,6 +102,7 @@ function EditCustomerPage() {
           <CustomerForm
             initial={valuesOf(customer.data)}
             editing
+            customerId={customerId}
             submitLabel={sk.common.saveChanges}
             pending={update.isPending}
             serverError={update.error}

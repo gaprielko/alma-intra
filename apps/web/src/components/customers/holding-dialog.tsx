@@ -223,6 +223,8 @@ export function HoldingDialog({
           className="space-y-5"
           onSubmit={(event) => {
             event.preventDefault();
+            // Opened from the organization's form: its submit must not reach that form too.
+            event.stopPropagation();
             submit();
           }}
         >
