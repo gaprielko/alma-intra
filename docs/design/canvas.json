@@ -53,6 +53,14 @@
     {
       "id": "org",
       "name": "Organizácie · redesign"
+    },
+    {
+      "id": "est",
+      "name": "Prevádzky · návrh"
+    },
+    {
+      "id": "prod",
+      "name": "Produkty · návrh"
     }
   ],
   "boards": {
@@ -495,6 +503,100 @@
       "title": "Nová osoba · organizácie a existujúci e-mail",
       "page": "org",
       "expand": "fill"
+    },
+    "EstOrgDetail.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1600,
+      "title": "Organizácia s prevádzkami · prevádzky, osoby ako tabuľka, časová os s prevádzkami",
+      "page": "est",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "EstDetail.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 1100,
+      "title": "Detail prevádzky",
+      "page": "est",
+      "expand": "fill"
+    },
+    "EstDialog.dc.html": {
+      "x": 3040,
+      "y": 0,
+      "w": 1440,
+      "h": 1300,
+      "title": "Nová prevádzka · hlavný kontakt z organizácie",
+      "page": "est",
+      "expand": "fill"
+    },
+    "EstActivityDialog.dc.html": {
+      "x": 3040,
+      "y": 1420,
+      "w": 1440,
+      "h": 1300,
+      "title": "Zapísať aktivitu · prevádzka určená podľa kontaktu",
+      "page": "est",
+      "expand": "fill"
+    },
+    "ProdList.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Produkty · zoznam s cenou a tým, čo obsahuje",
+      "page": "prod",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "ProdDetail.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 1300,
+      "title": "Detail produktu · cenník a výpočet ceny",
+      "page": "prod",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "ProdItemDialog.dc.html": {
+      "x": 3040,
+      "y": 0,
+      "w": 1440,
+      "h": 1000,
+      "title": "Pridať položku · zo spoločného zoznamu, s nastavením z iného produktu",
+      "page": "prod",
+      "expand": "fill"
+    },
+    "ProdItems.dc.html": {
+      "x": 0,
+      "y": 1020,
+      "w": 1440,
+      "h": 900,
+      "title": "Položky · spoločné názvy pre všetky produkty",
+      "page": "prod",
+      "expand": "fill"
+    },
+    "ProdVatSettings.dc.html": {
+      "x": 1520,
+      "y": 1320,
+      "w": 1440,
+      "h": 800,
+      "title": "Nastavenia · Ceny a DPH (sadzba DPH)",
+      "page": "prod",
+      "expand": "fill"
+    },
+    "EstProductDialog.dc.html": {
+      "x": 1520,
+      "y": 1420,
+      "w": 1440,
+      "h": 1300,
+      "title": "Prideliť produkt · rozsah, cena a výpočet s DPH",
+      "page": "est",
+      "expand": "fill",
+      "is_interactive": true
     }
   },
   "order": [
@@ -546,7 +648,17 @@
     "OrgPartnerDetail.dc.html",
     "OrgIndividualDetail.dc.html",
     "ContactDetail.dc.html",
-    "PersonDialog.dc.html"
+    "PersonDialog.dc.html",
+    "EstOrgDetail.dc.html",
+    "EstDetail.dc.html",
+    "EstDialog.dc.html",
+    "EstActivityDialog.dc.html",
+    "ProdList.dc.html",
+    "ProdDetail.dc.html",
+    "ProdItemDialog.dc.html",
+    "ProdItems.dc.html",
+    "ProdVatSettings.dc.html",
+    "EstProductDialog.dc.html"
   ],
   "notes": {
     "logotitle": {
@@ -636,6 +748,22 @@
       "kind": "title1",
       "maxW": 4480,
       "page": "org"
+    },
+    "esttitle": {
+      "x": 0,
+      "y": -300,
+      "text": "Prevádzky · organizácia, jej prevádzky, osoby a aktivity",
+      "kind": "title1",
+      "maxW": 4480,
+      "page": "est"
+    },
+    "prodtitle": {
+      "x": 0,
+      "y": -300,
+      "text": "Produkty · cenníky, položky a výpočet ceny",
+      "kind": "title1",
+      "maxW": 4480,
+      "page": "prod"
     }
   },
   "designSystems": []

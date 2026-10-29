@@ -1,6 +1,7 @@
 import { type InboundListInput, inboundListSchema, PAGE_SIZE } from '@intra/shared/schemas';
 import { and, desc, eq, isNull, ne, sql } from 'drizzle-orm';
 import type { Db } from '../db/db.module.js';
+import { fileUnder } from '../customers/customers.service.js';
 import {
   campaignMessages,
   campaigns,
@@ -137,7 +138,12 @@ export async function assignInbound(
     .update(inboundMessages)
     .set({
       status: 'assigned',
-      organizationId: input.customerId,
+      // Where the person is: a prevádzka when they are only there (P-11).
+      organizationId: await fileUnder(
+        db,
+        input.customerId,
+        input.contactId ? [input.contactId] : [],
+      ),
       contactId: input.contactId,
       assignedByUserId: userId,
       ...(kept && kept.customerId !== input.customerId ? { messageId: null } : {}),

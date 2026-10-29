@@ -109,7 +109,11 @@ second role later does not mean rewriting procedures. Every action is recorded u
 - **First user**: created by a server CLI command (`users:create-first --email --name`), receives an
   invitation (valid 72 h) and sets their own password. No public sign-up.
 - **User list**: name, e-mail, status (invited / active / deactivated), last sign-in, 2FA on/off.
-- **Invite a user**: name, e-mail, phone, position. Resend or withdraw an invitation.
+- **Invite a user**: titles before and after, name, e-mail, phone, position. Resend or withdraw an
+  invitation.
+- **Titles** of a colleague („Mgr. Jana Horváthová, PhD.“) show only in the user list, the e-mails
+  (the sender, `{{sender.name}}`, the invitation) and the communication on a timeline. Everywhere
+  else (an owner, who recorded an activity, who changed what) the name stands alone.
 - **Deactivate / reactivate** a user; deactivation ends their sessions at once.
 - **Safeguards**: nobody deactivates themselves; at least one active user always remains.
 - **Reset another user's 2FA** (lost phone).
@@ -144,7 +148,8 @@ with three tabs:
 | Name               | a company's name; a private person's name follows their person                             |
 | IČO, DIČ, IČ DPH   | a company only; IČO unique; name and seat from the register of legal persons **[D-5]**     |
 | Status             | a customer only, optional (nothing shown when empty, D-6); `lead` … `not_interested`        |
-| Products           | a customer only: none, one or several, from the code list                                  |
+| Products           | a customer only: none, one or several, each with its counts and price (section 4.5)        |
+| Organization       | set for a prevádzka only: the organization it belongs to (section 4.4)                     |
 | Owner              | a customer only: the Intra user responsible                                                |
 | Address, web, e-mail, phone, source, tags, note, Alma ADOS id | as before; a partner's kind of cooperation is a tag (D-4) |
 
@@ -172,6 +177,41 @@ in Kontakty.
 
 Deleting is soft everywhere; the communication history stays. Export to CSV; no import
 (**[D-10]**).
+
+### 4.4 Prevádzky (establishments) **[D-34]**
+
+Agreed and implemented on 29 Oct 2026; the decisions P-1…P-14 are in
+[establishments.md](establishments.md), the screens in `design/Est*.dc.html`. In short:
+
+- A prevádzka is a row of `organizations` with `parent_id` set, one level only. It has its own
+  name, address, persons, primary contact, timeline and products; role, status, owner, IČO and
+  tags are its organization's. The lists show organizations only, with „3 prevádzky“ under the
+  name; the search and the region filter find an organization by its prevádzky.
+- The organization's detail shows the Prevádzky table, the products, and a persons table with the
+  persons of the prevádzky too; its timeline includes the prevádzky' entries, indented, with the
+  switch „Aj prevádzky“.
+- An activity, a sent e-mail and a filed reply belong to the organization or one prevádzka: picked
+  in „Patrí k“, or found from the persons (all at the same prevádzka: that prevádzka).
+- The e-mail wizard offers „Hlavné kontakty aj prevádzok“; templates have `establishment.name` and
+  `establishment.address`. Kontakty name a prevádzka with its organization. CSV and Claude (MCP)
+  include the prevádzky.
+- „Zaradiť pod organizáciu…“ turns an organization without IČO and without prevádzky into a
+  prevádzka of another.
+
+### 4.5 Products and price lists **[D-35]**
+
+Agreed and implemented on 29 Oct 2026; the decisions R-1…R-15 are in [products.md](products.md),
+the screens in `design/Prod*.dc.html`. In short:
+
+- „Produkty“ in the sidebar: products with a base price and period, and a price list of items from
+  a shared catalog (Položky): how many are in the base price, the price of each further one, a
+  maximum, recurring or one-off, counted from workloads or not. Prices without and with VAT; the
+  VAT rate is set in Nastavenia › Ceny a DPH.
+- An organization or a prevádzka holds a product from a date (optionally to one), with counts that
+  never go below the package, priced by the list, with a discount (permanent or for some months)
+  or at a fixed price. A change of the list applies to every holder unless the price is fixed.
+- Items counted from workloads: each workload rounds up to the product's step, the sum rounds up to
+  whole ones. „Sestry“ in the organization's header is the count of the item „Sestra“.
 
 ---
 
@@ -449,7 +489,8 @@ part of stage E7.
 ### Navigation (proposed sidebar)
 
 - Prehľad
-- Zákazníci
+- Organizácie (Zákazníci, Partneri, Kontakty)
+- Produkty (Produkty, Položky)
 - E-maily (Prijaté, Odoslané, Naplánované, Šablóny)
 - Súbory
 - Nastavenia (Firma, Používatelia, Číselníky, Vzhľad e-mailov)
@@ -571,6 +612,8 @@ both attach files.
 | D-31  | MCP for all Claude clients: OAuth (claude.ai, Desktop, Code) and personal access tokens (Code), both in E7                |
 | D-32  | No job library: e-mails wait in `campaign_messages` (and system mail in `mail_outbox`), drained every few seconds by a worker in the API process with leases, retries and scheduled times; one process, no extra service. pg-boss only if several API instances run |
 | D-33  | A file's document date is a property of each version, taken from the end of the uploaded name or the upload day; old versions merged into one file keep their dates |
+| D-34  | Prevádzky are organizations under an organization, one level deep, with their own persons, timeline and products (establishments.md, P-1…P-14; 29 Oct 2026) |
+| D-35  | Products have price lists of shared items; a holder's price follows the list unless fixed or discounted; workloads count items (products.md, R-1…R-15; 29 Oct 2026) |
 
 ### Still to verify (not decisions)
 

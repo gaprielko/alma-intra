@@ -34,6 +34,10 @@ export const ACTIONS = [
   'email.send',
   // Nastavenia › Záznam aktivít: who did what, the whole app's audit trail (D-16).
   'audit.read',
+  // Produkty (docs/products.md): the products, their price lists and the shared items; the VAT rate.
+  'product.read',
+  'product.write',
+  'pricing.manage',
 ] as const;
 export type Action = (typeof ACTIONS)[number];
 
@@ -68,6 +72,9 @@ const POLICY: Record<Action, readonly Role[]> = {
   'email.read': ['admin'],
   'email.send': ['admin'],
   'audit.read': ['admin'],
+  'product.read': ['admin'],
+  'product.write': ['admin'],
+  'pricing.manage': ['admin'],
 };
 
 /**

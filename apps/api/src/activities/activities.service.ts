@@ -15,17 +15,18 @@ import {
   auditEvents,
   campaignMessages,
   campaigns,
-  messageAttachments,
-  inboundMessages,
   contactLinks,
   contacts,
-  organizations,
   files,
   fileVersions,
   folders,
+  fullNameOf,
+  inboundMessages,
+  messageAttachments,
+  organizations,
   users,
 } from '../db/schema/index.js';
-import { customerHistory } from '../customers/customers.service.js';
+import { customerHistory, familyOf, fileUnder } from '../customers/customers.service.js';
 import type { Storage } from '../storage/storage.js';
 
 /** A refusal the web words for itself (`sk.activities.errors`). */
@@ -57,8 +58,11 @@ async function liveCustomer(tx: Db | Tx, customerId: string) {
   return row;
 }
 
-/** The contacts must be the customer's own, the colleagues must exist. */
-async function checkParticipants(tx: Tx, customerId: string, input: ActivityValues) {
+/**
+ * The contacts must be of the organization or one of its prevádzky (`familyIds`), the colleagues
+ * must exist.
+ */
+async function checkParticipants(tx: Tx, familyIds: string[], input: ActivityValues) {
   const contactIds = [...new Set(input.contactIds)];
   const userIds = [...new Set(input.userIds)];
   if (contactIds.length > 0) {
@@ -68,7 +72,13 @@ async function checkParticipants(tx: Tx, customerId: string, input: ActivityValu
       .where(
         and(
           inArray(contacts.id, contactIds),
-          sql`exists (select 1 from contact_links l where l.contact_id = ${contacts.id} and l.organization_id = ${customerId})`,
+          inArray(
+            contacts.id,
+            tx
+              .select({ id: contactLinks.contactId })
+              .from(contactLinks)
+              .where(inArray(contactLinks.organizationId, familyIds)),
+          ),
           isNull(contacts.deletedAt),
         ),
       );
@@ -119,6 +129,24 @@ async function resolveAttachments(
   return versionIds;
 }
 
+/**
+ * The row an activity belongs to (docs/establishments.md 7): the one picked in „Patrí k“, which
+ * must be of the same organization; otherwise a prevádzka's own, or found from the persons.
+ */
+async function targetOf(
+  tx: Tx,
+  customerId: string,
+  family: Awaited<ReturnType<typeof familyOf>>,
+  picked: string | undefined,
+  contactIds: string[],
+) {
+  if (picked) {
+    if (!family.members.some((m) => m.id === picked)) throw new ActivityError('CUSTOMER_NOT_FOUND');
+    return picked;
+  }
+  return customerId === family.headId ? fileUnder(tx, customerId, contactIds) : customerId;
+}
+
 function columnsOf(input: ActivityValues) {
   const bodyText = input.body ? richTextToPlain(input.body).trim() : '';
   return {
@@ -164,15 +192,28 @@ export async function createActivity(
 ) {
   return db.transaction(async (tx) => {
     await liveCustomer(tx, customerId);
-    const people = await checkParticipants(tx, customerId, input);
+    const family = await familyOf(tx, customerId);
+    const people = await checkParticipants(
+      tx,
+      family.members.map((m) => m.id),
+      input,
+    );
+    const organizationId = await targetOf(
+      tx,
+      customerId,
+      family,
+      input.organizationId,
+      people.contactIds,
+    );
     const versionIds = await resolveAttachments(tx, input);
     const [created] = await tx
       .insert(activities)
-      .values({ ...columnsOf(input), organizationId: customerId, authorUserId: userId })
+      .values({ ...columnsOf(input), organizationId, authorUserId: userId })
       .returning({ id: activities.id });
     await writeLinks(tx, created!.id, people, versionIds);
     return {
       id: created!.id,
+      organizationId,
       contacts: people.contactIds.length,
       attachments: versionIds.length,
     };
@@ -203,13 +244,22 @@ export async function updateActivity(db: Db, id: string, input: ActivityValues) 
       .for('update');
     if (!current) throw new ActivityError('NOT_FOUND');
     await liveCustomer(tx, current.organizationId);
-    const people = await checkParticipants(tx, current.organizationId, input);
+    const family = await familyOf(tx, current.organizationId);
+    const people = await checkParticipants(
+      tx,
+      family.members.map((m) => m.id),
+      input,
+    );
+    // Moving it between the organization and a prevádzka is an edit of „Patrí k“.
+    const organizationId = input.organizationId
+      ? await targetOf(tx, current.organizationId, family, input.organizationId, [])
+      : current.organizationId;
     const keptRows = await tx
       .select({ id: activityAttachments.fileVersionId })
       .from(activityAttachments)
       .where(eq(activityAttachments.activityId, id));
     const versionIds = await resolveAttachments(tx, input, new Set(keptRows.map((row) => row.id)));
-    const values = columnsOf(input);
+    const values = { ...columnsOf(input), organizationId };
     const fields = changedFields(current, values);
     // A next step taken away is no longer done either.
     const done = values.nextStepText ? {} : { nextStepDoneAt: null, nextStepDoneByUserId: null };
@@ -219,7 +269,7 @@ export async function updateActivity(db: Db, id: string, input: ActivityValues) 
       .where(eq(activities.id, id));
     await writeLinks(tx, id, people, versionIds);
     return {
-      customerId: current.organizationId,
+      customerId: organizationId,
       fields,
       contacts: people.contactIds.length,
       attachments: versionIds.length,
@@ -379,9 +429,20 @@ const TIMELINE_LIMIT = 100;
  * The customer's timeline, newest first: activities and notes, the e-mails sent and received,
  * and the changes from the audit trail.
  */
-export async function timeline(db: Db, customerId: string, filter: TimelineFilter) {
+export async function timeline(
+  db: Db,
+  customerId: string,
+  filter: TimelineFilter,
+  withEstablishments = false,
+) {
   await liveCustomer(db, customerId);
-  return timelineOf(db, { customerId }, filter);
+  // An organization's timeline may carry its prevádzky' entries too (P-7); a prevádzka's, its own.
+  const family = await familyOf(db, customerId);
+  const customerIds =
+    withEstablishments && family.headId === customerId
+      ? family.members.map((m) => m.id)
+      : [customerId];
+  return timelineOf(db, { customerIds }, filter);
 }
 
 /**
@@ -391,13 +452,13 @@ export async function timeline(db: Db, customerId: string, filter: TimelineFilte
  */
 export async function timelineOf(
   db: Db,
-  scope: { customerId: string } | { contactId: string },
+  scope: { customerIds: string[] } | { contactId: string },
   filter: TimelineFilter,
 ) {
-  const customerId = 'customerId' in scope ? scope.customerId : null;
+  const customerIds = 'customerIds' in scope ? scope.customerIds : null;
   const contactId = 'contactId' in scope ? scope.contactId : null;
-  const activityScope = customerId
-    ? eq(activities.organizationId, customerId)
+  const activityScope = customerIds
+    ? inArray(activities.organizationId, customerIds)
     : sql`exists (select 1 from activity_participants p
         where p.activity_id = ${activities.id} and p.contact_id = ${contactId})`;
   const kindFilter =
@@ -454,7 +515,7 @@ export async function timelineOf(
               status: campaignMessages.status,
               toName: campaignMessages.toName,
               at: sql<Date>`coalesce(${campaignMessages.sentAt}, ${campaignMessages.queuedAt})`,
-              sender: users.name,
+              sender: fullNameOf(users),
               organization: organizationJson(campaignMessages.organizationId),
             })
             .from(campaignMessages)
@@ -462,8 +523,8 @@ export async function timelineOf(
             .innerJoin(users, eq(users.id, campaigns.senderUserId))
             .where(
               and(
-                customerId
-                  ? eq(campaignMessages.organizationId, customerId)
+                customerIds
+                  ? inArray(campaignMessages.organizationId, customerIds)
                   : eq(campaignMessages.contactId, contactId!),
                 isNotNull(campaignMessages.queuedAt),
               ),
@@ -489,8 +550,8 @@ export async function timelineOf(
             .from(inboundMessages)
             .where(
               and(
-                customerId
-                  ? eq(inboundMessages.organizationId, customerId)
+                customerIds
+                  ? inArray(inboundMessages.organizationId, customerIds)
                   : eq(inboundMessages.contactId, contactId!),
                 eq(inboundMessages.status, 'assigned'),
               ),
@@ -499,8 +560,23 @@ export async function timelineOf(
             .limit(TIMELINE_LIMIT)
         ).map((reply) => ({ type: 'reply' as const, at: reply.at, reply }))
       : []),
-    ...(customerId && (filter === 'all' || filter === 'changes')
-      ? (await customerHistory(db, customerId))
+    ...(customerIds && (filter === 'all' || filter === 'changes')
+      ? (
+          await Promise.all(
+            (
+              await db
+                .select({ id: organizations.id, name: organizations.name })
+                .from(organizations)
+                .where(inArray(organizations.id, customerIds))
+            ).map(async (organization) =>
+              (await customerHistory(db, organization.id)).map((event) => ({
+                ...event,
+                organization,
+              })),
+            ),
+          )
+        )
+          .flat()
           // A download of the CSV is not news about the customer.
           .filter((event) => event.diff?.exported !== true)
           .map((event) => ({ type: 'change' as const, at: event.at, change: event }))
@@ -544,10 +620,14 @@ export async function myNextSteps(db: Db, userId: string) {
     .limit(50);
 }
 
-/** The colleagues and the customer's contacts, for the participants and the assignee. */
+/**
+ * The colleagues and the persons of the organization and its prevádzky, each with where they are,
+ * for the participants and the assignee; and where the activity may belong („Patrí k“).
+ */
 export async function activityOptions(db: Db, customerId: string) {
   await liveCustomer(db, customerId);
-  const [people, colleagues] = await Promise.all([
+  const family = await familyOf(db, customerId);
+  const [links, colleagues] = await Promise.all([
     db
       .select({
         id: contacts.id,
@@ -556,10 +636,20 @@ export async function activityOptions(db: Db, customerId: string) {
         lastName: contacts.lastName,
         titleAfter: contacts.titleAfter,
         position: contactLinks.position,
+        organizationId: contactLinks.organizationId,
+        isPrimary: contactLinks.isPrimary,
       })
       .from(contactLinks)
       .innerJoin(contacts, eq(contacts.id, contactLinks.contactId))
-      .where(and(eq(contactLinks.organizationId, customerId), isNull(contacts.deletedAt)))
+      .where(
+        and(
+          inArray(
+            contactLinks.organizationId,
+            family.members.map((m) => m.id),
+          ),
+          isNull(contacts.deletedAt),
+        ),
+      )
       .orderBy(desc(contactLinks.isPrimary), asc(contacts.lastName)),
     db
       .select({ id: users.id, name: users.name })
@@ -567,9 +657,34 @@ export async function activityOptions(db: Db, customerId: string) {
       .where(eq(users.status, 'active'))
       .orderBy(asc(users.name)),
   ]);
+  // One row per person: the position where this page's customer has them, else the first one.
+  const byId = new Map<
+    string,
+    { id: string; name: string; position: string | null; places: string[]; here: boolean }
+  >();
+  for (const link of links) {
+    const known = byId.get(link.id);
+    const here = link.organizationId === customerId;
+    if (known) {
+      known.places.push(link.organizationId);
+      if (here) Object.assign(known, { position: link.position, here });
+    } else {
+      byId.set(link.id, {
+        id: link.id,
+        name: personName(link),
+        position: link.position,
+        places: [link.organizationId],
+        here,
+      });
+    }
+  }
+  // This page's own persons first.
+  const people = [...byId.values()].sort((a, b) => Number(b.here) - Number(a.here));
   return {
-    contacts: people.map((c) => ({ id: c.id, name: personName(c), position: c.position })),
+    contacts: people.map(({ id, name, position, places }) => ({ id, name, position, places })),
     users: colleagues,
+    headId: family.headId,
+    holders: family.members,
   };
 }
 

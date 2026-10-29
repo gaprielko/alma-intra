@@ -42,6 +42,13 @@ function SettingsLayout() {
           {t.tabs.emailLook}
         </Link>
         <Link
+          to="/settings/pricing"
+          className={tabClass}
+          activeProps={{ className: activeTabClass }}
+        >
+          {sk.products.vat.tab}
+        </Link>
+        <Link
           to="/settings/activity-log"
           className={tabClass}
           activeProps={{ className: activeTabClass }}

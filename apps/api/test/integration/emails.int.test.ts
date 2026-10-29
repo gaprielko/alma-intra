@@ -57,6 +57,29 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     expect(await statusOf(id)).toBe('sent');
   });
 
+  it('shows a colleague’s titles in the user list and the e-mails, not elsewhere in the app', async () => {
+    const profile = { name: 'Jana Horváthová', titleBefore: 'Mgr.', titleAfter: 'PhD.' };
+    await jana.call('account.updateProfile', profile);
+    const people = await jana.call<{ items: { name: string; fullName: string }[] }>(
+      'user.list',
+      {},
+    );
+    expect(people.data.items).toContainEqual(
+      expect.objectContaining({ name: 'Jana Horváthová', fullName: 'Mgr. Jana Horváthová, PhD.' }),
+    );
+    const id = await draft();
+    await jana.call('campaign.send', { id });
+    const before = outbox.length;
+    await drainCampaigns(api.db, memoryTransport({ quiet: true }), null, loadEnv());
+    expect(outbox.slice(before).find((m) => m.subject === 'Test')!.from).toMatch(
+      /^Mgr\. Jana Horváthová, PhD\. \|/,
+    );
+    // The owner picker, like the rest of the app, shows the name alone.
+    const options = await jana.call<{ users: { name: string }[] }>('customer.options');
+    expect(options.data.users.map((u) => u.name)).toContain('Jana Horváthová');
+    await jana.call('account.updateProfile', { ...profile, titleBefore: '', titleAfter: '' });
+  });
+
   it('„Použiť znova“ makes a new draft with the same text and recipients', async () => {
     const id = await draft();
     await jana.call('campaign.send', { id });

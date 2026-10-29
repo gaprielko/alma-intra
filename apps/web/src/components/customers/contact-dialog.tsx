@@ -30,7 +30,22 @@ import { type RouterOutputs, trpc } from '@/lib/trpc';
 
 const d = sk.contacts.dialog;
 
-export type Contact = RouterOutputs['customer']['get']['contacts'][number];
+/** A person as the dialog edits them: from an organization's detail or its persons table. */
+export type Contact = Pick<
+  RouterOutputs['customer']['get']['contacts'][number],
+  | 'id'
+  | 'titleBefore'
+  | 'firstName'
+  | 'lastName'
+  | 'titleAfter'
+  | 'gender'
+  | 'salutation'
+  | 'email'
+  | 'phone'
+  | 'position'
+  | 'note'
+  | 'unsubscribedAt'
+>;
 
 interface ContactFormValues {
   contact: PersonValues & { position: string; note: string };

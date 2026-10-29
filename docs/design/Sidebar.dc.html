@@ -77,7 +77,7 @@ body{margin:0}
   </div>
 </nav>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","options":["overview","customers","emails","files","settings","account"],"default":"customers"},"organizations":{"editor":"boolean","default":false},"$preview":{"width":232,"height":900}}'>
+<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","options":["overview","customers","products","emails","files","settings","account"],"default":"customers"},"organizations":{"editor":"boolean","default":false},"$preview":{"width":232,"height":900}}'>
 class Component extends DCLogic {
   renderVals() {
     const active = this.props.active ?? 'customers';
@@ -86,6 +86,7 @@ class Component extends DCLogic {
       overview: { paths: ['M6 3.5h12A2.5 2.5 0 0 1 20.5 6v12a2.5 2.5 0 0 1-2.5 2.5H6A2.5 2.5 0 0 1 3.5 18V6A2.5 2.5 0 0 1 6 3.5z', 'M8 16.5v-3', 'M12 16.5v-7', 'M16 16.5v-4.5'], circles: [] },
       customers: { paths: ['M8.6 14.2a3.4 3.4 0 0 0 6.8 0', 'M6.3 6.3l2.4 2.4', 'M17.7 6.3l-2.4 2.4', 'M6.3 17.7l1.9-1.9', 'M17.7 17.7l-1.9-1.9'], circles: [{ x: 12, y: 10.6, r: 2 }, { x: 5, y: 5, r: 1.6 }, { x: 19, y: 5, r: 1.6 }, { x: 5, y: 19, r: 1.6 }, { x: 19, y: 19, r: 1.6 }] },
       emails: { paths: ['M4 5.5h16A1.5 1.5 0 0 1 21.5 7v10a1.5 1.5 0 0 1-1.5 1.5H4A1.5 1.5 0 0 1 2.5 17V7A1.5 1.5 0 0 1 4 5.5z', 'm3 7.5 9 6 9-6'], circles: [] },
+      products: { paths: ['M12 3.2 20 7.6v8.8L12 20.8l-8-4.4V7.6z', 'M4.3 7.8 12 12l7.7-4.2', 'M12 12v8.6'], circles: [] },
       files: { paths: ['M3 7.5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', 'M8.6 15.4a3.4 3.4 0 0 0 6.8 0'], circles: [{ x: 12, y: 12.2, r: 1.8 }] },
       settings: { paths: ['M4 7h9', 'M17 7h3', 'M4 17h3', 'M11 17h9'], circles: [{ x: 15, y: 7, r: 2 }, { x: 9, y: 17, r: 2 }] }
     };
@@ -98,6 +99,7 @@ class Component extends DCLogic {
     const main = [
       item('overview', 'Prehľad', '#'),
       this.props.organizations ? item('customers', 'Organizácie', 'OrgCustomers.dc.html') : item('customers', 'Zákazníci', 'Customers.dc.html'),
+      ...(this.props.organizations ? [item('products', 'Produkty', 'ProdList.dc.html')] : []),
       item('emails', 'E-maily', '#'),
       item('files', 'Súbory', 'Files.dc.html')
     ];

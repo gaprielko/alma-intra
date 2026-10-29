@@ -57,6 +57,14 @@ export const FilesMark = (props: NavMarkProps) => (
   </Mark>
 );
 
+/** Produkty: a box, what a customer buys. */
+export const ProductsMark = (props: NavMarkProps) => (
+  <Mark {...props}>
+    <path d="M12 3.2 20 7.6v8.8L12 20.8l-8-4.4V7.6z" />
+    <path d="M4.3 7.8 12 12l7.7-4.2M12 12v8.6" />
+  </Mark>
+);
+
 export const SettingsMark = (props: NavMarkProps) => (
   <Mark {...props}>
     <path d="M4 7h9M17 7h3M4 17h3M11 17h9" />

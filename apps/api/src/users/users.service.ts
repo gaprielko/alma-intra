@@ -4,7 +4,7 @@ import { revokeAuthTokens } from '../auth/account.service.js';
 import { revokeUserSessions } from '../auth/auth.service.js';
 import { removeSecondFactor } from '../auth/second-factor.service.js';
 import type { Db, Tx } from '../db/db.module.js';
-import { userSecondFactors, users } from '../db/schema/index.js';
+import { fullNameOf, userSecondFactors, users } from '../db/schema/index.js';
 import { dropQueuedInvitation, enqueueMail, invitationDelivery } from '../mail/mail-outbox.js';
 
 /** A refusal the web words for itself (`sk.users.errors`). */
@@ -25,6 +25,10 @@ export async function listUsers(db: Db | Tx, filter: { status?: UserStatus | und
     .select({
       id: users.id,
       name: users.name,
+      titleBefore: users.titleBefore,
+      titleAfter: users.titleAfter,
+      // The user list is one of the places that shows a colleague's titles.
+      fullName: fullNameOf(users),
       email: users.email,
       phone: users.phone,
       position: users.position,
@@ -62,6 +66,8 @@ export async function inviteUser(db: Db | Tx, invitedBy: string, input: InviteUs
       .values({
         email: input.email,
         name: input.name,
+        titleBefore: input.titleBefore || null,
+        titleAfter: input.titleAfter || null,
         phone: input.phone || null,
         position: input.position || null,
         status: 'invited',
@@ -79,6 +85,8 @@ export async function updateUser(db: Db | Tx, input: UpdateUserInput) {
     .update(users)
     .set({
       name: input.name,
+      ...(input.titleBefore === undefined ? {} : { titleBefore: input.titleBefore || null }),
+      ...(input.titleAfter === undefined ? {} : { titleAfter: input.titleAfter || null }),
       ...(input.phone === undefined ? {} : { phone: input.phone || null }),
       ...(input.position === undefined ? {} : { position: input.position || null }),
       updatedAt: sql`now()`,

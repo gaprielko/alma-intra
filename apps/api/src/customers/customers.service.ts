@@ -2,6 +2,8 @@ import { personName } from '@intra/shared/schemas';
 import type {
   ContactInput,
   CreateCustomerInput,
+  CreateEstablishmentInput,
+  EstablishmentInput,
   CustomerFilter,
   CustomerInput,
   CustomerListInput,
@@ -34,6 +36,7 @@ import {
   users,
 } from '../db/schema/index.js';
 import { createCustomerFolder } from '../files/files.service.js';
+import { nursesOf } from './holdings.service.js';
 
 /** The object without one key, for a row that must not leave the server whole. */
 function omit<T extends object, K extends keyof T>(value: T, key: K): Omit<T, K> {
@@ -46,7 +49,19 @@ function omit<T extends object, K extends keyof T>(value: T, key: K): Omit<T, K>
 export class CustomerError extends Error {
   constructor(
     readonly code:
-      'NOT_FOUND' | 'ICO_TAKEN' | 'KIND_CHANGED' | 'CONTACT_EMAIL_TAKEN' | 'NOT_ORGANIZATION',
+      | 'NOT_FOUND'
+      | 'ICO_TAKEN'
+      | 'KIND_CHANGED'
+      | 'CONTACT_EMAIL_TAKEN'
+      | 'NOT_ORGANIZATION'
+      /** A prevádzka cannot have prevádzky, nor can a private person (one level, a company). */
+      | 'NOT_PARENT'
+      /** What only an organization has (role, IČO, classification) is changed at the organization. */
+      | 'IS_ESTABLISHMENT'
+      /** The prevádzka form edits prevádzky only. */
+      | 'NOT_ESTABLISHMENT'
+      /** Only an organization without IČO and without prevádzky becomes a prevádzka (P-14). */
+      | 'NOT_ATTACHABLE',
   ) {
     super(code);
   }
@@ -107,11 +122,12 @@ function linkedTo(
 
 /** The filters of the list as a WHERE clause; `status` is left to the caller (the chips count without it). */
 function filterWhere(filter: CustomerFilter): SQL[] {
-  const where: SQL[] = [alive];
+  // Organizations only: a prevádzka is shown at its organization (docs/establishments.md).
+  const where: SQL[] = [alive, isNull(organizations.parentId)];
   if (filter.role) where.push(eq(organizations.role, filter.role));
   where.push(...anyOf(organizations.kind, filter.kind));
   where.push(...linkedTo('organization_products', 'product_id', filter.productId));
-  where.push(...anyOf(organizations.region, filter.region));
+  where.push(...regionWhere(filter.region));
   where.push(...anyOf(organizations.ownerUserId, filter.ownerUserId));
   where.push(...linkedTo('organization_tags', 'tag_id', filter.tagId));
   if (filter.search) {
@@ -127,10 +143,33 @@ function filterWhere(filter: CustomerFilter): SQL[] {
           where l.organization_id = ${CUSTOMER_ID} and p.deleted_at is null
           and (p.email ilike ${pattern}
             or unaccent(p.first_name || ' ' || p.last_name) ilike unaccent(${pattern})))`,
+        // A prevádzka's name, city or person finds its organization (P-12).
+        sql`exists (select 1 from organizations e where e.parent_id = ${CUSTOMER_ID}
+          and e.deleted_at is null and ${establishmentMatch(pattern)})`,
       )!,
     );
   }
   return where;
+}
+
+/** A prevádzka `e` found by its name, city or one of its persons. */
+const establishmentMatch = (pattern: string) => sql`(unaccent(e.name) ilike unaccent(${pattern})
+  or unaccent(coalesce(e.city, '')) ilike unaccent(${pattern})
+  or exists (select 1 from contact_links el join contacts ep on ep.id = el.contact_id
+    where el.organization_id = e.id and ep.deleted_at is null
+    and (ep.email ilike ${pattern}
+      or unaccent(ep.first_name || ' ' || ep.last_name) ilike unaccent(${pattern}))))`;
+
+/** The region filter: the seat, or the seat of one of the prevádzky (P-12). */
+function regionWhere(regions: CustomerFilter['region']): SQL[] {
+  if (!regions || regions.length === 0) return [];
+  return [
+    or(
+      inArray(organizations.region, regions),
+      sql`exists (select 1 from organizations e where e.parent_id = ${CUSTOMER_ID}
+        and e.deleted_at is null and e.region in ${regions})`,
+    )!,
+  ];
 }
 
 /** The customer's tags, by name, as JSON. */
@@ -202,6 +241,15 @@ export async function listCustomers(db: Db | Tx, raw: CustomerListInput) {
         tags: tagsJson,
         primaryContact: primaryContactJson,
         lastContactAt: sql<string | null>`${LAST_CONTACT}`,
+        establishmentCount: sql<number>`(select count(*)::int from organizations e
+          where e.parent_id = ${CUSTOMER_ID} and e.deleted_at is null)`,
+        // The prevádzka the search found, named under the organization („prevádzka Prešov“).
+        foundEstablishment: input.search
+          ? sql<string | null>`(select e.name from organizations e
+              where e.parent_id = ${CUSTOMER_ID} and e.deleted_at is null
+              and ${establishmentMatch(likePattern(input.search))}
+              order by e.name limit 1)`
+          : sql<string | null>`null`,
         total: sql<number>`count(*) over ()`.mapWith(Number),
       })
       .from(organizations)
@@ -266,7 +314,15 @@ export async function getCustomer(db: Db | Tx, id: string) {
     .leftJoin(organizationSources, eq(organizationSources.id, organizations.sourceId))
     .where(and(eq(organizations.id, id), alive));
   if (!row) throw new CustomerError('NOT_FOUND');
-  const people = await personsOf(db, id);
+  const [people, parent, [established], nurses] = await Promise.all([
+    personsOf(db, id),
+    row.customer.parentId ? parentSummary(db, row.customer.parentId) : Promise.resolve(null),
+    db
+      .select({ count: sql<number>`count(*)`.mapWith(Number) })
+      .from(organizations)
+      .where(and(eq(organizations.parentId, id), alive)),
+    nursesOf(db, id),
+  ]);
   const { customer, ...rest } = row;
   const self = customer.kind === 'individual' ? people.find((p) => p.isPrimary) : undefined;
   return {
@@ -279,7 +335,31 @@ export async function getCustomer(db: Db | Tx, id: string) {
     /** A private person's own person in Kontakty. */
     personId: self?.id ?? null,
     contacts: customer.kind === 'individual' ? [] : people,
+    /** A prevádzka's organization: what it shares (IČO, role, status, owner, tags). */
+    parent,
+    establishmentCount: established?.count ?? 0,
+    /** „Sestry“ in the header, from the products held now (R-12); NULL without the item. */
+    nurses,
   };
+}
+
+/** What a prevádzka shows of its organization. */
+async function parentSummary(db: Db | Tx, parentId: string) {
+  const [parent] = await db
+    .select({
+      id: organizations.id,
+      name: organizations.name,
+      ico: organizations.ico,
+      role: organizations.role,
+      status: organizations.status,
+      owner: sql<{ id: string; name: string } | null>`case when ${users.id} is null then null
+        else json_build_object('id', ${users.id}, 'name', ${users.name}) end`,
+      tags: tagsJson,
+    })
+    .from(organizations)
+    .leftJoin(users, eq(users.id, organizations.ownerUserId))
+    .where(eq(organizations.id, parentId));
+  return parent ?? null;
 }
 
 /** The live persons of an organization with their position there, the primary one first. */
@@ -384,11 +464,23 @@ async function setProducts(tx: Tx, customerId: string, picked: readonly string[]
             .from(products)
             .where(inArray(products.id, [...new Set(picked)]))
         ).map((row) => row.id);
-  await tx.delete(organizationProducts).where(eq(organizationProducts.organizationId, customerId));
+  // Only what was unticked goes, and only what is new comes: a held product keeps its counts.
+  const removed = before.filter((id) => !ids.includes(id));
+  if (removed.length > 0) {
+    await tx
+      .delete(organizationProducts)
+      .where(
+        and(
+          eq(organizationProducts.organizationId, customerId),
+          inArray(organizationProducts.productId, removed),
+        ),
+      );
+  }
   if (ids.length > 0) {
     await tx
       .insert(organizationProducts)
-      .values(ids.map((productId) => ({ organizationId: customerId, productId })));
+      .values(ids.map((productId) => ({ organizationId: customerId, productId })))
+      .onConflictDoNothing();
   }
   return {
     added: ids.filter((id) => !before.includes(id)),
@@ -563,6 +655,7 @@ export async function updateCustomer(db: Db, id: string, input: CustomerInput) {
         .where(and(eq(organizations.id, id), alive))
         .for('update');
       if (!current) throw new CustomerError('NOT_FOUND');
+      if (current.parentId) throw new CustomerError('IS_ESTABLISHMENT');
       if (current.kind !== input.kind) throw new CustomerError('KIND_CHANGED');
       await assertIcoFree(tx, input.kind === 'organization' ? input.ico : undefined, id);
       const values = columnsOf(input);
@@ -618,11 +711,12 @@ export async function updateCustomer(db: Db, id: string, input: CustomerInput) {
 export async function setRole(db: Db, id: string, role: 'customer' | 'partner') {
   return db.transaction(async (tx) => {
     const [current] = await tx
-      .select({ role: organizations.role })
+      .select({ role: organizations.role, parentId: organizations.parentId })
       .from(organizations)
       .where(and(eq(organizations.id, id), alive))
       .for('update');
     if (!current) throw new CustomerError('NOT_FOUND');
+    if (current.parentId) throw new CustomerError('IS_ESTABLISHMENT');
     if (current.role === role) return { changed: false, productsRemoved: [] as string[] };
     await tx
       .update(organizations)
@@ -632,19 +726,35 @@ export async function setRole(db: Db, id: string, role: 'customer' | 'partner') 
         updatedAt: new Date(),
       })
       .where(eq(organizations.id, id));
+    // Its prevádzky share the role.
+    await tx
+      .update(organizations)
+      .set({ role, updatedAt: new Date() })
+      .where(and(eq(organizations.parentId, id), alive));
     const productsRemoved =
       role === 'partner' ? (await setProducts(tx, id, [])).removed : ([] as string[]);
     return { changed: true, productsRemoved };
   });
 }
 
+/** Soft: an organization's prevádzky go with it; a prevádzka alone answers its organization. */
 export async function deleteCustomer(db: Db, id: string) {
-  const [row] = await db
-    .update(organizations)
-    .set({ deletedAt: new Date(), updatedAt: new Date() })
-    .where(and(eq(organizations.id, id), alive))
-    .returning({ id: organizations.id });
-  if (!row) throw new CustomerError('NOT_FOUND');
+  return db.transaction(async (tx) => {
+    const now = new Date();
+    const [row] = await tx
+      .update(organizations)
+      .set({ deletedAt: now, updatedAt: now })
+      .where(and(eq(organizations.id, id), alive))
+      .returning({ id: organizations.id, parentId: organizations.parentId });
+    if (!row) throw new CustomerError('NOT_FOUND');
+    if (!row.parentId) {
+      await tx
+        .update(organizations)
+        .set({ deletedAt: now, updatedAt: now })
+        .where(and(eq(organizations.parentId, id), alive));
+    }
+    return { parentId: row.parentId };
+  });
 }
 
 /** Adds one tag (made when new) to every picked customer; how many there were. */
@@ -713,6 +823,8 @@ export async function exportRows(
       owner: users.name,
       source: organizationSources.name,
       tags: tagsJson,
+      establishments: sql<string | null>`(select string_agg(e.name, ', ' order by e.name)
+        from organizations e where e.parent_id = ${CUSTOMER_ID} and e.deleted_at is null)`,
       primary,
       createdAt: organizations.createdAt,
     })
@@ -785,29 +897,35 @@ async function namesOf(db: Db | Tx, diffs: (Record<string, unknown> | null)[]) {
   for (const diff of diffs) idsIn(diff, ids);
   const list = [...ids];
   if (list.length === 0) return {} as Record<string, string>;
-  const [tagRows, contactRows, userRows, productRows, sourceRows] = await Promise.all([
-    db.select({ id: tags.id, name: tags.name }).from(tags).where(inArray(tags.id, list)),
-    db
-      .select({
-        id: contacts.id,
-        titleBefore: contacts.titleBefore,
-        firstName: contacts.firstName,
-        lastName: contacts.lastName,
-        titleAfter: contacts.titleAfter,
-      })
-      .from(contacts)
-      .where(inArray(contacts.id, list)),
-    db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, list)),
-    db
-      .select({ id: products.id, name: products.name })
-      .from(products)
-      .where(inArray(products.id, list)),
-    db
-      .select({ id: organizationSources.id, name: organizationSources.name })
-      .from(organizationSources)
-      .where(inArray(organizationSources.id, list)),
-  ]);
+  const [tagRows, contactRows, userRows, productRows, sourceRows, organizationRows] =
+    await Promise.all([
+      db.select({ id: tags.id, name: tags.name }).from(tags).where(inArray(tags.id, list)),
+      db
+        .select({
+          id: contacts.id,
+          titleBefore: contacts.titleBefore,
+          firstName: contacts.firstName,
+          lastName: contacts.lastName,
+          titleAfter: contacts.titleAfter,
+        })
+        .from(contacts)
+        .where(inArray(contacts.id, list)),
+      db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, list)),
+      db
+        .select({ id: products.id, name: products.name })
+        .from(products)
+        .where(inArray(products.id, list)),
+      db
+        .select({ id: organizationSources.id, name: organizationSources.name })
+        .from(organizationSources)
+        .where(inArray(organizationSources.id, list)),
+      db
+        .select({ id: organizations.id, name: organizations.name })
+        .from(organizations)
+        .where(inArray(organizations.id, list)),
+    ]);
   return Object.fromEntries([
+    ...organizationRows.map((row) => [row.id, row.name]),
     ...tagRows.map((row) => [row.id, row.name]),
     ...contactRows.map((row) => [row.id, personName(row)]),
     ...userRows.map((row) => [row.id, row.name]),
@@ -1002,4 +1120,297 @@ export async function customerIdsMatching(db: Db | Tx, filter: CustomerFilter, l
     .orderBy(collated(organizations.name), asc(organizations.id))
     .limit(limit);
   return rows.map((row) => row.id);
+}
+
+// ---------------------------------------------------------------------------------------------
+// Prevádzky (docs/establishments.md): rows of `organizations` with a parent, one level.
+
+/** The prevádzka's own columns; the rest stays NULL and is read from its organization. */
+function establishmentColumns(input: EstablishmentInput) {
+  return {
+    name: input.name,
+    street: input.street ?? null,
+    postalCode: input.postalCode ?? null,
+    city: input.city ?? null,
+    region: input.region ?? null,
+    email: input.email ?? null,
+    phone: input.phone ?? null,
+    almaOrganizationId: input.almaOrganizationId ?? null,
+    note: input.note ?? null,
+  };
+}
+
+/** The organization a prevádzka is added to: live, a company, not itself a prevádzka. */
+async function parentOf(tx: Tx, parentId: string) {
+  const [row] = await tx
+    .select({
+      id: organizations.id,
+      kind: organizations.kind,
+      role: organizations.role,
+      parentId: organizations.parentId,
+    })
+    .from(organizations)
+    .where(and(eq(organizations.id, parentId), alive))
+    .for('update');
+  if (!row) throw new CustomerError('NOT_FOUND');
+  if (row.kind !== 'organization' || row.parentId) throw new CustomerError('NOT_PARENT');
+  return row;
+}
+
+/**
+ * „Zaradiť pod organizáciu…“ (P-14): an organization without IČO and without prevádzky becomes a
+ * prevádzka of another, keeping its persons, timeline and files; it takes on that one's role.
+ */
+export async function attachEstablishment(db: Db, id: string, parentId: string) {
+  return db.transaction(async (tx) => {
+    if (id === parentId) throw new CustomerError('NOT_ATTACHABLE');
+    const parent = await parentOf(tx, parentId);
+    const [row] = await tx
+      .select({
+        kind: organizations.kind,
+        ico: organizations.ico,
+        parentId: organizations.parentId,
+      })
+      .from(organizations)
+      .where(and(eq(organizations.id, id), alive))
+      .for('update');
+    if (!row) throw new CustomerError('NOT_FOUND');
+    const [child] = await tx
+      .select({ id: organizations.id })
+      .from(organizations)
+      .where(and(eq(organizations.parentId, id), alive))
+      .limit(1);
+    if (row.kind !== 'organization' || row.ico || row.parentId || child)
+      throw new CustomerError('NOT_ATTACHABLE');
+    await tx
+      .update(organizations)
+      .set({ parentId: parent.id, role: parent.role, updatedAt: new Date() })
+      .where(eq(organizations.id, id));
+    return { parentId: parent.id };
+  });
+}
+
+/** The primary person of a prevádzka, as the table of prevádzky shows them. */
+const establishmentPrimaryJson = sql<{
+  id: string;
+  name: string;
+  email: string | null;
+} | null>`(select json_build_object(
+    'id', p.id, 'name', concat_ws(' ', p.title_before, p.first_name, p.last_name), 'email', p.email)
+  from contact_links l join contacts p on p.id = l.contact_id
+  where l.organization_id = ${CUSTOMER_ID} and l.is_primary and p.deleted_at is null)`;
+
+/** An organization's live prevádzky, by name, with their primary person and how many persons. */
+export async function listEstablishments(db: Db | Tx, parentId: string) {
+  return db
+    .select({
+      id: organizations.id,
+      name: organizations.name,
+      street: organizations.street,
+      postalCode: organizations.postalCode,
+      city: organizations.city,
+      region: organizations.region,
+      email: organizations.email,
+      phone: organizations.phone,
+      primaryContact: establishmentPrimaryJson,
+      persons:
+        sql<number>`(select count(*) from contact_links l join contacts p on p.id = l.contact_id
+        where l.organization_id = ${CUSTOMER_ID} and p.deleted_at is null)`.mapWith(Number),
+      products: productsJson,
+      lastContactAt: sql<string | null>`${LAST_CONTACT}`,
+    })
+    .from(organizations)
+    .where(and(eq(organizations.parentId, parentId), alive))
+    .orderBy(collated(organizations.name), asc(organizations.id));
+}
+
+/**
+ * A new prevádzka of an organization, with its role; its primary contact is a person already in
+ * Kontakty (they keep their other links), a new person, or nobody yet.
+ */
+export async function createEstablishment(db: Db, userId: string, input: CreateEstablishmentInput) {
+  return mapUnique(() =>
+    db.transaction(async (tx) => {
+      const parent = await parentOf(tx, input.parentId);
+      const [created] = await tx
+        .insert(organizations)
+        .values({
+          kind: 'organization',
+          role: parent.role,
+          parentId: parent.id,
+          ...establishmentColumns(input.establishment),
+          createdByUserId: userId,
+        })
+        .returning({ id: organizations.id });
+      let contactId: string | null = null;
+      if (input.primary?.kind === 'existing') {
+        const [person] = await tx
+          .select({ id: contacts.id })
+          .from(contacts)
+          .where(and(eq(contacts.id, input.primary.contactId), aliveContact));
+        if (!person) throw new CustomerError('NOT_FOUND');
+        await tx.insert(contactLinks).values({
+          contactId: person.id,
+          organizationId: created!.id,
+          position: input.primary.position ?? null,
+          isPrimary: true,
+        });
+        contactId = person.id;
+      } else if (input.primary?.kind === 'new') {
+        const [person] = await tx
+          .insert(contacts)
+          .values(contactColumns(input.primary.contact))
+          .returning({ id: contacts.id });
+        await tx.insert(contactLinks).values({
+          contactId: person!.id,
+          organizationId: created!.id,
+          position: input.primary.contact.position ?? null,
+          isPrimary: true,
+        });
+        contactId = person!.id;
+      }
+      await touch(tx, parent.id);
+      return { id: created!.id, parentId: parent.id, contactId };
+    }),
+  );
+}
+
+/** A prevádzka's own fields; which of them changed, for the audit trail. */
+export async function updateEstablishment(db: Db, id: string, input: EstablishmentInput) {
+  return db.transaction(async (tx) => {
+    const [current] = await tx
+      .select()
+      .from(organizations)
+      .where(and(eq(organizations.id, id), alive))
+      .for('update');
+    if (!current) throw new CustomerError('NOT_FOUND');
+    if (!current.parentId) throw new CustomerError('NOT_ESTABLISHMENT');
+    const values = establishmentColumns(input);
+    const fields = changedFields(current, values);
+    await tx
+      .update(organizations)
+      .set({ ...values, updatedAt: new Date() })
+      .where(eq(organizations.id, id));
+    return { parentId: current.parentId, fields };
+  });
+}
+
+/**
+ * The persons of an organization and of all its prevádzky (docs/establishments.md 4.2): one row a
+ * person, with their place at the organization (if any) and the prevádzky they are at.
+ */
+export async function organizationPersons(db: Db | Tx, organizationId: string) {
+  const rows = await db
+    .select({
+      contact: contacts,
+      organizationId: contactLinks.organizationId,
+      organizationName: organizations.name,
+      parentId: organizations.parentId,
+      position: contactLinks.position,
+      isPrimary: contactLinks.isPrimary,
+    })
+    .from(contactLinks)
+    .innerJoin(contacts, eq(contacts.id, contactLinks.contactId))
+    .innerJoin(organizations, eq(organizations.id, contactLinks.organizationId))
+    .where(
+      and(
+        or(eq(organizations.id, organizationId), eq(organizations.parentId, organizationId)),
+        alive,
+        aliveContact,
+      ),
+    )
+    .orderBy(collated(contacts.lastName), collated(contacts.firstName), asc(contacts.id));
+  type Person = Omit<(typeof rows)[number]['contact'], 'deletedAt'> & {
+    position: string | null;
+    isPrimary: boolean;
+    atOrganization: boolean;
+    establishments: { id: string; name: string; position: string | null; isPrimary: boolean }[];
+  };
+  const byId = new Map<string, Person>();
+  for (const row of rows) {
+    const person =
+      byId.get(row.contact.id) ??
+      ({
+        ...omit(row.contact, 'deletedAt'),
+        position: null,
+        isPrimary: false,
+        atOrganization: false,
+        establishments: [],
+      } satisfies Person);
+    if (row.organizationId !== organizationId) {
+      person.establishments.push({
+        id: row.organizationId,
+        name: row.organizationName,
+        position: row.position,
+        isPrimary: row.isPrimary,
+      });
+      person.position ??= row.position;
+    } else {
+      person.atOrganization = true;
+      person.isPrimary = row.isPrimary;
+      person.position = row.position;
+    }
+    byId.set(row.contact.id, person);
+  }
+  // The organization's primary contact first, the rest by name.
+  return [...byId.values()].sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary));
+}
+
+/**
+ * An organization and its prevádzky, from any of them: the head organization and every live id,
+ * the head first; with the names, for the „Patrí k“ field.
+ */
+export async function familyOf(db: Db | Tx, organizationId: string) {
+  const [row] = await db
+    .select({ parentId: organizations.parentId })
+    .from(organizations)
+    .where(eq(organizations.id, organizationId));
+  const headId = row?.parentId ?? organizationId;
+  const members = await db
+    .select({ id: organizations.id, name: organizations.name, parentId: organizations.parentId })
+    .from(organizations)
+    .where(
+      and(
+        or(eq(organizations.id, headId), eq(organizations.parentId, headId)),
+        isNull(organizations.deletedAt),
+      ),
+    )
+    .orderBy(sql`${organizations.parentId} is not null`, collated(organizations.name));
+  return {
+    headId,
+    members: members.map((m) => ({ id: m.id, name: m.name, isEstablishment: m.parentId !== null })),
+  };
+}
+
+/**
+ * Where an activity, an e-mail or a reply with these persons belongs (docs/establishments.md 7,
+ * P-11): when every one of them is at the same prevádzka of the organization, and none at the
+ * organization itself, that prevádzka; otherwise the organization.
+ */
+export async function fileUnder(db: Db | Tx, organizationId: string, contactIds: string[]) {
+  if (contactIds.length === 0) return organizationId;
+  const [row] = await db
+    .select({ parentId: organizations.parentId })
+    .from(organizations)
+    .where(eq(organizations.id, organizationId));
+  if (!row || row.parentId !== null) return organizationId;
+  const links = await db
+    .select({ contactId: contactLinks.contactId, organizationId: contactLinks.organizationId })
+    .from(contactLinks)
+    .innerJoin(organizations, eq(organizations.id, contactLinks.organizationId))
+    .where(
+      and(
+        inArray(contactLinks.contactId, contactIds),
+        or(eq(organizations.id, organizationId), eq(organizations.parentId, organizationId)),
+        isNull(organizations.deletedAt),
+      ),
+    );
+  // The prevádzky every person is at so far; NULL before the first person.
+  let common: string[] | null = null;
+  for (const contactId of new Set(links.map((l) => l.contactId))) {
+    const places = links.filter((l) => l.contactId === contactId).map((l) => l.organizationId);
+    if (places.includes(organizationId)) return organizationId;
+    common = common === null ? places : common.filter((p) => places.includes(p));
+  }
+  return common !== null && common.length === 1 ? common[0]! : organizationId;
 }

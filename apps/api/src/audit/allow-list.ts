@@ -66,7 +66,7 @@ const AUTH_REASON_CODES = [
 const USER_REASON_CODES = [...AUTH_REASON_CODES, 'self', 'last_active_user', 'already_exists'];
 
 /** The fields of a user's profile that may be named in an event, never their values. */
-const PROFILE_FIELDS = ['name', 'phone', 'position', 'emailSignature'];
+const PROFILE_FIELDS = ['name', 'titleBefore', 'titleAfter', 'phone', 'position', 'emailSignature'];
 
 /** The fields of a customer or a contact that may be named in an event, never their values. */
 const CUSTOMER_FIELDS = [
@@ -153,6 +153,11 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     primary: flag,
     reason: oneOf(['too_many', 'not_interested', 'left_position', 'other']),
     contactId: uuid,
+    establishment: oneOf(['created', 'updated', 'deleted', 'attached']),
+    holding: oneOf(['added', 'changed', 'ended']),
+    productId: uuid,
+    establishmentId: uuid,
+    parentId: uuid,
     ids: uuidList,
     count: number,
     tagAdded: flag,
@@ -182,6 +187,34 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
    * A person of Kontakty: created or deleted, which of their fields changed (names), at how many
    * organizations. Never a name, an e-mail, a phone or a note.
    */
+  /** A product: created, duplicated, deleted, which of its fields changed, its price list. */
+  product: {
+    created: flag,
+    deleted: flag,
+    duplicatedFrom: uuid,
+    fields: subsetOf([
+      'name',
+      'description',
+      'basePrice',
+      'basePriceGross',
+      'period',
+      'active',
+      'workloadStep',
+    ]),
+    itemsAdded: uuidList,
+    itemsRemoved: uuidList,
+    itemsChanged: uuidList,
+  },
+  /** An item of the shared catalog. */
+  product_item: {
+    created: flag,
+    deleted: flag,
+    fields: subsetOf(['name', 'unit', 'description']),
+  },
+  /** The VAT rate (Nastavenia › Ceny a DPH). */
+  pricing: {
+    vatRate: number,
+  },
   person: {
     created: flag,
     deleted: flag,

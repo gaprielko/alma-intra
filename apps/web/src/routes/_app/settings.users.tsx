@@ -191,7 +191,8 @@ function UserRowView({
           <Avatar name={user.name} size={32} />
           <div className="min-w-0">
             <p className="truncate font-medium">
-              {user.name} {isMe ? <span className="font-normal text-muted">{t.you}</span> : null}
+              {user.fullName}{' '}
+              {isMe ? <span className="font-normal text-muted">{t.you}</span> : null}
             </p>
             {user.position ? <p className="truncate text-xs text-muted">{user.position}</p> : null}
             {/* Its own column only on a wide window. */}
@@ -289,6 +290,8 @@ function PersonDialog({ user, onClose }: { user?: UserRow; onClose: () => void }
     defaultValues: {
       email: user?.email ?? '',
       name: user?.name ?? '',
+      titleBefore: user?.titleBefore ?? '',
+      titleAfter: user?.titleAfter ?? '',
       phone: user?.phone ?? '',
       position: user?.position ?? '',
     },
@@ -336,19 +339,47 @@ function PersonDialog({ user, onClose }: { user?: UserRow; onClose: () => void }
               )(event)
             }
           >
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{d.name}</FormLabel>
-                  <FormControl>
-                    <Input autoComplete="off" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid gap-4 sm:grid-cols-[8rem_minmax(0,1fr)_8rem]">
+              <FormField
+                control={form.control}
+                name="titleBefore"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{d.titleBefore}</FormLabel>
+                    <FormControl>
+                      <Input autoComplete="off" {...field} value={field.value ?? ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{d.name}</FormLabel>
+                    <FormControl>
+                      <Input autoComplete="off" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="titleAfter"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{d.titleAfter}</FormLabel>
+                    <FormControl>
+                      <Input autoComplete="off" {...field} value={field.value ?? ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
               name="email"

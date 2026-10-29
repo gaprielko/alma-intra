@@ -10,6 +10,7 @@ import {
   emailEvents,
   files,
   fileVersions,
+  fullNameOf,
   messageAttachments,
   users,
 } from '../db/schema/index.js';
@@ -76,7 +77,7 @@ export async function drainCampaigns(
         html: campaignMessages.html,
         text: campaignMessages.text,
         attempts: campaignMessages.attempts,
-        senderName: users.name,
+        senderName: fullNameOf(users),
         senderEmail: users.email,
         // An answer from the app: the e-mail it answers, to thread it in the customer's client.
         answers: sql<{ messageId: string | null; references: string | null } | null>`(

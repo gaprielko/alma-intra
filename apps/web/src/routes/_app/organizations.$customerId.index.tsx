@@ -2,7 +2,6 @@ import { sk } from '@intra/shared/i18n';
 import {
   CUSTOMER_STATUSES,
   type CustomerStatus,
-  personName,
   type RichText,
   TIMELINE_FILTERS,
   type TimelineFilter,
@@ -15,14 +14,12 @@ import { ActivityDialog } from '@/components/activities/activity-dialog';
 import { ActivitySheet } from '@/components/activities/activity-sheet';
 import { ActivityItem, EmailItem, ReplyItem } from '@/components/activities/timeline-items';
 import { Avatar } from '@/components/avatar';
-import { ContactDialog, type Contact } from '@/components/customers/contact-dialog';
-import { ExistingPersonDialog } from '@/components/customers/existing-person-dialog';
-import {
-  CustomerAvatar,
-  CustomerStatusBadge,
-  ProductChip,
-  TagChip,
-} from '@/components/customers/customer-bits';
+import { AttachDialog } from '@/components/customers/attach-dialog';
+import { EstablishmentDialog } from '@/components/customers/establishment-dialog';
+import { EstablishmentChip, EstablishmentsCard } from '@/components/customers/establishments-card';
+import { HoldingsCard } from '@/components/customers/holdings-card';
+import { PersonsTable } from '@/components/customers/persons-table';
+import { CustomerStatusBadge, ProductChip, TagChip } from '@/components/customers/customer-bits';
 import { CreateDocumentDialog } from '@/components/documents/create-document-dialog';
 import { ErrorState } from '@/components/empty-state';
 import { CustomerFilesCard } from '@/components/files/customer-files-card';
@@ -37,9 +34,9 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
 import { formatDate, formatRecent } from '@/lib/format';
@@ -63,6 +60,9 @@ function CustomerDetailPage() {
   const [changingRole, setChangingRole] = useState(false);
   const [documenting, setDocumenting] = useState(false);
   const [recording, setRecording] = useState(false);
+  const [addingEstablishment, setAddingEstablishment] = useState(false);
+  const [editingEstablishment, setEditingEstablishment] = useState(false);
+  const [attaching, setAttaching] = useState(false);
   const canRecord = useCan('activity.write');
   const canSend = useCan('email.send');
   const navigateTo = useNavigate();
@@ -106,84 +106,131 @@ function CustomerDetailPage() {
     );
   }
   const c = customer.data;
-  const meta = [
-    sk.organizations.persons.roles[c.role],
-    c.kind === 'individual' ? sk.customers.kind.individual : null,
-    c.city,
-    c.ico ? t.ico(c.ico.replace(/^(\d{2})(\d{3})(\d{3})$/, '$1 $2 $3')) : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  const parent = c.parent;
+  const status = parent ? parent.status : c.status;
 
   return (
     <div className="min-w-0">
       <PageHeader
         title={c.name}
-        subtitle={meta}
-        back={{
-          to: c.role === 'partner' ? '/organizations/partners' : '/organizations/customers',
-          label:
-            c.role === 'partner' ? sk.organizations.tabs.partners : sk.organizations.tabs.customers,
-        }}
-        badge={c.status ? <CustomerStatusBadge status={c.status} /> : undefined}
+        subtitle={<HeaderFacts customer={c} />}
+        back={
+          parent
+            ? {
+                to: '/organizations/$customerId',
+                params: { customerId: parent.id },
+                label: parent.name,
+              }
+            : {
+                to: c.role === 'partner' ? '/organizations/partners' : '/organizations/customers',
+                label:
+                  c.role === 'partner'
+                    ? sk.organizations.tabs.partners
+                    : sk.organizations.tabs.customers,
+              }
+        }
+        badge={
+          <span className="flex flex-wrap items-center gap-2">
+            <Badge tone="neutral">{sk.organizations.persons.roles[c.role]}</Badge>
+            {parent ? <EstablishmentChip name={sk.establishments.badge} /> : null}
+            {status ? <CustomerStatusBadge status={status} /> : null}
+          </span>
+        }
       >
-        {canSend ? (
-          <Button
-            variant="secondary"
-            disabled={compose.isPending}
-            onClick={() => compose.mutate({ customerIds: [customerId] })}
-          >
-            <Mail className="size-4" aria-hidden />
-            {sk.campaigns.sendEmail}
-          </Button>
-        ) : null}
-        {canRecord ? (
-          <Button onClick={() => setRecording(true)}>
-            <Plus className="size-4" aria-hidden />
-            {a.record}
-          </Button>
-        ) : null}
-        <Button variant="secondary" asChild>
-          <Link to="/organizations/$customerId/edit" params={{ customerId }}>
-            <Pencil className="size-4" aria-hidden />
-            {t.edit}
-          </Link>
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="icon" aria-label={t.more}>
-              <MoreHorizontal className="size-4" aria-hidden />
+        {/* One row: the title side wraps first, the buttons stay together. */}
+        <div className="flex flex-nowrap items-center gap-3">
+          {canSend ? (
+            <Button
+              variant="secondary"
+              disabled={compose.isPending}
+              onClick={() => compose.mutate({ customerIds: [customerId] })}
+            >
+              <Mail className="size-4" aria-hidden />
+              {sk.campaigns.sendEmail}
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={() => setChangingRole(true)}>
-              {c.role === 'customer'
-                ? sk.organizations.roleChange.toPartner
-                : sk.organizations.roleChange.toCustomer}
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => setDocumenting(true)}>
-              {sk.documents.menu}
-            </DropdownMenuItem>
-            <DropdownMenuItem destructive onSelect={() => setDeleting(true)}>
-              {t.delete}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          ) : null}
+          {canRecord ? (
+            <Button onClick={() => setRecording(true)}>
+              <Plus className="size-4" aria-hidden />
+              {a.record}
+            </Button>
+          ) : null}
+          {parent ? (
+            <Button variant="secondary" onClick={() => setEditingEstablishment(true)}>
+              <Pencil className="size-4" aria-hidden />
+              {t.edit}
+            </Button>
+          ) : (
+            <Button variant="secondary" asChild>
+              <Link to="/organizations/$customerId/edit" params={{ customerId }}>
+                <Pencil className="size-4" aria-hidden />
+                {t.edit}
+              </Link>
+            </Button>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" aria-label={t.more}>
+                <MoreHorizontal className="size-4" aria-hidden />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {parent ? null : (
+                <DropdownMenuItem onSelect={() => setChangingRole(true)}>
+                  {c.role === 'customer'
+                    ? sk.organizations.roleChange.toPartner
+                    : sk.organizations.roleChange.toCustomer}
+                </DropdownMenuItem>
+              )}
+              {!parent && c.kind === 'organization' ? (
+                <DropdownMenuItem onSelect={() => setAddingEstablishment(true)}>
+                  {sk.establishments.add}
+                </DropdownMenuItem>
+              ) : null}
+              {!parent && c.kind === 'organization' && !c.ico && c.establishmentCount === 0 ? (
+                <DropdownMenuItem onSelect={() => setAttaching(true)}>
+                  {sk.establishments.attach.menu}
+                </DropdownMenuItem>
+              ) : null}
+              <DropdownMenuItem onSelect={() => setDocumenting(true)}>
+                {sk.documents.menu}
+              </DropdownMenuItem>
+              <DropdownMenuItem destructive onSelect={() => setDeleting(true)}>
+                {parent ? sk.establishments.delete : t.delete}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <OwnerLine
+          owner={(parent ?? c).owner?.name ?? null}
+          source={parent ? null : c.sourceName}
+        />
       </PageHeader>
 
-      <main className="grid max-w-[1400px] items-start gap-5 px-7 pt-5 pb-10 xl:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
+      <main className="grid max-w-[1400px] items-start gap-5 px-7 pt-5 pb-10 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
         <div className="min-w-0 space-y-5">
-          {c.kind === 'organization' ? <ContactsCard customer={c} /> : null}
-          <TimelineCard customer={c} />
-        </div>
-        <div className="min-w-0 space-y-5">
+          {!parent && c.establishmentCount > 0 ? (
+            <EstablishmentsCard parentId={c.id} parentName={c.name} />
+          ) : null}
+          <HoldingsCard
+            customerId={c.id}
+            customerName={c.name}
+            isEstablishment={parent !== null && parent !== undefined}
+          />
           {c.kind === 'organization' ? (
-            <OrganizationCard customer={c} />
+            <PersonsTable
+              organizationId={c.id}
+              organizationName={c.name}
+              hasEstablishments={!parent && c.establishmentCount > 0}
+            />
           ) : (
             <PersonCard customer={c} />
           )}
-          <ClassificationCard customer={c} />
-          <CustomerFilesCard customerId={customerId} />
+          <NoteCard customer={c} />
+          {parent ? null : <CustomerFilesCard customerId={customerId} />}
+        </div>
+        <div className="min-w-0 space-y-5">
+          <TimelineCard customer={c} />
         </div>
       </main>
 
@@ -191,6 +238,28 @@ function CustomerDetailPage() {
       {changingRole ? <ChangeRole customer={c} onClose={() => setChangingRole(false)} /> : null}
       {documenting ? (
         <CreateDocumentDialog customer={c} onClose={() => setDocumenting(false)} />
+      ) : null}
+      {attaching ? (
+        <AttachDialog
+          organizationId={c.id}
+          organizationName={c.name}
+          onClose={() => setAttaching(false)}
+        />
+      ) : null}
+      {addingEstablishment ? (
+        <EstablishmentDialog
+          parentId={c.id}
+          parentName={c.name}
+          onClose={() => setAddingEstablishment(false)}
+        />
+      ) : null}
+      {editingEstablishment && parent ? (
+        <EstablishmentDialog
+          parentId={parent.id}
+          parentName={parent.name}
+          establishment={c}
+          onClose={() => setEditingEstablishment(false)}
+        />
       ) : null}
       {recording ? (
         <ActivityDialog
@@ -222,114 +291,145 @@ const address = (c: Customer) =>
 
 const webHref = (web: string) => (/^https?:\/\//.test(web) ? web : `https://${web}`);
 
-function OrganizationCard({ customer: c }: { customer: Customer }) {
+const h = sk.establishments.header;
+const formatIco = (ico: string) => ico.replace(/^(\d{2})(\d{3})(\d{3})$/, '$1 $2 $3');
+
+/** One fact of the header: a muted label and its value. */
+function Fact({ label, children }: { label?: string; children: ReactNode }) {
   return (
-    <Card>
-      <CardHeader title={t.basics} />
-      <Rows>
-        <Row label={f.kind}>{sk.customers.kind[c.kind]}</Row>
-        <Row label={f.ico}>{c.ico}</Row>
-        <Row label={f.dic}>{c.dic}</Row>
-        <Row label={f.icDph}>{c.icDph}</Row>
-        <Row label={f.region}>{c.region ? sk.customers.region[c.region] : null}</Row>
-        <Row label={f.address}>{address(c)}</Row>
-        <Row label={f.web}>
-          {c.web ? (
-            <a
-              href={webHref(c.web)}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="text-primary-text hover:underline"
-            >
-              {c.web}
-            </a>
-          ) : null}
-        </Row>
-        <Row label={f.phone}>
-          {c.phone ? <a href={`tel:${c.phone.replace(/\s/g, '')}`}>{c.phone}</a> : null}
-        </Row>
-        <Row label={f.email}>
-          {c.email ? (
-            <a href={`mailto:${c.email}`} className="text-primary-text hover:underline">
-              {c.email}
-            </a>
-          ) : null}
-        </Row>
-      </Rows>
-    </Card>
+    <span className="text-foreground">
+      {label ? <span className="mr-1 text-muted">{label}</span> : null}
+      {children}
+    </span>
   );
 }
 
-function PersonCard({ customer: c }: { customer: Customer }) {
+/**
+ * The record's data under its name (docs/establishments.md 4): a line of IČO, DIČ, seat, phone,
+ * e-mail and web, and a little apart the products and the number of prevádzky. A prevádzka shows
+ * its address and its organization instead.
+ */
+function HeaderFacts({ customer: c }: { customer: Customer }) {
+  const parent = c.parent;
+  const where = address(c);
+  const email = c.email ? (
+    <a href={`mailto:${c.email}`} className="font-medium text-primary-text hover:underline">
+      {c.email}
+    </a>
+  ) : null;
+  const web = c.web ? (
+    <a
+      href={webHref(c.web)}
+      target="_blank"
+      rel="noreferrer noopener"
+      className="font-medium text-primary-text hover:underline"
+    >
+      {c.web}
+    </a>
+  ) : null;
   return (
-    <Card>
-      <CardHeader
-        title={t.personal}
-        action={
-          c.personId ? (
-            <Button variant="secondary" size="sm" asChild>
-              <Link to="/contacts/$personId" params={{ personId: c.personId }}>
-                {sk.organizations.openPerson}
+    <div className="max-w-[38rem] space-y-2 pt-1">
+      <p className="flex flex-wrap gap-x-3.5 gap-y-0.5">
+        {parent ? (
+          <>
+            {where ? <Fact label={h.address}>{where}</Fact> : null}
+            {c.phone ? <Fact label={h.phone}>{c.phone}</Fact> : null}
+            {email}
+            {c.almaOrganizationId ? <Fact label={h.alma}>{c.almaOrganizationId}</Fact> : null}
+          </>
+        ) : (
+          <>
+            {c.ico ? <Fact label={h.ico}>{formatIco(c.ico)}</Fact> : null}
+            {c.dic ? <Fact label={h.dic}>{c.dic}</Fact> : null}
+            {where ? (
+              <Fact label={c.kind === 'organization' ? h.seat : h.address}>{where}</Fact>
+            ) : null}
+            {c.phone ? <Fact label={h.phone}>{c.phone}</Fact> : null}
+            {email}
+            {web}
+          </>
+        )}
+      </p>
+      <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1">
+        {c.products.length > 0 ? (
+          <span className="inline-flex flex-wrap gap-1">
+            {c.products.map((product) => (
+              <ProductChip key={product.id}>{product.name}</ProductChip>
+            ))}
+          </span>
+        ) : null}
+        {parent ? (
+          <>
+            <Fact label={h.organization}>
+              <Link
+                to="/organizations/$customerId"
+                params={{ customerId: parent.id }}
+                className="font-medium text-primary-text hover:underline"
+              >
+                {parent.name}
               </Link>
-            </Button>
-          ) : null
-        }
-      />
-      <Rows>
-        <Row label={f.name}>{c.name}</Row>
-        <Row label={f.kind}>{sk.customers.kind[c.kind]}</Row>
-        <Row label={f.salutation}>{c.salutation}</Row>
-        <Row label={f.email}>
-          {c.email ? (
-            <a href={`mailto:${c.email}`} className="text-primary-text hover:underline">
-              {c.email}
-            </a>
-          ) : null}
-        </Row>
-        <Row label={f.phone}>{c.phone}</Row>
-        <Row label={f.bulk}>
-          {c.unsubscribedAt ? (
-            <Badge tone="warning">{t.unsubscribed}</Badge>
-          ) : (
-            <Badge tone="success">{t.receives}</Badge>
-          )}
-        </Row>
-        <Row label={f.address}>{address(c)}</Row>
-        <Row label={f.region}>{c.region ? sk.customers.region[c.region] : null}</Row>
-      </Rows>
-    </Card>
+            </Fact>
+            {parent.ico ? <Fact label={h.ico}>{formatIco(parent.ico)}</Fact> : null}
+          </>
+        ) : c.establishmentCount > 0 ? (
+          <Fact label={h.establishments}>{c.establishmentCount}</Fact>
+        ) : null}
+        {c.nurses !== null ? <Fact label={h.nurses}>{c.nurses}</Fact> : null}
+        {parent ? (
+          parent.tags.map((tag) => <TagChip key={tag.id}>{tag.name}</TagChip>)
+        ) : (
+          <TagsQuickAdd customer={c} />
+        )}
+      </div>
+    </div>
   );
 }
 
-function ClassificationCard({ customer: c }: { customer: Customer }) {
+/** Under the header's buttons: who has the record in hand and where it came from. */
+function OwnerLine({ owner, source }: { owner: string | null; source: string | null }) {
+  if (!owner && !source) return null;
+  return (
+    <p className="flex basis-full flex-wrap justify-end gap-x-3.5 text-[13px] text-muted">
+      {owner ? <Fact label={h.owner}>{owner}</Fact> : null}
+      {source ? <Fact label={h.source}>{source}</Fact> : null}
+    </p>
+  );
+}
+
+/** The note and the few things not in the header; a prevádzka points to its organization's files. */
+function NoteCard({ customer: c }: { customer: Customer }) {
+  const e = sk.establishments.detail;
   return (
     <Card>
-      <CardHeader title={t.classification} />
+      <CardHeader title={sk.establishments.noteCard} />
       <Rows>
-        <Row label={f.products}>
-          {c.products.length > 0 ? (
-            <div className="flex flex-wrap gap-1">
-              {c.products.map((product) => (
-                <ProductChip key={product.id}>{product.name}</ProductChip>
-              ))}
-            </div>
-          ) : null}
+        <Row label={f.note}>
+          {c.note ? <span className="whitespace-pre-line">{c.note}</span> : null}
         </Row>
-        <Row label={f.owner}>{c.owner?.name}</Row>
-        <Row label={f.source}>{c.sourceName}</Row>
-        <Row label={f.tags}>
-          <TagsQuickAdd customer={c} />
-        </Row>
-        {c.kind === 'organization' ? <Row label={f.almaId}>{c.almaOrganizationId}</Row> : null}
+        {c.kind === 'organization' && !c.parent ? (
+          <Row label={f.almaId}>{c.almaOrganizationId}</Row>
+        ) : null}
+        {c.kind === 'organization' && !c.parent ? (
+          <Row label={f.region}>{c.region ? sk.customers.region[c.region] : null}</Row>
+        ) : null}
         <Row label={f.created}>
           {c.createdBy
             ? t.createdBy(formatDate(c.createdAt), c.createdBy)
             : formatDate(c.createdAt)}
         </Row>
-        <Row label={f.note}>
-          {c.note ? <span className="whitespace-pre-line">{c.note}</span> : null}
-        </Row>
       </Rows>
+      {c.parent ? (
+        <p className="px-5 pb-5 text-[13px] text-muted">
+          {e.files}{' '}
+          <Link
+            to="/organizations/$customerId"
+            params={{ customerId: c.parent.id }}
+            className="font-semibold text-primary-text hover:underline"
+          >
+            {e.openFolder(c.parent.name)}
+          </Link>
+        </p>
+      ) : null}
     </Card>
   );
 }
@@ -387,199 +487,43 @@ function TagsQuickAdd({ customer: c }: { customer: Customer }) {
   );
 }
 
-function ContactsCard({ customer: c }: { customer: Customer }) {
-  const tc = sk.contacts;
-  const toast = useToast();
-  const queryClient = useQueryClient();
-  const [editing, setEditing] = useState<Contact | 'new' | null>(null);
-  const [picking, setPicking] = useState(false);
-  const [removing, setRemoving] = useState<Contact | null>(null);
-  const refresh = () => queryClient.invalidateQueries(trpc.customer.pathFilter());
-  const primary = useMutation(
-    trpc.customer.contactSetPrimary.mutationOptions({
-      onSuccess: async () => {
-        toast('success', tc.primaryDone);
-        await refresh();
-      },
-      onError: (error) => toast('error', errorMessage(error, sk.customers.errors)),
-    }),
-  );
-  const remove = useMutation(
-    trpc.customer.contactDelete.mutationOptions({
-      onSuccess: async () => {
-        toast('success', tc.deleteConfirm.done);
-        setRemoving(null);
-        setEditing(null);
-        await refresh();
-      },
-      onError: (error) => toast('error', errorMessage(error, sk.customers.errors)),
-    }),
-  );
+function PersonCard({ customer: c }: { customer: Customer }) {
   return (
     <Card>
       <CardHeader
-        title={
-          <>
-            {tc.title}
-            <span className="ml-1.5 font-normal text-muted">· {c.contacts.length}</span>
-          </>
-        }
+        title={t.personal}
         action={
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="secondary" size="sm">
-                <Plus className="size-3.5" aria-hidden />
-                {tc.add}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => setEditing('new')}>
-                <span>
-                  <span className="block font-medium">{sk.organizations.addNewPerson}</span>
-                  <span className="block text-xs text-muted">
-                    {sk.organizations.addNewPersonHint}
-                  </span>
-                </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setPicking(true)}>
-                <span>
-                  <span className="block font-medium">{sk.organizations.addExistingPerson}</span>
-                  <span className="block text-xs text-muted">
-                    {sk.organizations.addExistingPersonHint}
-                  </span>
-                </span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          c.personId ? (
+            <Button variant="secondary" size="sm" asChild>
+              <Link to="/contacts/$personId" params={{ personId: c.personId }}>
+                {sk.organizations.openPerson}
+              </Link>
+            </Button>
+          ) : null
         }
       />
-      {c.contacts.length === 0 ? (
-        <p className="px-5 pt-3 pb-5 text-sm text-muted">{tc.empty}</p>
-      ) : (
-        <ul className="px-5 pt-2 pb-3">
-          {c.contacts.map((contact) => {
-            const name = personName(contact);
-            return (
-              <li
-                key={contact.id}
-                className="flex items-start gap-3 border-t border-border-subtle py-3.5 first:border-t-0"
-              >
-                <CustomerAvatar
-                  name={`${contact.firstName} ${contact.lastName}`}
-                  kind="individual"
-                  size={40}
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Link
-                      to="/contacts/$personId"
-                      params={{ personId: contact.id }}
-                      className="text-left font-semibold hover:underline"
-                    >
-                      {name}
-                    </Link>
-                    {contact.isPrimary ? <Badge tone="info">{tc.primary}</Badge> : null}
-                    {contact.unsubscribedAt ? (
-                      <Badge tone="warning">{tc.unsubscribed}</Badge>
-                    ) : null}
-                    {contact.emailStatus !== 'ok' ? (
-                      <Badge tone="danger">{tc.bounced}</Badge>
-                    ) : null}
-                  </div>
-                  <p className="text-[13px] text-muted">
-                    {[
-                      contact.position,
-                      contact.unsubscribedAt
-                        ? tc.unsubscribedOn(formatDate(contact.unsubscribedAt))
-                        : contact.salutation
-                          ? tc.salutationOf(contact.salutation)
-                          : null,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </p>
-                  {contact.elsewhere.length > 0 ? (
-                    <p className="text-[13px] text-muted">
-                      {sk.organizations.alsoAt}{' '}
-                      {contact.elsewhere.map((org, index) => (
-                        <span key={org.id}>
-                          {index > 0 ? ', ' : null}
-                          <Link
-                            to="/organizations/$customerId"
-                            params={{ customerId: org.id }}
-                            className="text-primary-text hover:underline"
-                          >
-                            {org.name}
-                          </Link>{' '}
-                          ({sk.organizations.persons.roles[org.role].toLowerCase()})
-                        </span>
-                      ))}
-                    </p>
-                  ) : null}
-                  <p className="mt-1 flex flex-wrap gap-x-4 text-[13px]">
-                    {contact.email ? (
-                      <a
-                        href={`mailto:${contact.email}`}
-                        className="text-primary-text hover:underline"
-                      >
-                        {contact.email}
-                      </a>
-                    ) : null}
-                    {contact.phone ? <span className="text-muted">{contact.phone}</span> : null}
-                  </p>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button size="icon" aria-label={tc.menu(name)}>
-                      <MoreHorizontal className="size-4" aria-hidden />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onSelect={() => setEditing(contact)}>
-                      {tc.edit}
-                    </DropdownMenuItem>
-                    {contact.isPrimary ? null : (
-                      <DropdownMenuItem
-                        onSelect={() => primary.mutate({ id: contact.id, customerId: c.id })}
-                      >
-                        {tc.makePrimary}
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem destructive onSelect={() => setRemoving(contact)}>
-                      {tc.dialog.delete}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-      {picking ? (
-        <ExistingPersonDialog customerId={c.id} onClose={() => setPicking(false)} />
-      ) : null}
-      {editing ? (
-        <ContactDialog
-          customerId={c.id}
-          customerName={c.name}
-          contact={editing === 'new' ? undefined : editing}
-          onClose={() => setEditing(null)}
-          onDelete={editing === 'new' ? undefined : () => setRemoving(editing)}
-        />
-      ) : null}
-      {removing ? (
-        <ConfirmDialog
-          open
-          onOpenChange={(open) => !open && setRemoving(null)}
-          title={tc.deleteConfirm.title(personName(removing))}
-          description={tc.deleteConfirm.text}
-          confirmLabel={tc.deleteConfirm.confirm}
-          destructive
-          pending={remove.isPending}
-          onConfirm={() => remove.mutate({ id: removing.id, customerId: c.id })}
-        />
-      ) : null}
+      <Rows>
+        <Row label={f.name}>{c.name}</Row>
+        <Row label={f.kind}>{sk.customers.kind[c.kind]}</Row>
+        <Row label={f.salutation}>{c.salutation}</Row>
+        <Row label={f.email}>
+          {c.email ? (
+            <a href={`mailto:${c.email}`} className="text-primary-text hover:underline">
+              {c.email}
+            </a>
+          ) : null}
+        </Row>
+        <Row label={f.phone}>{c.phone}</Row>
+        <Row label={f.bulk}>
+          {c.unsubscribedAt ? (
+            <Badge tone="warning">{t.unsubscribed}</Badge>
+          ) : (
+            <Badge tone="success">{t.receives}</Badge>
+          )}
+        </Row>
+        <Row label={f.address}>{address(c)}</Row>
+        <Row label={f.region}>{c.region ? sk.customers.region[c.region] : null}</Row>
+      </Rows>
     </Card>
   );
 }
@@ -607,6 +551,7 @@ function describe(event: HistoryEvent): ReactNode {
     const after = nameOf(value.after) ?? h.none;
     return `${before} → ${after}`;
   };
+  const named = (text: string, id: unknown) => (nameOf(id) ? `${text}: ${nameOf(id)}` : text);
   const contactName = nameOf(diff.contactId);
   const withContact = (text: string) => (contactName ? `${text}: ${contactName}` : text);
   const added = namesOf(diff.tagsAdded);
@@ -651,7 +596,21 @@ function describe(event: HistoryEvent): ReactNode {
         .filter(Boolean)
         .join(' · ');
     case 'customer.delete':
-      return h.deleted;
+      return diff.establishment === 'deleted'
+        ? named(h.establishmentDeleted, diff.establishmentId)
+        : h.deleted;
+    case 'customer.establishmentCreate':
+      return named(h.establishmentCreated, diff.establishmentId);
+    case 'customer.establishmentAttach':
+      return named(h.establishmentAttached, diff.establishmentId);
+    case 'customer.establishmentUpdate':
+      return fieldList
+        ? `${named(h.establishmentUpdated, diff.establishmentId)} (${fieldList})`
+        : named(h.establishmentUpdated, diff.establishmentId);
+    case 'customer.holdingSave':
+      return named(diff.holding === 'added' ? h.holdingAdded : h.holdingChanged, diff.productId);
+    case 'customer.holdingEnd':
+      return named(h.holdingEnded, diff.productId);
     case 'customer.bulkAddTag':
       return nameOf(diff.tagId) ? `${h.tagAdded}: ${nameOf(diff.tagId)}` : h.tagAdded;
     case 'customer.bulkSetStatus':
@@ -709,6 +668,17 @@ function describe(event: HistoryEvent): ReactNode {
  * The customer's timeline: activities and notes with the changes from the audit trail, newest
  * first, filtered by kind; a note is written right at its top. Sent e-mails join it with E5.
  */
+const WITH_ESTABLISHMENTS_KEY = 'intra.timeline.withEstablishments';
+type TimelineItem = RouterOutputs['activity']['timeline'][number];
+const keyOf = (item: TimelineItem) =>
+  item.type === 'activity'
+    ? item.activity.id
+    : item.type === 'email'
+      ? item.email.id
+      : item.type === 'reply'
+        ? item.reply.id
+        : item.change.id;
+
 function TimelineCard({ customer }: { customer: Customer }) {
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -720,10 +690,45 @@ function TimelineCard({ customer }: { customer: Customer }) {
   const [noteKey, setNoteKey] = useState(0);
   const [openId, setOpenId] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
+  // „Aj prevádzky“ (P-7): on by default, remembered in this browser.
+  const hasEstablishments = !customer.parent && customer.establishmentCount > 0;
+  const [withEstablishments, setWithEstablishments] = useState(() => {
+    try {
+      return localStorage.getItem(WITH_ESTABLISHMENTS_KEY) !== 'off';
+    } catch {
+      return true;
+    }
+  });
+  const toggleEstablishments = () => {
+    const next = !withEstablishments;
+    setWithEstablishments(next);
+    try {
+      localStorage.setItem(WITH_ESTABLISHMENTS_KEY, next ? 'on' : 'off');
+    } catch {
+      // A private window: the choice lasts this page only.
+    }
+  };
   const timeline = useQuery({
-    ...trpc.activity.timeline.queryOptions({ customerId: customer.id, filter }),
+    ...trpc.activity.timeline.queryOptions({
+      customerId: customer.id,
+      filter,
+      withEstablishments: hasEstablishments && withEstablishments,
+    }),
     placeholderData: keepPreviousData,
   });
+  // A prevádzka's entry is indented under its name (docs/establishments.md 4.3).
+  const holderOf = (item: TimelineItem) =>
+    item.type === 'activity'
+      ? item.activity.organization
+      : item.type === 'email'
+        ? item.email.organization
+        : item.type === 'reply'
+          ? item.reply.organization
+          : item.change.organization;
+  const establishmentName = (item: TimelineItem) => {
+    const holder = holderOf(item);
+    return holder && holder.id !== customer.id ? holder.name : null;
+  };
   const saveNote = useMutation(
     trpc.activity.create.mutationOptions({
       onSuccess: async () => {
@@ -743,13 +748,32 @@ function TimelineCard({ customer }: { customer: Customer }) {
   return (
     <Card>
       <CardHeader
-        title={a.timeline.title}
+        title={
+          <span className="inline-flex items-center gap-2">
+            {a.timeline.title}
+            {canWrite ? (
+              <Button
+                variant="secondary"
+                size="icon"
+                className="size-7"
+                aria-label={a.record}
+                onClick={() => setRecording(true)}
+              >
+                <Plus className="size-3.5" aria-hidden />
+              </Button>
+            ) : null}
+          </span>
+        }
         action={
-          canWrite ? (
-            <Button variant="secondary" size="sm" onClick={() => setRecording(true)}>
-              <Plus className="size-3.5" aria-hidden />
-              {a.record}
-            </Button>
+          hasEstablishments ? (
+            <span className="flex items-center gap-2 text-[13px] font-medium text-muted">
+              {a.timeline.withEstablishments}
+              <Switch
+                checked={withEstablishments}
+                label={a.timeline.withEstablishments}
+                onChange={toggleEstablishments}
+              />
+            </span>
           ) : null
         }
       />
@@ -836,33 +860,46 @@ function TimelineCard({ customer }: { customer: Customer }) {
                 timeline.isPlaceholderData && 'opacity-60',
               )}
             >
-              {timeline.data.map((item) =>
-                item.type === 'activity' ? (
-                  <ActivityItem
-                    key={item.activity.id}
-                    item={item.activity}
-                    onOpen={() => setOpenId(item.activity.id)}
-                  />
-                ) : item.type === 'email' ? (
-                  <EmailItem key={item.email.id} item={item.email} />
-                ) : item.type === 'reply' ? (
-                  <ReplyItem key={item.reply.id} item={item.reply} />
-                ) : (
-                  <li key={item.change.id} className="relative">
-                    <span
-                      aria-hidden
-                      className="absolute top-1.5 -left-[29px] size-2 rounded-full bg-border ring-4 ring-white"
+              {timeline.data.map((item) => {
+                const entry =
+                  item.type === 'activity' ? (
+                    <ActivityItem
+                      key={item.activity.id}
+                      item={item.activity}
+                      onOpen={() => setOpenId(item.activity.id)}
                     />
-                    <div className="text-sm">{describe(item.change)}</div>
-                    <p className="text-xs text-muted">
-                      {t.history.by(
-                        item.change.userName ?? sk.common.none,
-                        formatRecent(item.change.at),
-                      )}
-                    </p>
+                  ) : item.type === 'email' ? (
+                    <EmailItem key={item.email.id} item={item.email} />
+                  ) : item.type === 'reply' ? (
+                    <ReplyItem key={item.reply.id} item={item.reply} />
+                  ) : (
+                    <li key={item.change.id} className="relative">
+                      <span
+                        aria-hidden
+                        className="absolute top-1.5 -left-[29px] size-2 rounded-full bg-border ring-4 ring-white"
+                      />
+                      <div className="text-sm">{describe(item.change)}</div>
+                      <p className="text-xs text-muted">
+                        {t.history.by(
+                          item.change.userName ?? sk.common.none,
+                          formatRecent(item.change.at),
+                        )}
+                      </p>
+                    </li>
+                  );
+                const at = establishmentName(item);
+                return at ? (
+                  <li
+                    key={`est-${keyOf(item)}`}
+                    className="relative ml-3 border-l-2 border-warning-soft pl-3"
+                  >
+                    <EstablishmentChip name={at} className="mb-1.5" />
+                    <ol className="relative">{entry}</ol>
                   </li>
-                ),
-              )}
+                ) : (
+                  entry
+                );
+              })}
             </ol>
           )}
         </div>

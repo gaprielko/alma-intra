@@ -71,6 +71,20 @@ describe('Claude through MCP', () => {
     expect(JSON.parse(person.text)).toHaveProperty('timeline');
   });
 
+  it('reads an organization with its prevádzky and their persons', async () => {
+    const parentId = '00000000-0000-4000-8000-d00000000001';
+    const created = await jana.call<{ id: string }>('customer.establishmentCreate', {
+      parentId,
+      establishment: { name: 'Harmónia MCP Spiš' },
+      primary: { kind: 'new', contact: { firstName: 'Iveta', lastName: 'Spišská' } },
+    });
+    const customer = JSON.parse((await tool('customers_get', { customerId: parentId })).text) as {
+      establishments: { id: string; persons: { name: string }[] }[];
+    };
+    const spis = customer.establishments.find((e) => e.id === created.data.id)!;
+    expect(spis.persons).toEqual([expect.objectContaining({ name: 'Iveta Spišská' })]);
+  });
+
   it('finds a customer and writes a file there as a new version, never over it', async () => {
     const found = JSON.parse((await tool('customers_search', { query: 'Harmónia' })).text) as {
       id: string;

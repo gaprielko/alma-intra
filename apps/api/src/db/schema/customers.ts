@@ -1,5 +1,8 @@
 import {
   CUSTOMER_KINDS,
+  ITEM_BILLINGS,
+  PRODUCT_PERIODS,
+  PRODUCT_PRICINGS,
   ORGANIZATION_ROLES,
   CUSTOMER_STATUSES,
   EMAIL_STATUSES,
@@ -8,10 +11,14 @@ import {
 } from '@intra/shared/schemas';
 import { sql } from 'drizzle-orm';
 import {
+  type AnyPgColumn,
   boolean,
   check,
   index,
+  date,
+  foreignKey,
   integer,
+  numeric,
   pgEnum,
   pgTable,
   primaryKey,
@@ -43,10 +50,79 @@ export const codeListColumns = () => ({
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-/** What Alma offers a record (ADOS, DOS, Stacionár, …): none, one or several. */
-export const products = pgTable('products', codeListColumns(), (t) => [
-  uniqueIndex('products_name_unique').on(sql`lower(${t.name})`),
-]);
+export const productPeriod = pgEnum('product_period', PRODUCT_PERIODS);
+export const itemBilling = pgEnum('item_billing', ITEM_BILLINGS);
+
+/** EUR to the cent, read as a number. */
+const money = (name: string) => numeric(name, { precision: 10, scale: 2, mode: 'number' });
+
+/**
+ * What a customer buys (docs/products.md): ADOS, DOS, … with its base price for a period and its
+ * price list. `active` is „Ponúka sa“; off, it is kept for the customers who have it.
+ */
+export const products = pgTable(
+  'products',
+  {
+    ...codeListColumns(),
+    description: text('description'),
+    /** Without and with VAT, both kept so what was typed stays exact (R-9); NULL: not set yet. */
+    basePrice: money('base_price'),
+    basePriceGross: money('base_price_gross'),
+    period: productPeriod('period').notNull().default('month'),
+    /** Every workload is rounded up to this many percent (R-14). */
+    workloadStep: integer('workload_step').notNull().default(50),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('products_name_unique').on(sql`lower(${t.name})`),
+    check('products_workload_step', sql`${t.workloadStep} between 1 and 100`),
+  ],
+);
+
+/** The shared catalog of what price lists count or add (R-2): „Admin prístup“, „Sestra“, … */
+export const productItems = pgTable(
+  'product_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: text('name').notNull(),
+    /** The word for one („prístup“, „sestra“). */
+    unit: text('unit'),
+    description: text('description'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('product_items_name_unique').on(sql`lower(${t.name})`)],
+);
+
+/** One product's price list (R-3): an item with this product's numbers. */
+export const productPriceItems = pgTable(
+  'product_price_items',
+  {
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    itemId: uuid('item_id')
+      .notNull()
+      .references(() => productItems.id),
+    included: integer('included').notNull().default(0),
+    unitPrice: money('unit_price'),
+    unitPriceGross: money('unit_price_gross'),
+    max: integer('max'),
+    billing: itemBilling('billing').notNull().default('recurring'),
+    byWorkload: boolean('by_workload').notNull().default(false),
+    position: integer('position').notNull().default(0),
+  },
+  (t) => [
+    primaryKey({ columns: [t.productId, t.itemId] }),
+    index('product_price_items_item_idx').on(t.itemId),
+  ],
+);
+
+/** Nastavenia › Ceny a DPH: one row (R-9). */
+export const pricingSettings = pgTable('pricing_settings', {
+  id: integer('id').primaryKey().default(1),
+  vatRate: numeric('vat_rate', { precision: 5, scale: 2, mode: 'number' }).notNull().default(23),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
 
 /** Where a customer came from: a referral, a conference, the web. */
 export const organizationSources = pgTable('organization_sources', codeListColumns(), (t) => [
@@ -94,6 +170,11 @@ export const organizations = pgTable(
     sourceId: uuid('source_id').references(() => organizationSources.id),
     note: text('note'),
     almaOrganizationId: text('alma_organization_id'),
+    /**
+     * A prevádzka's organization (docs/establishments.md): NULL for an organization. One level
+     * only; a prevádzka shares its organization's IČO, role, status, owner, source and tags.
+     */
+    parentId: uuid('parent_id').references((): AnyPgColumn => organizations.id),
     createdByUserId: uuid('created_by_user_id').references(() => users.id),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -107,6 +188,8 @@ export const organizations = pgTable(
     index('organizations_role_idx').on(t.role),
     index('organizations_status_idx').on(t.status),
     index('organizations_owner_idx').on(t.ownerUserId),
+    index('organizations_parent_idx').on(t.parentId),
+    check('organizations_parent_not_self', sql`${t.parentId} <> ${t.id}`),
     check('organizations_name_length', sql`char_length(${t.name}) between 1 and 200`),
   ],
 );
@@ -127,6 +210,12 @@ export const organizationTags = pgTable(
   ],
 );
 
+export const productPricing = pgEnum('product_pricing', PRODUCT_PRICINGS);
+
+/**
+ * A product an organization or a prevádzka holds (docs/products.md 9): once at a time, with its
+ * dates and how it is priced; its counts and workloads in the two tables below.
+ */
 export const organizationProducts = pgTable(
   'organization_products',
   {
@@ -136,10 +225,67 @@ export const organizationProducts = pgTable(
     productId: uuid('product_id')
       .notNull()
       .references(() => products.id),
+    validFrom: date('valid_from')
+      .notNull()
+      .default(sql`current_date`),
+    /** NULL: ongoing; ending sets it, nothing is deleted (R-10). */
+    validTo: date('valid_to'),
+    pricing: productPricing('pricing').notNull().default('list'),
+    discountPercent: numeric('discount_percent', { precision: 5, scale: 2, mode: 'number' }),
+    /** The discount's months from `valid_from`; NULL: permanent. */
+    discountMonths: integer('discount_months'),
+    fixedPrice: money('fixed_price'),
+    fixedPriceGross: money('fixed_price_gross'),
+    note: text('note'),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     primaryKey({ columns: [t.organizationId, t.productId] }),
     index('organization_products_product_idx').on(t.productId),
+  ],
+);
+
+/** How many of each item of the price list a holder has (R-13). */
+export const organizationProductCounts = pgTable(
+  'organization_product_counts',
+  {
+    organizationId: uuid('organization_id').notNull(),
+    productId: uuid('product_id').notNull(),
+    itemId: uuid('item_id')
+      .notNull()
+      .references(() => productItems.id),
+    count: integer('count').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.organizationId, t.productId, t.itemId] }),
+    foreignKey({
+      columns: [t.organizationId, t.productId],
+      foreignColumns: [organizationProducts.organizationId, organizationProducts.productId],
+      name: 'organization_product_counts_holding_fk',
+    }).onDelete('cascade'),
+  ],
+);
+
+/** The people and their workload behind an item counted by workloads (R-14). */
+export const organizationProductWorkloads = pgTable(
+  'organization_product_workloads',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: uuid('organization_id').notNull(),
+    productId: uuid('product_id').notNull(),
+    itemId: uuid('item_id')
+      .notNull()
+      .references(() => productItems.id),
+    persons: integer('persons').notNull(),
+    percent: integer('percent').notNull(),
+  },
+  (t) => [
+    index('organization_product_workloads_holding_idx').on(t.organizationId, t.productId),
+    foreignKey({
+      columns: [t.organizationId, t.productId],
+      foreignColumns: [organizationProducts.organizationId, organizationProducts.productId],
+      name: 'organization_product_workloads_holding_fk',
+    }).onDelete('cascade'),
   ],
 );
 

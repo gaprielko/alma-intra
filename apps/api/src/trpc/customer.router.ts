@@ -4,6 +4,10 @@ import {
   contactIdSchema,
   createContactSchema,
   createCustomerSchema,
+  attachEstablishmentSchema,
+  createEstablishmentSchema,
+  holdingKeySchema,
+  holdingSchema,
   customerIdSchema,
   customerListSchema,
   exportCustomersSchema,
@@ -11,10 +15,12 @@ import {
   setRoleSchema,
   updateContactSchema,
   updateCustomerSchema,
+  updateEstablishmentSchema,
 } from '@intra/shared/schemas';
 import { TRPCError } from '@trpc/server';
 import { lookupCompany, RegisterUnavailableError } from '../customers/business-register.js';
 import * as organizations from '../customers/customers.service.js';
+import * as holdings from '../customers/holdings.service.js';
 import { toCsv } from '../customers/csv.js';
 import type { Context } from './context.js';
 import { authorizedProcedure, router } from './trpc.js';
@@ -32,6 +38,19 @@ async function run<T>(fn: () => Promise<T>): Promise<T> {
           ? 'CONFLICT'
           : 'BAD_REQUEST';
     throw new TRPCError({ code, message: error.code });
+  }
+}
+
+/** A held product's refusals as tRPC errors. */
+async function runHolding<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    if (!(error instanceof holdings.HoldingError)) throw error;
+    throw new TRPCError({
+      code: error.code === 'COUNT_OUT_OF_RANGE' ? 'BAD_REQUEST' : 'NOT_FOUND',
+      message: error.code,
+    });
   }
 }
 
@@ -118,8 +137,82 @@ export const customerRouter = router({
   delete: authorizedProcedure('customer.delete')
     .input(customerIdSchema)
     .mutation(async ({ ctx, input }) => {
-      await run(() => organizations.deleteCustomer(ctx.db, input.id));
-      auditCustomer(ctx, input.id, { deleted: true });
+      const { parentId } = await run(() => organizations.deleteCustomer(ctx.db, input.id));
+      // A prevádzka's removal is told in its organization's history.
+      if (parentId)
+        auditCustomer(ctx, parentId, { establishment: 'deleted', establishmentId: input.id });
+      else auditCustomer(ctx, input.id, { deleted: true });
+      return { ok: true as const };
+    }),
+
+  /** The products an organization and its prevádzky hold, priced now (docs/products.md 9). */
+  holdings: authorizedProcedure('customer.read')
+    .input(customerIdSchema)
+    .query(({ ctx, input }) => holdings.holdingsOf(ctx.db, input.id)),
+
+  holdingSave: authorizedProcedure('customer.write')
+    .input(holdingSchema)
+    .mutation(async ({ ctx, input }) => {
+      const saved = await runHolding(() => holdings.saveHolding(ctx.db, input));
+      auditCustomer(ctx, input.organizationId, {
+        holding: saved.created ? 'added' : 'changed',
+        productId: input.productId,
+      });
+      return { ok: true as const };
+    }),
+
+  holdingEnd: authorizedProcedure('customer.write')
+    .input(holdingKeySchema)
+    .mutation(async ({ ctx, input }) => {
+      await runHolding(() => holdings.endHolding(ctx.db, input.organizationId, input.productId));
+      auditCustomer(ctx, input.organizationId, { holding: 'ended', productId: input.productId });
+      return { ok: true as const };
+    }),
+
+  /** An organization's prevádzky (docs/establishments.md). */
+  establishments: authorizedProcedure('customer.read')
+    .input(customerIdSchema)
+    .query(({ ctx, input }) => organizations.listEstablishments(ctx.db, input.id)),
+
+  /** The persons of an organization and of its prevádzky, each with where they are. */
+  persons: authorizedProcedure('customer.read')
+    .input(customerIdSchema)
+    .query(({ ctx, input }) => organizations.organizationPersons(ctx.db, input.id)),
+
+  establishmentCreate: authorizedProcedure('customer.write')
+    .input(createEstablishmentSchema)
+    .mutation(async ({ ctx, input }) => {
+      const created = await run(() =>
+        organizations.createEstablishment(ctx.db, ctx.session.userId, input),
+      );
+      auditCustomer(ctx, created.parentId, {
+        establishment: 'created',
+        establishmentId: created.id,
+        ...(created.contactId ? { contactId: created.contactId } : {}),
+      });
+      return { id: created.id };
+    }),
+
+  establishmentAttach: authorizedProcedure('customer.write')
+    .input(attachEstablishmentSchema)
+    .mutation(async ({ ctx, input }) => {
+      await run(() => organizations.attachEstablishment(ctx.db, input.id, input.parentId));
+      // Told in the organization's history, as a prevádzka created there would be.
+      auditCustomer(ctx, input.parentId, { establishment: 'attached', establishmentId: input.id });
+      return { ok: true as const };
+    }),
+
+  establishmentUpdate: authorizedProcedure('customer.write')
+    .input(updateEstablishmentSchema)
+    .mutation(async ({ ctx, input }) => {
+      const change = await run(() =>
+        organizations.updateEstablishment(ctx.db, input.id, input.establishment),
+      );
+      auditCustomer(ctx, change.parentId, {
+        establishment: 'updated',
+        establishmentId: input.id,
+        fields: change.fields,
+      });
       return { ok: true as const };
     }),
 

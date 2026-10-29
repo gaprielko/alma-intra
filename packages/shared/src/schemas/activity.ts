@@ -103,6 +103,11 @@ export const activitySchema = z.object({
   userIds: z.array(idSchema).max(50).default([]),
   attachments: z.array(attachmentSchema).max(20).default([]),
   nextStep: nextStepSchema.nullable().default(null),
+  /**
+   * „Patrí k“: the organization or one of its prevádzky the activity belongs to; left out, it is
+   * found from the participants (docs/establishments.md 7).
+   */
+  organizationId: idSchema.optional(),
 });
 export type ActivityInput = z.input<typeof activitySchema>;
 export type ActivityValues = z.output<typeof activitySchema>;
@@ -115,6 +120,8 @@ export const nextStepDoneSchema = z.object({ id: idSchema, done: z.boolean() });
 export const timelineSchema = z.object({
   customerId: idSchema,
   filter: z.enum(TIMELINE_FILTERS).default('all'),
+  /** „Aj prevádzky“: an organization's timeline with the entries of its prevádzky. */
+  withEstablishments: z.boolean().default(true),
 });
 
 /**

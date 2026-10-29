@@ -37,6 +37,8 @@ interface Person {
   kind: 'contact' | 'user';
   id: string;
   name: string;
+  /** A person not at this customer: the prevádzky (or organization) they are at. */
+  where?: string | undefined;
 }
 
 interface Attachment {
@@ -123,6 +125,21 @@ export function ActivityDialog({
   const [nextDue, setNextDue] = useState(activity?.nextStepDue ?? '');
   const [nextWho, setNextWho] = useState(activity?.nextStepUserId ?? me?.id ?? '');
   const [error, setError] = useState<string | null>(null);
+  // „Patrí k“: picked by hand, or (null) found from the persons as they change.
+  const [belongsTo, setBelongsTo] = useState<string | null>(activity?.customerId ?? null);
+  const holders = options.data?.holders ?? [];
+  const found = useMemo(() => {
+    if (!options.data || customerId !== options.data.headId) return customerId;
+    // Every person at the same prevádzka and none at the organization: that prevádzka (P-11).
+    let common: string[] | null = null;
+    for (const person of people.filter((p) => p.kind === 'contact')) {
+      const places = options.data.contacts.find((c) => c.id === person.id)?.places ?? [];
+      if (places.includes(customerId)) return customerId;
+      common = common === null ? places : common.filter((p) => places.includes(p));
+    }
+    return common !== null && common.length === 1 ? common[0]! : customerId;
+  }, [options.data, people, customerId]);
+  const target = belongsTo ?? found;
 
   const candidates = useMemo(() => {
     const chosen = new Set(people.map((p) => `${p.kind}:${p.id}`));
@@ -132,6 +149,12 @@ export function ActivityDialog({
         kind: 'contact' as const,
         id: c.id,
         name: c.name,
+        where: c.places.includes(customerId)
+          ? undefined
+          : (options.data?.holders ?? [])
+              .filter((h) => c.places.includes(h.id))
+              .map((h) => h.name)
+              .join(', '),
       })),
       ...(options.data?.users ?? []).map((u) => ({
         kind: 'user' as const,
@@ -144,7 +167,7 @@ export function ActivityDialog({
         !chosen.has(`${p.kind}:${p.id}`) &&
         (!needle || p.name.toLocaleLowerCase('sk').includes(needle)),
     );
-  }, [options.data, people, query]);
+  }, [options.data, people, query, customerId]);
 
   const onDone = async (id: string) => {
     toast('success', d.saved);
@@ -198,6 +221,7 @@ export function ActivityDialog({
             ...(nextWho ? { assigneeId: nextWho } : {}),
           }
         : null,
+      ...(holders.length > 1 ? { organizationId: target } : {}),
     };
     if (activity) update.mutate({ id: activity.id, activity: values });
     else create.mutate({ customerId, activity: values });
@@ -368,7 +392,9 @@ export function ActivityDialog({
                           >
                             <span className="truncate">{person.name}</span>
                             <span className="shrink-0 text-xs text-muted">
-                              {person.kind === 'contact' ? d.contactsGroup : d.usersGroup}
+                              {person.kind === 'contact'
+                                ? (person.where ?? d.contactsGroup)
+                                : d.usersGroup}
                             </span>
                           </button>
                         </li>
@@ -378,6 +404,22 @@ export function ActivityDialog({
                 ) : null}
               </div>
             </div>
+
+            {holders.length > 1 ? (
+              <div className="space-y-2">
+                <Label htmlFor={`${ids}-belongs`}>{d.belongsTo}</Label>
+                <Select id={`${ids}-belongs`} value={target} onChange={setBelongsTo}>
+                  {holders.map((holder) => (
+                    <SelectItem key={holder.id} value={holder.id}>
+                      {`${holder.name} · ${holder.isEstablishment ? d.establishment : d.organization}`}
+                    </SelectItem>
+                  ))}
+                </Select>
+                {belongsTo === null ? (
+                  <p className="text-xs text-muted">{d.belongsToHint}</p>
+                ) : null}
+              </div>
+            ) : null}
 
             <div className="space-y-2">
               <p id={`${ids}-notes`} className="text-sm font-medium">

@@ -1,5 +1,6 @@
 import { sk } from '@intra/shared/i18n';
 import type { EmailLook, EmailNode } from '@intra/shared/schemas';
+import { OPTIONAL_VARIABLES } from '@intra/shared/schemas';
 import {
   Body,
   Button,
@@ -77,6 +78,7 @@ export function plainOf(doc: EmailNode, values: Values, labels: RenderInput['lab
     if (node.type === 'text') return node.text ?? '';
     if (node.type === 'variable') {
       const name = str(node.attrs?.name);
+      if (OPTIONAL_VARIABLES.includes(name)) return values[name] ?? '';
       return values[name] ?? `[${labelOf(name, labels)}]`;
     }
     if (node.type === 'hardBreak') return ' ';
@@ -91,7 +93,8 @@ export function missingOf(docs: EmailNode[], values: Values): string[] {
   const walk = (node: EmailNode) => {
     if (node.type === 'variable') {
       const name = str(node.attrs?.name);
-      if (!values[name]?.trim() && !missing.includes(name)) missing.push(name);
+      if (!values[name]?.trim() && !OPTIONAL_VARIABLES.includes(name) && !missing.includes(name))
+        missing.push(name);
     }
     for (const child of node.content ?? []) walk(child);
   };
@@ -267,6 +270,8 @@ function NodeView({ node, ctx }: { node: EmailNode; ctx: Ctx }): ReactNode {
       const name = str(node.attrs?.name);
       const value = input.values[name];
       if (value?.trim()) return <>{value}</>;
+      // A prevádzka's variable for a person at none: simply left out.
+      if (OPTIONAL_VARIABLES.includes(name)) return null;
       return <span style={chip}>{t.variables.missing(labelOf(name, input.labels))}</span>;
     }
     default:

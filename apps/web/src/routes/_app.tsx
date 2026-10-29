@@ -12,6 +12,7 @@ import {
   EmailsMark,
   FilesMark,
   OverviewMark,
+  ProductsMark,
   SettingsMark,
 } from '@/components/nav-marks';
 import { RouteError } from '@/components/route-error';
@@ -53,6 +54,12 @@ function AppShell() {
               to="/organizations"
               icon={CustomersMark}
               label={nav.customers}
+              collapsed={collapsed}
+            />
+            <SidebarLink
+              to="/products"
+              icon={ProductsMark}
+              label={nav.products}
               collapsed={collapsed}
             />
             <SidebarLink to="/emails" icon={EmailsMark} label={nav.emails} collapsed={collapsed} />

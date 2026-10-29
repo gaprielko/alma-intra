@@ -37,7 +37,14 @@ export const activityRouter = router({
   timeline: authorizedProcedure('activity.read')
     .input(timelineSchema)
     .query(({ ctx, input }) =>
-      run(() => activitiesService.timeline(ctx.db, input.customerId, input.filter)),
+      run(() =>
+        activitiesService.timeline(
+          ctx.db,
+          input.customerId,
+          input.filter,
+          input.withEstablishments,
+        ),
+      ),
     ),
 
   get: authorizedProcedure('activity.read')
@@ -85,7 +92,7 @@ export const activityRouter = router({
         entityType: 'activity',
         entityId: created.id,
         diff: {
-          customerId: input.customerId,
+          customerId: created.organizationId,
           kind: input.activity.kind,
           contacts: created.contacts,
           attachments: created.attachments,

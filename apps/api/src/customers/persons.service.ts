@@ -38,11 +38,14 @@ const organizationsJson = sql<
     kind: 'organization' | 'individual';
     position: string | null;
     isPrimary: boolean;
+    /** At a prevádzka: its organization's name. */
+    parentName: string | null;
   }[]
 >`coalesce((select json_agg(json_build_object('id', o.id, 'name', o.name, 'role', o.role,
-    'kind', o.kind, 'position', l.position, 'isPrimary', l.is_primary)
-    order by l.is_primary desc, o.name collate "sk-x-icu")
+    'kind', o.kind, 'position', l.position, 'isPrimary', l.is_primary, 'parentName', h.name)
+    order by l.is_primary desc, coalesce(h.name, o.name) collate "sk-x-icu", o.name collate "sk-x-icu")
   from contact_links l join organizations o on o.id = l.organization_id
+  left join organizations h on h.id = o.parent_id
   where l.contact_id = ${PERSON_ID} and o.deleted_at is null), '[]'::json)`;
 
 function filterWhere(input: ReturnType<typeof personListSchema.parse>): SQL[] {
@@ -61,11 +64,15 @@ function filterWhere(input: ReturnType<typeof personListSchema.parse>): SQL[] {
   }
   if (input.organizationId) {
     where.push(
-      sql`exists (select 1 from contact_links l where l.contact_id = ${PERSON_ID}
-        and l.organization_id in (${sql.join(
+      // An organization's persons and those of its prevádzky.
+      sql`exists (select 1 from contact_links l join organizations o on o.id = l.organization_id
+        where l.contact_id = ${PERSON_ID} and (o.id in (${sql.join(
           input.organizationId.map((id) => sql`${id}`),
           sql`, `,
-        )}))`,
+        )}) or o.parent_id in (${sql.join(
+          input.organizationId.map((id) => sql`${id}`),
+          sql`, `,
+        )})))`,
     );
   }
   if (input.emailState) {

@@ -5,6 +5,7 @@ import {
   type CustomField,
   type EmailLook,
   type EmailNode,
+  userFullName,
   variablesOf,
 } from '@intra/shared/schemas';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -418,7 +419,7 @@ function Editor({ template, look }: { template: Template | null; look: EmailLook
               onChange={touch(setBody)}
               fields={fields}
               look={look}
-              senderName={me?.name ?? sk.templates.variables['sender.name']}
+              senderName={me ? userFullName(me) : sk.templates.variables['sender.name']}
             />
           ) : (
             <Preview subject={subject} body={body} fields={fields} />
