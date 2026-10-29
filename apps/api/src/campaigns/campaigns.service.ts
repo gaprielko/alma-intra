@@ -115,10 +115,16 @@ export function skipReasonOf(person: {
 
 /**
  * The organizations of the recipients step: each with the contacts an e-mail could go to, the primary
- * first, and why one would be left out. A private person is their own recipient.
+ * first, then the persons of its prevádzky by prevádzka (P-13), and why one would be left out. A
+ * private person is their own recipient.
  */
 export async function recipientCandidates(db: Db | Tx, customerIds: string[]) {
   if (customerIds.length === 0) return [];
+  const branches = await db
+    .select({ id: organizations.id, name: organizations.name, parentId: organizations.parentId })
+    .from(organizations)
+    .where(and(inArray(organizations.parentId, customerIds), isNull(organizations.deletedAt)));
+  const branchOf = new Map(branches.map((b) => [b.id, b]));
   const [rows, people] = await Promise.all([
     db
       .select({
@@ -145,9 +151,17 @@ export async function recipientCandidates(db: Db | Tx, customerIds: string[]) {
       })
       .from(contactLinks)
       .innerJoin(contacts, eq(contacts.id, contactLinks.contactId))
-      .where(and(inArray(contactLinks.organizationId, customerIds), isNull(contacts.deletedAt)))
+      .where(
+        and(
+          inArray(contactLinks.organizationId, [...customerIds, ...branchOf.keys()]),
+          isNull(contacts.deletedAt),
+        ),
+      )
       .orderBy(desc(contactLinks.isPrimary), asc(contacts.lastName)),
   ]);
+  // The head organization of a link: its own id, or the prevádzka's organization.
+  const headOf = (organizationId: string) =>
+    branchOf.get(organizationId)?.parentId ?? organizationId;
   const order = new Map(customerIds.map((id, i) => [id, i]));
   return rows
     .sort((a, b) => order.get(a.id)! - order.get(b.id)!)
@@ -157,16 +171,69 @@ export async function recipientCandidates(db: Db | Tx, customerIds: string[]) {
       kind: customer.kind,
       city: customer.city,
       status: customer.status,
-      contacts: people
-        .filter((p) => p.customerId === customer.id)
-        .map((p) => ({
-          id: p.id,
-          name: personName(p),
-          email: p.email,
-          isPrimary: p.isPrimary,
-          skipReason: skipReasonOf(p),
-        })),
+      contacts: contactsOf(
+        people.filter((p) => headOf(p.customerId) === customer.id),
+        customer.id,
+        branchOf,
+      ),
     }));
+}
+
+/**
+ * One row per person: at the organization (primary first), then by prevádzka; a person at both
+ * counts as the organization's, `isPrimary` is the organization's primary contact.
+ */
+function contactsOf(
+  links: {
+    id: string;
+    customerId: string;
+    titleBefore: string | null;
+    firstName: string;
+    lastName: string;
+    titleAfter: string | null;
+    email: string | null;
+    isPrimary: boolean;
+    unsubscribedAt: Date | null;
+    emailStatus: Parameters<typeof skipReasonOf>[0]['emailStatus'];
+  }[],
+  customerId: string,
+  branchOf: Map<string, { id: string; name: string }>,
+) {
+  const byId = new Map<
+    string,
+    {
+      id: string;
+      name: string;
+      email: string | null;
+      isPrimary: boolean;
+      establishment: { id: string; name: string; isPrimary: boolean } | null;
+      skipReason: ReturnType<typeof skipReasonOf>;
+    }
+  >();
+  for (const link of links) {
+    const atOrganization = link.customerId === customerId;
+    const branch = branchOf.get(link.customerId);
+    const known = byId.get(link.id);
+    if (known && (!atOrganization || known.establishment === null)) continue;
+    byId.set(link.id, {
+      id: link.id,
+      name: personName(link),
+      email: link.email,
+      isPrimary: atOrganization && link.isPrimary,
+      establishment:
+        atOrganization || !branch
+          ? null
+          : { id: branch.id, name: branch.name, isPrimary: link.isPrimary },
+      skipReason: skipReasonOf(link),
+    });
+  }
+  return [...byId.values()].sort(
+    (a, b) =>
+      Number(a.establishment !== null) - Number(b.establishment !== null) ||
+      (a.establishment?.name ?? '').localeCompare(b.establishment?.name ?? '', 'sk') ||
+      Number(b.isPrimary || Boolean(b.establishment?.isPrimary)) -
+        Number(a.isPrimary || Boolean(a.establishment?.isPrimary)),
+  );
 }
 
 /** The default recipients of a customer: a private person, or the primary contact. */

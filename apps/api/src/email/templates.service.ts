@@ -295,6 +295,9 @@ export async function previewContacts(db: Db) {
  * The values of the variables for one person, at one organization, and one sender. A value that
  * is empty stays missing: the preview marks it, sending refuses it.
  */
+/** A prevádzka's organization. */
+const head = alias(organizations, 'head');
+
 export async function valuesFor(
   db: Db | Tx,
   /**
@@ -317,20 +320,37 @@ export async function valuesFor(
         titleAfter: contacts.titleAfter,
         salutation: contacts.salutation,
         position: contactLinks.position,
-        customerName: organizations.name,
-        city: organizations.city,
+        // At a prevádzka: `customer.*` is its organization, `establishment.*` the prevádzka.
+        customerName: sql<string | null>`coalesce(${head.name}, ${organizations.name})`,
+        city: sql<string | null>`coalesce(${head.city}, ${organizations.city})`,
+        establishmentName: sql<string | null>`case when ${head.id} is not null
+          then ${organizations.name} end`,
+        establishmentAddress: sql<string | null>`case when ${head.id} is not null
+          then nullif(concat_ws(', ', ${organizations.street},
+            nullif(concat_ws(' ', ${organizations.postalCode}, ${organizations.city}), '')), '') end`,
       })
       .from(contacts)
       .leftJoin(
         contactLinks,
         and(
           eq(contactLinks.contactId, contacts.id),
-          recipient.customerId ? eq(contactLinks.organizationId, recipient.customerId) : sql`true`,
+          recipient.customerId
+            ? sql`${contactLinks.organizationId} in (select o.id from organizations o
+                where o.id = ${recipient.customerId} or o.parent_id = ${recipient.customerId})`
+            : sql`true`,
         ),
       )
       .leftJoin(organizations, eq(organizations.id, contactLinks.organizationId))
+      .leftJoin(head, eq(head.id, organizations.parentId))
       .where(and(eq(contacts.id, contactId), isNull(contacts.deletedAt)))
-      .orderBy(desc(contactLinks.isPrimary), asc(contactLinks.createdAt))
+      .orderBy(
+        // The link to the organization written to first, then a prevádzka's.
+        ...(recipient.customerId
+          ? [sql`${contactLinks.organizationId} = ${recipient.customerId} desc`]
+          : []),
+        desc(contactLinks.isPrimary),
+        asc(contactLinks.createdAt),
+      )
       .limit(1);
     if (row) {
       values.salutation = row.salutation ?? undefined;
@@ -340,6 +360,8 @@ export async function valuesFor(
       values['contact.position'] = row.position ?? undefined;
       values['customer.name'] = row.customerName ?? undefined;
       values['customer.city'] = row.city ?? undefined;
+      values['establishment.name'] = row.establishmentName ?? undefined;
+      values['establishment.address'] = row.establishmentAddress ?? undefined;
       customerName = row.customerName ?? undefined;
     }
   } else if (recipient.customerId) {

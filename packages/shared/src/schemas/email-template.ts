@@ -22,11 +22,22 @@ export const SYSTEM_VARIABLES = [
   'contact.position',
   'customer.name',
   'customer.city',
+  'establishment.name',
+  'establishment.address',
   'sender.name',
   'sender.position',
   'sender.phone',
 ] as const;
 export type SystemVariable = (typeof SYSTEM_VARIABLES)[number];
+
+/**
+ * Variables that may stay empty without stopping the sending: the prevádzka's, for a person who is
+ * at none (docs/establishments.md 8).
+ */
+export const OPTIONAL_VARIABLES: readonly string[] = [
+  'establishment.name',
+  'establishment.address',
+];
 
 /** A custom field's key, as it appears in `custom.<key>`. */
 const fieldKey = z.string().regex(/^[a-z][a-zA-Z0-9]{0,39}$/, 'invalid');

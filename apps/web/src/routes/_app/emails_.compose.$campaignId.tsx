@@ -28,6 +28,7 @@ import { FileBadge } from '@/components/files/file-bits';
 import { FilePicker } from '@/components/files/file-picker';
 import { PageHeader } from '@/components/page-header';
 import { CardSkeleton } from '@/components/skeletons';
+import { EstablishmentChip } from '@/components/customers/establishments-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -260,12 +261,17 @@ function RecipientsStep({ campaign, onNext }: { campaign: Campaign; onNext: () =
       else next.add(key);
       return next;
     });
-  const applyMode = (mode: 'primary' | 'all') =>
+  const applyMode = (mode: 'primary' | 'primaryWithEstablishments' | 'all') =>
     setChosen(
       new Set(
         customers.flatMap((customer) =>
           customer.contacts
-            .filter((p) => mode === 'all' || p.isPrimary)
+            .filter(
+              (p) =>
+                mode === 'all' ||
+                p.isPrimary ||
+                (mode === 'primaryWithEstablishments' && p.establishment?.isPrimary),
+            )
             .map((p) => keyOf({ customerId: customer.id, contactId: p.id })),
         ),
       ),
@@ -329,6 +335,15 @@ function RecipientsStep({ campaign, onNext }: { campaign: Campaign; onNext: () =
           <Button variant="secondary" size="sm" onClick={() => applyMode('primary')}>
             {r.modes.primary}
           </Button>
+          {customers.some((c) => c.contacts.some((p) => p.establishment)) ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => applyMode('primaryWithEstablishments')}
+            >
+              {r.modes.primaryWithEstablishments}
+            </Button>
+          ) : null}
           <Button variant="secondary" size="sm" onClick={() => applyMode('all')}>
             {r.modes.all}
           </Button>
@@ -438,7 +453,8 @@ function RecipientsStep({ campaign, onNext }: { campaign: Campaign; onNext: () =
                         name={p.name}
                         email={p.email}
                         skip={p.skipReason}
-                        primary={p.isPrimary}
+                        primary={p.isPrimary || Boolean(p.establishment?.isPrimary)}
+                        establishment={p.establishment?.name}
                       />
                     </li>
                   ))}
@@ -470,6 +486,7 @@ function PersonRow({
   email,
   skip,
   primary = false,
+  establishment,
 }: {
   checked: boolean;
   onToggle: () => void;
@@ -477,11 +494,14 @@ function PersonRow({
   email: string | null;
   skip: SkipReason | null;
   primary?: boolean;
+  /** A person of a prevádzka: its name. */
+  establishment?: string | undefined;
 }) {
   return (
     <label className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-hover">
       <Checkbox checked={checked} onChange={onToggle} aria-label={t.recipients.select(name)} />
       <span className={cn('text-sm font-medium', skip && 'text-muted')}>{name}</span>
+      {establishment ? <EstablishmentChip name={establishment} /> : null}
       {primary ? <Badge tone="info">{t.recipients.primary}</Badge> : null}
       {skip ? <SkipBadge reason={skip} /> : null}
       <span className="ml-auto truncate text-xs text-muted">{email ?? sk.common.none}</span>

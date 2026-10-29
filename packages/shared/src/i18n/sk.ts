@@ -2176,6 +2176,8 @@ export const sk = {
       'contact.position': 'Pozícia',
       'customer.name': 'Názov kontaktu',
       'customer.city': 'Mesto',
+      'establishment.name': 'Prevádzka',
+      'establishment.address': 'Adresa prevádzky',
       'sender.name': 'Meno odosielateľa',
       'sender.position': 'Pozícia odosielateľa',
       'sender.phone': 'Telefón odosielateľa',
@@ -2286,6 +2288,7 @@ export const sk = {
       modes: {
         label: 'Kontaktné osoby',
         primary: 'Len hlavný kontakt',
+        primaryWithEstablishments: 'Hlavné kontakty aj prevádzok',
         chosen: 'Vybrané kontaktné osoby',
         all: 'Všetky kontaktné osoby',
       },
