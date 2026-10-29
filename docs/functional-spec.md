@@ -122,95 +122,56 @@ other screen.
 
 ---
 
-## 4. Customers and contacts
+## 4. Organizácie: customers, partners and contacts
 
-### 4.1 Customer kind, contact type and products **[D-3]**
+Redesigned on 29 Oct 2026; the decisions D-1…D-12 and the reasoning are in
+[contacts-redesign.md](contacts-redesign.md), the screens in `design/Org*.dc.html`,
+`design/ContactDetail.dc.html` and `design/PersonDialog.dc.html`. One sidebar item, „Organizácie“,
+with three tabs:
 
-Customers are mostly ADOS, but may be other organizations or private persons. Two separate
-attributes:
+| Tab           | What it holds                                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------------ |
+| **Zákazníci** | organizations (or private persons) with the role `customer`: status, owner, products, tags        |
+| **Partneri**  | organizations (or private persons) with the role `partner`: tags only; no status, owner, products |
+| **Kontakty**  | natural persons, at any number of organizations (a position at each) or at none                  |
 
-- **Kind** (fixed, part of the model, chosen first when creating a customer, decides the form):
-  - `organization`: a company with a name, company ids, address and contact persons;
-  - `individual`: a private person; the customer *is* the person (name, salutation, e-mail, phone,
-    address), no company ids, no separate contacts.
-- **Contact type** (required): what the record is to Alma, „Zákazník“, „Partner“, „Dodávateľ“,
-  „Spolupracovník“, …; a code list managed in Settings, also addable from the form („Nový typ
-  kontaktu“). „Zákazník“ is a system item (renamed or switched off, never deleted): only a
-  „Zákazník“ has a sales status. The register is therefore called „Kontakty“ in the UI; the persons
-  at an organization are „Kontaktné osoby“.
-- **Products** (none, one or several): what Alma offers the record, „ADOS“, „DOS“, „Stacionár“, …;
-  a code list managed in Settings (add, rename, reorder, deactivate; never deleted while used),
-  independent of the kind, addable from the form („Nový produkt“). Filter „Bez produktu“ finds
-  the records without any. (Until 2026-10 this was a single optional „type“.)
+### 4.1 Organization (`organizations`)
 
-### 4.2 Customer
+| Field              | Note                                                                                       |
+| ------------------ | ------------------------------------------------------------------------------------------ |
+| Role               | `customer` or `partner`; „Zmeniť na zákazníka / partnera“ keeps everything shared (D-5)     |
+| Kind               | `organization` (a company) or `individual` (a private person); chosen once                  |
+| Name               | a company's name; a private person's name follows their person                             |
+| IČO, DIČ, IČ DPH   | a company only; IČO unique; name and seat from the register of legal persons **[D-5]**     |
+| Status             | a customer only, optional (nothing shown when empty, D-6); `lead` … `not_interested`        |
+| Products           | a customer only: none, one or several, from the code list                                  |
+| Owner              | a customer only: the Intra user responsible                                                |
+| Address, web, e-mail, phone, source, tags, note, Alma ADOS id | as before; a partner's kind of cooperation is a tag (D-4) |
 
-| Field                | Note                                                                                  |
-| -------------------- | ------------------------------------------------------------------------------------- |
-| Kind                 | `organization` / `individual`; decides which fields apply                             |
-| Contact type         | required, from the code list; new records start as „Zákazník“                         |
-| Products             | none, one or several, from the code list                                              |
-| Name                 | organization: company name; individual: built from the person's name                  |
-| IČO, DIČ, IČ DPH     | organization only, optional; IČO unique. **[D-5]** name and seat filled from the register of legal persons (RPO, public API); DIČ and IČ DPH by hand |
-| Status               | „Zákazník“ only, empty by default; `lead` → `contacted` → `interested` → `customer` → `former_customer`; `not_interested` |
-| Address              | street, city, postal code, region (for filtering)                                     |
-| Web, e-mail, phone   | general ones of the organization                                                      |
-| Owner                | the Intra user responsible for the customer                                           |
-| Tags                 | free tags for segmentation („pilot 2027“, „konferencia Košice“)                       |
-| Source               | where the customer came from (referral, conference, web, …)                           |
-| Note                 | free text                                                                             |
-| Alma ADOS id         | **[D-4]** optional id of the organization in Alma ADOS; no synchronisation            |
+### 4.2 Person (`contacts`, linked by `contact_links`)
 
-### 4.3 Contact (0..n per organization customer)
+Titles, first and last name, form of address, salutation, e-mail (unique among live persons, D-7),
+phone, e-mail status, unsubscribe, note. Where they work is a link per organization: the position
+there and whether they are its primary contact (the default recipient). A private-person customer
+or partner is linked to its own person as the primary contact, so the person exists once and shows
+in Kontakty.
 
-| Field                 | Note                                                                                   |
-| --------------------- | -------------------------------------------------------------------------------------- |
-| Titles, first / last name |                                                                                    |
-| Form of address       | Mr / Ms, for „Vážený pán / Vážená pani“                                                 |
-| **Salutation**        | the exact text used in e-mails, prefilled („Vážená pani riaditeľka“, „Vážený pán Novák“), editable |
-| Position              | director, head nurse, economist, …                                                     |
-| E-mail, phone         | e-mail unique within the customer                                                      |
-| Primary contact       | one per customer; the default recipient                                                |
-| E-mail status         | `ok`, `bounced`, `complained`; unsubscribed (when, how)                                |
-| Note                  |                                                                                        |
+### 4.3 Screens
 
-For an `individual` customer the same personal fields (salutation, e-mail status, unsubscribe) live
-on the customer, so the e-mail flow treats both the same way: a recipient is a contact or an
-individual customer.
+- **Lists** (each tab): search, dropdown filters that take several values each (D-12; customers:
+  status with counts, kind, product, region, tag, owner; partners: kind, region, tag; persons:
+  where they work, organization, e-mail state), sorting, paging 20/50/100, bulk e-mail, tag, status
+  (customers), CSV, segments saved per tab.
+- **Organization detail** (`/customers/<id>`): header with role, status and quick actions; the
+  contact persons with their position, a new one or an existing one from Kontakty; the timeline;
+  basics, classification and files; the „…“ menu changes the role, makes a document, deletes.
+- **Person detail** (`/contacts/<id>`): positions at their organizations, the person's own
+  timeline, personal data, the organizations card (assign, make primary, take off), edit, delete.
+- **„Nová osoba“**: the person and any number of organizations; an e-mail already in Kontakty offers
+  that person instead.
 
-Deleting is a **soft delete** (customer, contact); the communication history stays.
-
-### 4.4 Screens
-
-**Customer list** (the patient list's pattern, `DataList`):
-
-- columns: contact (name; under it the status badge, the contact type and the city), products
-  (chips), primary contact (name, e-mail; empty for a private person), owner, tags, last contact
-  (date of the last e-mail, reply or activity);
-- search (name, IČO, a contact person's name or e-mail), status chips with counts (including „Bez
-  stavu“), filters (contact type, kind, product including „Bez produktu“, region, tag, owner),
-  sorting, paging;
-- **bulk selection** → „Poslať e-mail“, „Pridať štítok“, „Zmeniť stav“, „Export CSV“;
-- saved filters (segments), pattern of `saved_filters`; a campaign can target a segment **[D-7]**.
-  A segment stores its rules, not a list of customers, so a new customer matching them joins it on
-  its own. A segment is personal or shared with colleagues (a switch when saving).
-
-**New / edit customer**: form in sections (kind first, since it decides the fields; basics,
-address, classification), optionally the first contact right away; leave guard. Addresses are
-typed by hand, no Google Places **[D-6]**.
-
-**Customer detail** (the patient card's pattern: header + cards / tabs):
-
-- header: name, status, contact type, tags, quick actions („Poslať e-mail“, „Zapísať aktivitu“,
-  „Nahrať súbor“, „Upraviť“);
-- **Basics** and address;
-- **Contacts**: add, edit, make primary, unsubscribe, remove;
-- **Timeline** (section 5): activities, sent e-mails with delivery status, received replies, notes,
-  in one chronological stream with filters by kind;
-- **Files**: the customer's folder (section 7);
-- **History of changes** (from the audit): who changed status, owner, … .
-
-**Export** of the current list to CSV. No import (**[D-10]**).
+Deleting is soft everywhere; the communication history stays. Export to CSV; no import
+(**[D-10]**).
 
 ---
 
@@ -228,8 +189,10 @@ A record of a contact with the customer outside the app.
 | Attachments  | files from the Files module or uploaded here (stored in the customer's folder) |
 | Next step    | optional: text + due date + assignee **[D-23]**                              |
 
-Functions: create from the customer detail or the customer list, edit by anyone **[D-24]**,
-delete (soft), filter in the timeline. Each edit is audited. A due next step notifies its assignee.
+Functions: create from the organization detail or its list, edit by anyone **[D-24]**, delete
+(soft), filter in the timeline. Each edit is audited. A due next step notifies its assignee. An
+activity belongs to one organization; a person's own timeline shows only the activities they took
+part in, the e-mails sent to them and their replies, from all their organizations (D-8).
 
 ---
 
