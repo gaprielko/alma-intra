@@ -57,8 +57,14 @@ tr:first-child td{border-top:0}
 .tl-est{margin-left:24px;padding-left:16px;border-left:3px solid #f3d6a8;border-radius:0}
 .tl-est .tl-line{left:32px}
 .meta{font-size:12px;color:#48625f}
+.facts{margin:4px 0 0;font-size:13px;line-height:20px;color:#48625f;display:flex;flex-wrap:wrap;align-items:center;gap:2px 14px}
+.facts b{font-weight:500;color:#7a8f8c;margin-right:4px}
+.facts a{font-weight:500}
 .note{margin-top:8px;font-size:14px;line-height:21px;background:#f7faf9;border-radius:10px;padding:10px 12px}
 .switch{position:relative;width:40px;height:24px;border-radius:999px;flex-shrink:0;border:0;cursor:pointer;padding:0}
+.chip-sm{height:26px;padding:0 9px;font-size:12px}
+.switch-sm{width:30px;height:18px}
+.switch-sm i{top:2px;width:14px;height:14px}
 .switch i{position:absolute;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)}
 .menu{position:absolute;right:0;top:38px;width:280px;border:1px solid #dfe8e6;border-radius:12px;background:#fff;box-shadow:0 12px 32px rgba(12,43,44,.18);padding:6px;z-index:5}
 .menu a,.menu label{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:14px;color:#152b2a}
@@ -76,21 +82,23 @@ tr:first-child td{border-top:0}
 .hint{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:#fdf6ea;color:#7a4508;font-size:13px;line-height:19px}
 </style>
 </helmet>
-<div style="position: relative; display: flex; flex-wrap: wrap; min-height: 1600px; background: #eaf0ee">
+<div style="position: relative; display: flex; flex-wrap: wrap; min-height: 1100px; background: #eaf0ee">
   <div style="flex: 0 0 232px; background: #0c3b3c">
     <dc-import name="Sidebar" active="customers" organizations="{{ true }}" hint-size="232px,900px"></dc-import>
   </div>
   <main style="flex: 999 1 560px; min-width: 0">
     <header style="min-height: 72px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 28px; box-sizing: border-box; background: rgba(255,255,255,0.8); border-bottom: 1px solid #d6e1de">
-      <div style="flex: 1 1 auto; min-width: 0">
+      <div style="flex: 1 1 520px; min-width: 0">
         <a href="EstOrgDetail.dc.html" style="display: inline-flex; align-items: center; gap: 2px; font-size: 13px; font-weight: 500"><svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"></path></svg>ADOS Harmónia, s.r.o.</a>
         <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
           <h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em">ADOS Harmónia Prešov</h1>
           <span class="est"><svg aria-hidden="true" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9 4.5 4h15L21 9"></path><path d="M4 9v11h16V9"></path><path d="M9 20v-6h6v6"></path></svg>Prevádzka</span>
           <span class="role">Zákazník</span>
           <span class="badge b-success"><i></i>Aktívna spolupráca</span>
+          <span class="tag">pilot 2026</span>
         </div>
-        <p style="margin: 2px 0 0; font-size: 13px; line-height: 20px; color: #48625f; display: flex; flex-wrap: wrap; align-items: center; gap: 6px"><span class="prod">ADOS</span><span class="prod">DOS</span> Hlavná 5, Prešov · prevádzka organizácie <a href="EstOrgDetail.dc.html">ADOS Harmónia, s.r.o.</a> · zodpovedá Peter Kováč</p>
+        <p style="margin: 2px 0 0; font-size: 13px; line-height: 20px; color: #48625f; display: flex; flex-wrap: wrap; align-items: center; gap: 6px"><span class="prod">ADOS</span><span class="prod">DOS</span> prevádzka organizácie <a href="EstOrgDetail.dc.html">ADOS Harmónia, s.r.o.</a> · IČO 51 234 567 · zodpovedá Peter Kováč</p>
+        <p class="facts"><span><b>Adresa</b>Hlavná 5, 080 01 Prešov</span><span><b>Tel.</b>+421 51 772 3040</span><a href="#">presov@adosharmonia.sk</a><span><b>Alma ADOS</b>ados-po-0412</span></p>
       </div>
       <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
         <div style="position: relative">
@@ -139,33 +147,11 @@ tr:first-child td{border-top:0}
         <div class="card-h"><h2>Produkty</h2><span class="meta">neskôr</span></div>
         <div style="padding: 12px 20px 18px; display: flex; flex-wrap: wrap; gap: 6px"><span class="prod">ADOS</span><span class="prod">DOS</span></div>
       </section>
-        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start">
-          <section class="card">
-            <div class="card-h"><h2>Údaje prevádzky</h2><a href="#" style="font-size: 13px; font-weight: 600">Upraviť</a></div>
-            <dl>
-              <div style="grid-column: 1 / -1"><dt>Adresa</dt><dd>Hlavná 5, 080 01 Prešov · Prešovský kraj</dd></div>
-              <div><dt>Telefón</dt><dd>+421 51 772 3040</dd></div>
-              <div><dt>E-mail</dt><dd><a href="#">presov@adosharmonia.sk</a></dd></div>
-              <div><dt>ID v Alma ADOS</dt><dd>ados-po-0412</dd></div>
-              <div><dt>Založená</dt><dd>3. 9. 2026 · Jana Horváthová</dd></div>
-              <div style="grid-column: 1 / -1"><dt>Poznámka</dt><dd>Dva tímy sestier, druhý od decembra.</dd></div>
-            </dl>
-          </section>
-          <section class="card">
-            <div class="card-h"><h2>Organizácia</h2><span class="meta">spoločné, mení sa pri organizácii</span></div>
-            <dl>
-              <div style="grid-column: 1 / -1"><dt>Názov</dt><dd><a href="EstOrgDetail.dc.html" style="font-weight: 600">ADOS Harmónia, s.r.o.</a></dd></div>
-              <div><dt>IČO</dt><dd>51 234 567</dd></div>
-              <div><dt>Stav</dt><dd>Aktívna spolupráca</dd></div>
-              <div><dt>Zodpovedá</dt><dd>Peter Kováč</dd></div>
-              <div><dt>Štítky</dt><dd style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px"><span class="tag">pilot 2026</span></dd></div>
-            </dl>
-          </section>
-          <section class="card">
-            <div class="card-h"><h2>Súbory</h2></div>
-            <p style="margin: 8px 20px 18px; font-size: 13px; line-height: 19px; color: #48625f">Súbory sa ukladajú pri organizácii. <a href="#" style="font-weight: 600">Otvoriť priečinok ADOS Harmónia</a></p>
-          </section>
-        </div>
+      <section class="card">
+        <div class="card-h"><h2>Poznámka a súbory</h2><a href="#" style="font-size: 13px; font-weight: 600">Upraviť</a></div>
+        <p style="margin: 8px 20px 0; font-size: 14px; line-height: 20px">Dva tímy sestier, druhý od decembra.</p>
+        <p style="margin: 6px 20px 18px; font-size: 13px; line-height: 19px; color: #48625f">Súbory sa ukladajú pri organizácii. <a href="#" style="font-weight: 600">Otvoriť priečinok ADOS Harmónia</a></p>
+      </section>
       </div>
       <div style="flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
         <section class="card">
@@ -218,7 +204,7 @@ tr:first-child td{border-top:0}
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1600}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
 class Component extends DCLogic {
   renderVals() {
     return {};
