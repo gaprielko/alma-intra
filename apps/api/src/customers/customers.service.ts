@@ -276,6 +276,8 @@ export async function getCustomer(db: Db | Tx, id: string) {
     ...personFieldsOf(self),
     email: self ? self.email : customer.email,
     phone: self ? self.phone : customer.phone,
+    /** A private person's own person in Kontakty. */
+    personId: self?.id ?? null,
     contacts: customer.kind === 'individual' ? [] : people,
   };
 }

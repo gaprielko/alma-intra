@@ -16,6 +16,7 @@ import { ActivitySheet } from '@/components/activities/activity-sheet';
 import { ActivityItem, EmailItem, ReplyItem } from '@/components/activities/timeline-items';
 import { Avatar } from '@/components/avatar';
 import { ContactDialog, type Contact } from '@/components/customers/contact-dialog';
+import { ExistingPersonDialog } from '@/components/customers/existing-person-dialog';
 import {
   CustomerAvatar,
   CustomerStatusBadge,
@@ -59,6 +60,7 @@ function CustomerDetailPage() {
   const { customerId } = Route.useParams();
   const customer = useQuery(trpc.customer.get.queryOptions({ id: customerId }));
   const [deleting, setDeleting] = useState(false);
+  const [changingRole, setChangingRole] = useState(false);
   const [documenting, setDocumenting] = useState(false);
   const [recording, setRecording] = useState(false);
   const canRecord = useCan('activity.write');
@@ -118,7 +120,11 @@ function CustomerDetailPage() {
       <PageHeader
         title={c.name}
         subtitle={meta}
-        back={{ to: '/organizations/customers', label: t.back }}
+        back={{
+          to: c.role === 'partner' ? '/organizations/partners' : '/organizations/customers',
+          label:
+            c.role === 'partner' ? sk.organizations.tabs.partners : sk.organizations.tabs.customers,
+        }}
         badge={c.status ? <CustomerStatusBadge status={c.status} /> : undefined}
       >
         {canSend ? (
@@ -150,6 +156,11 @@ function CustomerDetailPage() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => setChangingRole(true)}>
+              {c.role === 'customer'
+                ? sk.organizations.roleChange.toPartner
+                : sk.organizations.roleChange.toCustomer}
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => setDocumenting(true)}>
               {sk.documents.menu}
             </DropdownMenuItem>
@@ -177,6 +188,7 @@ function CustomerDetailPage() {
       </main>
 
       {deleting ? <DeleteCustomer customer={c} onClose={() => setDeleting(false)} /> : null}
+      {changingRole ? <ChangeRole customer={c} onClose={() => setChangingRole(false)} /> : null}
       {documenting ? (
         <CreateDocumentDialog customer={c} onClose={() => setDocumenting(false)} />
       ) : null}
@@ -251,7 +263,18 @@ function OrganizationCard({ customer: c }: { customer: Customer }) {
 function PersonCard({ customer: c }: { customer: Customer }) {
   return (
     <Card>
-      <CardHeader title={t.personal} />
+      <CardHeader
+        title={t.personal}
+        action={
+          c.personId ? (
+            <Button variant="secondary" size="sm" asChild>
+              <Link to="/contacts/$personId" params={{ personId: c.personId }}>
+                {sk.organizations.openPerson}
+              </Link>
+            </Button>
+          ) : null
+        }
+      />
       <Rows>
         <Row label={f.name}>{c.name}</Row>
         <Row label={f.kind}>{sk.customers.kind[c.kind]}</Row>
@@ -369,6 +392,7 @@ function ContactsCard({ customer: c }: { customer: Customer }) {
   const toast = useToast();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<Contact | 'new' | null>(null);
+  const [picking, setPicking] = useState(false);
   const [removing, setRemoving] = useState<Contact | null>(null);
   const refresh = () => queryClient.invalidateQueries(trpc.customer.pathFilter());
   const primary = useMutation(
@@ -401,10 +425,32 @@ function ContactsCard({ customer: c }: { customer: Customer }) {
           </>
         }
         action={
-          <Button variant="secondary" size="sm" onClick={() => setEditing('new')}>
-            <Plus className="size-3.5" aria-hidden />
-            {tc.add}
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="secondary" size="sm">
+                <Plus className="size-3.5" aria-hidden />
+                {tc.add}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => setEditing('new')}>
+                <span>
+                  <span className="block font-medium">{sk.organizations.addNewPerson}</span>
+                  <span className="block text-xs text-muted">
+                    {sk.organizations.addNewPersonHint}
+                  </span>
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setPicking(true)}>
+                <span>
+                  <span className="block font-medium">{sk.organizations.addExistingPerson}</span>
+                  <span className="block text-xs text-muted">
+                    {sk.organizations.addExistingPersonHint}
+                  </span>
+                </span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         }
       />
       {c.contacts.length === 0 ? (
@@ -425,13 +471,13 @@ function ContactsCard({ customer: c }: { customer: Customer }) {
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setEditing(contact)}
+                    <Link
+                      to="/contacts/$personId"
+                      params={{ personId: contact.id }}
                       className="text-left font-semibold hover:underline"
                     >
                       {name}
-                    </button>
+                    </Link>
                     {contact.isPrimary ? <Badge tone="info">{tc.primary}</Badge> : null}
                     {contact.unsubscribedAt ? (
                       <Badge tone="warning">{tc.unsubscribed}</Badge>
@@ -492,6 +538,9 @@ function ContactsCard({ customer: c }: { customer: Customer }) {
           })}
         </ul>
       )}
+      {picking ? (
+        <ExistingPersonDialog customerId={c.id} onClose={() => setPicking(false)} />
+      ) : null}
       {editing ? (
         <ContactDialog
           customerId={c.id}
@@ -809,6 +858,36 @@ function TimelineCard({ customer }: { customer: Customer }) {
         />
       ) : null}
     </Card>
+  );
+}
+
+/** „Zmeniť na zákazníka“ / „Zmeniť na partnera“ (D-5), asked first: a partner loses status, owner and products. */
+function ChangeRole({ customer, onClose }: { customer: Customer; onClose: () => void }) {
+  const r = sk.organizations.roleChange;
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const toPartner = customer.role === 'customer';
+  const change = useMutation(
+    trpc.customer.setRole.mutationOptions({
+      onSuccess: async () => {
+        toast('success', r.done);
+        await queryClient.invalidateQueries(trpc.customer.pathFilter());
+        onClose();
+      },
+      onError: (error) => toast('error', errorMessage(error, sk.customers.errors)),
+    }),
+  );
+  return (
+    <ConfirmDialog
+      open
+      onOpenChange={(open) => !open && onClose()}
+      title={toPartner ? r.partnerTitle : r.customerTitle}
+      description={toPartner ? r.partnerText : r.customerText}
+      confirmLabel={toPartner ? r.toPartner : r.toCustomer}
+      destructive={toPartner}
+      pending={change.isPending}
+      onConfirm={() => change.mutate({ id: customer.id, role: toPartner ? 'partner' : 'customer' })}
+    />
   );
 }
 

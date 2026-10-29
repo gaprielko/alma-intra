@@ -578,6 +578,28 @@ export const sk = {
     newPartner: 'Nový partner',
     newPerson: 'Nová osoba',
     privatePerson: 'Súkromná osoba',
+    openPerson: 'Otvoriť v Kontaktoch',
+    addNewPerson: 'Nová osoba',
+    addNewPersonHint: 'Vytvorí osobu a priradí ju sem',
+    addExistingPerson: 'Existujúca osoba z Kontaktov',
+    addExistingPersonHint: 'Napríklad ak už pracuje aj inde',
+    existingDialog: {
+      title: 'Priradiť existujúcu osobu',
+      search: 'Hľadať osobu',
+      searchPlaceholder: 'Meno, e-mail alebo organizácia',
+      empty: 'Nikto sa nenašiel.',
+    },
+    roleChange: {
+      toCustomer: 'Zmeniť na zákazníka',
+      toPartner: 'Zmeniť na partnera',
+      customerTitle: 'Zmeniť na zákazníka?',
+      customerText:
+        'História, osoby, súbory a štítky ostanú. Potom doplníte stav, zodpovednú osobu a produkty.',
+      partnerTitle: 'Zmeniť na partnera?',
+      partnerText:
+        'Partner nemá stav, zodpovednú osobu ani produkty: tieto údaje sa odstránia, v histórii zmien ostanú.',
+      done: 'Rola je zmenená.',
+    },
     partnerColumn: 'Partner',
     customerColumn: 'Zákazník',
     statusFilter: 'Stav',
