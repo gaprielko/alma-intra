@@ -4,6 +4,7 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { Plus, X } from 'lucide-react';
 import { useId, useState } from 'react';
 import { useDebounced } from '@/components/customers/organization-list';
+import { PhoneInput } from '@/components/phone-input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -153,7 +154,12 @@ export function PersonDialog({ person, onClose }: { person?: Person; onClose: ()
           {field('lastName', f.lastName, 'col-span-6 sm:col-span-2')}
           {field('titleAfter', f.titleAfter, 'col-span-6 sm:col-span-1')}
           {field('email', f.email, 'col-span-6 sm:col-span-3', 'email')}
-          {field('phone', f.phone, 'col-span-6 sm:col-span-3', 'tel')}
+          <div className="col-span-6 sm:col-span-3">
+            <Label htmlFor={`${ids}-phone`}>{f.phone}</Label>
+            <div className="mt-1.5">
+              <PhoneInput id={`${ids}-phone`} value={values.phone} onChange={set('phone')} />
+            </div>
+          </div>
           {clash ? (
             <div
               role="status"

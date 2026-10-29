@@ -17,6 +17,9 @@ export function errorMessage(
 ): string {
   if (!(error instanceof TRPCClientError)) return fallback;
   const code = (error.data as { code?: string } | undefined)?.code;
+  // Refused input: name the fields, since the screen may not show them under any field.
+  const fields = invalidFields(error);
+  if (code === 'BAD_REQUEST' && fields.length > 0) return sk.errors.checkFields(fields.join(', '));
   for (const key of [error.message, code]) {
     if (key !== undefined && Object.hasOwn(specific, key)) return specific[key]!;
   }
@@ -24,6 +27,26 @@ export function errorMessage(
     if (key !== undefined && Object.hasOwn(shared, key)) return shared[key as keyof typeof shared];
   }
   return fallback;
+}
+
+/** The fields the server's Zod refused (`customer.phone` → „telefón“), in Slovak, once each. */
+function invalidFields(error: { data?: unknown }): string[] {
+  const data = error.data as
+    | { zodError?: { fieldErrors?: Record<string, unknown>; formErrors?: string[] } | null }
+    | undefined;
+  const paths = Object.keys(data?.zodError?.fieldErrors ?? {});
+  const names = paths.map((path) => {
+    const parts = path.split('.');
+    const leaf = parts[parts.length - 1]!;
+    const group = parts.find((part) => Object.hasOwn(sk.errors.fieldGroups, part));
+    const name = Object.hasOwn(sk.errors.fieldNames, leaf)
+      ? sk.errors.fieldNames[leaf as keyof typeof sk.errors.fieldNames]
+      : leaf;
+    return group
+      ? `${name} (${sk.errors.fieldGroups[group as keyof typeof sk.errors.fieldGroups]})`
+      : name;
+  });
+  return [...new Set(names)];
 }
 
 /** The server's own reason for a refusal (`EMAIL_TAKEN`), when it gave one. */
