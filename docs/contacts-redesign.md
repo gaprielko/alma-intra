@@ -1,7 +1,8 @@
 # Kontakty redesign: customers, partners and contacts (draft)
 
-Status: **functionality agreed** (2026-10-29). Phase 1 of 3 done; next the screens (phase 2), then
-the implementation (phase 3). Once implemented, it replaces sections 4 and 5 of
+Status: **functionality and screens agreed** (2026-10-29). Phases 1 and 2 done (screens: the `Org*`,
+`ContactDetail` and `PersonDialog` boards in `design/`); phase 3, the implementation, goes in the
+stages of section 11. Once implemented, it replaces sections 4 and 5 of
 `functional-spec.md`.
 
 Marks: **[D-n]** a decision of this redesign (listed at the end, section 10).
@@ -179,3 +180,17 @@ participants: its contact persons and Intra users.
 | D-9  | Files only per organization for now. |
 | D-10 | The migration drops the status and owner of records that become partners (kept in history). |
 | D-11 | `customers` is renamed `organizations` in the database and the code. |
+| D-12 | Every dropdown filter takes one or several values; the customer status is such a filter (no chip row). |
+
+## 11. Stages of the implementation
+
+Each stage is its own set of commits, leaves the app working and the tests green.
+
+| Stage | What | Visible change |
+| ----- | ---- | -------------- |
+| O1 | Rename: table `customers` → `organizations`, `customer_*` columns and tables → `organization_*`, code identifiers likewise. A pure refactor. | none |
+| O2 | Data model: `role`, persons as standalone `contacts` + `contact_links` (position, primary), private persons moved into `contacts`, contact types → tags; migration of the data. | almost none |
+| O3 | API: lists per role, persons list / detail / timeline, create and link persons, unique e-mail, role change, multi-select filters. | none |
+| O4 | Web lists: „Organizácie“ with the tabs Zákazníci, Partneri, Kontakty; multi-select dropdown filters. | new lists |
+| O5 | Web details: customer, partner, private person, contact detail with its timeline, person dialog, „Zmeniť na zákazníka“. | new details |
+| O6 | The rest: e-mail wizard recipients, template variables, segments per register, received e-mail matching, Claude's tools, dashboard, CSV, `functional-spec.md` sections 4 and 5 replaced. | everything consistent |

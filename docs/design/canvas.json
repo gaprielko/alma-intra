@@ -49,6 +49,10 @@
     {
       "id": "e8",
       "name": "E8 · Dashboard, scheduling, segments"
+    },
+    {
+      "id": "org",
+      "name": "Organizácie · redesign"
     }
   ],
   "boards": {
@@ -419,6 +423,78 @@
       "title": "Odoslanie · adresáti zo segmentu",
       "page": "e8",
       "expand": "fill"
+    },
+    "OrgCustomers.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1040,
+      "title": "Organizácie · Zákazníci",
+      "page": "org",
+      "expand": "fill"
+    },
+    "OrgPartners.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 1040,
+      "title": "Organizácie · Partneri",
+      "page": "org",
+      "expand": "fill"
+    },
+    "OrgContacts.dc.html": {
+      "x": 3040,
+      "y": 0,
+      "w": 1440,
+      "h": 1040,
+      "title": "Organizácie · Kontakty (osoby)",
+      "page": "org",
+      "expand": "fill"
+    },
+    "OrgCustomerDetail.dc.html": {
+      "x": 0,
+      "y": 1160,
+      "w": 1440,
+      "h": 1240,
+      "title": "Detail zákazníka · kontaktné osoby s pozíciou",
+      "page": "org",
+      "expand": "fill"
+    },
+    "OrgPartnerDetail.dc.html": {
+      "x": 1520,
+      "y": 1160,
+      "w": 1440,
+      "h": 1240,
+      "title": "Detail partnera · zmeniť na zákazníka",
+      "page": "org",
+      "expand": "fill"
+    },
+    "OrgIndividualDetail.dc.html": {
+      "x": 3040,
+      "y": 1160,
+      "w": 1440,
+      "h": 1240,
+      "title": "Súkromná osoba ako zákazník (bez stavu)",
+      "page": "org",
+      "expand": "fill"
+    },
+    "ContactDetail.dc.html": {
+      "x": 0,
+      "y": 2520,
+      "w": 1440,
+      "h": 1160,
+      "title": "Detail kontaktu · organizácie a vlastná časová os",
+      "page": "org",
+      "expand": "fill"
+    },
+    "PersonDialog.dc.html": {
+      "x": 1520,
+      "y": 2520,
+      "w": 1440,
+      "h": 1160,
+      "title": "Nová osoba · organizácie a existujúci e-mail",
+      "page": "org",
+      "expand": "fill"
     }
   },
   "order": [
@@ -462,7 +538,15 @@
     "Dashboard.dc.html",
     "Scheduled.dc.html",
     "Segments.dc.html",
-    "SegmentRecipients.dc.html"
+    "SegmentRecipients.dc.html",
+    "OrgCustomers.dc.html",
+    "OrgPartners.dc.html",
+    "OrgContacts.dc.html",
+    "OrgCustomerDetail.dc.html",
+    "OrgPartnerDetail.dc.html",
+    "OrgIndividualDetail.dc.html",
+    "ContactDetail.dc.html",
+    "PersonDialog.dc.html"
   ],
   "notes": {
     "logotitle": {
@@ -544,6 +628,14 @@
       "kind": "title1",
       "maxW": 2960,
       "page": "e8"
+    },
+    "orgtitle": {
+      "x": 0,
+      "y": -300,
+      "text": "Organizácie · zákazníci, partneri, kontakty",
+      "kind": "title1",
+      "maxW": 4480,
+      "page": "org"
     }
   },
   "designSystems": []

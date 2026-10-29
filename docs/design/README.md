@@ -59,6 +59,18 @@ with the code so the implementation can be checked against them.
 | E8 | `Scheduled.dc.html` | E-mails › Scheduled and drafts |
 | E8 | `Segments.dc.html` | Customers › saved segments |
 | E8 | `SegmentRecipients.dc.html` | Send wizard, recipients from a segment |
+| Org | `OrgCustomers.dc.html` | Organizácie › Zákazníci (multi-select dropdown filters) |
+| Org | `OrgPartners.dc.html` | Organizácie › Partneri |
+| Org | `OrgContacts.dc.html` | Organizácie › Kontakty (persons) |
+| Org | `OrgCustomerDetail.dc.html` | Customer detail: contact persons with position, add a new or existing person |
+| Org | `OrgPartnerDetail.dc.html` | Partner detail, „Zmeniť na zákazníka“ |
+| Org | `OrgIndividualDetail.dc.html` | Private person as a customer, without status |
+| Org | `ContactDetail.dc.html` | Contact (person) detail: organizations and the person's own timeline |
+| Org | `PersonDialog.dc.html` | New person: organizations with position, existing e-mail |
+
+The `Org` boards are the agreed redesign of [contacts-redesign.md](../contacts-redesign.md) (29 Oct
+2026); they replace the E1 boards once implemented. `Sidebar.dc.html` gained the switch
+`organizations` that names the item „Organizácie“.
 
 ## Keeping them in step
 
