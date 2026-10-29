@@ -4,6 +4,7 @@ import {
   contactIdSchema,
   createContactSchema,
   createCustomerSchema,
+  attachEstablishmentSchema,
   createEstablishmentSchema,
   holdingKeySchema,
   holdingSchema,
@@ -190,6 +191,15 @@ export const customerRouter = router({
         ...(created.contactId ? { contactId: created.contactId } : {}),
       });
       return { id: created.id };
+    }),
+
+  establishmentAttach: authorizedProcedure('customer.write')
+    .input(attachEstablishmentSchema)
+    .mutation(async ({ ctx, input }) => {
+      await run(() => organizations.attachEstablishment(ctx.db, input.id, input.parentId));
+      // Told in the organization's history, as a prevádzka created there would be.
+      auditCustomer(ctx, input.parentId, { establishment: 'attached', establishmentId: input.id });
+      return { ok: true as const };
     }),
 
   establishmentUpdate: authorizedProcedure('customer.write')

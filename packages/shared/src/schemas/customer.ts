@@ -256,6 +256,9 @@ export const updateEstablishmentSchema = z.object({
   establishment: establishmentSchema,
 });
 
+/** „Zaradiť pod organizáciu…“ (P-14): an organization becomes a prevádzka of another. */
+export const attachEstablishmentSchema = z.object({ id: idSchema, parentId: idSchema });
+
 /** Contact types, products and sources: a name each, offered in the forms while active. */
 export const CODE_LISTS = ['product', 'source', 'template_category'] as const;
 export type CodeList = (typeof CODE_LISTS)[number];

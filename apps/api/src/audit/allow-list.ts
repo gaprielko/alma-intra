@@ -153,7 +153,7 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     primary: flag,
     reason: oneOf(['too_many', 'not_interested', 'left_position', 'other']),
     contactId: uuid,
-    establishment: oneOf(['created', 'updated', 'deleted']),
+    establishment: oneOf(['created', 'updated', 'deleted', 'attached']),
     holding: oneOf(['added', 'changed', 'ended']),
     productId: uuid,
     establishmentId: uuid,

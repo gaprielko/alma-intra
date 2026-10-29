@@ -189,6 +189,41 @@ describe('prevádzky (establishments)', () => {
     expect(csv.data.csv).toContain(';Tatry Kežmarok;');
   });
 
+  it('„Zaradiť pod organizáciu“ turns an organization without IČO into a prevádzka', async () => {
+    const make = async (name: string, extra: Record<string, unknown> = {}) =>
+      (
+        await jana.call<{ id: string }>('customer.create', {
+          customer: {
+            kind: 'organization',
+            name,
+            role: 'customer',
+            tags: [],
+            productIds: [],
+            ...extra,
+          },
+        })
+      ).data.id;
+    const loose = await make('ADOS Harmónia Bardejov');
+    const withIco = await make('Iná sieť, s.r.o.', { ico: '50123456' });
+    const refused = await jana.call('customer.establishmentAttach', {
+      id: withIco,
+      parentId: HARMONIA,
+    });
+    expect(refused.message).toBe('NOT_ATTACHABLE');
+    const done = await jana.call('customer.establishmentAttach', {
+      id: loose,
+      parentId: HARMONIA,
+    });
+    expect(done.code).toBeUndefined();
+    const list = await jana.call<Establishment[]>('customer.establishments', { id: HARMONIA });
+    expect(list.data.some((e) => e.id === loose)).toBe(true);
+    const page = await jana.call<{ items: { id: string }[] }>('customer.list', {
+      search: 'Bardejov',
+      pageSize: 100,
+    });
+    expect(page.data.items.map((i) => i.id)).toEqual([HARMONIA]);
+  });
+
   it('removing a prevádzka is told in its organization’s history', async () => {
     const est = await jana.call<{ id: string }>('customer.establishmentCreate', {
       parentId: HARMONIA,

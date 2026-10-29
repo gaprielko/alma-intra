@@ -14,6 +14,7 @@ import { ActivityDialog } from '@/components/activities/activity-dialog';
 import { ActivitySheet } from '@/components/activities/activity-sheet';
 import { ActivityItem, EmailItem, ReplyItem } from '@/components/activities/timeline-items';
 import { Avatar } from '@/components/avatar';
+import { AttachDialog } from '@/components/customers/attach-dialog';
 import { EstablishmentDialog } from '@/components/customers/establishment-dialog';
 import { EstablishmentChip, EstablishmentsCard } from '@/components/customers/establishments-card';
 import { HoldingsCard } from '@/components/customers/holdings-card';
@@ -61,6 +62,7 @@ function CustomerDetailPage() {
   const [recording, setRecording] = useState(false);
   const [addingEstablishment, setAddingEstablishment] = useState(false);
   const [editingEstablishment, setEditingEstablishment] = useState(false);
+  const [attaching, setAttaching] = useState(false);
   const canRecord = useCan('activity.write');
   const canSend = useCan('email.send');
   const navigateTo = useNavigate();
@@ -185,6 +187,11 @@ function CustomerDetailPage() {
                   {sk.establishments.add}
                 </DropdownMenuItem>
               ) : null}
+              {!parent && c.kind === 'organization' && !c.ico && c.establishmentCount === 0 ? (
+                <DropdownMenuItem onSelect={() => setAttaching(true)}>
+                  {sk.establishments.attach.menu}
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuItem onSelect={() => setDocumenting(true)}>
                 {sk.documents.menu}
               </DropdownMenuItem>
@@ -231,6 +238,13 @@ function CustomerDetailPage() {
       {changingRole ? <ChangeRole customer={c} onClose={() => setChangingRole(false)} /> : null}
       {documenting ? (
         <CreateDocumentDialog customer={c} onClose={() => setDocumenting(false)} />
+      ) : null}
+      {attaching ? (
+        <AttachDialog
+          organizationId={c.id}
+          organizationName={c.name}
+          onClose={() => setAttaching(false)}
+        />
       ) : null}
       {addingEstablishment ? (
         <EstablishmentDialog
@@ -587,6 +601,8 @@ function describe(event: HistoryEvent): ReactNode {
         : h.deleted;
     case 'customer.establishmentCreate':
       return named(h.establishmentCreated, diff.establishmentId);
+    case 'customer.establishmentAttach':
+      return named(h.establishmentAttached, diff.establishmentId);
     case 'customer.establishmentUpdate':
       return fieldList
         ? `${named(h.establishmentUpdated, diff.establishmentId)} (${fieldList})`

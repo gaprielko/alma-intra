@@ -59,7 +59,9 @@ export class CustomerError extends Error {
       /** What only an organization has (role, IČO, classification) is changed at the organization. */
       | 'IS_ESTABLISHMENT'
       /** The prevádzka form edits prevádzky only. */
-      | 'NOT_ESTABLISHMENT',
+      | 'NOT_ESTABLISHMENT'
+      /** Only an organization without IČO and without prevádzky becomes a prevádzka (P-14). */
+      | 'NOT_ATTACHABLE',
   ) {
     super(code);
   }
@@ -1153,6 +1155,39 @@ async function parentOf(tx: Tx, parentId: string) {
   if (!row) throw new CustomerError('NOT_FOUND');
   if (row.kind !== 'organization' || row.parentId) throw new CustomerError('NOT_PARENT');
   return row;
+}
+
+/**
+ * „Zaradiť pod organizáciu…“ (P-14): an organization without IČO and without prevádzky becomes a
+ * prevádzka of another, keeping its persons, timeline and files; it takes on that one's role.
+ */
+export async function attachEstablishment(db: Db, id: string, parentId: string) {
+  return db.transaction(async (tx) => {
+    if (id === parentId) throw new CustomerError('NOT_ATTACHABLE');
+    const parent = await parentOf(tx, parentId);
+    const [row] = await tx
+      .select({
+        kind: organizations.kind,
+        ico: organizations.ico,
+        parentId: organizations.parentId,
+      })
+      .from(organizations)
+      .where(and(eq(organizations.id, id), alive))
+      .for('update');
+    if (!row) throw new CustomerError('NOT_FOUND');
+    const [child] = await tx
+      .select({ id: organizations.id })
+      .from(organizations)
+      .where(and(eq(organizations.parentId, id), alive))
+      .limit(1);
+    if (row.kind !== 'organization' || row.ico || row.parentId || child)
+      throw new CustomerError('NOT_ATTACHABLE');
+    await tx
+      .update(organizations)
+      .set({ parentId: parent.id, role: parent.role, updatedAt: new Date() })
+      .where(eq(organizations.id, id));
+    return { parentId: parent.id };
+  });
 }
 
 /** The primary person of a prevádzka, as the table of prevádzky shows them. */

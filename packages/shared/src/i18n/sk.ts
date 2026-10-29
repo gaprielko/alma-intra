@@ -1013,6 +1013,7 @@ export const sk = {
         establishmentCreated: 'Pridaná prevádzka',
         establishmentUpdated: 'Upravená prevádzka',
         establishmentDeleted: 'Odstránená prevádzka',
+        establishmentAttached: 'Zaradená prevádzka',
         holdingAdded: 'Pridelený produkt',
         holdingChanged: 'Upravený produkt',
         holdingEnded: 'Ukončený produkt',
@@ -1056,6 +1057,7 @@ export const sk = {
       NOT_PARENT: 'Prevádzku možno pridať len organizácii, nie prevádzke ani súkromnej osobe.',
       IS_ESTABLISHMENT: 'Toto sa mení pri organizácii, nie pri prevádzke.',
       NOT_ESTABLISHMENT: 'Toto nie je prevádzka.',
+      NOT_ATTACHABLE: 'Pod inú organizáciu sa dá zaradiť len organizácia bez IČO a bez prevádzok.',
     },
   },
   products: {
@@ -1296,6 +1298,17 @@ export const sk = {
   },
   establishments: {
     title: 'Prevádzky',
+    attach: {
+      menu: 'Zaradiť pod organizáciu…',
+      title: 'Zaradiť pod organizáciu',
+      description: (name: string) => `${name} sa stane prevádzkou organizácie, ktorú vyberiete.`,
+      search: 'Hľadať organizáciu (názov alebo IČO)',
+      nothing: 'Žiadna organizácia sa nenašla.',
+      keeps:
+        'Osoby, časová os aj súbory zostanú. Typ, stav a zodpovedná osoba sa preberú od organizácie.',
+      submit: 'Zaradiť',
+      done: 'Organizácia je zaradená ako prevádzka.',
+    },
     count: (n: number) =>
       n === 1 ? '1 prevádzka' : n >= 2 && n <= 4 ? `${n} prevádzky` : `${n} prevádzok`,
     found: (name: string) => `nájdené v prevádzke ${name}`,
