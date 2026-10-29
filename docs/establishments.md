@@ -73,9 +73,12 @@ Changes against today's detail (board `EstOrgDetail`):
 **Layout**: the timeline is the right-hand panel, from the very top, with „Zobraziť staršie“ at its
 end. The middle part holds, in this order: the Prevádzky table, the products right under it (section
 4.4), and the Kontaktné osoby table. The basics and the classification have no cards of their own: the
-header carries them, the role, status and tags next to the name, under it the products, owner and
-source, then a line of IČO, DIČ, seat, phone, e-mail and web. The timeline's title row holds a small
-switch „Aj prevádzky“ and the add button. The persons
+header carries them. Next to the name the role, status and tags; under it a line of IČO, DIČ, seat,
+phone, e-mail and web; under that, a little apart, the products with „Prevádzky: 3“ and
+„Sestry: 18“. On the right, under the buttons and level with the products, the owner and the source.
+The timeline's title is followed by a small „+“ (record an activity); the switch „Aj prevádzky“ sits
+on the right of the same row. „Sestry“ is the number of nurses: today a tag, proposed as an optional
+number field of the organization (to be agreed with the products spec). The persons
 table puts the position under the name and the e-mail over the phone, so it fits beside the
 timeline. The prevádzka's detail uses the same layout.
 

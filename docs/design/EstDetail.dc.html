@@ -63,9 +63,9 @@ tr:first-child td{border-top:0}
 .note{margin-top:8px;font-size:14px;line-height:21px;background:#f7faf9;border-radius:10px;padding:10px 12px}
 .switch{position:relative;width:40px;height:24px;border-radius:999px;flex-shrink:0;border:0;cursor:pointer;padding:0}
 .chip-sm{height:26px;padding:0 9px;font-size:12px}
-.switch-sm{width:30px;height:18px}
-.switch-sm i{top:2px;width:14px;height:14px}
 .switch i{position:absolute;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.switch.switch-sm{width:32px;height:18px}
+.switch.switch-sm i{top:2px;width:14px;height:14px}
 .menu{position:absolute;right:0;top:38px;width:280px;border:1px solid #dfe8e6;border-radius:12px;background:#fff;box-shadow:0 12px 32px rgba(12,43,44,.18);padding:6px;z-index:5}
 .menu a,.menu label{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:14px;color:#152b2a}
 .menu a:hover,.menu label:hover{background:#f0f8f7;text-decoration:none}
@@ -97,16 +97,17 @@ tr:first-child td{border-top:0}
           <span class="badge b-success"><i></i>Aktívna spolupráca</span>
           <span class="tag">pilot 2026</span>
         </div>
-        <p style="margin: 2px 0 0; font-size: 13px; line-height: 20px; color: #48625f; display: flex; flex-wrap: wrap; align-items: center; gap: 6px"><span class="prod">ADOS</span><span class="prod">DOS</span> prevádzka organizácie <a href="EstOrgDetail.dc.html">ADOS Harmónia, s.r.o.</a> · IČO 51 234 567 · zodpovedá Peter Kováč</p>
         <p class="facts"><span><b>Adresa</b>Hlavná 5, 080 01 Prešov</span><span><b>Tel.</b>+421 51 772 3040</span><a href="#">presov@adosharmonia.sk</a><span><b>Alma ADOS</b>ados-po-0412</span></p>
+        <p class="facts" style="margin-top: 12px"><span style="display: inline-flex; gap: 6px"><span class="prod">ADOS</span><span class="prod">DOS</span></span><span><b>Organizácia</b><a href="EstOrgDetail.dc.html">ADOS Harmónia, s.r.o.</a></span><span><b>IČO</b>51 234 567</span></p>
       </div>
-      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
-        <div style="position: relative">
+      <div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; gap: 10px; align-self: stretch">
+        <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 10px">
           <button type="button" class="btn btn-icon" aria-label="Ďalšie akcie"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle></svg></button>
+          <a href="#" class="btn btn-secondary">Upraviť</a>
+          <a href="EstActivityDialog.dc.html" class="btn btn-secondary">Zapísať aktivitu</a>
+          <button type="button" class="btn btn-primary"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-10 6L2 7"></path></svg>Poslať e-mail</button>
         </div>
-        <a href="#" class="btn btn-secondary">Upraviť</a>
-        <a href="EstActivityDialog.dc.html" class="btn btn-secondary">Zapísať aktivitu</a>
-        <button type="button" class="btn btn-primary"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-10 6L2 7"></path></svg>Poslať e-mail</button>
+        <p class="facts" style="margin: 0; justify-content: flex-end"><span><b>Zodpovedá</b>Peter Kováč</span><span><b>Zdroj</b>Odporúčanie</span></p>
       </div>
     </header>
     <div style="padding: 24px 28px 40px; display: flex; flex-wrap: wrap; gap: 20px; max-width: 1400px; align-items: flex-start">
@@ -156,8 +157,7 @@ tr:first-child td{border-top:0}
       <div style="flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
         <section class="card">
           <div class="card-h">
-            <h2>Časová os prevádzky</h2>
-            <button type="button" class="btn btn-secondary btn-sm"><svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Zapísať aktivitu</button>
+            <div style="display: flex; align-items: center; gap: 8px"><h2>Časová os prevádzky</h2><button type="button" class="btn btn-secondary btn-sm" aria-label="Zapísať aktivitu" style="width: 28px; height: 28px; padding: 0"><svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button></div>
           </div>
           <p style="margin: 6px 20px 0; font-size: 13px; color: #48625f">Len aktivity a e-maily tejto prevádzky. Organizácia ich vidí vo svojej časovej osi odsadené.</p>
           <div style="display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 20px 0">
