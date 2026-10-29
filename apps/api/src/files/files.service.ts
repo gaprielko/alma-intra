@@ -11,7 +11,14 @@ import { and, asc, desc, eq, inArray, isNotNull, isNull, lt, or, type SQL, sql }
 import { alias } from 'drizzle-orm/pg-core';
 import { randomUUID } from 'node:crypto';
 import type { Db, Tx } from '../db/db.module.js';
-import { auditEvents, customers, files, fileVersions, folders, users } from '../db/schema/index.js';
+import {
+  auditEvents,
+  organizations,
+  files,
+  fileVersions,
+  folders,
+  users,
+} from '../db/schema/index.js';
 import { type Storage, storageKey } from '../storage/storage.js';
 
 /** A refusal the web words for itself (`sk.files.errors`). */
@@ -76,24 +83,24 @@ export async function folderPath(db: Db | Tx, folderId: string): Promise<FolderS
   const result = await db.execute<{
     id: string;
     name: string | null;
-    customer_id: string | null;
+    organization_id: string | null;
     customer_deleted: boolean | null;
   }>(sql`
     with recursive p as (
-      select id, parent_id, customer_id, name, 0 as depth from folders where id = ${folderId}
+      select id, parent_id, organization_id, name, 0 as depth from folders where id = ${folderId}
       union all
-      select f.id, f.parent_id, f.customer_id, f.name, p.depth + 1
+      select f.id, f.parent_id, f.organization_id, f.name, p.depth + 1
       from folders f join p on f.id = p.parent_id
     )
-    select p.id, coalesce(p.name, c.name) as name, p.customer_id,
+    select p.id, coalesce(p.name, c.name) as name, p.organization_id,
       (c.deleted_at is not null) as customer_deleted
-    from p left join customers c on c.id = p.customer_id and p.parent_id is null
+    from p left join organizations c on c.id = p.organization_id and p.parent_id is null
     order by p.depth desc`);
   const rows = result.rows;
   if (rows.length === 0 || rows.some((row) => row.customer_deleted)) {
     throw new FileError('NOT_FOUND');
   }
-  return rows.map((row) => ({ id: row.id, name: row.name ?? '', customerId: row.customer_id }));
+  return rows.map((row) => ({ id: row.id, name: row.name ?? '', customerId: row.organization_id }));
 }
 
 /** The company's folders, flat with their parents, and how many files each holds directly. */
@@ -107,7 +114,7 @@ export async function companyTree(db: Db) {
         where f.folder_id = "folders"."id" and f.deleted_at is null and f.current_version_id is not null)`,
     })
     .from(folders)
-    .where(and(isNull(folders.customerId), isNotNull(folders.parentId)))
+    .where(and(isNull(folders.organizationId), isNotNull(folders.parentId)))
     .orderBy(collated(sql`${folders.name}`));
   const [trash] = await db
     .select({ count: sql<number>`count(*)::int` })
@@ -127,50 +134,50 @@ export async function companyTree(db: Db) {
 }
 
 /**
- * The customers' folders for the tree: with a search the customers whose name matches, otherwise
+ * The customers' folders for the tree: with a search the organizations whose name matches, otherwise
  * the ones with the most files. `total`: every customer, for „Všetci zákazníci“.
  */
 export async function customerFolders(db: Db, search: string | undefined, limit: number) {
   const fileCount = sql<number>`(select count(*)::int from files f join folders fo on fo.id = f.folder_id
-    where fo.customer_id = "customers"."id" and f.deleted_at is null and f.current_version_id is not null)`;
-  const where = [isNull(customers.deletedAt)];
+    where fo.organization_id = "organizations"."id" and f.deleted_at is null and f.current_version_id is not null)`;
+  const where = [isNull(organizations.deletedAt)];
   if (search) {
-    where.push(sql`unaccent(${customers.name}) ilike unaccent(${likePattern(search)})`);
+    where.push(sql`unaccent(${organizations.name}) ilike unaccent(${likePattern(search)})`);
   }
   const rows = await db
     .select({
       folderId: folders.id,
-      customerId: customers.id,
-      name: customers.name,
+      customerId: organizations.id,
+      name: organizations.name,
       fileCount,
     })
-    .from(customers)
-    .innerJoin(folders, and(eq(folders.customerId, customers.id), isNull(folders.parentId)))
+    .from(organizations)
+    .innerJoin(folders, and(eq(folders.organizationId, organizations.id), isNull(folders.parentId)))
     .where(and(...where))
-    .orderBy(...(search ? [] : [desc(fileCount)]), collated(sql`${customers.name}`))
+    .orderBy(...(search ? [] : [desc(fileCount)]), collated(sql`${organizations.name}`))
     .limit(limit);
   const [total] = await db
     .select({ count: sql<number>`count(*)::int` })
-    .from(customers)
-    .where(isNull(customers.deletedAt));
+    .from(organizations)
+    .where(isNull(organizations.deletedAt));
   return { items: rows, total: total?.count ?? 0 };
 }
 
 /** The root of a customer's folder tree, made when the customer is. */
 export async function createCustomerFolder(tx: Tx, customerId: string) {
-  await tx.insert(folders).values({ customerId }).onConflictDoNothing();
+  await tx.insert(folders).values({ organizationId: customerId }).onConflictDoNothing();
 }
 
 export async function customerRootFolderId(db: Db | Tx, customerId: string) {
   const [row] = await db
     .select({ id: folders.id })
     .from(folders)
-    .innerJoin(customers, eq(customers.id, folders.customerId))
+    .innerJoin(organizations, eq(organizations.id, folders.organizationId))
     .where(
       and(
-        eq(folders.customerId, customerId),
+        eq(folders.organizationId, customerId),
         isNull(folders.parentId),
-        isNull(customers.deletedAt),
+        isNull(organizations.deletedAt),
       ),
     );
   if (!row) throw new FileError('NOT_FOUND');
@@ -183,7 +190,7 @@ export async function createFolder(db: Db, userId: string, parentId: string, nam
       const path = await folderPath(tx, parentId);
       const [created] = await tx
         .insert(folders)
-        .values({ parentId, name, customerId: path[0]!.customerId, createdByUserId: userId })
+        .values({ parentId, name, organizationId: path[0]!.customerId, createdByUserId: userId })
         .returning({ id: folders.id });
       return { id: created!.id };
     }),
@@ -217,7 +224,7 @@ export async function moveFolder(db: Db, id: string, parentId: string) {
       const folder = await ownFolder(tx, id);
       const target = await folderPath(tx, parentId);
       if (target.some((step) => step.id === id)) throw new FileError('MOVE_INTO_ITSELF');
-      if (target[0]!.customerId !== folder.customerId) throw new FileError('OTHER_TREE');
+      if (target[0]!.customerId !== folder.organizationId) throw new FileError('OTHER_TREE');
       await tx.update(folders).set({ parentId, updatedAt: new Date() }).where(eq(folders.id, id));
     }),
   );
@@ -271,7 +278,7 @@ function fileRows(db: Db, where: SQL[]) {
       id: files.id,
       name: files.name,
       folderId: files.folderId,
-      folderName: sql<string>`coalesce(${folders.name}, ${customers.name})`,
+      folderName: sql<string>`coalesce(${folders.name}, ${organizations.name})`,
       size: fileVersions.size,
       mime: fileVersions.mime,
       // Set on every confirmed version, and only those are current.
@@ -283,7 +290,7 @@ function fileRows(db: Db, where: SQL[]) {
     .from(files)
     .innerJoin(fileVersions, eq(fileVersions.id, files.currentVersionId))
     .innerJoin(folders, eq(folders.id, files.folderId))
-    .leftJoin(customers, eq(customers.id, folders.customerId))
+    .leftJoin(organizations, eq(organizations.id, folders.organizationId))
     .leftJoin(changer, eq(changer.id, fileVersions.createdByUserId))
     .where(and(...where));
 }
@@ -306,7 +313,7 @@ export async function folderContents(db: Db, input: FolderContentsInput) {
   if (input.search) {
     where.push(
       sql`unaccent(${files.name}) ilike unaccent(${likePattern(input.search)})`,
-      or(isNull(folders.customerId), isNull(customers.deletedAt))!,
+      or(isNull(folders.organizationId), isNull(organizations.deletedAt))!,
     );
     const rows = await fileRows(db, where)
       .orderBy(desc(fileVersions.createdAt))
@@ -345,14 +352,14 @@ export async function fileAuthors(db: Db) {
 /** The newest files anywhere in a customer's folders, for the customer's detail. */
 export async function customerFiles(db: Db, customerId: string) {
   const rootId = await customerRootFolderId(db, customerId);
-  const where = [isNull(files.deletedAt), eq(folders.customerId, customerId)];
+  const where = [isNull(files.deletedAt), eq(folders.organizationId, customerId)];
   const [rows, [count]] = await Promise.all([
     fileRows(db, where).orderBy(desc(fileVersions.createdAt)).limit(5),
     db
       .select({ count: sql<number>`count(*)::int` })
       .from(files)
       .innerJoin(folders, eq(folders.id, files.folderId))
-      .where(and(live, eq(folders.customerId, customerId))),
+      .where(and(live, eq(folders.organizationId, customerId))),
   ]);
   return { rootId, files: rows, total: count?.count ?? 0 };
 }
@@ -776,7 +783,7 @@ export async function trashList(db: Db) {
       id: files.id,
       name: files.name,
       folderId: files.folderId,
-      folderName: sql<string>`coalesce(${folders.name}, ${customers.name})`,
+      folderName: sql<string>`coalesce(${folders.name}, ${organizations.name})`,
       size: fileVersions.size,
       mime: fileVersions.mime,
       deletedAt: sql<Date>`${files.deletedAt}`,
@@ -786,7 +793,7 @@ export async function trashList(db: Db) {
     .from(files)
     .innerJoin(fileVersions, eq(fileVersions.id, files.currentVersionId))
     .innerJoin(folders, eq(folders.id, files.folderId))
-    .leftJoin(customers, eq(customers.id, folders.customerId))
+    .leftJoin(organizations, eq(organizations.id, folders.organizationId))
     .leftJoin(remover, eq(remover.id, files.deletedByUserId))
     .where(
       and(

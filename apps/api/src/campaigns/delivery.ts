@@ -7,7 +7,7 @@ import {
   campaignMessages,
   campaigns,
   contacts,
-  customers,
+  organizations,
   emailEvents,
   files,
   fileVersions,
@@ -239,7 +239,7 @@ export async function handleResendEvent(db: Db, eventId: string, event: ResendEv
       id: campaignMessages.id,
       status: campaignMessages.status,
       contactId: campaignMessages.contactId,
-      customerId: campaignMessages.customerId,
+      customerId: campaignMessages.organizationId,
       campaignId: campaignMessages.campaignId,
       subject: campaignMessages.subject,
       senderUserId: campaigns.senderUserId,
@@ -298,7 +298,10 @@ export async function handleResendEvent(db: Db, eventId: string, event: ResendEv
     if (message.contactId) {
       await db.update(contacts).set({ emailStatus }).where(eq(contacts.id, message.contactId));
     } else {
-      await db.update(customers).set({ emailStatus }).where(eq(customers.id, message.customerId));
+      await db
+        .update(organizations)
+        .set({ emailStatus })
+        .where(eq(organizations.id, message.customerId));
     }
   }
   return { ignored: false, messageId: message.id, status: next };
@@ -313,7 +316,7 @@ async function byToken(db: Db, token: string) {
     .select({
       id: campaignMessages.id,
       contactId: campaignMessages.contactId,
-      customerId: campaignMessages.customerId,
+      customerId: campaignMessages.organizationId,
       toEmail: campaignMessages.toEmail,
     })
     .from(campaignMessages)
@@ -335,9 +338,9 @@ export async function unsubscribeInfo(db: Db, token: string) {
         .from(contacts)
         .where(eq(contacts.id, row.contactId))
     : await db
-        .select({ unsubscribedAt: customers.unsubscribedAt })
-        .from(customers)
-        .where(eq(customers.id, row.customerId));
+        .select({ unsubscribedAt: organizations.unsubscribedAt })
+        .from(organizations)
+        .where(eq(organizations.id, row.customerId));
   return {
     email: maskEmail(row.toEmail),
     unsubscribed: state?.unsubscribedAt !== null && state?.unsubscribedAt !== undefined,
@@ -369,14 +372,17 @@ export async function setUnsubscribed(db: Db, token: string, unsubscribed: boole
       );
   } else {
     await db
-      .update(customers)
+      .update(organizations)
       .set(values)
       .where(
         and(
-          eq(customers.id, row.customerId),
+          eq(organizations.id, row.customerId),
           unsubscribed
-            ? isNull(customers.unsubscribedAt)
-            : or(eq(customers.unsubscribeSource, 'link'), isNull(customers.unsubscribeSource)),
+            ? isNull(organizations.unsubscribedAt)
+            : or(
+                eq(organizations.unsubscribeSource, 'link'),
+                isNull(organizations.unsubscribeSource),
+              ),
         ),
       );
   }
@@ -397,7 +403,7 @@ export async function dropForUnsubscribed(
         recipient.contactId
           ? eq(campaignMessages.contactId, recipient.contactId)
           : and(
-              eq(campaignMessages.customerId, recipient.customerId),
+              eq(campaignMessages.organizationId, recipient.customerId),
               isNull(campaignMessages.contactId),
             ),
       ),

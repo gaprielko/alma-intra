@@ -11,7 +11,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 
-/** The system e-mails of the app. E-mails to customers have their own tables. */
+/** The system e-mails of the app. E-mails to organizations have their own tables. */
 export const mailKind = pgEnum('mail_kind', [
   'invitation',
   'password_reset',

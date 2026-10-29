@@ -161,7 +161,7 @@ export async function createDocument(
       .where(
         and(
           eq(contacts.id, input.contactId),
-          eq(contacts.customerId, input.customerId),
+          eq(contacts.organizationId, input.customerId),
           isNull(contacts.deletedAt),
         ),
       );

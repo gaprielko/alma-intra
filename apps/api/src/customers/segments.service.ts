@@ -69,7 +69,7 @@ export async function deleteSegment(db: Db, userId: string, id: string) {
   return rows.length > 0;
 }
 
-/** The customers a segment finds today, for an e-mail's recipients; null when not visible. */
+/** The organizations a segment finds today, for an e-mail's recipients; null when not visible. */
 export async function segmentCustomerIds(db: Db, userId: string, id: string) {
   const [row] = await db
     .select({ filters: segments.filters })

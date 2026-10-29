@@ -11,7 +11,7 @@ import { alias } from 'drizzle-orm/pg-core';
 import type { Db, Tx } from '../db/db.module.js';
 import {
   contacts,
-  customers,
+  organizations,
   emailLook,
   emailTemplateAttachments,
   emailTemplates,
@@ -268,14 +268,18 @@ export async function previewContacts(db: Db) {
       firstName: contacts.firstName,
       lastName: contacts.lastName,
       titleAfter: contacts.titleAfter,
-      customerName: customers.name,
+      customerName: organizations.name,
     })
     .from(contacts)
-    .innerJoin(customers, eq(customers.id, contacts.customerId))
+    .innerJoin(organizations, eq(organizations.id, contacts.organizationId))
     .where(
-      and(isNull(contacts.deletedAt), isNull(customers.deletedAt), eq(contacts.isPrimary, true)),
+      and(
+        isNull(contacts.deletedAt),
+        isNull(organizations.deletedAt),
+        eq(contacts.isPrimary, true),
+      ),
     )
-    .orderBy(sql`${customers.name} collate "sk-x-icu"`)
+    .orderBy(sql`${organizations.name} collate "sk-x-icu"`)
     .limit(200);
   return rows.map((row) => ({
     id: row.id,
@@ -301,16 +305,16 @@ export async function valuesFor(
   if (!contactId && recipient.customerId) {
     const [row] = await db
       .select({
-        titleBefore: customers.titleBefore,
-        firstName: customers.firstName,
-        lastName: customers.lastName,
-        titleAfter: customers.titleAfter,
-        salutation: customers.salutation,
-        name: customers.name,
-        city: customers.city,
+        titleBefore: organizations.titleBefore,
+        firstName: organizations.firstName,
+        lastName: organizations.lastName,
+        titleAfter: organizations.titleAfter,
+        salutation: organizations.salutation,
+        name: organizations.name,
+        city: organizations.city,
       })
-      .from(customers)
-      .where(eq(customers.id, recipient.customerId));
+      .from(organizations)
+      .where(eq(organizations.id, recipient.customerId));
     if (row) {
       values.salutation = row.salutation ?? undefined;
       values['contact.firstName'] = row.firstName ?? undefined;
@@ -330,11 +334,11 @@ export async function valuesFor(
         titleAfter: contacts.titleAfter,
         salutation: contacts.salutation,
         position: contacts.position,
-        customerName: customers.name,
-        city: customers.city,
+        customerName: organizations.name,
+        city: organizations.city,
       })
       .from(contacts)
-      .innerJoin(customers, eq(customers.id, contacts.customerId))
+      .innerJoin(organizations, eq(organizations.id, contacts.organizationId))
       .where(and(eq(contacts.id, contactId), isNull(contacts.deletedAt)));
     if (row) {
       values.salutation = row.salutation ?? undefined;

@@ -11,7 +11,7 @@ type Page = {
   counts: Record<string, number>;
 };
 
-describe('contacts (customers)', () => {
+describe('contacts (organizations)', () => {
   let api: Awaited<ReturnType<typeof startApi>>;
   let jana: ReturnType<typeof browser>;
   let options: Options;

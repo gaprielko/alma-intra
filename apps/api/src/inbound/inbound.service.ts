@@ -5,7 +5,7 @@ import {
   campaignMessages,
   campaigns,
   contacts,
-  customers,
+  organizations,
   inboundMessages,
 } from '../db/schema/index.js';
 import { notify } from '../notifications/notifications.service.js';
@@ -20,8 +20,8 @@ export class InboundError extends Error {
 /** The first characters of the plain text, for a list line. */
 const PREVIEW = sql<string>`left(regexp_replace(coalesce(${inboundMessages.text}, ''), '\\s+', ' ', 'g'), 160)`;
 
-const customerName = sql<string | null>`(select c.name from customers c
-  where c.id = ${inboundMessages.customerId})`;
+const customerName = sql<string | null>`(select c.name from organizations c
+  where c.id = ${inboundMessages.organizationId})`;
 
 /**
  * „Prijaté“: one page of received e-mail, the unassigned first (or only), newest first, and how
@@ -43,7 +43,7 @@ export async function listInbound(db: Db, raw: InboundListInput) {
         subject: inboundMessages.subject,
         preview: PREVIEW,
         receivedAt: inboundMessages.receivedAt,
-        customerId: inboundMessages.customerId,
+        customerId: inboundMessages.organizationId,
         customerName,
         attachmentCount: sql<number>`jsonb_array_length(${inboundMessages.attachments})`,
         total: sql<number>`count(*) over ()`.mapWith(Number),
@@ -90,7 +90,8 @@ export async function getInbound(db: Db, id: string) {
     .where(and(eq(inboundMessages.id, id), ne(inboundMessages.status, 'discarded')));
   if (!row) throw new InboundError('NOT_FOUND');
   const { inbound, ...rest } = row;
-  return { ...inbound, ...rest };
+  const { organizationId, ...fields } = inbound;
+  return { ...fields, customerId: organizationId, ...rest };
 }
 
 /** Files an e-mail under a customer and optionally one of its live contact persons. */
@@ -100,9 +101,9 @@ export async function assignInbound(
   input: { id: string; customerId: string; contactId: string | null },
 ) {
   const [customer] = await db
-    .select({ id: customers.id, ownerUserId: customers.ownerUserId })
-    .from(customers)
-    .where(and(eq(customers.id, input.customerId), isNull(customers.deletedAt)));
+    .select({ id: organizations.id, ownerUserId: organizations.ownerUserId })
+    .from(organizations)
+    .where(and(eq(organizations.id, input.customerId), isNull(organizations.deletedAt)));
   if (!customer) throw new InboundError('CUSTOMER_NOT_FOUND');
   if (input.contactId) {
     const [contact] = await db
@@ -111,7 +112,7 @@ export async function assignInbound(
       .where(
         and(
           eq(contacts.id, input.contactId),
-          eq(contacts.customerId, input.customerId),
+          eq(contacts.organizationId, input.customerId),
           isNull(contacts.deletedAt),
         ),
       );
@@ -119,7 +120,7 @@ export async function assignInbound(
   }
   const [before] = await db
     .select({
-      customerId: inboundMessages.customerId,
+      customerId: inboundMessages.organizationId,
       status: inboundMessages.status,
       subject: inboundMessages.subject,
     })
@@ -128,7 +129,7 @@ export async function assignInbound(
   if (!before) throw new InboundError('NOT_FOUND');
   // Another customer than the one the token named: the link to our e-mail no longer holds.
   const [kept] = await db
-    .select({ customerId: campaignMessages.customerId })
+    .select({ customerId: campaignMessages.organizationId })
     .from(campaignMessages)
     .innerJoin(inboundMessages, eq(inboundMessages.messageId, campaignMessages.id))
     .where(eq(inboundMessages.id, input.id));
@@ -136,7 +137,7 @@ export async function assignInbound(
     .update(inboundMessages)
     .set({
       status: 'assigned',
-      customerId: input.customerId,
+      organizationId: input.customerId,
       contactId: input.contactId,
       assignedByUserId: userId,
       ...(kept && kept.customerId !== input.customerId ? { messageId: null } : {}),
@@ -161,7 +162,7 @@ export async function discardInbound(db: Db, id: string) {
     .update(inboundMessages)
     .set({ status: 'discarded' })
     .where(and(eq(inboundMessages.id, id), ne(inboundMessages.status, 'discarded')))
-    .returning({ customerId: inboundMessages.customerId });
+    .returning({ customerId: inboundMessages.organizationId });
   if (rows.length === 0) throw new InboundError('NOT_FOUND');
   return rows[0]!;
 }
@@ -186,7 +187,7 @@ export async function replyToInbound(db: Db, userId: string, input: { id: string
     .select()
     .from(inboundMessages)
     .where(and(eq(inboundMessages.id, input.id), eq(inboundMessages.status, 'assigned')));
-  if (!received?.customerId) throw new InboundError('NOT_FOUND');
+  if (!received?.organizationId) throw new InboundError('NOT_FOUND');
   const subject = /^re:/i.test(received.subject) ? received.subject : `Re: ${received.subject}`;
   const quoted = received.text?.trim() ?? '';
   const sender = received.fromName
@@ -208,7 +209,7 @@ export async function replyToInbound(db: Db, userId: string, input: { id: string
       .returning({ id: campaigns.id });
     await tx.insert(campaignMessages).values({
       campaignId: campaign!.id,
-      customerId: received.customerId!,
+      organizationId: received.organizationId!,
       contactId: received.contactId,
       status: 'queued',
       toEmail: received.fromEmail,

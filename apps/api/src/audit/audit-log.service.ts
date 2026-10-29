@@ -8,7 +8,7 @@ import { auditEvents, users } from '../db/schema/index.js';
  * a contact, a file, an e-mail, a received e-mail, a template, a colleague. Gone since: none.
  */
 const subjectName = sql<string | null>`case ${auditEvents.entityType}
-  when 'customer' then (select c.name from customers c where c.id::text = ${auditEvents.entityId})
+  when 'customer' then (select c.name from organizations c where c.id::text = ${auditEvents.entityId})
   when 'file' then (select f.name from files f where f.id::text = ${auditEvents.entityId})
   when 'campaign' then (select c.subject_text from campaigns c where c.id::text = ${auditEvents.entityId})
   when 'inbound' then (select i.subject from inbound_messages i where i.id::text = ${auditEvents.entityId})

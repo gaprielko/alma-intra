@@ -5,7 +5,7 @@ import type { Db } from '../db/db.module.js';
 import {
   campaigns as campaignsTable,
   contactTypes,
-  customers,
+  organizations,
   inboundMessages,
 } from '../db/schema/index.js';
 
@@ -13,18 +13,18 @@ import {
 export const STALE_DAYS = 30;
 
 /**
- * Prehľad (D-15): the customers by sales status, the latest e-mails sent and how they did, the
+ * Prehľad (D-15): the organizations by sales status, the latest e-mails sent and how they did, the
  * received e-mails waiting for a contact, the e-mails scheduled to leave, and my contacts nobody
  * has been in touch with lately. „Moje ďalšie kroky“ come from their own query.
  */
 export async function overviewSummary(db: Db, userId: string) {
   const [statusRows, [unassigned], campaigns, stale, scheduled] = await Promise.all([
     db
-      .select({ status: customers.status, count: sql<number>`count(*)`.mapWith(Number) })
-      .from(customers)
-      .innerJoin(contactTypes, eq(contactTypes.id, customers.contactTypeId))
-      .where(and(isNull(customers.deletedAt), eq(contactTypes.systemKey, 'customer')))
-      .groupBy(customers.status),
+      .select({ status: organizations.status, count: sql<number>`count(*)`.mapWith(Number) })
+      .from(organizations)
+      .innerJoin(contactTypes, eq(contactTypes.id, organizations.contactTypeId))
+      .where(and(isNull(organizations.deletedAt), eq(contactTypes.systemKey, 'customer')))
+      .groupBy(organizations.status),
     db
       .select({ count: sql<number>`count(*)`.mapWith(Number) })
       .from(inboundMessages)
@@ -32,20 +32,20 @@ export async function overviewSummary(db: Db, userId: string) {
     listCampaigns(db, 'sent', 1),
     db
       .select({
-        id: customers.id,
-        name: customers.name,
-        city: customers.city,
+        id: organizations.id,
+        name: organizations.name,
+        city: organizations.city,
         lastContactAt: sql<string | null>`${LAST_CONTACT}`,
       })
-      .from(customers)
+      .from(organizations)
       .where(
         and(
-          isNull(customers.deletedAt),
-          eq(customers.ownerUserId, userId),
+          isNull(organizations.deletedAt),
+          eq(organizations.ownerUserId, userId),
           sql`coalesce(${LAST_CONTACT}, '-infinity') < now() - make_interval(days => ${STALE_DAYS})`,
         ),
       )
-      .orderBy(sql`${LAST_CONTACT} asc nulls first`, asc(customers.name))
+      .orderBy(sql`${LAST_CONTACT} asc nulls first`, asc(organizations.name))
       .limit(8),
     db
       .select({

@@ -12,7 +12,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { customers } from './customers.js';
+import { organizations } from './customers.js';
 import { users } from './users.js';
 
 /**
@@ -27,7 +27,7 @@ export const folders = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     parentId: uuid('parent_id').references((): AnyPgColumn => folders.id),
-    customerId: uuid('customer_id').references(() => customers.id),
+    organizationId: uuid('organization_id').references(() => organizations.id),
     name: text('name'),
     createdByUserId: uuid('created_by_user_id').references(() => users.id),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -35,21 +35,21 @@ export const folders = pgTable(
   },
   (t) => [
     index('folders_parent_idx').on(t.parentId),
-    index('folders_customer_idx').on(t.customerId),
+    index('folders_organization_idx').on(t.organizationId),
     // One root per customer, and one company root.
-    uniqueIndex('folders_customer_root_unique')
-      .on(t.customerId)
+    uniqueIndex('folders_organization_root_unique')
+      .on(t.organizationId)
       .where(sql`${t.parentId} is null`),
     uniqueIndex('folders_company_root_unique')
       .on(sql`(${t.parentId} is null)`)
-      .where(sql`${t.parentId} is null and ${t.customerId} is null`),
+      .where(sql`${t.parentId} is null and ${t.organizationId} is null`),
     // A name once per parent.
     uniqueIndex('folders_name_unique')
       .on(t.parentId, sql`lower(${t.name})`)
       .where(sql`${t.parentId} is not null`),
     check(
       'folders_named',
-      sql`(${t.parentId} is null and ${t.customerId} is not null and ${t.name} is null) or ${t.name} is not null`,
+      sql`(${t.parentId} is null and ${t.organizationId} is not null and ${t.name} is null) or ${t.name} is not null`,
     ),
   ],
 );

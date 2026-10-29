@@ -41,7 +41,7 @@ export const segmentRouter = router({
       return { ok: true as const };
     }),
 
-  /** The customers it finds today, to add as an e-mail's recipients. */
+  /** The organizations it finds today, to add as an e-mail's recipients. */
   customerIds: authorizedProcedure('customer.read')
     .input(segmentIdSchema)
     .query(async ({ ctx, input }) => {

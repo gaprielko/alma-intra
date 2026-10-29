@@ -3,10 +3,10 @@ import { and, asc, eq, isNull, ne, sql } from 'drizzle-orm';
 import type { Db, Tx } from '../db/db.module.js';
 import {
   contactTypes,
-  customerProducts,
-  customers,
-  customerSources,
-  customerTags,
+  organizationProducts,
+  organizations,
+  organizationSources,
+  organizationTags,
   emailTemplates,
   products,
   tags,
@@ -23,22 +23,22 @@ export class CodeListError extends Error {
 const TABLES = {
   contact_type: contactTypes,
   product: products,
-  source: customerSources,
+  source: organizationSources,
   template_category: templateCategories,
 } as const;
 /**
- * What uses an item held in a column: customers for their contact type and source, templates for
- * their category. A product is held in `customer_products` instead.
+ * What uses an item held in a column: organizations for their contact type and source, templates for
+ * their category. A product is held in `organization_products` instead.
  */
 const USED_BY = {
-  contact_type: customers.contactTypeId,
-  source: customers.sourceId,
+  contact_type: organizations.contactTypeId,
+  source: organizations.sourceId,
   template_category: emailTemplates.categoryId,
 } as const;
 // Raw names for the correlated count: Drizzle writes columns bare in a single-table query.
 const TABLE_NAMES = {
   contact_type: 'contact_types',
-  source: 'customer_sources',
+  source: 'organization_sources',
   template_category: 'template_categories',
 } as const;
 const USED_BY_TABLE = {
@@ -69,7 +69,7 @@ async function mapNameClash<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 /**
- * How many live rows use an item: customers for a type or a source, templates (deactivated ones
+ * How many live rows use an item: organizations for a type or a source, templates (deactivated ones
  * included) for a category.
  */
 const usageCount = (list: CodeList) =>
@@ -77,8 +77,8 @@ const usageCount = (list: CodeList) =>
     ? sql<number>`(select count(*) from email_templates c
         where c.category_id = "template_categories"."id")`.mapWith(Number)
     : list === 'product'
-      ? sql<number>`(select count(*) from customer_products cp
-          join customers c on c.id = cp.customer_id
+      ? sql<number>`(select count(*) from organization_products cp
+          join organizations c on c.id = cp.organization_id
           where cp.product_id = "products"."id" and c.deleted_at is null)`.mapWith(Number)
       : sql<number>`(select count(*) from ${sql.raw(USED_BY_TABLE[list])} c
         where c.${sql.raw(USED_BY_COLUMN[list])} = ${sql.raw(`"${TABLE_NAMES[list]}"."id"`)}
@@ -111,17 +111,17 @@ export async function listItems(db: Db | Tx, list: CodeList) {
       : list === 'product'
         ? await db
             .select({ count: sql<number>`count(*)`.mapWith(Number) })
-            .from(customers)
+            .from(organizations)
             .where(
               and(
-                isNull(customers.deletedAt),
-                sql`not exists (select 1 from customer_products cp where cp.customer_id = ${customers.id})`,
+                isNull(organizations.deletedAt),
+                sql`not exists (select 1 from organization_products cp where cp.organization_id = ${organizations.id})`,
               ),
             )
         : await db
             .select({ count: sql<number>`count(*)`.mapWith(Number) })
-            .from(customers)
-            .where(and(isNull(USED_BY[list]), isNull(customers.deletedAt)));
+            .from(organizations)
+            .where(and(isNull(USED_BY[list]), isNull(organizations.deletedAt)));
   return { items, withoutCount: without?.count ?? 0 };
 }
 
@@ -179,20 +179,20 @@ export async function deleteItem(db: Db, list: CodeList, id: string) {
             .limit(1)
         : list === 'product'
           ? await tx
-              .select({ id: customerProducts.customerId })
-              .from(customerProducts)
-              .innerJoin(customers, eq(customers.id, customerProducts.customerId))
-              .where(and(eq(customerProducts.productId, id), isNull(customers.deletedAt)))
+              .select({ id: organizationProducts.organizationId })
+              .from(organizationProducts)
+              .innerJoin(organizations, eq(organizations.id, organizationProducts.organizationId))
+              .where(and(eq(organizationProducts.productId, id), isNull(organizations.deletedAt)))
               .limit(1)
           : await tx
-              .select({ id: customers.id })
-              .from(customers)
+              .select({ id: organizations.id })
+              .from(organizations)
               .where(eq(USED_BY[list], id))
               .limit(1);
     if (used) throw new CodeListError('IN_USE');
     // A deleted record loses the product with it, as it does a tag.
     if (list === 'product') {
-      await tx.delete(customerProducts).where(eq(customerProducts.productId, id));
+      await tx.delete(organizationProducts).where(eq(organizationProducts.productId, id));
     }
     const rows = await tx.delete(table).where(eq(table.id, id)).returning({ id: table.id });
     if (rows.length === 0) throw new CodeListError('NOT_FOUND');
@@ -212,14 +212,14 @@ export async function reorderItems(db: Db, list: CodeList, ids: string[]) {
   });
 }
 
-/** Every tag with how many live customers carry it. */
+/** Every tag with how many live organizations carry it. */
 export async function listTags(db: Db | Tx) {
   return db
     .select({
       id: tags.id,
       name: tags.name,
-      customers: sql<number>`(select count(*) from customer_tags ct
-        join customers c on c.id = ct.customer_id
+      customers: sql<number>`(select count(*) from organization_tags ct
+        join organizations c on c.id = ct.organization_id
         where ct.tag_id = "tags"."id" and c.deleted_at is null)`.mapWith(Number),
     })
     .from(tags)
@@ -246,10 +246,10 @@ export async function renameTag(db: Db | Tx, id: string, name: string) {
 export async function deleteTag(db: Db, id: string) {
   await db.transaction(async (tx) => {
     const [used] = await tx
-      .select({ id: customerTags.customerId })
-      .from(customerTags)
-      .innerJoin(customers, eq(customers.id, customerTags.customerId))
-      .where(and(eq(customerTags.tagId, id), isNull(customers.deletedAt)))
+      .select({ id: organizationTags.organizationId })
+      .from(organizationTags)
+      .innerJoin(organizations, eq(organizations.id, organizationTags.organizationId))
+      .where(and(eq(organizationTags.tagId, id), isNull(organizations.deletedAt)))
       .limit(1);
     if (used) throw new CodeListError('IN_USE');
     const rows = await tx.delete(tags).where(eq(tags.id, id)).returning({ id: tags.id });

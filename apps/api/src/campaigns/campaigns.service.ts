@@ -16,7 +16,7 @@ import {
   campaignMessages,
   campaigns,
   contacts,
-  customers,
+  organizations,
   emailTemplateAttachments,
   emailTemplates,
   files,
@@ -111,7 +111,7 @@ export function skipReasonOf(person: {
 }
 
 /**
- * The customers of the recipients step: each with the contacts an e-mail could go to, the primary
+ * The organizations of the recipients step: each with the contacts an e-mail could go to, the primary
  * first, and why one would be left out. A private person is their own recipient.
  */
 export async function recipientCandidates(db: Db | Tx, customerIds: string[]) {
@@ -119,21 +119,21 @@ export async function recipientCandidates(db: Db | Tx, customerIds: string[]) {
   const [rows, people] = await Promise.all([
     db
       .select({
-        id: customers.id,
-        name: customers.name,
-        kind: customers.kind,
-        city: customers.city,
-        status: customers.status,
-        email: customers.email,
-        unsubscribedAt: customers.unsubscribedAt,
-        emailStatus: customers.emailStatus,
+        id: organizations.id,
+        name: organizations.name,
+        kind: organizations.kind,
+        city: organizations.city,
+        status: organizations.status,
+        email: organizations.email,
+        unsubscribedAt: organizations.unsubscribedAt,
+        emailStatus: organizations.emailStatus,
       })
-      .from(customers)
-      .where(and(inArray(customers.id, customerIds), isNull(customers.deletedAt))),
+      .from(organizations)
+      .where(and(inArray(organizations.id, customerIds), isNull(organizations.deletedAt))),
     db
       .select({
         id: contacts.id,
-        customerId: contacts.customerId,
+        customerId: contacts.organizationId,
         titleBefore: contacts.titleBefore,
         firstName: contacts.firstName,
         lastName: contacts.lastName,
@@ -144,7 +144,7 @@ export async function recipientCandidates(db: Db | Tx, customerIds: string[]) {
         emailStatus: contacts.emailStatus,
       })
       .from(contacts)
-      .where(and(inArray(contacts.customerId, customerIds), isNull(contacts.deletedAt)))
+      .where(and(inArray(contacts.organizationId, customerIds), isNull(contacts.deletedAt)))
       .orderBy(desc(contacts.isPrimary), asc(contacts.lastName)),
   ]);
   const order = new Map(customerIds.map((id, i) => [id, i]));
@@ -245,10 +245,10 @@ export async function reuseCampaign(db: Db, userId: string, id: string) {
       .where(eq(campaignMessages.campaignId, id))
       .orderBy(asc(campaignMessages.position));
     const candidates = await recipientCandidates(tx, [
-      ...new Set(messages.map((m) => m.customerId)),
+      ...new Set(messages.map((m) => m.organizationId)),
     ]);
     const kept = messages.filter((m) => {
-      const customer = candidates.find((c) => c.id === m.customerId);
+      const customer = candidates.find((c) => c.id === m.organizationId);
       if (!customer) return false;
       return m.contactId
         ? customer.contacts.some((c) => c.id === m.contactId)
@@ -269,7 +269,7 @@ export async function reuseCampaign(db: Db, userId: string, id: string) {
       await tx.insert(campaignMessages).values(
         kept.map((m, position) => ({
           campaignId: created!.id,
-          customerId: m.customerId,
+          organizationId: m.organizationId,
           contactId: m.contactId,
           position,
           values: m.values,
@@ -304,7 +304,7 @@ async function writeRecipients(
   const existing = await tx
     .select({
       id: campaignMessages.id,
-      customerId: campaignMessages.customerId,
+      customerId: campaignMessages.organizationId,
       contactId: campaignMessages.contactId,
     })
     .from(campaignMessages)
@@ -323,9 +323,14 @@ async function writeRecipients(
   const have = new Set(existing.map(key));
   const added = unique.filter((r) => !have.has(key(r)));
   if (added.length > 0) {
-    await tx
-      .insert(campaignMessages)
-      .values(added.map((r) => ({ campaignId, ...r, position: wanted.get(key(r))! })));
+    await tx.insert(campaignMessages).values(
+      added.map((r) => ({
+        campaignId,
+        organizationId: r.customerId,
+        contactId: r.contactId,
+        position: wanted.get(key(r))!,
+      })),
+    );
   }
 }
 
@@ -521,10 +526,10 @@ export async function getCampaign(db: Db, id: string) {
   const messages = await db
     .select({
       id: campaignMessages.id,
-      customerId: campaignMessages.customerId,
+      customerId: campaignMessages.organizationId,
       contactId: campaignMessages.contactId,
-      customerName: customers.name,
-      customerKind: customers.kind,
+      customerName: organizations.name,
+      customerKind: organizations.kind,
       contactTitleBefore: contacts.titleBefore,
       contactFirstName: contacts.firstName,
       contactLastName: contacts.lastName,
@@ -533,10 +538,10 @@ export async function getCampaign(db: Db, id: string) {
       contactEmail: contacts.email,
       contactUnsubscribedAt: contacts.unsubscribedAt,
       contactEmailStatus: contacts.emailStatus,
-      customerSalutation: customers.salutation,
-      customerEmail: customers.email,
-      customerUnsubscribedAt: customers.unsubscribedAt,
-      customerEmailStatus: customers.emailStatus,
+      customerSalutation: organizations.salutation,
+      customerEmail: organizations.email,
+      customerUnsubscribedAt: organizations.unsubscribedAt,
+      customerEmailStatus: organizations.emailStatus,
       values: campaignMessages.values,
       ownFileIds: campaignMessages.ownFileIds,
       bodyOverride: campaignMessages.bodyOverride,
@@ -552,7 +557,7 @@ export async function getCampaign(db: Db, id: string) {
       complainedAt: campaignMessages.complainedAt,
     })
     .from(campaignMessages)
-    .innerJoin(customers, eq(customers.id, campaignMessages.customerId))
+    .innerJoin(organizations, eq(organizations.id, campaignMessages.organizationId))
     .leftJoin(contacts, eq(contacts.id, campaignMessages.contactId))
     .where(eq(campaignMessages.campaignId, id))
     .orderBy(asc(campaignMessages.position));

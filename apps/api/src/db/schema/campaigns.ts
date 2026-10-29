@@ -18,7 +18,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { contacts, customers } from './customers.js';
+import { contacts, organizations } from './customers.js';
 import { emailTemplates } from './email.js';
 import { files, fileVersions } from './files.js';
 import { users } from './users.js';
@@ -85,9 +85,9 @@ export const campaignMessages = pgTable(
     campaignId: uuid('campaign_id')
       .notNull()
       .references(() => campaigns.id, { onDelete: 'cascade' }),
-    customerId: uuid('customer_id')
+    organizationId: uuid('organization_id')
       .notNull()
-      .references(() => customers.id),
+      .references(() => organizations.id),
     contactId: uuid('contact_id').references(() => contacts.id),
     position: integer('position').notNull().default(0),
     values: jsonb('values').$type<Record<string, string>>().notNull().default({}),
@@ -123,14 +123,14 @@ export const campaignMessages = pgTable(
   },
   (t) => [
     index('campaign_messages_campaign_idx').on(t.campaignId, t.position),
-    index('campaign_messages_customer_idx').on(t.customerId),
+    index('campaign_messages_organization_idx').on(t.organizationId),
     // The worker's queue: the queued messages, oldest attempt first.
     index('campaign_messages_queue_idx')
       .on(t.nextAttemptAt)
       .where(sql`${t.status} = 'queued'`),
     uniqueIndex('campaign_messages_recipient_unique').on(
       t.campaignId,
-      t.customerId,
+      t.organizationId,
       sql`coalesce(${t.contactId}, '00000000-0000-0000-0000-000000000000'::uuid)`,
     ),
     uniqueIndex('campaign_messages_provider_unique')

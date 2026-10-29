@@ -25,10 +25,10 @@ import {
   auditEvents,
   contacts,
   contactTypes,
-  customerSources,
-  customers,
-  customerTags,
-  customerProducts,
+  organizationSources,
+  organizations,
+  organizationTags,
+  organizationProducts,
   products,
   tags,
   users,
@@ -57,7 +57,7 @@ export class CustomerError extends Error {
   }
 }
 
-const alive = isNull(customers.deletedAt);
+const alive = isNull(organizations.deletedAt);
 const aliveContact = isNull(contacts.deletedAt);
 /** Names sorted as a Slovak reader expects: case and accents in their places. */
 const collated = (column: SQL | AnyColumn) => sql`${column} collate "sk-x-icu"`;
@@ -66,34 +66,38 @@ const collated = (column: SQL | AnyColumn) => sql`${column} collate "sk-x-icu"`;
  * The customer's id, always qualified: Drizzle writes columns bare in a single-table query, and a
  * bare `id` inside a correlated subquery would name the subquery's own table.
  */
-const CUSTOMER_ID = sql.raw('"customers"."id"');
+const CUSTOMER_ID = sql.raw('"organizations"."id"');
 
 /** `%text%` for ILIKE, with the wildcards somebody typed taken literally. */
 const likePattern = (text: string) => `%${text.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
 /** The status filter: one status, or the records without one. */
 const statusWhere = (status: CustomerFilter['status']) =>
-  status === 'none' ? [isNull(customers.status)] : status ? [eq(customers.status, status)] : [];
+  status === 'none'
+    ? [isNull(organizations.status)]
+    : status
+      ? [eq(organizations.status, status)]
+      : [];
 
 /** The filters of the list as a WHERE clause; `status` is left to the caller (the chips count without it). */
 function filterWhere(filter: CustomerFilter): SQL[] {
   const where: SQL[] = [alive];
-  if (filter.kind) where.push(eq(customers.kind, filter.kind));
-  if (filter.contactTypeId) where.push(eq(customers.contactTypeId, filter.contactTypeId));
+  if (filter.kind) where.push(eq(organizations.kind, filter.kind));
+  if (filter.contactTypeId) where.push(eq(organizations.contactTypeId, filter.contactTypeId));
   if (filter.productId === 'none') {
     where.push(
-      sql`not exists (select 1 from customer_products cp where cp.customer_id = ${CUSTOMER_ID})`,
+      sql`not exists (select 1 from organization_products cp where cp.organization_id = ${CUSTOMER_ID})`,
     );
   } else if (filter.productId) {
     where.push(
-      sql`exists (select 1 from customer_products cp where cp.customer_id = ${CUSTOMER_ID} and cp.product_id = ${filter.productId})`,
+      sql`exists (select 1 from organization_products cp where cp.organization_id = ${CUSTOMER_ID} and cp.product_id = ${filter.productId})`,
     );
   }
-  if (filter.region) where.push(eq(customers.region, filter.region));
-  if (filter.ownerUserId) where.push(eq(customers.ownerUserId, filter.ownerUserId));
+  if (filter.region) where.push(eq(organizations.region, filter.region));
+  if (filter.ownerUserId) where.push(eq(organizations.ownerUserId, filter.ownerUserId));
   if (filter.tagId) {
     where.push(
-      sql`exists (select 1 from customer_tags ct where ct.customer_id = ${CUSTOMER_ID} and ct.tag_id = ${filter.tagId})`,
+      sql`exists (select 1 from organization_tags ct where ct.organization_id = ${CUSTOMER_ID} and ct.tag_id = ${filter.tagId})`,
     );
   }
   if (filter.search) {
@@ -102,10 +106,10 @@ function filterWhere(filter: CustomerFilter): SQL[] {
     where.push(
       or(
         // Without regard to diacritics either: „Toth“ finds „Tóth“ (migration 0022).
-        sql`unaccent(${customers.name}) ilike unaccent(${pattern})`,
-        sql`${customers.email} ilike ${pattern}`,
-        /^\d+$/.test(digits) ? sql`${customers.ico} like ${likePattern(digits)}` : sql`false`,
-        sql`exists (select 1 from contacts p where p.customer_id = ${CUSTOMER_ID}
+        sql`unaccent(${organizations.name}) ilike unaccent(${pattern})`,
+        sql`${organizations.email} ilike ${pattern}`,
+        /^\d+$/.test(digits) ? sql`${organizations.ico} like ${likePattern(digits)}` : sql`false`,
+        sql`exists (select 1 from contacts p where p.organization_id = ${CUSTOMER_ID}
           and p.deleted_at is null
           and (p.email ilike ${pattern}
             or unaccent(p.first_name || ' ' || p.last_name) ilike unaccent(${pattern})))`,
@@ -118,46 +122,46 @@ function filterWhere(filter: CustomerFilter): SQL[] {
 /** The customer's tags, by name, as JSON. */
 const tagsJson = sql<{ id: string; name: string }[]>`coalesce((
   select json_agg(json_build_object('id', t.id, 'name', t.name) order by t.name collate "sk-x-icu")
-  from customer_tags ct join tags t on t.id = ct.tag_id
-  where ct.customer_id = ${CUSTOMER_ID}), '[]'::json)`;
+  from organization_tags ct join tags t on t.id = ct.tag_id
+  where ct.organization_id = ${CUSTOMER_ID}), '[]'::json)`;
 
 /** The record's products, in the order of the code list, as JSON. */
 const productsJson = sql<{ id: string; name: string }[]>`coalesce((
   select json_agg(json_build_object('id', p.id, 'name', p.name)
     order by p.position, p.name collate "sk-x-icu")
-  from customer_products cp join products p on p.id = cp.product_id
-  where cp.customer_id = ${CUSTOMER_ID}), '[]'::json)`;
+  from organization_products cp join products p on p.id = cp.product_id
+  where cp.organization_id = ${CUSTOMER_ID}), '[]'::json)`;
 
 /** The primary contact, or for a private person the person. */
 const primaryContactJson = sql<{
   name: string;
   email: string | null;
-} | null>`case when ${customers.kind} = 'individual'
-  then json_build_object('name', ${customers.name}, 'email', ${customers.email})
+} | null>`case when ${organizations.kind} = 'individual'
+  then json_build_object('name', ${organizations.name}, 'email', ${organizations.email})
   else (select json_build_object(
       'name', concat_ws(' ', p.title_before, p.first_name, p.last_name), 'email', p.email)
     from contacts p
-    where p.customer_id = ${CUSTOMER_ID} and p.is_primary and p.deleted_at is null)
+    where p.organization_id = ${CUSTOMER_ID} and p.is_primary and p.deleted_at is null)
   end`;
 
 /** The last activity, e-mail sent to the customer or reply received from it. */
 export const LAST_CONTACT = sql`greatest(
   (select max(a.occurred_at) from activities a
-    where a.customer_id = ${CUSTOMER_ID} and a.deleted_at is null),
-  (select max(m.sent_at) from campaign_messages m where m.customer_id = ${CUSTOMER_ID}),
+    where a.organization_id = ${CUSTOMER_ID} and a.deleted_at is null),
+  (select max(m.sent_at) from campaign_messages m where m.organization_id = ${CUSTOMER_ID}),
   (select max(i.received_at) from inbound_messages i
-    where i.customer_id = ${CUSTOMER_ID} and i.status = 'assigned'))`;
+    where i.organization_id = ${CUSTOMER_ID} and i.status = 'assigned'))`;
 
 const SORTS = {
-  name: collated(customers.name),
-  status: sql`${customers.status}`,
-  createdAt: sql`${customers.createdAt}`,
-  updatedAt: sql`${customers.updatedAt}`,
+  name: collated(organizations.name),
+  status: sql`${organizations.status}`,
+  createdAt: sql`${organizations.createdAt}`,
+  updatedAt: sql`${organizations.updatedAt}`,
   lastContact: LAST_CONTACT,
 };
 
 /**
- * One page of the customer list, the number of customers in each status for the chips (with
+ * One page of the customer list, the number of organizations in each status for the chips (with
  * every other filter applied), and the total the pager counts.
  */
 export async function listCustomers(db: Db | Tx, raw: CustomerListInput) {
@@ -175,13 +179,13 @@ export async function listCustomers(db: Db | Tx, raw: CustomerListInput) {
   const [items, statusCounts] = await Promise.all([
     db
       .select({
-        id: customers.id,
-        kind: customers.kind,
-        name: customers.name,
-        city: customers.city,
+        id: organizations.id,
+        kind: organizations.kind,
+        name: organizations.name,
+        city: organizations.city,
         contactTypeName: contactTypes.name,
         products: productsJson,
-        status: customers.status,
+        status: organizations.status,
         owner: sql<{ id: string; name: string } | null>`case when ${users.id} is null then null
           else json_build_object('id', ${users.id}, 'name', ${users.name}) end`,
         tags: tagsJson,
@@ -189,18 +193,18 @@ export async function listCustomers(db: Db | Tx, raw: CustomerListInput) {
         lastContactAt: sql<string | null>`${LAST_CONTACT}`,
         total: sql<number>`count(*) over ()`.mapWith(Number),
       })
-      .from(customers)
-      .innerJoin(contactTypes, eq(contactTypes.id, customers.contactTypeId))
-      .leftJoin(users, eq(users.id, customers.ownerUserId))
+      .from(organizations)
+      .innerJoin(contactTypes, eq(contactTypes.id, organizations.contactTypeId))
+      .leftJoin(users, eq(users.id, organizations.ownerUserId))
       .where(and(...where))
-      .orderBy(order, asc(customers.id))
+      .orderBy(order, asc(organizations.id))
       .limit(input.pageSize)
       .offset((input.page - 1) * input.pageSize),
     db
-      .select({ status: customers.status, count: sql<number>`count(*)`.mapWith(Number) })
-      .from(customers)
+      .select({ status: organizations.status, count: sql<number>`count(*)`.mapWith(Number) })
+      .from(organizations)
       .where(and(...base))
-      .groupBy(customers.status),
+      .groupBy(organizations.status),
   ]);
 
   const counts: Record<'all' | 'none' | CustomerStatus, number> = {
@@ -233,29 +237,29 @@ export async function getCustomer(db: Db | Tx, id: string) {
   const owner = sql<{
     id: string;
     name: string;
-  } | null>`(select json_build_object('id', u.id, 'name', u.name) from users u where u.id = "customers"."owner_user_id")`;
+  } | null>`(select json_build_object('id', u.id, 'name', u.name) from users u where u.id = "organizations"."owner_user_id")`;
   const createdBy = sql<
     string | null
-  >`(select u.name from users u where u.id = "customers"."created_by_user_id")`;
+  >`(select u.name from users u where u.id = "organizations"."created_by_user_id")`;
   const [row] = await db
     .select({
-      customer: customers,
+      customer: organizations,
       contactTypeName: contactTypes.name,
       products: productsJson,
-      sourceName: customerSources.name,
+      sourceName: organizationSources.name,
       owner,
       createdBy,
       tags: tagsJson,
     })
-    .from(customers)
-    .innerJoin(contactTypes, eq(contactTypes.id, customers.contactTypeId))
-    .leftJoin(customerSources, eq(customerSources.id, customers.sourceId))
-    .where(and(eq(customers.id, id), alive));
+    .from(organizations)
+    .innerJoin(contactTypes, eq(contactTypes.id, organizations.contactTypeId))
+    .leftJoin(organizationSources, eq(organizationSources.id, organizations.sourceId))
+    .where(and(eq(organizations.id, id), alive));
   if (!row) throw new CustomerError('NOT_FOUND');
   const people = await db
     .select()
     .from(contacts)
-    .where(and(eq(contacts.customerId, id), aliveContact))
+    .where(and(eq(contacts.organizationId, id), aliveContact))
     .orderBy(desc(contacts.isPrimary), asc(contacts.createdAt));
   const { customer, ...rest } = row;
   return {
@@ -289,14 +293,16 @@ async function tagIds(tx: Tx, names: readonly string[]): Promise<string[]> {
 async function setTags(tx: Tx, customerId: string, names: readonly string[]) {
   const before = (
     await tx
-      .select({ id: customerTags.tagId })
-      .from(customerTags)
-      .where(eq(customerTags.customerId, customerId))
+      .select({ id: organizationTags.tagId })
+      .from(organizationTags)
+      .where(eq(organizationTags.organizationId, customerId))
   ).map((row) => row.id);
   const ids = [...new Set(await tagIds(tx, names))];
-  await tx.delete(customerTags).where(eq(customerTags.customerId, customerId));
+  await tx.delete(organizationTags).where(eq(organizationTags.organizationId, customerId));
   if (ids.length > 0) {
-    await tx.insert(customerTags).values(ids.map((tagId) => ({ customerId, tagId })));
+    await tx
+      .insert(organizationTags)
+      .values(ids.map((tagId) => ({ organizationId: customerId, tagId })));
   }
   return {
     added: ids.filter((id) => !before.includes(id)),
@@ -311,9 +317,9 @@ async function setTags(tx: Tx, customerId: string, names: readonly string[]) {
 async function setProducts(tx: Tx, customerId: string, picked: readonly string[]) {
   const before = (
     await tx
-      .select({ id: customerProducts.productId })
-      .from(customerProducts)
-      .where(eq(customerProducts.customerId, customerId))
+      .select({ id: organizationProducts.productId })
+      .from(organizationProducts)
+      .where(eq(organizationProducts.organizationId, customerId))
   ).map((row) => row.id);
   const ids =
     picked.length === 0
@@ -324,9 +330,11 @@ async function setProducts(tx: Tx, customerId: string, picked: readonly string[]
             .from(products)
             .where(inArray(products.id, [...new Set(picked)]))
         ).map((row) => row.id);
-  await tx.delete(customerProducts).where(eq(customerProducts.customerId, customerId));
+  await tx.delete(organizationProducts).where(eq(organizationProducts.organizationId, customerId));
   if (ids.length > 0) {
-    await tx.insert(customerProducts).values(ids.map((productId) => ({ customerId, productId })));
+    await tx
+      .insert(organizationProducts)
+      .values(ids.map((productId) => ({ organizationId: customerId, productId })));
   }
   return {
     added: ids.filter((id) => !before.includes(id)),
@@ -337,9 +345,9 @@ async function setProducts(tx: Tx, customerId: string, picked: readonly string[]
 async function assertIcoFree(tx: Tx, ico: string | undefined, except?: string) {
   if (!ico) return;
   const [taken] = await tx
-    .select({ id: customers.id })
-    .from(customers)
-    .where(and(eq(customers.ico, ico), alive));
+    .select({ id: organizations.id })
+    .from(organizations)
+    .where(and(eq(organizations.ico, ico), alive));
   if (taken && taken.id !== except) throw new CustomerError('ICO_TAKEN');
 }
 
@@ -447,16 +455,16 @@ export async function createCustomer(db: Db, userId: string, input: CreateCustom
           ? { unsubscribedAt: new Date(), unsubscribeSource: 'manual' as const }
           : {};
       const [created] = await tx
-        .insert(customers)
+        .insert(organizations)
         .values({ ...values, ...unsubscribed, createdByUserId: userId })
-        .returning({ id: customers.id });
+        .returning({ id: organizations.id });
       const { added } = await setTags(tx, created!.id, input.customer.tags);
       const productChange = await setProducts(tx, created!.id, input.customer.productIds);
       await createCustomerFolder(tx, created!.id);
       if (input.firstContact && input.customer.kind === 'organization') {
         await tx.insert(contacts).values({
           ...contactColumns(input.firstContact),
-          customerId: created!.id,
+          organizationId: created!.id,
           isPrimary: true,
         });
       }
@@ -488,8 +496,8 @@ export async function updateCustomer(db: Db, id: string, input: CustomerInput) {
     db.transaction(async (tx) => {
       const [current] = await tx
         .select()
-        .from(customers)
-        .where(and(eq(customers.id, id), alive))
+        .from(organizations)
+        .where(and(eq(organizations.id, id), alive))
         .for('update');
       if (!current) throw new CustomerError('NOT_FOUND');
       if (current.kind !== input.kind) throw new CustomerError('KIND_CHANGED');
@@ -505,9 +513,9 @@ export async function updateCustomer(db: Db, id: string, input: CustomerInput) {
               : { unsubscribedAt: new Date(), unsubscribeSource: 'manual' as const }
           : {};
       await tx
-        .update(customers)
+        .update(organizations)
         .set({ ...values, ...unsubscribe, updatedAt: new Date() })
-        .where(eq(customers.id, id));
+        .where(eq(organizations.id, id));
       const tagChange = await setTags(tx, id, input.tags);
       if (tagChange.added.length + tagChange.removed.length > 0) fields.push('tags');
       const productChange = await setProducts(tx, id, input.productIds);
@@ -529,10 +537,10 @@ export async function updateCustomer(db: Db, id: string, input: CustomerInput) {
 
 export async function deleteCustomer(db: Db, id: string) {
   const [row] = await db
-    .update(customers)
+    .update(organizations)
     .set({ deletedAt: new Date(), updatedAt: new Date() })
-    .where(and(eq(customers.id, id), alive))
-    .returning({ id: customers.id });
+    .where(and(eq(organizations.id, id), alive))
+    .returning({ id: organizations.id });
   if (!row) throw new CustomerError('NOT_FOUND');
 }
 
@@ -541,13 +549,13 @@ export async function bulkAddTag(db: Db, ids: string[], name: string) {
   return db.transaction(async (tx) => {
     const [tagId] = await tagIds(tx, [name]);
     const live = await tx
-      .select({ id: customers.id })
-      .from(customers)
-      .where(and(inArray(customers.id, ids), alive));
+      .select({ id: organizations.id })
+      .from(organizations)
+      .where(and(inArray(organizations.id, ids), alive));
     if (live.length > 0) {
       await tx
-        .insert(customerTags)
-        .values(live.map((c) => ({ customerId: c.id, tagId: tagId! })))
+        .insert(organizationTags)
+        .values(live.map((c) => ({ organizationId: c.id, tagId: tagId! })))
         .onConflictDoNothing();
     }
     return { ids: live.map((c) => c.id), tagId: tagId! };
@@ -557,69 +565,69 @@ export async function bulkAddTag(db: Db, ids: string[], name: string) {
 /** The status of the picked records that are a „Zákazník“; the others have none and are left. */
 export async function bulkSetStatus(db: Db, ids: string[], status: CustomerStatus) {
   const rows = await db
-    .update(customers)
+    .update(organizations)
     .set({ status, updatedAt: new Date() })
     .where(
       and(
-        inArray(customers.id, ids),
+        inArray(organizations.id, ids),
         alive,
-        sql`${customers.contactTypeId} in (select id from contact_types where system_key = 'customer')`,
+        sql`${organizations.contactTypeId} in (select id from contact_types where system_key = 'customer')`,
       ),
     )
-    .returning({ id: customers.id });
+    .returning({ id: organizations.id });
   return rows.map((r) => r.id);
 }
 
-/** The rows of a CSV export: the picked customers, or everything the filters find. */
+/** The rows of a CSV export: the picked organizations, or everything the filters find. */
 export async function exportRows(
   db: Db | Tx,
   filter: CustomerFilter & { ids?: string[] | undefined },
 ) {
   const where = filter.ids
-    ? [alive, inArray(customers.id, filter.ids)]
+    ? [alive, inArray(organizations.id, filter.ids)]
     : [...filterWhere(filter), ...statusWhere(filter.status)];
   const primary = sql<{
     name: string;
     email: string | null;
     phone: string | null;
     salutation: string | null;
-  } | null>`case when ${customers.kind} = 'individual'
-    then json_build_object('name', ${customers.name}, 'email', ${customers.email}, 'phone', ${customers.phone}, 'salutation', ${customers.salutation})
+  } | null>`case when ${organizations.kind} = 'individual'
+    then json_build_object('name', ${organizations.name}, 'email', ${organizations.email}, 'phone', ${organizations.phone}, 'salutation', ${organizations.salutation})
     else (select json_build_object(
         'name', concat_ws(' ', p.title_before, p.first_name, p.last_name),
         'email', p.email, 'phone', p.phone, 'salutation', p.salutation)
       from contacts p
-      where p.customer_id = ${CUSTOMER_ID} and p.is_primary and p.deleted_at is null)
+      where p.organization_id = ${CUSTOMER_ID} and p.is_primary and p.deleted_at is null)
     end`;
   return db
     .select({
-      name: customers.name,
-      kind: customers.kind,
+      name: organizations.name,
+      kind: organizations.kind,
       contactType: contactTypes.name,
       products: productsJson,
-      status: customers.status,
-      ico: customers.ico,
-      dic: customers.dic,
-      icDph: customers.icDph,
-      street: customers.street,
-      postalCode: customers.postalCode,
-      city: customers.city,
-      region: customers.region,
-      email: customers.email,
-      phone: customers.phone,
-      web: customers.web,
+      status: organizations.status,
+      ico: organizations.ico,
+      dic: organizations.dic,
+      icDph: organizations.icDph,
+      street: organizations.street,
+      postalCode: organizations.postalCode,
+      city: organizations.city,
+      region: organizations.region,
+      email: organizations.email,
+      phone: organizations.phone,
+      web: organizations.web,
       owner: users.name,
-      source: customerSources.name,
+      source: organizationSources.name,
       tags: tagsJson,
       primary,
-      createdAt: customers.createdAt,
+      createdAt: organizations.createdAt,
     })
-    .from(customers)
-    .innerJoin(contactTypes, eq(contactTypes.id, customers.contactTypeId))
-    .leftJoin(customerSources, eq(customerSources.id, customers.sourceId))
-    .leftJoin(users, eq(users.id, customers.ownerUserId))
+    .from(organizations)
+    .innerJoin(contactTypes, eq(contactTypes.id, organizations.contactTypeId))
+    .leftJoin(organizationSources, eq(organizationSources.id, organizations.sourceId))
+    .leftJoin(users, eq(users.id, organizations.ownerUserId))
     .where(and(...where))
-    .orderBy(collated(customers.name), asc(customers.id));
+    .orderBy(collated(organizations.name), asc(organizations.id));
 }
 
 /**
@@ -703,9 +711,9 @@ async function namesOf(db: Db | Tx, diffs: (Record<string, unknown> | null)[]) {
         .from(products)
         .where(inArray(products.id, list)),
       db
-        .select({ id: customerSources.id, name: customerSources.name })
-        .from(customerSources)
-        .where(inArray(customerSources.id, list)),
+        .select({ id: organizationSources.id, name: organizationSources.name })
+        .from(organizationSources)
+        .where(inArray(organizationSources.id, list)),
       db
         .select({ id: contactTypes.id, name: contactTypes.name })
         .from(contactTypes)
@@ -724,9 +732,9 @@ async function namesOf(db: Db | Tx, diffs: (Record<string, unknown> | null)[]) {
 /** The owner a contact belongs to; contacts exist for organizations only. */
 async function organizationOf(tx: Tx, customerId: string) {
   const [row] = await tx
-    .select({ kind: customers.kind })
-    .from(customers)
-    .where(and(eq(customers.id, customerId), alive))
+    .select({ kind: organizations.kind })
+    .from(organizations)
+    .where(and(eq(organizations.id, customerId), alive))
     .for('update');
   if (!row) throw new CustomerError('NOT_FOUND');
   if (row.kind !== 'organization') throw new CustomerError('NOT_ORGANIZATION');
@@ -741,11 +749,11 @@ export async function createContact(db: Db, customerId: string, input: ContactIn
         .select({ id: contacts.id })
         .from(contacts)
         .where(
-          and(eq(contacts.customerId, customerId), eq(contacts.isPrimary, true), aliveContact),
+          and(eq(contacts.organizationId, customerId), eq(contacts.isPrimary, true), aliveContact),
         );
       const [created] = await tx
         .insert(contacts)
-        .values({ ...contactColumns(input), customerId, isPrimary: !primary })
+        .values({ ...contactColumns(input), organizationId: customerId, isPrimary: !primary })
         .returning({ id: contacts.id });
       await touch(tx, customerId);
       return { id: created!.id, customerId };
@@ -754,7 +762,7 @@ export async function createContact(db: Db, customerId: string, input: ContactIn
 }
 
 const touch = (tx: Tx, customerId: string) =>
-  tx.update(customers).set({ updatedAt: new Date() }).where(eq(customers.id, customerId));
+  tx.update(organizations).set({ updatedAt: new Date() }).where(eq(organizations.id, customerId));
 
 async function liveContact(tx: Tx, id: string) {
   const [row] = await tx
@@ -787,8 +795,8 @@ export async function updateContact(
         .update(contacts)
         .set({ ...values, ...unsubscribe, updatedAt: new Date() })
         .where(eq(contacts.id, id));
-      await touch(tx, current.customerId);
-      return { customerId: current.customerId, fields: fields.sort() };
+      await touch(tx, current.organizationId);
+      return { customerId: current.organizationId, fields: fields.sort() };
     }),
   );
 }
@@ -799,13 +807,15 @@ export async function setPrimaryContact(db: Db, id: string) {
     await tx
       .update(contacts)
       .set({ isPrimary: false })
-      .where(and(eq(contacts.customerId, current.customerId), eq(contacts.isPrimary, true)));
+      .where(
+        and(eq(contacts.organizationId, current.organizationId), eq(contacts.isPrimary, true)),
+      );
     await tx
       .update(contacts)
       .set({ isPrimary: true, updatedAt: new Date() })
       .where(eq(contacts.id, id));
-    await touch(tx, current.customerId);
-    return { customerId: current.customerId };
+    await touch(tx, current.organizationId);
+    return { customerId: current.organizationId };
   });
 }
 
@@ -821,13 +831,13 @@ export async function deleteContact(db: Db, id: string) {
       const [next] = await tx
         .select({ id: contacts.id })
         .from(contacts)
-        .where(and(eq(contacts.customerId, current.customerId), aliveContact))
+        .where(and(eq(contacts.organizationId, current.organizationId), aliveContact))
         .orderBy(asc(contacts.createdAt))
         .limit(1);
       if (next) await tx.update(contacts).set({ isPrimary: true }).where(eq(contacts.id, next.id));
     }
-    await touch(tx, current.customerId);
-    return { customerId: current.customerId };
+    await touch(tx, current.organizationId);
+    return { customerId: current.organizationId };
   });
 }
 
@@ -849,12 +859,12 @@ export async function formOptions(db: Db | Tx) {
       .orderBy(asc(products.position), collated(products.name)),
     db
       .select({
-        id: customerSources.id,
-        name: customerSources.name,
-        active: customerSources.active,
+        id: organizationSources.id,
+        name: organizationSources.name,
+        active: organizationSources.active,
       })
-      .from(customerSources)
-      .orderBy(asc(customerSources.position), collated(customerSources.name)),
+      .from(organizationSources)
+      .orderBy(asc(organizationSources.position), collated(organizationSources.name)),
     db.select({ id: tags.id, name: tags.name }).from(tags).orderBy(collated(tags.name)),
     db
       .select({ id: users.id, name: users.name })
@@ -871,13 +881,13 @@ export async function formOptions(db: Db | Tx) {
   };
 }
 
-/** The live customers a filter finds, by name, at most `limit` (a segment's recipients). */
+/** The live organizations a filter finds, by name, at most `limit` (a segment's recipients). */
 export async function customerIdsMatching(db: Db | Tx, filter: CustomerFilter, limit: number) {
   const rows = await db
-    .select({ id: customers.id })
-    .from(customers)
+    .select({ id: organizations.id })
+    .from(organizations)
     .where(and(...filterWhere(filter), ...statusWhere(filter.status)))
-    .orderBy(collated(customers.name), asc(customers.id))
+    .orderBy(collated(organizations.name), asc(organizations.id))
     .limit(limit);
   return rows.map((row) => row.id);
 }

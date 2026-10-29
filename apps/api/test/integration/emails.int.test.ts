@@ -202,7 +202,7 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     });
     expect(timeline.data.some((item) => item.type === 'reply')).toBe(true);
     const owner = await api.db.execute<{ n: number }>(
-      sql`select count(*)::int as n from notifications n join customers c on c.owner_user_id = n.user_id
+      sql`select count(*)::int as n from notifications n join organizations c on c.owner_user_id = n.user_id
         where c.id = ${HARMONIA} and n.kind = 'reply' and n.ref_id = ${filed.id}`,
     );
     expect(owner.rows[0]!.n).toBe(1);
@@ -227,7 +227,7 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     expect(filed.matched).toBeNull();
     await jana.call('inbound.assign', { id: filed.id, customerId: HARMONIA, contactId: null });
     const told = await api.db.execute<{ subject: string }>(
-      sql`select n.subject from notifications n join customers c on c.owner_user_id = n.user_id
+      sql`select n.subject from notifications n join organizations c on c.owner_user_id = n.user_id
         where c.id = ${HARMONIA} and n.ref_id = ${filed.id}`,
     );
     expect(told.rows.map((row) => row.subject)).toEqual(['Otázka na ceny']);

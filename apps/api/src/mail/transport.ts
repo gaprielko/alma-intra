@@ -7,10 +7,10 @@ export interface OutgoingMail {
   subject: string;
   html: string;
   text: string;
-  /** E-mails to customers name their sender; system mail uses `MAIL_FROM`. */
+  /** E-mails to organizations name their sender; system mail uses `MAIL_FROM`. */
   from?: string;
   replyTo?: string;
-  /** `List-Unsubscribe` and `List-Unsubscribe-Post` of an e-mail to customers. */
+  /** `List-Unsubscribe` and `List-Unsubscribe-Post` of an e-mail to organizations. */
   headers?: Record<string, string>;
   /** Fetched by the provider from a short-lived signed link: the bytes never pass the API. */
   attachments?: { filename: string; path: string }[];

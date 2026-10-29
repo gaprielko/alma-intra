@@ -8,7 +8,7 @@ import {
   campaignMessages,
   campaigns,
   contacts,
-  customers,
+  organizations,
   inboundMessages,
 } from '../db/schema/index.js';
 
@@ -171,14 +171,14 @@ export function tokenIn(addresses: readonly string[], domain: string | undefined
 /** Who a mail is from, by the address: one live contact, else one live customer's own address. */
 async function bySender(db: Db, email: string) {
   const people = await db
-    .select({ contactId: contacts.id, customerId: contacts.customerId })
+    .select({ contactId: contacts.id, customerId: contacts.organizationId })
     .from(contacts)
-    .innerJoin(customers, eq(customers.id, contacts.customerId))
+    .innerJoin(organizations, eq(organizations.id, contacts.organizationId))
     .where(
       and(
         sql`lower(${contacts.email}) = ${email}`,
         isNull(contacts.deletedAt),
-        isNull(customers.deletedAt),
+        isNull(organizations.deletedAt),
       ),
     )
     .limit(2);
@@ -186,9 +186,9 @@ async function bySender(db: Db, email: string) {
     return { customerId: people[0]!.customerId, contactId: people[0]!.contactId };
   if (people.length > 1) return null;
   const records = await db
-    .select({ customerId: customers.id })
-    .from(customers)
-    .where(and(sql`lower(${customers.email}) = ${email}`, isNull(customers.deletedAt)))
+    .select({ customerId: organizations.id })
+    .from(organizations)
+    .where(and(sql`lower(${organizations.email}) = ${email}`, isNull(organizations.deletedAt)))
     .limit(2);
   return records.length === 1 ? { customerId: records[0]!.customerId, contactId: null } : null;
 }
@@ -215,7 +215,7 @@ export async function receiveInbound(
     ? await db
         .select({
           id: campaignMessages.id,
-          customerId: campaignMessages.customerId,
+          customerId: campaignMessages.organizationId,
           contactId: campaignMessages.contactId,
           userId: campaigns.senderUserId,
         })
@@ -234,7 +234,7 @@ export async function receiveInbound(
     .values({
       providerEmailId: email.providerEmailId,
       messageId: match?.id ?? null,
-      customerId: match?.customerId ?? null,
+      organizationId: match?.customerId ?? null,
       contactId: match?.contactId ?? null,
       userId: match?.userId ?? null,
       status: match ? 'assigned' : 'unassigned',
@@ -260,9 +260,9 @@ export async function receiveInbound(
     (match
       ? ((
           await db
-            .select({ ownerUserId: customers.ownerUserId })
-            .from(customers)
-            .where(eq(customers.id, match.customerId))
+            .select({ ownerUserId: organizations.ownerUserId })
+            .from(organizations)
+            .where(eq(organizations.id, match.customerId))
         )[0]?.ownerUserId ?? null)
       : null);
   await notify(db, {

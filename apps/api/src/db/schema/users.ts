@@ -31,9 +31,9 @@ export const users = pgTable(
     passwordHash: text('password_hash'),
     name: text('name').notNull(),
     phone: text('phone'),
-    /** Job title, shown to colleagues and in e-mails to customers. */
+    /** Job title, shown to colleagues and in e-mails to organizations. */
     position: text('position'),
-    /** Plain text, appended to the e-mails she sends to customers. */
+    /** Plain text, appended to the e-mails she sends to organizations. */
     emailSignature: text('email_signature'),
     status: userStatus('status').notNull().default('invited'),
     /** One role for now (`admin`): everybody may do everything, see `can()`. */

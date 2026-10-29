@@ -4,10 +4,10 @@ import { COMPANY_ROOT_FOLDER_ID } from '@intra/shared/schemas';
 import {
   contacts,
   contactTypes,
-  customers,
-  customerSources,
-  customerProducts,
-  customerTags,
+  organizations,
+  organizationSources,
+  organizationProducts,
+  organizationTags,
   folders,
   tags,
 } from './schema/index.js';
@@ -37,9 +37,9 @@ interface SeedCustomer {
   name: string;
   kind: 'organization' | 'individual';
   ados: boolean;
-  status: (typeof customers.$inferInsert)['status'];
+  status: (typeof organizations.$inferInsert)['status'];
   city: string;
-  region: (typeof customers.$inferInsert)['region'];
+  region: (typeof organizations.$inferInsert)['region'];
   owner: string;
   source?: number;
   tags?: number[];
@@ -53,14 +53,14 @@ interface SeedCustomer {
   people: Person[];
 }
 
-/** Development customers, as on the designs. Upserted by fixed ids, like the users. */
+/** Development organizations, as on the designs. Upserted by fixed ids, like the users. */
 export async function seedCustomers(
   tx: Tx,
   owners: { jana: string; peter: string; lucia: string },
 ) {
   for (const [i, name] of SOURCES.entries()) {
     await tx
-      .insert(customerSources)
+      .insert(organizationSources)
       .values({ id: id('b', i + 1), name, position: i + 1 })
       .onConflictDoNothing();
   }
@@ -304,7 +304,7 @@ export async function seedCustomers(
   for (const [i, c] of list.entries()) {
     const customerId = id('d', i + 1);
     const self = c.kind === 'individual' ? c.people[0]! : undefined;
-    const values: typeof customers.$inferInsert = {
+    const values: typeof organizations.$inferInsert = {
       id: customerId,
       kind: c.kind,
       contactTypeId: customerType!.id,
@@ -329,23 +329,31 @@ export async function seedCustomers(
       deletedAt: null,
     };
     await tx
-      .insert(customers)
+      .insert(organizations)
       .values(values)
-      .onConflictDoUpdate({ target: customers.id, set: { ...values, updatedAt: sql`now()` } });
-    await tx.insert(folders).values({ customerId }).onConflictDoNothing();
-    await tx.delete(customerTags).where(sql`${customerTags.customerId} = ${customerId}`);
+      .onConflictDoUpdate({ target: organizations.id, set: { ...values, updatedAt: sql`now()` } });
+    await tx.insert(folders).values({ organizationId: customerId }).onConflictDoNothing();
+    await tx
+      .delete(organizationTags)
+      .where(sql`${organizationTags.organizationId} = ${customerId}`);
     for (const tag of c.tags ?? []) {
-      await tx.insert(customerTags).values({ customerId, tagId: id('c', tag + 1) });
+      await tx
+        .insert(organizationTags)
+        .values({ organizationId: customerId, tagId: id('c', tag + 1) });
     }
-    await tx.delete(customerProducts).where(sql`${customerProducts.customerId} = ${customerId}`);
+    await tx
+      .delete(organizationProducts)
+      .where(sql`${organizationProducts.organizationId} = ${customerId}`);
     if (c.ados) {
-      await tx.insert(customerProducts).values({ customerId, productId: ADOS_PRODUCT_ID });
+      await tx
+        .insert(organizationProducts)
+        .values({ organizationId: customerId, productId: ADOS_PRODUCT_ID });
     }
     if (c.kind !== 'organization') continue;
     for (const [j, p] of c.people.entries()) {
       const contact: typeof contacts.$inferInsert = {
         id: id('e', (i + 1) * 10 + j),
-        customerId,
+        organizationId: customerId,
         titleBefore: p.titleBefore ?? null,
         firstName: p.firstName,
         lastName: p.lastName,
