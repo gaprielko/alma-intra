@@ -124,6 +124,8 @@ function ProfileForm({
 }: {
   me: {
     name: string;
+    titleBefore: string | null;
+    titleAfter: string | null;
     email: string;
     phone: string | null;
     position: string | null;
@@ -134,13 +136,25 @@ function ProfileForm({
   const saved = useProfileSaved();
   const form = useForm<ProfileForm, unknown, z.output<typeof profileForm>>({
     resolver: zodResolver(profileForm),
-    defaultValues: { name: me.name, phone: me.phone ?? '', position: me.position ?? '' },
+    defaultValues: {
+      name: me.name,
+      titleBefore: me.titleBefore ?? '',
+      titleAfter: me.titleAfter ?? '',
+      phone: me.phone ?? '',
+      position: me.position ?? '',
+    },
   });
   const update = useMutation(
     trpc.account.updateProfile.mutationOptions({
       onSuccess: async (_, input) => {
         toast('success', t.profile.saved);
-        form.reset({ name: input.name, phone: input.phone ?? '', position: input.position ?? '' });
+        form.reset({
+          name: input.name,
+          titleBefore: input.titleBefore ?? '',
+          titleAfter: input.titleAfter ?? '',
+          phone: input.phone ?? '',
+          position: input.position ?? '',
+        });
         await saved();
       },
       onError: (error) => {
@@ -161,7 +175,20 @@ function ProfileForm({
             )(event)
           }
         >
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-[8rem_minmax(0,1fr)_8rem]">
+            <FormField
+              control={form.control}
+              name="titleBefore"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t.profile.titleBefore}</FormLabel>
+                  <FormControl>
+                    <Input autoComplete="off" {...field} value={field.value ?? ''} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="name"
@@ -175,6 +202,21 @@ function ProfileForm({
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="titleAfter"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t.profile.titleAfter}</FormLabel>
+                  <FormControl>
+                    <Input autoComplete="off" {...field} value={field.value ?? ''} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="account-email">{t.profile.email}</Label>
               <Input id="account-email" readOnly value={me.email} className={readOnlyFieldClass} />

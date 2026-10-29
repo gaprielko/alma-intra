@@ -384,6 +384,8 @@ export async function me(db: Db, userId: string) {
       id: users.id,
       email: users.email,
       name: users.name,
+      titleBefore: users.titleBefore,
+      titleAfter: users.titleAfter,
       phone: users.phone,
       position: users.position,
       emailSignature: users.emailSignature,

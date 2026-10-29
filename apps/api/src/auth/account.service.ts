@@ -238,10 +238,12 @@ export async function updateProfile(
   db: Db | Tx,
   userId: string,
   input: UpdateProfileInput,
-): Promise<('name' | 'phone' | 'position' | 'emailSignature')[]> {
+): Promise<('name' | 'titleBefore' | 'titleAfter' | 'phone' | 'position' | 'emailSignature')[]> {
   const [current] = await db
     .select({
       name: users.name,
+      titleBefore: users.titleBefore,
+      titleAfter: users.titleAfter,
       phone: users.phone,
       position: users.position,
       emailSignature: users.emailSignature,
@@ -252,6 +254,8 @@ export async function updateProfile(
   // Not sent: left as it is. Sent empty: cleared.
   const next = {
     name: input.name,
+    titleBefore: input.titleBefore === undefined ? current.titleBefore : input.titleBefore || null,
+    titleAfter: input.titleAfter === undefined ? current.titleAfter : input.titleAfter || null,
     phone: input.phone === undefined ? current.phone : input.phone || null,
     position: input.position === undefined ? current.position : input.position || null,
     emailSignature:

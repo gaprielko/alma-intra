@@ -10,7 +10,7 @@ import {
   supersedeKey,
 } from '../auth/account.service.js';
 import type { Db, Tx } from '../db/db.module.js';
-import { mailOutbox, type SecondFactorChange, users } from '../db/schema/index.js';
+import { fullNameOf, mailOutbox, type SecondFactorChange, users } from '../db/schema/index.js';
 import { describeError } from '../logging/describe-error.js';
 import type { Mailer, SentMail } from './mailer.js';
 import { MailProviderError } from './transport.js';
@@ -246,7 +246,7 @@ async function deliver(db: Db, mailer: Mailer, job: Claimed): Promise<Delivered 
   // gets nothing.
   const inviter = alias(users, 'inviter');
   const [invited] = await db
-    .select({ email: users.email, invitedByName: inviter.name })
+    .select({ email: users.email, invitedByName: fullNameOf(inviter) })
     .from(users)
     .leftJoin(inviter, eq(inviter.id, users.invitedByUserId))
     .where(and(eq(users.id, job.userId), eq(users.status, 'invited'), isNull(users.deletedAt)));

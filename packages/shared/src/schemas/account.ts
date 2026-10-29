@@ -4,7 +4,12 @@ import { phoneSchema } from './common.js';
 
 /** The fields of a person's details: one's own on „Môj účet“, a colleague's in Settings. */
 export const profileFields = {
+  /** The name without titles: the app shows it alone. */
   name: z.string().trim().min(2).max(120),
+  /** „Mgr.“; optional, an empty string clears it. */
+  titleBefore: z.string().trim().max(40).optional(),
+  /** „PhD.“; optional, an empty string clears it. */
+  titleAfter: z.string().trim().max(40).optional(),
   /** Optional; an empty string clears it. */
   phone: phoneSchema.or(z.literal('')).optional(),
   position: z.string().trim().max(120).optional(),
@@ -58,3 +63,16 @@ export const accessTokenIdSchema = z.object({ id: z.string().uuid() });
 /** The consent page: the pending OAuth request it answers. */
 export const oauthRequestSchema = z.object({ request: z.string().uuid() });
 export const oauthDecisionSchema = z.object({ request: z.string().uuid(), approve: z.boolean() });
+
+/**
+ * „Mgr. Jana Horváthová, PhD.“: a colleague with their titles. Only the user list, the e-mails and
+ * the communication show it; everywhere else in the app the name stands alone.
+ */
+export function userFullName(u: {
+  titleBefore?: string | null | undefined;
+  name: string;
+  titleAfter?: string | null | undefined;
+}): string {
+  const core = [u.titleBefore, u.name].filter(Boolean).join(' ');
+  return u.titleAfter ? `${core}, ${u.titleAfter}` : core;
+}

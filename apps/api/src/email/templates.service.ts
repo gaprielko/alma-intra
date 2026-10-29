@@ -12,12 +12,13 @@ import type { Db, Tx } from '../db/db.module.js';
 import {
   contactLinks,
   contacts,
-  organizations,
   emailLook,
   emailTemplateAttachments,
   emailTemplates,
   files,
   fileVersions,
+  fullNameOf,
+  organizations,
   templateCategories,
   users,
 } from '../db/schema/index.js';
@@ -353,7 +354,7 @@ export async function valuesFor(
     }
   }
   const [sender] = await db
-    .select({ name: users.name, phone: users.phone, position: users.position })
+    .select({ name: fullNameOf(users), phone: users.phone, position: users.position })
     .from(users)
     .where(eq(users.id, senderUserId));
   values['sender.name'] = sender?.name;
@@ -412,7 +413,10 @@ export async function testTemplate(
   input: Parameters<typeof previewTemplate>[3],
 ) {
   const [[user], look, out] = await Promise.all([
-    db.select({ email: users.email, name: users.name }).from(users).where(eq(users.id, userId)),
+    db
+      .select({ email: users.email, name: fullNameOf(users) })
+      .from(users)
+      .where(eq(users.id, userId)),
     getLook(db),
     previewTemplate(db, env.WEB_URL, userId, input),
   ]);

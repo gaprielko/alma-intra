@@ -66,7 +66,7 @@ const AUTH_REASON_CODES = [
 const USER_REASON_CODES = [...AUTH_REASON_CODES, 'self', 'last_active_user', 'already_exists'];
 
 /** The fields of a user's profile that may be named in an event, never their values. */
-const PROFILE_FIELDS = ['name', 'phone', 'position', 'emailSignature'];
+const PROFILE_FIELDS = ['name', 'titleBefore', 'titleAfter', 'phone', 'position', 'emailSignature'];
 
 /** The fields of a customer or a contact that may be named in an event, never their values. */
 const CUSTOMER_FIELDS = [

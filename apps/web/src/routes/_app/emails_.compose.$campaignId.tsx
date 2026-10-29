@@ -4,6 +4,7 @@ import {
   type EmailNode,
   MAX_MESSAGE_BYTES,
   type SkipReason,
+  userFullName,
 } from '@intra/shared/schemas';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Navigate, useNavigate } from '@tanstack/react-router';
@@ -657,7 +658,7 @@ function ContentStep({
             onChange={setBody}
             fields={fields}
             look={look.data.look}
-            senderName={me?.name ?? ''}
+            senderName={me ? userFullName(me) : ''}
           />
         </div>
         <div>
@@ -1038,7 +1039,7 @@ function PreviewStep({
                 onChange={setEditing}
                 fields={campaign.customFields}
                 look={look.data.look}
-                senderName={me?.name ?? ''}
+                senderName={me ? userFullName(me) : ''}
               />
               <div className="flex justify-end gap-2 border-t border-border-subtle px-4 py-3">
                 <Button variant="ghost" onClick={() => setEditing(null)}>

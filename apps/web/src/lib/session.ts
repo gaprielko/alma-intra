@@ -3,7 +3,10 @@ import { create } from 'zustand';
 
 export interface SessionUser {
   id: string;
+  /** Without titles, as the app shows a colleague; `userFullName` adds them for e-mails. */
   name: string;
+  titleBefore?: string | null;
+  titleAfter?: string | null;
   email: string;
   position: string | null;
   role: Role;

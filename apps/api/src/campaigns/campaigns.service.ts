@@ -17,12 +17,13 @@ import {
   campaigns,
   contactLinks,
   contacts,
-  organizations,
   emailTemplateAttachments,
   emailTemplates,
   files,
   fileVersions,
+  fullNameOf,
   messageAttachments,
+  organizations,
   users,
 } from '../db/schema/index.js';
 import { missingOf, plainOf, renderEmail } from '../email/render.js';
@@ -492,7 +493,7 @@ export async function getCampaign(db: Db, id: string) {
     .select({
       campaign: campaigns,
       templateName: emailTemplates.name,
-      senderName: users.name,
+      senderName: fullNameOf(users),
       senderEmail: users.email,
     })
     .from(campaigns)
@@ -654,7 +655,7 @@ export async function listCampaigns(db: Db, status: 'sent' | 'draft', page: numb
       commonValues: campaigns.commonValues,
       updatedAt: campaigns.updatedAt,
       sentAt: campaigns.sentAt,
-      senderName: users.name,
+      senderName: fullNameOf(users),
       templateName: emailTemplates.name,
       recipients: count(`m.status <> 'skipped'`),
       skipped: count(`m.status = 'skipped'`),

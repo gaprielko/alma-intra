@@ -109,7 +109,11 @@ second role later does not mean rewriting procedures. Every action is recorded u
 - **First user**: created by a server CLI command (`users:create-first --email --name`), receives an
   invitation (valid 72 h) and sets their own password. No public sign-up.
 - **User list**: name, e-mail, status (invited / active / deactivated), last sign-in, 2FA on/off.
-- **Invite a user**: name, e-mail, phone, position. Resend or withdraw an invitation.
+- **Invite a user**: titles before and after, name, e-mail, phone, position. Resend or withdraw an
+  invitation.
+- **Titles** of a colleague („Mgr. Jana Horváthová, PhD.“) show only in the user list, the e-mails
+  (the sender, `{{sender.name}}`, the invitation) and the communication on a timeline. Everywhere
+  else (an owner, who recorded an activity, who changed what) the name stands alone.
 - **Deactivate / reactivate** a user; deactivation ends their sessions at once.
 - **Safeguards**: nobody deactivates themselves; at least one active user always remains.
 - **Reset another user's 2FA** (lost phone).

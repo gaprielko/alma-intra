@@ -15,14 +15,15 @@ import {
   auditEvents,
   campaignMessages,
   campaigns,
-  messageAttachments,
-  inboundMessages,
   contactLinks,
   contacts,
-  organizations,
   files,
   fileVersions,
   folders,
+  fullNameOf,
+  inboundMessages,
+  messageAttachments,
+  organizations,
   users,
 } from '../db/schema/index.js';
 import { customerHistory } from '../customers/customers.service.js';
@@ -454,7 +455,7 @@ export async function timelineOf(
               status: campaignMessages.status,
               toName: campaignMessages.toName,
               at: sql<Date>`coalesce(${campaignMessages.sentAt}, ${campaignMessages.queuedAt})`,
-              sender: users.name,
+              sender: fullNameOf(users),
               organization: organizationJson(campaignMessages.organizationId),
             })
             .from(campaignMessages)

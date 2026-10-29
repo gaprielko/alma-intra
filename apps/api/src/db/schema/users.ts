@@ -29,7 +29,15 @@ export const users = pgTable(
     email: text('email').notNull(),
     /** NULL until an invited user sets a password. */
     passwordHash: text('password_hash'),
+    /**
+     * The name without titles, as the app shows a colleague (an owner, an author, who changed what).
+     * The titles join it only in the user list, the e-mails and the communication: `fullNameOf`.
+     */
     name: text('name').notNull(),
+    /** „Mgr.“, „Ing.“; NULL without one. */
+    titleBefore: text('title_before'),
+    /** „PhD.“; NULL without one. */
+    titleAfter: text('title_after'),
     phone: text('phone'),
     /** Job title, shown to colleagues and in e-mails to organizations. */
     position: text('position'),
@@ -65,3 +73,11 @@ export const users = pgTable(
     ),
   ],
 );
+
+/** „Mgr. Jana Horváthová, PhD.“: a colleague with their titles, for the user list and e-mails. */
+export const fullNameOf = (u: {
+  titleBefore: AnyPgColumn;
+  name: AnyPgColumn;
+  titleAfter: AnyPgColumn;
+}) =>
+  sql<string>`concat_ws(' ', nullif(${u.titleBefore}, ''), ${u.name}) || coalesce(', ' || nullif(${u.titleAfter}, ''), '')`;
