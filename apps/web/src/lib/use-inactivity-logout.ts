@@ -1,5 +1,5 @@
 import { WEB_IDLE_TIMEOUT_MS } from '@intra/shared/schemas';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { keepSessionAlive } from './trpc';
 
 const EVENTS = ['pointerdown', 'keydown', 'scroll', 'visibilitychange'] as const;
@@ -109,6 +109,11 @@ export function watchInactivity(
 /** Returns whether the idle warning is due (the shell shows `IdleWarning`). */
 export function useInactivityLogout(onTimeout: () => void): boolean {
   const [warning, setWarning] = useState(false);
-  useEffect(() => watchInactivity(onTimeout, setWarning), [onTimeout]);
+  // One watcher for the shell's lifetime. Restarting it whenever `onTimeout` changed identity
+  // (the warning itself re-renders the shell) forgot that it had warned, so no interaction could
+  // withdraw the warning any more.
+  const timeout = useRef(onTimeout);
+  timeout.current = onTimeout;
+  useEffect(() => watchInactivity(() => timeout.current(), setWarning), []);
   return warning;
 }
