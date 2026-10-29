@@ -498,6 +498,24 @@ function ContactsCard({ customer: c }: { customer: Customer }) {
                       .filter(Boolean)
                       .join(' · ')}
                   </p>
+                  {contact.elsewhere.length > 0 ? (
+                    <p className="text-[13px] text-muted">
+                      {sk.organizations.alsoAt}{' '}
+                      {contact.elsewhere.map((org, index) => (
+                        <span key={org.id}>
+                          {index > 0 ? ', ' : null}
+                          <Link
+                            to="/customers/$customerId"
+                            params={{ customerId: org.id }}
+                            className="text-primary-text hover:underline"
+                          >
+                            {org.name}
+                          </Link>{' '}
+                          ({sk.organizations.persons.roles[org.role].toLowerCase()})
+                        </span>
+                      ))}
+                    </p>
+                  ) : null}
                   <p className="mt-1 flex flex-wrap gap-x-4 text-[13px]">
                     {contact.email ? (
                       <a

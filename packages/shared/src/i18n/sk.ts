@@ -614,6 +614,7 @@ export const sk = {
     newPerson: 'Nová osoba',
     privatePerson: 'Súkromná osoba',
     openPerson: 'Otvoriť v Kontaktoch',
+    alsoAt: 'Aj v organizácii',
     addNewPerson: 'Nová osoba',
     addNewPersonHint: 'Vytvorí osobu a priradí ju sem',
     addExistingPerson: 'Existujúca osoba z Kontaktov',
