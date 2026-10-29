@@ -48,3 +48,14 @@ test('a person opens from Kontakty with their organizations and own timeline', a
   await expect(page.getByRole('heading', { name: 'Časová os osoby' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'ADOS Harmónia, s.r.o.' }).first()).toBeVisible();
 });
+
+test('a new person is created in Kontakty and opens on their page', async ({ page }) => {
+  const last = `E2E${Date.now()}`;
+  await page.goto('/organizations/contacts');
+  await page.getByRole('button', { name: 'Nová osoba' }).click();
+  await page.getByLabel('Meno', { exact: true }).fill('Test');
+  await page.getByLabel('Priezvisko').fill(last);
+  await page.getByRole('button', { name: 'Uložiť osobu' }).click();
+  await expect(page.getByRole('heading', { name: `Test ${last}` })).toBeVisible();
+  await expect(page.getByText('Bez organizácie')).toBeVisible();
+});

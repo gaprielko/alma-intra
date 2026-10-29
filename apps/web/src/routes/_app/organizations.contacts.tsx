@@ -2,15 +2,17 @@ import { sk } from '@intra/shared/i18n';
 import { PAGE_SIZE, PERSON_EMAIL_STATES, PERSON_LINKS, PERSON_SORTS } from '@intra/shared/schemas';
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { ArrowDown, ArrowUp, Search } from 'lucide-react';
+import { ArrowDown, ArrowUp, Plus, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
 import { CustomerAvatar, MultiFilterMenu } from '@/components/customers/customer-bits';
 import { BarButton, useDebounced } from '@/components/customers/organization-list';
 import { OrganizationsHeader } from '@/components/customers/organizations-header';
+import { PersonDialog } from '@/components/customers/person-dialog';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { TablePagination, TableShell } from '@/components/table-shell';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RowLink, TableCell, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/toast';
@@ -52,6 +54,8 @@ function ContactsTab() {
   const debounced = useDebounced(typed.trim(), 300);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const canSend = useCan('email.send');
+  const canWrite = useCan('customer.write');
+  const [creating, setCreating] = useState(false);
 
   const setSearch = (next: Partial<PersonSearch>, keepPage = false) =>
     void navigate({
@@ -150,7 +154,14 @@ function ContactsTab() {
 
   return (
     <div className="min-w-0">
-      <OrganizationsHeader active="contacts" />
+      <OrganizationsHeader active="contacts">
+        {canWrite ? (
+          <Button onClick={() => setCreating(true)}>
+            <Plus className="size-4" aria-hidden />
+            {sk.organizations.newPerson}
+          </Button>
+        ) : null}
+      </OrganizationsHeader>
       <div className="max-w-[1400px] px-7 pt-5 pb-10">
         <TableShell
           header={
@@ -275,6 +286,7 @@ function ContactsTab() {
           ))}
         </TableShell>
       </div>
+      {creating ? <PersonDialog onClose={() => setCreating(false)} /> : null}
     </div>
   );
 }

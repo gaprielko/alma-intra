@@ -6,6 +6,7 @@ import { type ReactNode, useState } from 'react';
 import { ActivitySheet } from '@/components/activities/activity-sheet';
 import { ActivityItem, EmailItem, ReplyItem } from '@/components/activities/timeline-items';
 import { CustomerAvatar } from '@/components/customers/customer-bits';
+import { PersonDialog } from '@/components/customers/person-dialog';
 import { ErrorState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
 import { CardSkeleton } from '@/components/skeletons';
@@ -48,6 +49,7 @@ function PersonPage() {
   const person = useQuery(trpc.person.get.queryOptions({ id: personId }));
   const canWrite = useCan('customer.write');
   const [deleting, setDeleting] = useState(false);
+  const [editing, setEditing] = useState(false);
   const back = { to: '/organizations/contacts' as const, label: p.back };
 
   if (person.isPending) {
@@ -86,6 +88,11 @@ function PersonPage() {
             {p.delete}
           </Button>
         ) : null}
+        {canWrite ? (
+          <Button variant="secondary" onClick={() => setEditing(true)}>
+            {p.dialog.edit}
+          </Button>
+        ) : null}
       </PageHeader>
       <div className="flex max-w-[1400px] flex-wrap items-start gap-5 px-7 pt-6 pb-10">
         <div className="flex min-w-0 flex-[2_1_560px] flex-col gap-5">
@@ -97,6 +104,7 @@ function PersonPage() {
         </div>
       </div>
       {deleting ? <DeletePerson person={c} onClose={() => setDeleting(false)} /> : null}
+      {editing ? <PersonDialog person={c} onClose={() => setEditing(false)} /> : null}
     </div>
   );
 }

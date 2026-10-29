@@ -653,6 +653,23 @@ export const sk = {
         confirm: 'Odstrániť osobu',
       },
       deleted: 'Osoba je odstránená.',
+      dialog: {
+        newTitle: 'Nová osoba',
+        editTitle: 'Upraviť osobu',
+        lead: 'Do Kontaktov, s jednou alebo viacerými organizáciami, alebo bez nich.',
+        organizations: 'Organizácie',
+        organizationsHint: 'Nepovinné. Osoba môže byť aj bez organizácie, napríklad konzultant.',
+        addOrganization: 'Priradiť k ďalšej organizácii',
+        removeOrganization: (name: string) => `Odobrať ${name}`,
+        exists: 'Osoba s týmto e-mailom už v Kontaktoch je',
+        existsText: (name: string) =>
+          `${name}. Jednu osobu netreba zakladať dvakrát: priraďte ju k ďalšej organizácii.`,
+        useExisting: 'Použiť existujúcu osobu',
+        submit: 'Uložiť osobu',
+        created: 'Osoba je pridaná.',
+        saved: 'Osoba je uložená.',
+        edit: 'Upraviť',
+      },
       linkDialog: {
         title: 'Priradiť k organizácii',
         organization: 'Organizácia',
