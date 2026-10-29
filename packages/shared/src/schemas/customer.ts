@@ -197,6 +197,9 @@ export type CustomerListInput = z.input<typeof customerListSchema>;
 /** Several customers picked in the list. */
 const selection = z.array(idSchema).min(1).max(100);
 
+/** „Zmeniť na zákazníka“ / „Zmeniť na partnera“ (D-5). */
+export const setRoleSchema = z.object({ id: idSchema, role: z.enum(ORGANIZATION_ROLES) });
+
 export const bulkTagSchema = z.object({ ids: selection, tag: z.string().trim().min(1).max(40) });
 export const bulkStatusSchema = z.object({ ids: selection, status: z.enum(CUSTOMER_STATUSES) });
 

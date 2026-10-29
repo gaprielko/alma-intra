@@ -617,6 +617,47 @@ export async function updateCustomer(db: Db, id: string, input: CustomerInput) {
   );
 }
 
+/**
+ * A partner becomes a customer, or a customer a partner (D-5): the history, persons, files and
+ * segments stay. A partner has no status, owner or products, so a customer turned partner loses
+ * them (the history of changes keeps them). Until the forms offer the role, the contact type
+ * follows: „Zákazník“, or the first other type.
+ */
+export async function setRole(db: Db, id: string, role: 'customer' | 'partner') {
+  return db.transaction(async (tx) => {
+    const [current] = await tx
+      .select({ role: organizations.role })
+      .from(organizations)
+      .where(and(eq(organizations.id, id), alive))
+      .for('update');
+    if (!current) throw new CustomerError('NOT_FOUND');
+    if (current.role === role) return { changed: false, productsRemoved: [] as string[] };
+    const [type] = await tx
+      .select({ id: contactTypes.id })
+      .from(contactTypes)
+      .where(
+        role === 'customer'
+          ? eq(contactTypes.systemKey, 'customer')
+          : sql`${contactTypes.systemKey} is distinct from 'customer'`,
+      )
+      .orderBy(desc(contactTypes.active), asc(contactTypes.position))
+      .limit(1);
+    if (!type) throw new CustomerError('CONTACT_TYPE_UNKNOWN');
+    await tx
+      .update(organizations)
+      .set({
+        role,
+        contactTypeId: type.id,
+        ...(role === 'partner' ? { status: null, ownerUserId: null } : {}),
+        updatedAt: new Date(),
+      })
+      .where(eq(organizations.id, id));
+    const productsRemoved =
+      role === 'partner' ? (await setProducts(tx, id, [])).removed : ([] as string[]);
+    return { changed: true, productsRemoved };
+  });
+}
+
 export async function deleteCustomer(db: Db, id: string) {
   const [row] = await db
     .update(organizations)

@@ -8,6 +8,7 @@ import {
   customerListSchema,
   exportCustomersSchema,
   icoLookupSchema,
+  setRoleSchema,
   updateContactSchema,
   updateCustomerSchema,
 } from '@intra/shared/schemas';
@@ -166,6 +167,20 @@ export const customerRouter = router({
         },
       });
       return { csv: toCsv(rows), count: rows.length };
+    }),
+
+  /** „Zmeniť na zákazníka“ / „Zmeniť na partnera“ (D-5). */
+  setRole: authorizedProcedure('customer.write')
+    .input(setRoleSchema)
+    .mutation(async ({ ctx, input }) => {
+      const change = await run(() => organizations.setRole(ctx.db, input.id, input.role));
+      if (change.changed) {
+        auditCustomer(ctx, input.id, {
+          role: input.role,
+          ...(change.productsRemoved.length > 0 ? { productsRemoved: change.productsRemoved } : {}),
+        });
+      }
+      return { ok: true as const };
     }),
 
   contactCreate: authorizedProcedure('customer.write')

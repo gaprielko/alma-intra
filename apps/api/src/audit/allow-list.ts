@@ -6,6 +6,7 @@ import {
   FILE_GROUPS,
   HEADER_STYLES,
   INBOUND_STATUSES,
+  ORGANIZATION_ROLES,
   SECOND_STEPS,
   USER_STATUSES,
 } from '@intra/shared/schemas';
@@ -133,6 +134,7 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
    */
   customer: {
     kind: oneOf(CUSTOMER_KINDS),
+    role: oneOf(ORGANIZATION_ROLES),
     status: oneOf(CUSTOMER_STATUSES),
     ownerUserId: uuid,
     firstContact: flag,

@@ -86,6 +86,32 @@ describe('contacts (organizations)', () => {
     expect(sum).toBe(page.data.counts.all);
   });
 
+  it('turns a customer into a partner and back, keeping what is shared (D-5)', async () => {
+    const ados = options.products.find((p) => p.name === 'ADOS')!;
+    const made = await jana.call<{ id: string }>(
+      'customer.create',
+      organization('Mení rolu, s.r.o.', {
+        status: 'interested',
+        productIds: [ados.id],
+        tags: ['stála'],
+      }),
+    );
+    expect(
+      (await jana.call('customer.setRole', { id: made.data.id, role: 'partner' })).code,
+    ).toBeUndefined();
+    type Got = {
+      role: string;
+      status: string | null;
+      products: unknown[];
+      tags: { name: string }[];
+    };
+    const partner = (await jana.call<Got>('customer.get', { id: made.data.id })).data;
+    expect(partner).toMatchObject({ role: 'partner', status: null, products: [] });
+    expect(partner.tags.map((t) => t.name)).toEqual(['stála']);
+    await jana.call('customer.setRole', { id: made.data.id, role: 'customer' });
+    expect((await jana.call<Got>('customer.get', { id: made.data.id })).data.role).toBe('customer');
+  });
+
   it('filters by several values at once and by role (D-12)', async () => {
     const both = await jana.call<Page>('customer.list', {
       status: ['customer', 'interested'],

@@ -300,6 +300,7 @@ export const sk = {
       'customer.contactUpdate': 'Úprava kontaktnej osoby',
       'customer.contactSetPrimary': 'Zmena hlavného kontaktu',
       'customer.contactDelete': 'Odstránenie kontaktnej osoby',
+      'customer.setRole': 'Zmena na zákazníka alebo partnera',
       'person.create': 'Nová osoba v Kontaktoch',
       'person.update': 'Úprava osoby',
       'person.link': 'Osoba priradená k organizácii',
