@@ -1,6 +1,6 @@
 # Produkty: products, their items and prices (draft)
 
-Status: **agreed** sections 1–8 (2026-10-29); section 9, a product at a customer, **draft for review**. Phase 1 (spec) and phase 2 (screens: the `Prod*` boards on
+Status: **agreed** (2026-10-29); implementation after the prevádzky (stages R1–R5). Phase 1 (spec) and phase 2 (screens: the `Prod*` boards on
 the canvas page „Produkty · návrh“). How a product is assigned to an organization or a prevádzka and
 shown on its detail follows once this is agreed (section 9); it continues
 [establishments.md](establishments.md) section 4.4.
@@ -240,13 +240,13 @@ organization_product_workloads   for an item counted by workloads: the people an
 | R-9 | Prices are shown and entered with and without VAT; the other is computed and rounded to cents; the VAT rate is a setting; a rate change keeps the prices without VAT. | agreed |
 | R-5 | „Produkty“ is a sidebar item under „Organizácie“, with tabs Produkty and Položky. | agreed |
 | R-6 | The product's detail has a price calculator that stores nothing. | agreed |
-| R-7 | A held product follows the current price list; a discount in % follows it too; a fixed price stays. | proposed |
-| R-10 | A product is held by an organization or a prevádzka, with counts per item and dates; ended, not deleted. | proposed |
-| R-11 | Price modes at a customer: by the list, a discount in %, or a fixed agreed price. | proposed |
+| R-7 | A held product follows the current price list (a change reaches its customers, in their history); a discount in % follows it too; a fixed price stays. | agreed |
+| R-10 | A product is held by an organization or a prevádzka, with counts per item and dates; ended, not deleted. | agreed |
+| R-11 | Price modes at a customer: by the list, a discount in %, or a fixed agreed price. | agreed |
 | R-13 | The count of an item starts at the package and cannot go below it; the surcharge per piece is the price list's, not changed per customer. | agreed |
 | R-14 | An item of a product can be counted from workloads; each workload rounds up to the product's step; the sum gives the count. | agreed |
-| R-15 | A sum of workloads that is not whole is rounded up to the next whole count. | proposed |
-| R-12 | „Sestry“ in the header is the sum of the „Sestra“ counts over the organization and its prevádzky. | proposed |
+| R-15 | A sum of workloads that is not whole is rounded up to the next whole count. | agreed |
+| R-12 | „Sestry“ in the header is the sum of the „Sestra“ counts over the organization and its prevádzky. | agreed |
 | R-8 | Adding an item offers the numbers from the product it was last used in. | agreed |
 
 ## 12. Stages (after approval)

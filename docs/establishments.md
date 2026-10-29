@@ -1,11 +1,10 @@
 # Prevádzky: establishments of an organization (draft)
 
-Status: **draft for review** (2026-10-29). Phase 1 of the workflow (spec), phase 2 (screens: the
+Status: **agreed** (2026-10-29); implementation in the stages of section 10. Phase 1 of the workflow (spec), phase 2 (screens: the
 `Est*` boards on the canvas page „Prevádzky“) alongside; the implementation follows once both are
 agreed. Builds on [contacts-redesign.md](contacts-redesign.md).
 
-Marks: **[P-n]** a decision of this spec (section 11). Decisions marked _proposed_ wait for the
-user's word.
+Marks: **[P-n]** a decision of this spec (section 11). 
 
 ---
 
@@ -225,17 +224,17 @@ Moving an activity between the organization and a prevádzka is an edit of that 
 
 | Id | Decision | State |
 | ---- | -------- | ----- |
-| P-1 | A prevádzka is a row of `organizations` with `parent_id`. | proposed |
-| P-2 | IČO, role, status, owner, source and tags are the organization's; a prevádzka shares them. | proposed |
-| P-3 | One level only; a private person has no prevádzky. | proposed |
-| P-4 | The Prevádzky card shows only when there is at least one. | user |
-| P-5 | Kontaktné osoby is a table with full-text search and a multi-value Prevádzka filter. | user |
-| P-6 | The organization's persons include those of its prevádzky, with the prevádzka named. | user |
-| P-7 | The organization's timeline includes the entries of the prevádzky, indented, with a switch to hide them. | user |
-| P-8 | Products later per organization or prevádzka; the organization lists the products of the prevádzky apart. | user |
-| P-9 | Files stay at the organization. | proposed |
-| P-10 | A prevádzka's primary contact: a person of the organization, an existing person, a new one, or none. | user |
-| P-11 | An activity or e-mail is filed under a prevádzka by its persons; the dialog shows and lets change it. | user + proposed rule |
-| P-12 | Search and the region filter of the lists also look at the prevádzky. | proposed |
-| P-13 | The wizard offers „Hlavné kontakty aj prevádzok“ next to „Len hlavný kontakt“. | proposed |
-| P-14 | An existing organization (no IČO, no prevádzky) can be turned into a prevádzka of another. | proposed |
+| P-1 | A prevádzka is a row of `organizations` with `parent_id`. | agreed |
+| P-2 | IČO, role, status, owner, source and tags are the organization's; a prevádzka shares them. | agreed |
+| P-3 | One level only; a private person has no prevádzky. | agreed |
+| P-4 | The Prevádzky card shows only when there is at least one. | agreed |
+| P-5 | Kontaktné osoby is a table with full-text search and a multi-value Prevádzka filter. | agreed |
+| P-6 | The organization's persons include those of its prevádzky, with the prevádzka named. | agreed |
+| P-7 | The organization's timeline includes the entries of the prevádzky, indented, with a switch to hide them. | agreed |
+| P-8 | Products later per organization or prevádzka; the organization lists the products of the prevádzky apart. | agreed |
+| P-9 | Files stay at the organization. | agreed |
+| P-10 | A prevádzka's primary contact: a person of the organization, an existing person, a new one, or none. | agreed |
+| P-11 | An activity or e-mail is filed under a prevádzka by its persons; the dialog shows and lets change it. | agreed |
+| P-12 | Search and the region filter of the lists also look at the prevádzky. | agreed |
+| P-13 | The wizard offers „Hlavné kontakty aj prevádzok“ next to „Len hlavný kontakt“. | agreed |
+| P-14 | An existing organization (no IČO, no prevádzky) can be turned into a prevádzka of another. | agreed |
