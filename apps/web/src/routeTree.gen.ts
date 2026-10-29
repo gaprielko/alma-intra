@@ -22,6 +22,7 @@ import { Route as AppFilesRouteImport } from './routes/_app/files'
 import { Route as AppOverviewRouteImport } from './routes/_app/overview'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as OauthConsentRouteImport } from './routes/oauth.consent'
+import { Route as AppContactsPersonIdRouteImport } from './routes/_app/contacts.$personId'
 import { Route as AppCustomersIndexRouteImport } from './routes/_app/customers.index'
 import { Route as AppCustomersNewRouteImport } from './routes/_app/customers.new'
 import { Route as AppEmailsDraftsRouteImport } from './routes/_app/emails.drafts'
@@ -106,6 +107,11 @@ const OauthConsentRoute = OauthConsentRouteImport.update({
   id: '/oauth/consent',
   path: '/oauth/consent',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppContactsPersonIdRoute = AppContactsPersonIdRouteImport.update({
+  id: '/contacts/$personId',
+  path: '/contacts/$personId',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppCustomersIndexRoute = AppCustomersIndexRouteImport.update({
   id: '/customers/',
@@ -228,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/overview': typeof AppOverviewRoute
   '/settings': typeof AppSettingsRouteWithChildren
   '/oauth/consent': typeof OauthConsentRoute
+  '/contacts/$personId': typeof AppContactsPersonIdRoute
   '/customers/new': typeof AppCustomersNewRoute
   '/emails/drafts': typeof AppEmailsDraftsRoute
   '/emails/inbox': typeof AppEmailsInboxRoute
@@ -262,6 +269,7 @@ export interface FileRoutesByTo {
   '/overview': typeof AppOverviewRoute
   '/settings': typeof AppSettingsRouteWithChildren
   '/oauth/consent': typeof OauthConsentRoute
+  '/contacts/$personId': typeof AppContactsPersonIdRoute
   '/customers/new': typeof AppCustomersNewRoute
   '/emails/drafts': typeof AppEmailsDraftsRoute
   '/emails/inbox': typeof AppEmailsInboxRoute
@@ -298,6 +306,7 @@ export interface FileRoutesById {
   '/_app/overview': typeof AppOverviewRoute
   '/_app/settings': typeof AppSettingsRouteWithChildren
   '/oauth/consent': typeof OauthConsentRoute
+  '/_app/contacts/$personId': typeof AppContactsPersonIdRoute
   '/_app/customers/new': typeof AppCustomersNewRoute
   '/_app/emails/drafts': typeof AppEmailsDraftsRoute
   '/_app/emails/inbox': typeof AppEmailsInboxRoute
@@ -334,6 +343,7 @@ export interface FileRouteTypes {
     | '/overview'
     | '/settings'
     | '/oauth/consent'
+    | '/contacts/$personId'
     | '/customers/new'
     | '/emails/drafts'
     | '/emails/inbox'
@@ -368,6 +378,7 @@ export interface FileRouteTypes {
     | '/overview'
     | '/settings'
     | '/oauth/consent'
+    | '/contacts/$personId'
     | '/customers/new'
     | '/emails/drafts'
     | '/emails/inbox'
@@ -403,6 +414,7 @@ export interface FileRouteTypes {
     | '/_app/overview'
     | '/_app/settings'
     | '/oauth/consent'
+    | '/_app/contacts/$personId'
     | '/_app/customers/new'
     | '/_app/emails/drafts'
     | '/_app/emails/inbox'
@@ -528,6 +540,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/oauth/consent'
       preLoaderRoute: typeof OauthConsentRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/contacts/$personId': {
+      id: '/_app/contacts/$personId'
+      path: '/contacts/$personId'
+      fullPath: '/contacts/$personId'
+      preLoaderRoute: typeof AppContactsPersonIdRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/customers/': {
       id: '/_app/customers/'
@@ -714,6 +733,7 @@ interface AppRouteChildren {
   AppFilesRoute: typeof AppFilesRoute
   AppOverviewRoute: typeof AppOverviewRoute
   AppSettingsRoute: typeof AppSettingsRouteWithChildren
+  AppContactsPersonIdRoute: typeof AppContactsPersonIdRoute
   AppCustomersNewRoute: typeof AppCustomersNewRoute
   AppOrganizationsContactsRoute: typeof AppOrganizationsContactsRoute
   AppOrganizationsCustomersRoute: typeof AppOrganizationsCustomersRoute
@@ -734,6 +754,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppFilesRoute: AppFilesRoute,
   AppOverviewRoute: AppOverviewRoute,
   AppSettingsRoute: AppSettingsRouteWithChildren,
+  AppContactsPersonIdRoute: AppContactsPersonIdRoute,
   AppCustomersNewRoute: AppCustomersNewRoute,
   AppOrganizationsContactsRoute: AppOrganizationsContactsRoute,
   AppOrganizationsCustomersRoute: AppOrganizationsCustomersRoute,

@@ -12,7 +12,7 @@ import { EmptyState, ErrorState } from '@/components/empty-state';
 import { TablePagination, TableShell } from '@/components/table-shell';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { TableCell, TableRow } from '@/components/ui/table';
+import { RowLink, TableCell, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
 import { formatDate } from '@/lib/format';
@@ -294,7 +294,7 @@ function PersonRow({
       ? { tone: 'danger' as const, text: p.invalid }
       : null;
   return (
-    <TableRow className={cn(checked && 'bg-primary-soft/40')}>
+    <TableRow href={`/contacts/${row.id}`} className={cn(checked && 'bg-primary-soft/40')}>
       <TableCell className="w-10">
         <Checkbox
           aria-label={`${sk.customers.columns.select} ${row.name}`}
@@ -306,7 +306,9 @@ function PersonRow({
         <div className="flex min-w-0 items-center gap-3">
           <CustomerAvatar name={row.name} kind="individual" />
           <div className="min-w-0">
-            <p className="truncate font-semibold">{row.name}</p>
+            <RowLink href={`/contacts/${row.id}`} className="block truncate font-semibold">
+              {row.name}
+            </RowLink>
             {flag ? (
               <Badge tone={flag.tone} className="mt-0.5">
                 {flag.text}

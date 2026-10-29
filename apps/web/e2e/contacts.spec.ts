@@ -40,3 +40,11 @@ test('Organizácie: three tabs, and a filter of several statuses', async ({ page
   await page.getByRole('link', { name: /Partneri/ }).click();
   await expect(page.getByRole('columnheader', { name: /Partner/i })).toBeVisible();
 });
+
+test('a person opens from Kontakty with their organizations and own timeline', async ({ page }) => {
+  await page.goto('/organizations/contacts?q=T%C3%B3thov%C3%A1');
+  await page.getByRole('link', { name: 'Mgr. Eva Tóthová' }).click();
+  await expect(page.getByRole('heading', { name: 'Mgr. Eva Tóthová' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Časová os osoby' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'ADOS Harmónia, s.r.o.' }).first()).toBeVisible();
+});
