@@ -88,25 +88,34 @@ tr:first-child td{border-top:0}
   </div>
   <main style="flex: 999 1 560px; min-width: 0">
     <header style="min-height: 72px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 28px; box-sizing: border-box; background: rgba(255,255,255,0.8); border-bottom: 1px solid #d6e1de">
-      <div style="flex: 1 1 520px; min-width: 0">
-        <a href="OrgCustomers.dc.html" style="display: inline-flex; align-items: center; gap: 2px; font-size: 13px; font-weight: 500"><svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"></path></svg>Organizácie · Zákazníci</a>
-        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
-          <h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em">ADOS Harmónia, s.r.o.</h1>
-          <span class="role">Zákazník</span>
-          <span class="badge b-success"><i></i>Aktívna spolupráca</span>
-          <span class="tag">pilot 2026</span>
+      <div style="flex: 1 1 100%; min-width: 0">
+        <div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 16px">
+          <div style="min-width: 0">
+            <a href="OrgCustomers.dc.html" style="display: inline-flex; align-items: center; gap: 2px; font-size: 13px; font-weight: 500"><svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"></path></svg>Organizácie · Zákazníci</a>
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+              <h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em">ADOS Harmónia, s.r.o.</h1>
+              <span class="role">Zákazník</span>
+              <span class="badge b-success"><i></i>Aktívna spolupráca</span>
+              <span class="tag">pilot 2026</span>
+            </div>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 10px">
+            <button type="button" class="btn btn-icon" aria-label="Ďalšie akcie"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle></svg></button>
+            <a href="#" class="btn btn-secondary">Upraviť</a>
+            <a href="EstActivityDialog.dc.html" class="btn btn-secondary">Zapísať aktivitu</a>
+            <button type="button" class="btn btn-primary"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-10 6L2 7"></path></svg>Poslať e-mail</button>
+          </div>
         </div>
-        <p class="facts"><span><b>IČO</b>51 234 567</span><span><b>DIČ</b>2120654321</span><span><b>Sídlo</b>Hlavná 112, 040 01 Košice</span><span><b>Tel.</b>+421 55 622 1100</span><a href="#">info@adosharmonia.sk</a><a href="#">adosharmonia.sk</a></p>
-        <p class="facts" style="margin-top: 12px"><span style="display: inline-flex; gap: 6px"><span class="prod">ADOS</span><span class="prod">DOS</span><span class="prod">Stacionár</span></span><span><b>Prevádzky:</b>3</span><span><b>Sestry:</b>18</span></p>
-      </div>
-      <div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; gap: 10px; align-self: stretch">
-        <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 10px">
-          <button type="button" class="btn btn-icon" aria-label="Ďalšie akcie"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle></svg></button>
-          <a href="#" class="btn btn-secondary">Upraviť</a>
-          <a href="EstActivityDialog.dc.html" class="btn btn-secondary">Zapísať aktivitu</a>
-          <button type="button" class="btn btn-primary"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-10 6L2 7"></path></svg>Poslať e-mail</button>
+        <!-- the same columns as the content below: the middle part and the timeline panel -->
+        <div style="display: flex; flex-wrap: wrap; gap: 0 20px; align-items: flex-end">
+          <div style="flex: 2 1 700px; min-width: 0">
+            <p class="facts"><span><b>IČO</b>51 234 567</span><span><b>DIČ</b>2120654321</span><span><b>Sídlo</b>Hlavná 112, 040 01 Košice</span><span><b>Tel.</b>+421 55 622 1100</span><a href="#">info@adosharmonia.sk</a><a href="#">adosharmonia.sk</a></p>
+            <p class="facts" style="margin-top: 12px"><span style="display: inline-flex; gap: 6px"><span class="prod">ADOS</span><span class="prod">DOS</span><span class="prod">Stacionár</span></span><span style="margin-left: auto"><b>Prevádzky:</b>3</span><span><b>Sestry:</b>18</span></p>
+          </div>
+          <div style="flex: 1 1 360px; min-width: 0">
+            <p class="facts" style="justify-content: flex-end"><span><b>Zodpovedá</b>Peter Kováč</span><span><b>Zdroj</b>Odporúčanie</span></p>
+          </div>
         </div>
-        <p class="facts" style="margin: 0; justify-content: flex-end"><span><b>Zodpovedá</b>Peter Kováč</span><span><b>Zdroj</b>Odporúčanie</span></p>
       </div>
     </header>
     <div style="padding: 24px 28px 40px; display: flex; flex-wrap: wrap; gap: 20px; max-width: 1400px; align-items: flex-start">
