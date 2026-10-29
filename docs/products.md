@@ -185,7 +185,9 @@ organization_product_counts how many of each item it has
   reaches every customer on it (and shows in their history of changes); a **discount** in % keeps
   following it; a **fixed price** is agreed with the customer and stays until changed.
 - A product is held at most once at a time per organization or prevádzka.
-- **Prideliť produkt** (dialog): for whom (the organization or one of its prevádzky), the product,
+- **Prideliť produkt** (dialog): for whom (the organization or one of its prevádzky), the product
+  (a searchable list, by name and description, with the starting price; products no longer offered
+  shown but not pickable, as there may be dozens),
   the counts with steppers („1 v cene, max. 3, +12,30 €“), from (and until), the price mode, and the
   result monthly, yearly and one-off, with and without VAT.
 

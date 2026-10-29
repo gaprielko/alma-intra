@@ -108,7 +108,16 @@ tr:first-child td{border-top:0}
       </header>
       <form style="padding: 20px 24px 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px">
         <div class="field" style="grid-column: span 3; display: flex; align-items: center; gap: 8px"><div style="flex: 1"><span>Pre</span><div style="padding-top: 4px; font-size: 15px; display: flex; align-items: center; gap: 6px"><span class="est"><svg aria-hidden="true" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9 4.5 4h15L21 9"></path><path d="M4 9v11h16V9"></path><path d="M9 20v-6h6v6"></path></svg>Prevádzka</span>ADOS Harmónia Prešov</div></div><svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></div>
-        <div style="grid-column: span 3; display: flex; flex-direction: column; justify-content: center; gap: 6px"><span class="meta" style="font-weight: 500">Produkt</span><div class="seg" style="flex-wrap: nowrap; align-self: flex-start"><button type="button" class="on">ADOS</button><button type="button">DOS</button><button type="button" disabled style="opacity: .5">Stacionár</button></div></div>
+        <div style="grid-column: span 3; position: relative">
+          <div class="field" style="display: flex; align-items: center; gap: 8px; border-color: #0f8b8d"><div style="flex: 1"><span>Produkt</span><div style="padding-top: 2px; display: flex; align-items: center; gap: 6px; font-size: 15px"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>ado<span style="width: 1px; height: 18px; background: #152b2a"></span></div></div><svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></div>
+          <div class="menu" role="listbox" style="left: 0; right: auto; top: 62px; width: 100%; box-sizing: border-box">
+            <label role="option" aria-selected="true" style="background: #f0f8f7"><span class="prod">ADOS</span><small style="margin-left: auto">od 60,27 € / mes.</small><span style="color: #0a6466"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span></label>
+            <label role="option"><span class="prod">ADOS Mobil</span><small style="margin-left: auto">od 18,45 € / mes.</small></label>
+            <label role="option"><span class="prod">ADOS Plánovanie trás</span><small style="margin-left: auto">od 24,60 € / mes.</small></label>
+            <label role="option" style="opacity: .55"><span class="prod">ADOS Archív 2024</span><small style="margin-left: auto">už sa neponúka</small></label>
+            <p class="meta" style="margin: 4px 10px 6px">4 zo 17 produktov · hľadá sa v názve a popise</p>
+          </div>
+        </div>
         <p style="grid-column: 1 / -1; margin: 8px 0 0; font-size: 14px; font-weight: 600">Rozsah</p>
         <div style="grid-column: 1 / -1; border: 1px solid #dfe8e6; border-radius: 12px; padding: 0 14px">
           <sc-for list="{{ items }}" as="it" hint-placeholder-count="4">
