@@ -577,6 +577,15 @@
       "title": "Položky · spoločné názvy pre všetky produkty",
       "page": "prod",
       "expand": "fill"
+    },
+    "ProdVatSettings.dc.html": {
+      "x": 1520,
+      "y": 1320,
+      "w": 1440,
+      "h": 800,
+      "title": "Nastavenia · Ceny a DPH (sadzba DPH)",
+      "page": "prod",
+      "expand": "fill"
     }
   },
   "order": [
@@ -636,7 +645,8 @@
     "ProdList.dc.html",
     "ProdDetail.dc.html",
     "ProdItemDialog.dc.html",
-    "ProdItems.dc.html"
+    "ProdItems.dc.html",
+    "ProdVatSettings.dc.html"
   ],
   "notes": {
     "logotitle": {

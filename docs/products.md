@@ -40,7 +40,7 @@ customer. The user wants products as software a customer buys, each with its own
 ```
 products                    (today's code list `products`, extended) [R-1]
   id, name (unique), description
-  base_price                numeric(10,2), EUR without VAT; NULL = not set yet
+  base_price, base_price_gross   numeric(10,2), EUR without and with VAT; NULL = not set yet
   period                    'month' | 'year'
   state                     'offered' | 'withdrawn' (no longer offered; kept for customers who have it)
   position, created_*, updated_at, deleted_at
@@ -52,7 +52,8 @@ product_items               the shared catalog of item names [R-2]
 product_price_items         one product's price list [R-3]
   product_id, item_id       (one item once per product)
   included                  how many are in the base price (0 = none)
-  unit_price                each further one, EUR without VAT; NULL = none may be added beyond `included`
+  unit_price, unit_price_gross   each further one, EUR without and with VAT; NULL = none may be
+                            added beyond `included`
   max                       the most a customer may have (NULL = no limit)
   billing                   'recurring' (every period of the product) | 'once'
   position                  order in the price list
@@ -65,7 +66,14 @@ recurring = base_price + Σ over recurring items: max(0, count − included) × 
 once      =              Σ over one-off items:  count × unit_price
 ```
 
-A count above `max` is refused. Prices are without VAT, in EUR; VAT is not computed in Intra.
+A count above `max` is refused. The sums are made without VAT; the total with VAT is the sum times
+(1 + rate), rounded to cents.
+
+**With and without VAT** [R-9]: every price is shown and entered both ways. The user types either
+one, the other is computed with the VAT rate and rounded to 2 decimals (half up); both are stored,
+so what was typed stays exact. The **VAT rate** (%, today 23) is a setting, Nastavenia › „Ceny a DPH“
+(board `ProdVatSettings`). When it changes, the prices without VAT stay and those with VAT are
+recomputed; the change is audited.
 
 ---
 
@@ -177,7 +185,8 @@ Not in this spec; noted so the model above fits it:
 | R-1 | Products are today's code list extended (same ids), not a new list beside it. | proposed |
 | R-2 | Item names live in one shared catalog; a product's price list points to them. | user |
 | R-3 | Per product and item: included count, price of each further one, maximum, recurring or once. | user + proposed (once) |
-| R-4 | Price = base + further items × their price; prices in EUR without VAT; a product has a period, monthly or yearly. | proposed |
+| R-4 | Price = base + further items × their price, in EUR; a product has a period, monthly or yearly. | proposed |
+| R-9 | Prices are shown and entered with and without VAT; the other is computed and rounded to cents; the VAT rate is a setting; a rate change keeps the prices without VAT. | user + proposed (rate change) |
 | R-5 | „Produkty“ is a sidebar item under „Organizácie“, with tabs Produkty and Položky. | user |
 | R-6 | The product's detail has a price calculator that stores nothing. | proposed |
 | R-7 | What a price change does to customers who have the product: decided with section 9. | open |
@@ -187,7 +196,7 @@ Not in this spec; noted so the model above fits it:
 
 | Stage | What |
 | ----- | ---- |
-| R1 | Data: products extended, `product_items`, `product_price_items`; API with the price function; tests |
+| R1 | Data: products extended, `product_items`, `product_price_items`, the VAT rate setting; API with the price function; tests |
 | R2 | Web: sidebar item, Produkty list, Položky tab |
 | R3 | Web: product detail with the price list, the item dialog, the calculator, duplicate |
 | R4 | Code list removed from Nastavenia, `functional-spec.md` |

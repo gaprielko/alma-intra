@@ -75,6 +75,7 @@ with the code so the implementation can be checked against them.
 | Prod | `ProdDetail.dc.html` | Product detail: price list and price calculator (interactive) |
 | Prod | `ProdItemDialog.dc.html` | Add an item to a price list from the shared catalog |
 | Prod | `ProdItems.dc.html` | Položky: the shared catalog of item names |
+| Prod | `ProdVatSettings.dc.html` | Settings › Ceny a DPH: the VAT rate |
 
 The `Org` boards are the agreed redesign of [contacts-redesign.md](../contacts-redesign.md) (29 Oct
 2026); they replace the E1 boards once implemented. `Sidebar.dc.html` gained the switch

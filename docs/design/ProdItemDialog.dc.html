@@ -86,8 +86,8 @@ tr:first-child td{border-top:0}
 .tab-on{color:#0a6466;border-bottom-color:#0f8b8d}
 .tab .n{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:999px;background:#dde6e3;font-size:12px;color:#48625f}
 .tab-on .n{background:#e3f3f2;color:#0a6466}
-.num{height:34px;width:64px;box-sizing:border-box;border:1px solid #d6e1de;border-radius:8px;padding:0 8px;font:inherit;font-size:14px;text-align:right;color:#152b2a;background:#fff}
-.num-w{width:84px}
+.num{height:34px;width:52px;box-sizing:border-box;border:1px solid #d6e1de;border-radius:8px;padding:0 8px;font:inherit;font-size:14px;text-align:right;color:#152b2a;background:#fff}
+.num-w{width:72px}
 .euro{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
 .handle{color:#9db3b0;cursor:grab}
 .step{width:28px;height:28px;border:1px solid #d6e1de;border-radius:8px;background:#fff;color:#0a6466;font:inherit;font-size:16px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
@@ -130,9 +130,10 @@ tr:first-child td{border-top:0}
         </div>
         <p style="grid-column: 1 / -1; margin: 8px 0 0; font-size: 14px; font-weight: 600">Admin prístup v produkte DOS</p>
         <label style="grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; font-size: 14px"><input type="checkbox" checked style="width: 18px; height: 18px; accent-color: #0f8b8d; margin: 0">Prevziať nastavenia z ADOS</label>
-        <div style="grid-column: span 3; display: flex; flex-direction: column; gap: 6px"><span class="meta" style="font-weight: 500">Platba</span><div class="seg" style="flex-wrap: nowrap; align-self: flex-start"><button type="button" class="on">Opakovane</button><button type="button">Jednorazovo</button></div></div>
+        <div style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px"><span class="meta" style="font-weight: 500">Platba</span><div class="seg" style="flex-wrap: nowrap; align-self: flex-start"><button type="button" class="on">Opakovane</button><button type="button">Jednorazovo</button></div></div>
         <label class="field" style="grid-column: span 1"><span>V cene</span><input value="1"></label>
-        <label class="field" style="grid-column: span 1"><span>Cena (€)</span><input value="10,00"></label>
+        <label class="field" style="grid-column: span 2"><span>Ďalšia bez DPH (€)</span><input value="10,00"></label>
+        <label class="field" style="grid-column: span 2; background: #f7faf9"><span>s DPH 23 % (€)</span><input value="12,30"></label>
         <label class="field" style="grid-column: span 1"><span>Max.</span><input value="3"></label>
       </form>
       <footer style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 20px 24px 24px">

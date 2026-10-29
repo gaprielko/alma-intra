@@ -86,8 +86,8 @@ tr:first-child td{border-top:0}
 .tab-on{color:#0a6466;border-bottom-color:#0f8b8d}
 .tab .n{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:999px;background:#dde6e3;font-size:12px;color:#48625f}
 .tab-on .n{background:#e3f3f2;color:#0a6466}
-.num{height:34px;width:64px;box-sizing:border-box;border:1px solid #d6e1de;border-radius:8px;padding:0 8px;font:inherit;font-size:14px;text-align:right;color:#152b2a;background:#fff}
-.num-w{width:84px}
+.num{height:34px;width:52px;box-sizing:border-box;border:1px solid #d6e1de;border-radius:8px;padding:0 8px;font:inherit;font-size:14px;text-align:right;color:#152b2a;background:#fff}
+.num-w{width:72px}
 .euro{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
 .handle{color:#9db3b0;cursor:grab}
 .step{width:28px;height:28px;border:1px solid #d6e1de;border-radius:8px;background:#fff;color:#0a6466;font:inherit;font-size:16px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
@@ -125,8 +125,10 @@ tr:first-child td{border-top:0}
             <label class="field" style="grid-column: span 3"><span>Názov</span><input value="ADOS"></label>
             <div style="grid-column: span 3; display: flex; flex-direction: column; justify-content: center; gap: 6px"><span class="meta" style="font-weight: 500">Stav</span><div class="seg"><button type="button" class="on">Ponúka sa</button><button type="button">Už sa neponúka</button></div></div>
             <label class="field" style="grid-column: 1 / -1; min-height: 76px"><span>Popis</span><textarea rows="2">Domáca ošetrovateľská starostlivosť: sestry, návštevy, výkazy pre poisťovne</textarea></label>
-            <label class="field" style="grid-column: span 3"><span>Základná cena (€ bez DPH)</span><input value="49,00"></label>
-            <div style="grid-column: span 3; display: flex; flex-direction: column; justify-content: center; gap: 6px"><span class="meta" style="font-weight: 500">Obdobie</span><div class="seg"><button type="button" class="on">Mesačne</button><button type="button">Ročne</button></div></div>
+            <label class="field" style="grid-column: span 2"><span>Základná cena bez DPH (€)</span><input value="49,00"></label>
+            <label class="field" style="grid-column: span 2; background: #f7faf9"><span>s DPH 23 % (€)</span><input value="60,27"></label>
+            <div style="grid-column: span 2; display: flex; flex-direction: column; justify-content: center; gap: 6px"><span class="meta" style="font-weight: 500">Obdobie</span><div class="seg" style="flex-wrap: nowrap; align-self: flex-start"><button type="button" class="on">Mesačne</button><button type="button">Ročne</button></div></div>
+            <p class="meta" style="grid-column: 1 / -1; margin: 0">Zadajte cenu bez DPH alebo s DPH, druhá sa dopočíta a zaokrúhli na 2 desatinné miesta. Sadzbu DPH (23 %) mení <a href="ProdVatSettings.dc.html">Nastavenia</a>.</p>
           </div>
         </section>
         <section class="card">
@@ -134,17 +136,18 @@ tr:first-child td{border-top:0}
             <h2>Cenník</h2>
             <a href="ProdItemDialog.dc.html" class="btn btn-secondary btn-sm"><svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Pridať položku</a>
           </div>
-          <p style="margin: 6px 20px 0; font-size: 13px; line-height: 19px; color: #48625f">„V cene“ je počet zahrnutý v základnej cene, každý ďalší stojí „Cena za ďalšiu“, najviac do „Max.“. Prázdne Max. znamená bez obmedzenia.</p>
+          <p style="margin: 6px 20px 0; font-size: 13px; line-height: 19px; color: #48625f">„V cene“ je počet zahrnutý v základnej cene, každý ďalší stojí „Ďalšia“, najviac do „Max.“. Prázdne Max. znamená bez obmedzenia. Cenu stačí zadať bez DPH alebo s DPH.</p>
           <div class="tblwrap">
             <table>
-              <thead><tr><th style="padding-right: 0"></th><th style="padding-left: 6px">Položka</th><th>Platba</th><th>V cene</th><th>Cena za ďalšiu</th><th>Max.</th><th></th></tr></thead>
+              <thead><tr><th style="padding-right: 0"></th><th style="padding-left: 6px">Položka</th><th>Platba</th><th>V cene</th><th>Ďalšia bez DPH</th><th>s DPH</th><th>Max.</th><th></th></tr></thead>
               <tbody>
                 <tr>
                   <td style="width: 24px; padding-right: 0"><span class="handle" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="9" cy="6" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle><circle cx="9" cy="12" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle><circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle></svg></span></td>
                   <td style="padding-left: 6px"><span class="name">Admin prístup</span><span class="sub">jednotka: prístup</span></td>
                   <td><button type="button" class="chip chip-sm" aria-label="Admin prístup: platba">Opakovane<svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></button></td>
                   <td><input class="num" value="1" aria-label="Admin prístup: v cene"></td>
-                  <td><span class="euro"><input class="num num-w" value="10,00" aria-label="Admin prístup: cena za ďalšiu"> €</span></td>
+                  <td><span class="euro"><input class="num num-w" value="10,00" aria-label="Admin prístup: cena za ďalšiu bez DPH"> €</span></td>
+                  <td><span class="euro"><input class="num num-w" value="12,30" aria-label="Admin prístup: cena za ďalšiu s DPH" style="background: #f7faf9"> €</span></td>
                   <td><input class="num" value="3" aria-label="Admin prístup: maximum"></td>
                   <td style="width: 40px"><button type="button" class="dots" aria-label="Odobrať Admin prístup"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"></path></svg></button></td>
                 </tr>
@@ -153,7 +156,8 @@ tr:first-child td{border-top:0}
                   <td style="padding-left: 6px"><span class="name">Sestra</span><span class="sub">jednotka: sestra</span></td>
                   <td><button type="button" class="chip chip-sm" aria-label="Sestra: platba">Opakovane<svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></button></td>
                   <td><input class="num" value="4" aria-label="Sestra: v cene"></td>
-                  <td><span class="euro"><input class="num num-w" value="8,00" aria-label="Sestra: cena za ďalšiu"> €</span></td>
+                  <td><span class="euro"><input class="num num-w" value="8,00" aria-label="Sestra: cena za ďalšiu bez DPH"> €</span></td>
+                  <td><span class="euro"><input class="num num-w" value="9,84" aria-label="Sestra: cena za ďalšiu s DPH" style="background: #f7faf9"> €</span></td>
                   <td><input class="num" value="50" aria-label="Sestra: maximum"></td>
                   <td style="width: 40px"><button type="button" class="dots" aria-label="Odobrať Sestra"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"></path></svg></button></td>
                 </tr>
@@ -162,7 +166,8 @@ tr:first-child td{border-top:0}
                   <td style="padding-left: 6px"><span class="name">Superadmin</span><span class="sub">jednotka: prístup</span></td>
                   <td><button type="button" class="chip chip-sm" aria-label="Superadmin: platba">Opakovane<svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></button></td>
                   <td><input class="num" value="0" aria-label="Superadmin: v cene"></td>
-                  <td><span class="euro"><input class="num num-w" value="25,00" aria-label="Superadmin: cena za ďalšiu"> €</span></td>
+                  <td><span class="euro"><input class="num num-w" value="25,00" aria-label="Superadmin: cena za ďalšiu bez DPH"> €</span></td>
+                  <td><span class="euro"><input class="num num-w" value="30,75" aria-label="Superadmin: cena za ďalšiu s DPH" style="background: #f7faf9"> €</span></td>
                   <td><input class="num" value="1" aria-label="Superadmin: maximum"></td>
                   <td style="width: 40px"><button type="button" class="dots" aria-label="Odobrať Superadmin"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"></path></svg></button></td>
                 </tr>
@@ -171,7 +176,8 @@ tr:first-child td{border-top:0}
                   <td style="padding-left: 6px"><span class="name">Implementácia</span><span class="sub">jednotka: implementácia</span></td>
                   <td><button type="button" class="chip chip-sm" aria-label="Implementácia: platba">Jednorazovo<svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></button></td>
                   <td><input class="num" value="0" aria-label="Implementácia: v cene"></td>
-                  <td><span class="euro"><input class="num num-w" value="450,00" aria-label="Implementácia: cena za ďalšiu"> €</span></td>
+                  <td><span class="euro"><input class="num num-w" value="450,00" aria-label="Implementácia: cena za ďalšiu bez DPH"> €</span></td>
+                  <td><span class="euro"><input class="num num-w" value="553,50" aria-label="Implementácia: cena za ďalšiu s DPH" style="background: #f7faf9"> €</span></td>
                   <td><input class="num" value="1" aria-label="Implementácia: maximum"></td>
                   <td style="width: 40px"><button type="button" class="dots" aria-label="Odobrať Implementácia"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"></path></svg></button></td>
                 </tr>
@@ -196,8 +202,9 @@ tr:first-child td{border-top:0}
                 <span class="sub" style="grid-column: 1 / -1">{{ it.note }}</span>
               </div>
             </sc-for>
-            <div class="total"><span style="font-size: 14px; font-weight: 600">Spolu</span><span style="text-align: right"><strong style="font-size: 20px">{{ recurring }}</strong><span class="sub">{{ once }}</span></span></div>
-            <p class="meta" style="margin: 10px 0 0">Ceny bez DPH. Základná cena 49 € zahŕňa 1 admin prístup a 4 sestry.</p>
+            <div class="total"><span style="font-size: 14px; font-weight: 600">Spolu bez DPH</span><span style="text-align: right"><strong style="font-size: 20px">{{ recurring }}</strong><span class="sub">{{ once }}</span></span></div>
+            <div class="total" style="border-top-width: 1px; padding-top: 10px"><span style="font-size: 14px; font-weight: 600">s DPH 23 %</span><span style="text-align: right"><strong style="font-size: 16px">{{ recurringGross }}</strong><span class="sub">{{ onceGross }}</span></span></div>
+            <p class="meta" style="margin: 10px 0 0">Základná cena 49 € bez DPH zahŕňa 1 admin prístup a 4 sestry. DPH sa počíta zo súčtu a zaokrúhľuje na centy.</p>
           </div>
         </section>
         <section class="card">
@@ -228,7 +235,7 @@ class Component extends DCLogic {
     this.state = { admin: 2, sestra: 10, superadmin: 0, impl: 1 };
   }
   renderVals() {
-    const eur = (n) => n.toLocaleString('sk-SK', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' €';
+    const eur = (n) => n.toLocaleString('sk-SK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
     const items = [
       { key: 'admin', name: 'Admin prístup', included: 1, price: 10, max: 3, once: false },
       { key: 'sestra', name: 'Sestra', included: 4, price: 8, max: 50, once: false },
@@ -252,10 +259,14 @@ class Component extends DCLogic {
         inc: () => this.setState({ [it.key]: Math.min(it.max, count + 1) }),
       };
     });
+    const vat = 0.23;
+    const gross = (n) => Math.round(n * (1 + vat) * 100) / 100;
     return {
       calc,
       recurring: eur(recurring) + ' / mesiac',
       once: once ? '+ ' + eur(once) + ' jednorazovo' : 'bez jednorazových položiek',
+      recurringGross: eur(gross(recurring)) + ' / mesiac',
+      onceGross: once ? '+ ' + eur(gross(once)) + ' jednorazovo' : '',
     };
   }
 }
