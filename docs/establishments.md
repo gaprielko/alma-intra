@@ -115,8 +115,8 @@ The card becomes a table that copes with dozens of persons [P-5]:
 ### 4.3 Timeline
 
 - Shows the organization's own entries **and the entries of its prevádzky** [P-7]. A prevádzka's entry
-  is **indented**, with a thin line on the left and the prevádzka's name as a chip, so it is told
-  apart at a glance.
+  is **indented**, with a thin yellow line on the left and the prevádzka's name as a chip, so it is
+  told apart at a glance. The timeline draws no other vertical line between its entries.
 - A switch **„Aj prevádzky“** (on by default) hides them: then only the organization's own
   activities and e-mails remain. The choice is remembered per user in the browser.
 - The existing type chips (Všetko, Aktivity, E-maily, Zmeny) work on top of it.
@@ -136,11 +136,12 @@ At `/organizations/<id>` like any organization (the same route; board `EstDetail
 - header: back link to the organization („‹ ADOS Harmónia, s.r.o.“), the name, a „Prevádzka“
   chip, the shared role and status of the organization (read only), the city; actions „Poslať
   e-mail“, „Zapísať aktivitu“, „Upraviť“, „…“ (Zrušiť prevádzku);
-- **Kontaktné osoby**: the same table, only the prevádzka's persons, no Prevádzka column;
+- **Produkty** at the very top: its own, prices with or without VAT as its organization has it
+  set (products.md 9.1);
+- **Kontaktné osoby** under them: the same table, only the prevádzka's persons, no Prevádzka column;
 - **Časová os**: only the prevádzka's own entries;
 - **Údaje prevádzky**: address, e-mail, phone, Alma ADOS id, note;
 - **Organizácia**: name (link), IČO, status, owner, tags: shared, edited at the organization;
-- **Produkty**: its own (later);
 - files stay at the organization [P-9]; the card links to the organization's folder.
 
 ---
