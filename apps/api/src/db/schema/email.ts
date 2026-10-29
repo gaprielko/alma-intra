@@ -98,6 +98,10 @@ export const emailLook = pgTable(
     footerIco: text('footer_ico').notNull().default(''),
     footerWeb: text('footer_web').notNull().default(''),
     footerEmail: text('footer_email').notNull().default(''),
+    replyMode: text('reply_mode', { enum: ['intra', 'company', 'sender'] })
+      .notNull()
+      .default('company'),
+    replyToAddress: text('reply_to_address').notNull().default('info@alma-care.eu'),
     updatedByUserId: uuid('updated_by_user_id').references(() => users.id),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

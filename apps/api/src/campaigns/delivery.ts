@@ -1,3 +1,4 @@
+import type { EmailLook } from '@intra/shared/schemas';
 import { Logger } from '@nestjs/common';
 import { and, asc, eq, isNull, or, sql } from 'drizzle-orm';
 import { createHmac, timingSafeEqual } from 'node:crypto';
@@ -23,6 +24,21 @@ import type { Storage } from '../storage/storage.js';
 import { settleCampaigns, tokenHash, unsubscribeToken } from './campaigns.service.js';
 
 const logger = new Logger('campaign-sender');
+
+/**
+ * The Reply-To of an e-mail to a customer (Settings › Vzhľad e-mailov): the message's own
+ * address back to Intra, which exists only with an inbound domain (else the sender's mailbox,
+ * as before it), the company address, or the sender's mailbox.
+ */
+export function replyToFor(
+  look: Pick<EmailLook, 'replyMode' | 'replyToAddress'>,
+  inboundReplyTo: string | null,
+  senderEmail: string,
+) {
+  if (look.replyMode === 'company') return look.replyToAddress;
+  if (look.replyMode === 'intra') return inboundReplyTo ?? senderEmail;
+  return senderEmail;
+}
 
 /** 1, 2, 4, 8, 16 minutes; then the message is failed. A permanent refusal fails it at once. */
 export const MAX_ATTEMPTS = 6;
@@ -111,8 +127,8 @@ export async function drainCampaigns(
         })),
       );
       const oneClick = `${env.WEB_URL}/u/${unsubscribeToken(env, id)}`;
-      // The reply comes back to Intra when an inbound domain is set, else to the sender's mailbox.
-      const replyTo = replyAddress(env, id);
+      const inboundReplyTo = look.replyMode === 'intra' ? replyAddress(env, id) : null;
+      const replyTo = replyToFor(look, inboundReplyTo, m.senderEmail);
       const sent = await transport.send(
         {
           to: m.to,
@@ -120,7 +136,7 @@ export async function drainCampaigns(
           html: m.html,
           text: m.text ?? '',
           from: `${m.senderName} | ${look.brandName} <${env.CAMPAIGN_FROM_ADDRESS}>`,
-          replyTo: replyTo ?? m.senderEmail,
+          replyTo,
           headers: m.answers
             ? {
                 // Correspondence (D-14): threaded, without an unsubscribe link.
@@ -150,7 +166,7 @@ export async function drainCampaigns(
                 status: 'sent',
                 sentAt: new Date(),
                 providerMessageId: sent.providerMessageId,
-                replyToken: replyTo ? replyToken(env, id) : null,
+                replyToken: inboundReplyTo ? replyToken(env, id) : null,
                 leasedUntil: null,
               },
         )

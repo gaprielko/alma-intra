@@ -201,6 +201,12 @@ export const templatePreviewSchema = z.object({
 /** Settings › Vzhľad e-mailov. */
 export const HEADER_STYLES = ['dark', 'light'] as const;
 export const ACCENT_COLORS = ['#0f766e', '#0c3b3c', '#0d7f81', '#b45309', '#334e7b'] as const;
+/**
+ * Where a customer's reply goes (the Reply-To of e-mails to customers): back to Intra on the
+ * message's own address (needs the inbound domain), to the company address, or to the sender.
+ */
+export const REPLY_MODES = ['intra', 'company', 'sender'] as const;
+export type ReplyMode = (typeof REPLY_MODES)[number];
 
 export const emailLookSchema = z.object({
   logoKey: z.string().regex(IMAGE_KEY).nullable(),
@@ -212,6 +218,8 @@ export const emailLookSchema = z.object({
   footerIco: z.string().trim().max(20, 'too_long'),
   footerWeb: z.string().trim().max(120, 'too_long'),
   footerEmail: z.union([z.literal(''), z.string().trim().email('invalid_email').max(120)]),
+  replyMode: z.enum(REPLY_MODES),
+  replyToAddress: z.string().trim().email('invalid_email').max(120),
 });
 export type EmailLook = z.infer<typeof emailLookSchema>;
 

@@ -134,9 +134,11 @@ account, so the first user's invitation would not arrive.
 
 ### 5a. Replies in the app (E6)
 
-Customers' replies come back to Intra when Resend receives mail for the sending subdomain. Every
-e-mail to a customer then carries the Reply-To `r+<token>@mail.alma-care.eu`; without this setup
-the Reply-To is the colleague's own mailbox, as before.
+Customers' replies come back to Intra when Resend receives mail for the sending subdomain and
+Settings › Vzhľad e-mailov › „Odpovede zákazníkov“ is „Do Alma Intra“ (D-36). Every e-mail to a
+customer then carries the Reply-To `r+<token>@mail.alma-care.eu`; without the receiving setup that
+option falls back to the colleague's own mailbox. The default is the company address
+(`info@alma-care.eu`).
 
 1. Resend → Domains → `mail.alma-care.eu` → **Receiving** → enable. Resend shows one MX record
    for `mail.alma-care.eu` itself (not the `send.` bounce subdomain). Add it in Websupport with

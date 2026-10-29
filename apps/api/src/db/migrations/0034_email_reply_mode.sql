@@ -1,0 +1,2 @@
+ALTER TABLE "email_look" ADD COLUMN "reply_mode" text DEFAULT 'company' NOT NULL;--> statement-breakpoint
+ALTER TABLE "email_look" ADD COLUMN "reply_to_address" text DEFAULT 'info@alma-care.eu' NOT NULL;

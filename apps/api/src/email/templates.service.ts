@@ -243,6 +243,8 @@ export async function getLook(db: Db | Tx): Promise<EmailLook> {
     footerIco: row?.footerIco ?? '',
     footerWeb: row?.footerWeb ?? '',
     footerEmail: row?.footerEmail ?? '',
+    replyMode: row?.replyMode ?? 'company',
+    replyToAddress: row?.replyToAddress ?? 'info@alma-care.eu',
   };
 }
 

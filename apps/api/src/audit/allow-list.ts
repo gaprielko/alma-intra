@@ -307,6 +307,8 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
       'footerIco',
       'footerWeb',
       'footerEmail',
+      'replyMode',
+      'replyToAddress',
     ]),
     headerStyle: oneOf(HEADER_STYLES),
   },
