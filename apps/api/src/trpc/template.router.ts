@@ -121,10 +121,14 @@ export const templateRouter = router({
       return { sentTo: mail.to };
     }),
 
-  /** The look, and the sending address it is shown with (read-only, from the environment). */
+  /**
+   * The look, the sending address it is shown with and whether replies can come back to Intra
+   * (both read-only, from the environment).
+   */
   look: authorizedProcedure('template.read').query(async ({ ctx }) => ({
     look: await templates.getLook(ctx.db),
     senderAddress: ctx.env.CAMPAIGN_FROM_ADDRESS,
+    inboundReady: Boolean(ctx.env.INBOUND_REPLY_DOMAIN && ctx.env.RESEND_API_KEY),
   })),
 
   lookPreview: authorizedProcedure('template.read')

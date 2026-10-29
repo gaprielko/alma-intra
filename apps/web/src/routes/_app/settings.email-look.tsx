@@ -1,5 +1,5 @@
 import { sk } from '@intra/shared/i18n';
-import { ACCENT_COLORS, type EmailLook, HEADER_STYLES } from '@intra/shared/schemas';
+import { ACCENT_COLORS, type EmailLook, HEADER_STYLES, REPLY_MODES } from '@intra/shared/schemas';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { Check, Upload } from 'lucide-react';
@@ -34,7 +34,13 @@ function EmailLookPage() {
     );
   }
   if (loadFailed(look)) return <ErrorState onRetry={() => void look.refetch()} />;
-  return <LookForm initial={look.data.look} senderAddress={look.data.senderAddress} />;
+  return (
+    <LookForm
+      initial={look.data.look}
+      senderAddress={look.data.senderAddress}
+      inboundReady={look.data.inboundReady}
+    />
+  );
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -55,7 +61,15 @@ function useDebounced<T>(value: T, ms: number) {
   return debounced;
 }
 
-function LookForm({ initial, senderAddress }: { initial: EmailLook; senderAddress: string }) {
+function LookForm({
+  initial,
+  senderAddress,
+  inboundReady,
+}: {
+  initial: EmailLook;
+  senderAddress: string;
+  inboundReady: boolean;
+}) {
   const toast = useToast();
   const queryClient = useQueryClient();
   const canManage = useCan('email_look.manage');
@@ -243,6 +257,53 @@ function LookForm({ initial, senderAddress }: { initial: EmailLook; senderAddres
             <Input id={`${ids}-sender`} value={t.senderNameValue(look.brandName)} readOnly />
           </div>
           <p className="text-[13px] text-muted">{t.senderHint(look.brandName)}</p>
+        </Section>
+
+        <Section title={t.replies}>
+          <div role="radiogroup" aria-label={t.replies} className="space-y-2">
+            {REPLY_MODES.map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                role="radio"
+                aria-checked={look.replyMode === mode}
+                disabled={!canManage}
+                onClick={() => set('replyMode', mode)}
+                className={cn(
+                  'block w-full rounded-xl border px-3.5 py-2.5 text-left',
+                  look.replyMode === mode
+                    ? 'border-primary bg-primary-soft'
+                    : 'border-border hover:bg-hover',
+                )}
+              >
+                <span
+                  className={cn(
+                    'block text-sm font-semibold',
+                    look.replyMode === mode ? 'text-primary-text' : 'text-foreground',
+                  )}
+                >
+                  {t.replyModes[mode]}
+                </span>
+                <span className="block text-xs text-muted">{t.replyHints[mode]}</span>
+              </button>
+            ))}
+          </div>
+          {look.replyMode === 'company' ? (
+            <div className="space-y-2">
+              <Label htmlFor={`${ids}-reply-to`}>{t.replyToAddress}</Label>
+              <Input
+                id={`${ids}-reply-to`}
+                type="email"
+                maxLength={120}
+                value={look.replyToAddress}
+                disabled={!canManage}
+                onChange={(event) => set('replyToAddress', event.target.value)}
+              />
+            </div>
+          ) : null}
+          {look.replyMode === 'intra' && !inboundReady ? (
+            <p className="text-[13px] text-warning">{t.replyIntraNotReady}</p>
+          ) : null}
         </Section>
 
         <Section title={t.footer}>

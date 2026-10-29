@@ -257,8 +257,11 @@ part in, the e-mails sent to them and their replies, from all their organization
   reputation is separate from the main domain and from Alma ADOS's system mail.
 - **From**: the user's name with the shared address **`info@mail.alma-care.eu`** **[D-17a]**, e.g.
   `Ján Novák | Alma <info@mail.alma-care.eu>`.
-- **Reply-To**: a per-message reply address on the inbound subdomain (section 6.6), so replies come
-  back to Intra.
+- **Reply-To** **[D-36]**: chosen in Settings › Vzhľad e-mailov („Odpovede zákazníkov“):
+  - „Na firemnú adresu“ (the default): the company address, `info@alma-care.eu` unless changed;
+  - „Do Alma Intra“: a per-message reply address on the inbound subdomain (section 6.6), so replies
+    come back to Intra; until the inbound domain is set up, the sender's own mailbox;
+  - „Odosielateľovi“: the sender's own mailbox.
 - `info@alma-care.eu` is the company's general mailbox outside Intra and is shown in the e-mail
   footer as the general contact **[D-17b]**. Bringing mail sent to it into Intra (forwarding to the
   inbound address) is a later extension, not part of the stages below.
@@ -614,6 +617,7 @@ both attach files.
 | D-33  | A file's document date is a property of each version, taken from the end of the uploaded name or the upload day; old versions merged into one file keep their dates |
 | D-34  | Prevádzky are organizations under an organization, one level deep, with their own persons, timeline and products (establishments.md, P-1…P-14; 29 Oct 2026) |
 | D-35  | Products have price lists of shared items; a holder's price follows the list unless fixed or discounted; workloads count items (products.md, R-1…R-15; 29 Oct 2026) |
+| D-36  | The Reply-To of e-mails to customers is a setting: company address (default), back to Intra, or the sender (29 Oct 2026) |
 
 ### Still to verify (not decisions)
 

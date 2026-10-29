@@ -2250,8 +2250,21 @@ export const sk = {
     senderAddress: 'Adresa odosielateľa',
     senderName: 'Meno odosielateľa',
     senderNameValue: (brand: string) => `meno kolegu | ${brand}`,
-    senderHint: (brand: string) =>
-      `Príjemca uvidí napríklad „Peter Kováč | ${brand}“. Odpovede prídu do Alma Intra ku kontaktu.`,
+    senderHint: (brand: string) => `Príjemca uvidí napríklad „Peter Kováč | ${brand}“.`,
+    replies: 'Odpovede zákazníkov',
+    replyModes: {
+      company: 'Na firemnú adresu',
+      intra: 'Do Alma Intra',
+      sender: 'Odosielateľovi',
+    },
+    replyHints: {
+      company: 'Odpoveď príde do firemnej schránky.',
+      intra: 'Odpoveď sa zobrazí pri kontakte a odosielateľ dostane jej kópiu.',
+      sender: 'Odpoveď príde do schránky kolegu, ktorý e-mail poslal.',
+    },
+    replyIntraNotReady:
+      'Príjem odpovedí ešte nie je nastavený. Kým nebude, odpovede prídu odosielateľovi.',
+    replyToAddress: 'Firemná adresa pre odpovede',
     footer: 'Pätička',
     footerCompany: 'Obchodné meno a adresa',
     footerIco: 'IČO',
