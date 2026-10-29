@@ -114,42 +114,27 @@ tr:first-child td{border-top:0}
         <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 16px 20px 0">
           <div class="search"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Hľadať produkt</div>
           <button type="button" class="chip">Stav<svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></button>
+          <div class="seg" role="group" aria-label="Ceny" style="margin-left: auto; flex-wrap: nowrap"><button type="button" class="{{ grossCls }}" onClick="{{ showGross }}">S DPH</button><button type="button" class="{{ netCls }}" onClick="{{ showNet }}">Bez DPH</button></div>
         </div>
         <div class="tblwrap">
           <table>
-            <thead><tr><th>Produkt</th><th>Základná cena bez DPH</th><th>V základnej cene</th><th>Príplatky</th><th style="text-align: right">Zákazníci</th><th>Stav</th><th></th></tr></thead>
+            <thead><tr><th>Produkt</th><th>{{ baseHead }}</th><th>V základnej cene</th><th>{{ extraHead }}</th><th style="text-align: right">Zákazníci</th><th>Stav</th><th></th></tr></thead>
             <tbody>
+              <sc-for list="{{ rows }}" as="r" hint-placeholder-count="3">
               <tr>
-                <td style="width: 26%"><a href="ProdDetail.dc.html" class="prod" style="font-size: 13px; height: 24px">ADOS</a><span class="sub" style="margin-top: 4px">Domáca ošetrovateľská starostlivosť: sestry, návštevy, výkazy pre poisťovne</span></td>
-                <td style="white-space: nowrap"><strong style="font-size: 15px">49,00 €</strong> <span class="meta">/ mesiac<span class="sub">s DPH 60,27 €</span></span></td>
-                <td style="line-height: 20px; font-size: 13px; white-space: nowrap">1 × Admin prístup<br>4 × Sestra</td>
-                <td style="line-height: 20px; font-size: 13px; white-space: nowrap; color: #48625f">Admin prístup +10 €<br>Sestra +8 €<br>Superadmin 25 €</td>
-                <td style="text-align: right"><a href="#">14</a></td>
-                <td><span class="badge b-success"><i></i>Ponúka sa</span></td>
-                <td style="width: 40px"><button type="button" class="dots" aria-label="Akcie pre ADOS"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg></button></td>
+                <td style="width: 26%"><a href="ProdDetail.dc.html" class="prod" style="font-size: 13px; height: 24px">{{ r.name }}</a><span class="sub" style="margin-top: 4px">{{ r.desc }}</span></td>
+                <td style="white-space: nowrap"><strong style="font-size: 15px">{{ r.base }}</strong> <span class="meta">{{ r.per }}</span><span class="sub">{{ r.other }}</span></td>
+                <td style="line-height: 20px; font-size: 13px; white-space: nowrap"><sc-for list="{{ r.inc }}" as="x" hint-placeholder-count="2"><span style="display: block">{{ x }}</span></sc-for></td>
+                <td style="line-height: 20px; font-size: 13px; white-space: nowrap; color: #48625f"><sc-for list="{{ r.extra }}" as="x" hint-placeholder-count="2"><span style="display: block">{{ x }}</span></sc-for></td>
+                <td style="text-align: right"><a href="#">{{ r.customers }}</a></td>
+                <td><sc-if value="{{ r.offered }}" hint-placeholder-val="{{ true }}"><span class="badge b-success"><i></i>Ponúka sa</span></sc-if><sc-if value="{{ r.withdrawn }}" hint-placeholder-val="{{ false }}"><span class="badge b-neutral"><i></i>Už sa neponúka</span></sc-if></td>
+                <td style="width: 40px"><button type="button" class="dots" aria-label="Akcie"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg></button></td>
               </tr>
-<tr>
-                <td style="width: 26%"><a href="ProdDetail.dc.html" class="prod" style="font-size: 13px; height: 24px">DOS</a><span class="sub" style="margin-top: 4px">Denné centrá a stacionáre: dochádzka, plány, výkazy</span></td>
-                <td style="white-space: nowrap"><strong style="font-size: 15px">39,00 €</strong> <span class="meta">/ mesiac<span class="sub">s DPH 47,97 €</span></span></td>
-                <td style="line-height: 20px; font-size: 13px; white-space: nowrap">1 × Admin prístup<br>3 × Opatrovateľ</td>
-                <td style="line-height: 20px; font-size: 13px; white-space: nowrap; color: #48625f">Admin prístup +10 €<br>Opatrovateľ +6 €</td>
-                <td style="text-align: right"><a href="#">6</a></td>
-                <td><span class="badge b-success"><i></i>Ponúka sa</span></td>
-                <td style="width: 40px"><button type="button" class="dots" aria-label="Akcie pre DOS"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg></button></td>
-              </tr>
-<tr>
-                <td style="width: 26%"><a href="ProdDetail.dc.html" class="prod" style="font-size: 13px; height: 24px">Stacionár</a><span class="sub" style="margin-top: 4px">Pôvodný produkt, nahradil ho DOS</span></td>
-                <td style="white-space: nowrap"><strong style="font-size: 15px"><span class="meta" style="font-size: 13px">cena nezadaná</span></strong> <span class="meta"></span></td>
-                <td style="line-height: 20px; font-size: 13px; white-space: nowrap"><span style="color: #9db3b0">—</span></td>
-                <td style="line-height: 20px; font-size: 13px; white-space: nowrap; color: #48625f"><span style="color: #9db3b0">—</span></td>
-                <td style="text-align: right"><a href="#">2</a></td>
-                <td><span class="badge b-neutral"><i></i>Už sa neponúka</span></td>
-                <td style="width: 40px"><button type="button" class="dots" aria-label="Akcie pre Stacionár"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg></button></td>
-              </tr>
+              </sc-for>
             </tbody>
           </table>
         </div>
-        <div class="foot"><span>3 produkty</span><span>Príplatky sú bez DPH · DPH 23 % podľa <a href="ProdVatSettings.dc.html">Nastavení</a></span></div>
+        <div class="foot"><span>3 produkty</span><span>{{ footNote }} · DPH 23 % podľa <a href="ProdVatSettings.dc.html">Nastavení</a></span></div>
       </section>
     </div>
   </main>
@@ -158,8 +143,39 @@ tr:first-child td{border-top:0}
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
 class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { gross: true };
+  }
   renderVals() {
-    return {};
+    const g = this.state.gross;
+    const vat = 0.23;
+    const eur = (n) => n.toLocaleString('sk-SK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+    const price = (net) => eur(g ? Math.round(net * (1 + vat) * 100) / 100 : net);
+    const products = [
+      { name: 'ADOS', desc: 'Domáca ošetrovateľská starostlivosť: sestry, návštevy, výkazy pre poisťovne', base: 49, customers: 14, offered: true,
+        inc: ['1 × Admin prístup', '4 × Sestra'], extra: [['Admin prístup', '+', 10], ['Sestra', '+', 8], ['Superadmin', '', 25]] },
+      { name: 'DOS', desc: 'Denné centrá a stacionáre: dochádzka, plány, výkazy', base: 39, customers: 6, offered: true,
+        inc: ['1 × Admin prístup', '3 × Opatrovateľ'], extra: [['Admin prístup', '+', 10], ['Opatrovateľ', '+', 6]] },
+      { name: 'Stacionár', desc: 'Pôvodný produkt, nahradil ho DOS', base: null, customers: 2, offered: false, inc: ['—'], extra: [['—', '', null]] },
+    ];
+    const rows = products.map((p) => ({
+      name: p.name, desc: p.desc, customers: p.customers, offered: p.offered, withdrawn: !p.offered,
+      base: p.base === null ? 'cena nezadaná' : price(p.base),
+      per: p.base === null ? '' : '/ mesiac',
+      other: p.base === null ? '' : (g ? 'bez DPH ' + eur(p.base) : 's DPH ' + eur(Math.round(p.base * (1 + vat) * 100) / 100)),
+      inc: p.inc,
+      extra: p.extra.map(([n, sign, v]) => v === null ? n : n + ' ' + sign + price(v)),
+    }));
+    return {
+      rows,
+      grossCls: g ? 'on' : '', netCls: g ? '' : 'on',
+      showGross: () => this.setState({ gross: true }),
+      showNet: () => this.setState({ gross: false }),
+      baseHead: g ? 'Základná cena s DPH' : 'Základná cena bez DPH',
+      extraHead: g ? 'Príplatky s DPH' : 'Príplatky bez DPH',
+      footNote: g ? 'Ceny s DPH' : 'Ceny bez DPH',
+    };
   }
 }
 </script>

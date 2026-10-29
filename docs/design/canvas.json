@@ -548,7 +548,8 @@
       "h": 900,
       "title": "Produkty · zoznam s cenou a tým, čo obsahuje",
       "page": "prod",
-      "expand": "fill"
+      "expand": "fill",
+      "is_interactive": true
     },
     "ProdDetail.dc.html": {
       "x": 1520,

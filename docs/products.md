@@ -92,12 +92,13 @@ A sidebar item **„Produkty“** right under „Organizácie“ [R-5], with two
 
 ## 5. Produkty (list)
 
-Board `ProdList`. A table, paging as elsewhere, a search by name:
+Board `ProdList`. A table, paging as elsewhere, a search by name, and a switch **S DPH / Bez DPH**
+(prices with VAT by default; the other form is shown small under the base price):
 
 | Column | Content |
 | ------ | ------- |
 | Produkt | the name as a chip and the description under it |
-| Základná cena | „49 € / mesiac“; „cena nezadaná“ when empty |
+| Základná cena | „60,27 € / mesiac“ (with VAT, „bez DPH 49,00 €“ under it); „cena nezadaná“ when empty |
 | V základnej cene | „1 × Admin prístup · 4 × Sestra“ |
 | Príplatky | the items with a price per further one, „Admin prístup +10 € · Sestra +8 €“ |
 | Zákazníci | how many organizations and prevádzky have it (link to the filtered list) |
