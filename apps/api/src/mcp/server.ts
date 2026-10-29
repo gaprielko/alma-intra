@@ -1,4 +1,10 @@
-import { COMPANY_ROOT_FOLDER_ID } from '@intra/shared/schemas';
+import {
+  COMPANY_ROOT_FOLDER_ID,
+  FILE_TYPES,
+  folderNameSchema,
+  isoDateSchema,
+  MAX_VIDEO_BYTES,
+} from '@intra/shared/schemas';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { eq } from 'drizzle-orm';
 import type { Request } from 'express';
@@ -11,14 +17,19 @@ import type { Db } from '../db/db.module.js';
 import { fileVersions } from '../db/schema/index.js';
 import {
   addVersionFromBytes,
+  confirmUpload,
   createFileFromBytes,
+  createFolder,
   customerRootFolderId,
   downloadUrl,
   FileError,
   fileDetail,
   folderContents,
+  folderNamed,
   moveFile,
   renameFile,
+  requestUpload,
+  requestVersion,
 } from '../files/files.service.js';
 import type { Storage } from '../storage/storage.js';
 import { extractText } from './text.js';
@@ -52,10 +63,19 @@ const REFUSALS: Partial<Record<FileError['code'], string>> = {
   TYPE_MISMATCH:
     'The type is not allowed, or differs from the file (a new version or a rename keeps the extension).',
   UPLOAD_MISMATCH:
-    'The content is empty, too large (50 MB at most), not of the type the name says, or both or neither of text and base64 were given.',
+    'The content is empty, too large (50 MB at most, a video 500 MB), not of the type the name says, or both or neither of text and base64 were given.',
+  NAME_TAKEN: 'A folder of that name is already there.',
+  UPLOAD_MISSING: 'Nothing arrived at the upload link: PUT the bytes first, then finish.',
   STORAGE_NOT_CONFIGURED: 'Files are not set up on this server.',
   OTHER_TREE: 'That folder cannot hold this file.',
 };
+
+/** The allowed types, for the tools' descriptions. */
+const TYPES = Object.keys(FILE_TYPES).join(', ');
+const DATE_RULE =
+  'A date at the end of the name (`Alma ADOS - Cennik 2026-10-28.pdf`) leaves the name and ' +
+  "becomes the document's date; documentDate (YYYY-MM-DD) wins over it; without either it is " +
+  'today.';
 
 const READ_ONLY = { readOnlyHint: true, openWorldHint: false } as const;
 
@@ -358,6 +378,56 @@ export function buildMcpServer(ctx: McpContext) {
       .describe('The content as base64, for DOCX, XLSX, PPTX, PDF or images.'),
   };
   const WRITES = { readOnlyHint: false, destructiveHint: false, openWorldHint: false } as const;
+  const documentDate = isoDateSchema
+    .optional()
+    .describe("The document's date, YYYY-MM-DD, when the name does not end in it.");
+
+  /** A folder given by its id, or a customer's root folder. */
+  const folderOf = async (args: {
+    folderId?: string | undefined;
+    customerId?: string | undefined;
+  }) => {
+    const folderId =
+      args.folderId ??
+      (args.customerId ? await customerRootFolderId(ctx.db, args.customerId) : null);
+    if (!folderId) throw new FileError('NOT_FOUND');
+    return folderId;
+  };
+
+  server.registerTool(
+    'files_create_folder',
+    {
+      title: 'Create a folder',
+      description:
+        'A sub-folder of a folder (parentId, or customerId for that customer’s folder, or neither ' +
+        'for the company documents). A folder of that name already there is returned as it is.',
+      inputSchema: {
+        name: folderNameSchema,
+        parentId: z.string().uuid().optional(),
+        customerId: z.string().uuid().optional(),
+      },
+      annotations: WRITES,
+    },
+    tool(
+      'files_create_folder',
+      'mutation',
+      async (args: {
+        name: string;
+        parentId?: string | undefined;
+        customerId?: string | undefined;
+      }) => {
+        const parentId =
+          args.parentId ??
+          (args.customerId
+            ? await customerRootFolderId(ctx.db, args.customerId)
+            : COMPANY_ROOT_FOLDER_ID);
+        const existing = await folderNamed(ctx.db, parentId, args.name);
+        const folderId =
+          existing ?? (await createFolder(ctx.db, ctx.userId, parentId, args.name)).id;
+        return { result: { folderId, created: !existing }, diff: { folderId } };
+      },
+    ),
+  );
 
   server.registerTool(
     'files_create',
@@ -365,13 +435,14 @@ export function buildMcpServer(ctx: McpContext) {
       title: 'Create a file',
       description:
         "A new file in a folder (folderId, or customerId for that customer's folder). The name " +
-        'must end in an allowed type (pdf, docx, odt, xlsx, csv, pptx, txt, md, jpg, png, webp, ' +
-        'svg, zip) and the content must really be of that type.',
+        `must end in an allowed type (${TYPES}) and the content must really be of that type. ` +
+        `For a file over a few hundred kB use files_upload_begin. ${DATE_RULE}`,
       inputSchema: {
         name: z.string().min(1).max(200),
         folderId: z.string().uuid().optional(),
         customerId: z.string().uuid().optional(),
         note: z.string().max(500).optional(),
+        documentDate,
         ...content,
       },
       annotations: WRITES,
@@ -386,10 +457,7 @@ export function buildMcpServer(ctx: McpContext) {
           customerId?: string | undefined;
         },
       ) => {
-        const folderId =
-          args.folderId ??
-          (args.customerId ? await customerRootFolderId(ctx.db, args.customerId) : null);
-        if (!folderId) throw new FileError('NOT_FOUND');
+        const folderId = await folderOf(args);
         const created = await createFileFromBytes(ctx.db, ctx.storage, {
           folderId,
           name: args.name,
@@ -397,6 +465,7 @@ export function buildMcpServer(ctx: McpContext) {
           userId: ctx.userId,
           via: 'mcp',
           note: args.note,
+          documentDate: args.documentDate,
         });
         return { result: created, diff: { fileId: created.fileId, folderId } };
       },
@@ -413,6 +482,7 @@ export function buildMcpServer(ctx: McpContext) {
       inputSchema: {
         fileId: z.string().uuid(),
         note: z.string().max(500).optional().describe('What changed, shown with the version.'),
+        documentDate,
         ...content,
       },
       annotations: WRITES,
@@ -424,8 +494,85 @@ export function buildMcpServer(ctx: McpContext) {
         userId: ctx.userId,
         via: 'mcp',
         note: args.note,
+        documentDate: args.documentDate,
       });
       return { result: version, diff: { fileId: args.fileId, versionId: version.versionId } };
+    }),
+  );
+
+  server.registerTool(
+    'files_upload_begin',
+    {
+      title: 'Begin an upload',
+      description:
+        'For content too large to send as base64: a new file (folderId or customerId, and name) ' +
+        'or a new version of a file (fileId; name is then the uploaded name, for its extension ' +
+        'and date). Returns a link valid 10 minutes: PUT the bytes to it with the returned ' +
+        'Content-Type and the exact size, then call files_upload_finish. ' +
+        `Allowed types: ${TYPES}. ${DATE_RULE}`,
+      inputSchema: {
+        name: z.string().min(1).max(200),
+        size: z.number().int().min(1).max(MAX_VIDEO_BYTES).describe('The size in bytes.'),
+        folderId: z.string().uuid().optional(),
+        customerId: z.string().uuid().optional(),
+        fileId: z.string().uuid().optional(),
+        note: z.string().max(500).optional(),
+        documentDate,
+      },
+      annotations: WRITES,
+    },
+    tool(
+      'files_upload_begin',
+      'mutation',
+      async (args: {
+        name: string;
+        size: number;
+        folderId?: string | undefined;
+        customerId?: string | undefined;
+        fileId?: string | undefined;
+        note?: string | undefined;
+        documentDate?: string | undefined;
+      }) => {
+        const origin = { via: 'mcp' as const, documentDate: args.documentDate };
+        const upload = args.fileId
+          ? await requestVersion(ctx.db, ctx.storage, ctx.userId, {
+              fileId: args.fileId,
+              name: args.name,
+              size: args.size,
+              note: args.note,
+              ...origin,
+            })
+          : await requestUpload(ctx.db, ctx.storage, ctx.userId, {
+              folderId: await folderOf(args),
+              name: args.name,
+              size: args.size,
+              note: args.note,
+              ...origin,
+            });
+        return {
+          result: upload,
+          diff: { fileId: upload.fileId, versionId: upload.versionId },
+        };
+      },
+    ),
+  );
+
+  server.registerTool(
+    'files_upload_finish',
+    {
+      title: 'Finish an upload',
+      description:
+        'Checks what arrived at the link of files_upload_begin (type, size, first bytes) and ' +
+        "makes it the file's newest version.",
+      inputSchema: { versionId: z.string().uuid() },
+      annotations: WRITES,
+    },
+    tool('files_upload_finish', 'mutation', async ({ versionId }: { versionId: string }) => {
+      const done = await confirmUpload(ctx.db, ctx.storage, versionId);
+      return {
+        result: { fileId: done.fileId, versionId, number: done.number },
+        diff: { fileId: done.fileId, versionId },
+      };
     }),
   );
 
@@ -468,6 +615,7 @@ interface WriteArgs {
   text?: string | undefined;
   base64?: string | undefined;
   note?: string | undefined;
+  documentDate?: string | undefined;
 }
 
 /** The content Claude sent: text, or base64 for anything else; exactly one of them. */

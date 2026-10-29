@@ -4,8 +4,9 @@ import { idSchema } from './common.js';
 /** Signed URLs are short-lived: long enough for one upload or one download, no more. */
 export const FILE_URL_TTL_SECONDS = { upload: 600, download: 300 } as const;
 
-/** At most 50 MB per file. */
+/** At most 50 MB per file; a video up to `MAX_VIDEO_BYTES`. */
 export const MAX_FILE_BYTES = 50 * 1024 * 1024;
+export const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
 
 /** How long a file stays in „Kôš“ before it is deleted for good. */
 export const TRASH_DAYS = 30;
@@ -20,6 +21,7 @@ export const FILE_GROUPS = [
   'spreadsheet',
   'presentation',
   'image',
+  'video',
   'text',
   'archive',
 ] as const;
@@ -38,6 +40,10 @@ export const FILE_TYPES = {
     preview: false,
   },
   odt: { mime: 'application/vnd.oasis.opendocument.text', group: 'document', preview: false },
+  doc: { mime: 'application/msword', group: 'document', preview: false },
+  rtf: { mime: 'application/rtf', group: 'document', preview: false },
+  /** A document written as HTML (and printed to PDF): saved, never shown, it can carry a script. */
+  html: { mime: 'text/html', group: 'document', preview: false },
   xlsx: {
     mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     group: 'spreadsheet',
@@ -56,6 +62,8 @@ export const FILE_TYPES = {
   png: { mime: 'image/png', group: 'image', preview: true },
   webp: { mime: 'image/webp', group: 'image', preview: true },
   svg: { mime: 'image/svg+xml', group: 'image', preview: false },
+  mp4: { mime: 'video/mp4', group: 'video', preview: false },
+  mov: { mime: 'video/quicktime', group: 'video', preview: false },
   zip: { mime: 'application/zip', group: 'archive', preview: false },
 } as const satisfies Record<string, { mime: string; group: FileGroup; preview: boolean }>;
 export type FileExtension = keyof typeof FILE_TYPES;
@@ -65,6 +73,34 @@ export function fileExtension(name: string): FileExtension | null {
   const match = /\.([A-Za-z0-9]+)$/.exec(name);
   const ext = match?.[1]?.toLowerCase();
   return ext !== undefined && Object.hasOwn(FILE_TYPES, ext) ? (ext as FileExtension) : null;
+}
+
+/** The largest upload a name's type allows. */
+export function maxBytesOf(name: string): number {
+  const ext = fileExtension(name);
+  return ext !== null && FILE_TYPES[ext].group === 'video' ? MAX_VIDEO_BYTES : MAX_FILE_BYTES;
+}
+
+/** A calendar day, `2026-10-29`. */
+export const isoDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'invalid_date')
+  .refine(isCalendarDay, 'invalid_date');
+
+function isCalendarDay(value: string) {
+  const day = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(day.getTime()) && day.toISOString().slice(0, 10) === value;
+}
+
+/**
+ * The document's date out of its name: `Alma ADOS - Cennik 2027-01-15.pdf` is the file
+ * `Alma ADOS - Cennik.pdf` dated 15 January 2027. A name without a valid date at its end is kept
+ * as it is, with no date.
+ */
+export function splitDocumentDate(name: string): { name: string; documentDate: string | null } {
+  const match = /^(.*\S)\s+(\d{4}-\d{2}-\d{2})(\.[A-Za-z0-9]+)$/.exec(name);
+  if (!match || !isCalendarDay(match[2]!)) return { name, documentDate: null };
+  return { name: `${match[1]}${match[3]}`, documentDate: match[2]! };
 }
 
 /** What the `accept` attribute of a file input lists. */
@@ -109,6 +145,9 @@ export const folderContentsSchema = z.object({
   group: z.enum(FILE_GROUPS).optional(),
   changedBy: idSchema.optional(),
   period: z.enum(FILE_PERIODS).optional(),
+  /** The document's date, from and to, both days included. */
+  dateFrom: isoDateSchema.optional(),
+  dateTo: isoDateSchema.optional(),
 });
 export type FolderContentsInput = z.infer<typeof folderContentsSchema>;
 
@@ -120,18 +159,25 @@ export const customerFoldersSchema = z.object({
 /** The note of a version: what changed („Doplnená tabuľka zliav“). */
 const versionNoteSchema = z.string().trim().max(300).optional();
 
-export const requestUploadSchema = z.object({
-  folderId: idSchema,
-  name: fileNameSchema,
-  size: z.number().int().min(1).max(MAX_FILE_BYTES),
-});
-export const requestVersionSchema = z.object({
-  fileId: idSchema,
-  /** The name of the uploaded file: its extension must be the file's. */
-  name: fileNameSchema,
-  size: z.number().int().min(1).max(MAX_FILE_BYTES),
-  note: versionNoteSchema,
-});
+const fitsType = (value: { name: string; size: number }) => value.size <= maxBytesOf(value.name);
+
+export const requestUploadSchema = z
+  .object({
+    folderId: idSchema,
+    /** A date at the end of the name becomes the document's date and leaves the name. */
+    name: fileNameSchema,
+    size: z.number().int().min(1).max(MAX_VIDEO_BYTES),
+  })
+  .refine(fitsType, { message: 'too_large', path: ['size'] });
+export const requestVersionSchema = z
+  .object({
+    fileId: idSchema,
+    /** The name of the uploaded file: its extension must be the file's; a date at its end dates the version. */
+    name: fileNameSchema,
+    size: z.number().int().min(1).max(MAX_VIDEO_BYTES),
+    note: versionNoteSchema,
+  })
+  .refine(fitsType, { message: 'too_large', path: ['size'] });
 export const versionIdSchema = z.object({ versionId: idSchema });
 export const fileIdSchema = z.object({ id: idSchema });
 export const renameFileSchema = z.object({ id: idSchema, name: fileNameSchema });

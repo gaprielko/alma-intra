@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import {
   bigint,
   check,
+  date,
   type AnyPgColumn,
   index,
   integer,
@@ -112,6 +113,11 @@ export const fileVersions = pgTable(
     mime: text('mime').notNull(),
     size: bigint('size', { mode: 'number' }).notNull(),
     note: text('note'),
+    /**
+     * The document's date: from the end of the uploaded name (`… 2026-10-28.pdf`), given by Claude,
+     * or the day of the upload. Searched by range; the current version's dates the file.
+     */
+    documentDate: date('document_date', { mode: 'string' }),
     /** The number of the older version this one brought back („Obnoviť“). */
     restoredFrom: integer('restored_from'),
     createdVia: fileVersionSource('created_via').notNull().default('web'),
@@ -120,6 +126,7 @@ export const fileVersions = pgTable(
   },
   (t) => [
     index('file_versions_file_idx').on(t.fileId),
+    index('file_versions_document_date_idx').on(t.documentDate),
     uniqueIndex('file_versions_number_unique').on(t.fileId, t.number),
     uniqueIndex('file_versions_key_unique').on(t.storageKey),
   ],
