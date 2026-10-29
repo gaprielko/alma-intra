@@ -856,10 +856,7 @@ function TimelineCard({ customer }: { customer: Customer }) {
             </p>
           ) : (
             <ol
-              className={cn(
-                'relative space-y-5 border-l border-border-subtle pl-6',
-                timeline.isPlaceholderData && 'opacity-60',
-              )}
+              className={cn('relative space-y-5 pl-6', timeline.isPlaceholderData && 'opacity-60')}
             >
               {timeline.data.map((item) => {
                 const entry =

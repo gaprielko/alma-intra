@@ -479,10 +479,7 @@ function PersonTimeline({ person: c }: { person: Person }) {
             <p className="py-2 text-sm text-muted">{a.timeline.empty}</p>
           ) : (
             <ol
-              className={cn(
-                'relative space-y-5 border-l border-border-subtle pl-6',
-                timeline.isPlaceholderData && 'opacity-60',
-              )}
+              className={cn('relative space-y-5 pl-6', timeline.isPlaceholderData && 'opacity-60')}
             >
               {items.map((item) =>
                 item.type === 'activity' ? (
