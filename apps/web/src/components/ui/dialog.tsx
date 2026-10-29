@@ -38,6 +38,7 @@ export function DialogContent({
   overlayClassName,
   children,
   size = 'sm',
+  nested = false,
   onPointerDownOutside,
   onInteractOutside,
   ...props
@@ -45,18 +46,25 @@ export function DialogContent({
   size?: DialogSize;
   /** The ⌘K palette sits on a lighter backdrop (W11). */
   overlayClassName?: string | undefined;
+  /**
+   * A dialog opened from another one: its backdrop and content go above the first dialog, so that
+   * one is dimmed too (z-50 would leave it on top of the backdrop).
+   */
+  nested?: boolean;
 }) {
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay
         className={cn(
-          'fixed inset-0 z-40 bg-dark/55 backdrop-blur-[4px] motion-safe:animate-fade-in',
+          'fixed inset-0 bg-dark/55 backdrop-blur-[4px] motion-safe:animate-fade-in',
+          nested ? 'z-[55]' : 'z-40',
           overlayClassName,
         )}
       />
       <DialogPrimitive.Content
         className={cn(
-          'fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100vh-2rem)] w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col gap-5 overflow-y-auto rounded-3xl bg-white p-6 shadow-floating outline-none motion-safe:animate-scale-in',
+          'fixed top-1/2 left-1/2 flex max-h-[calc(100vh-2rem)] w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col gap-5 overflow-y-auto rounded-3xl bg-white p-6 shadow-floating outline-none motion-safe:animate-scale-in',
+          nested ? 'z-[56]' : 'z-50',
           SIZE[size],
           className,
         )}

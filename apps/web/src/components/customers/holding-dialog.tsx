@@ -603,7 +603,7 @@ function WorkloadsDialog({
     setRows((all) => all.map((r, i) => (i === index ? row : r)));
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent size="md">
+      <DialogContent size="md" nested>
         <DialogHeader>
           <DialogTitle>{w.title(item.name)}</DialogTitle>
           <DialogDescription>{w.hint(step, productName)}</DialogDescription>
