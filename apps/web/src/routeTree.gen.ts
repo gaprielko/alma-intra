@@ -32,9 +32,13 @@ import { Route as AppOrganizationsContactsRouteImport } from './routes/_app/orga
 import { Route as AppOrganizationsCustomersRouteImport } from './routes/_app/organizations.customers'
 import { Route as AppOrganizationsNewRouteImport } from './routes/_app/organizations.new'
 import { Route as AppOrganizationsPartnersRouteImport } from './routes/_app/organizations.partners'
+import { Route as AppProductsIndexRouteImport } from './routes/_app/products.index'
+import { Route as AppProductsProductIdRouteImport } from './routes/_app/products.$productId'
+import { Route as AppProductsItemsRouteImport } from './routes/_app/products.items'
 import { Route as AppSettingsActivityLogRouteImport } from './routes/_app/settings.activity-log'
 import { Route as AppSettingsCodeListsRouteImport } from './routes/_app/settings.code-lists'
 import { Route as AppSettingsEmailLookRouteImport } from './routes/_app/settings.email-look'
+import { Route as AppSettingsPricingRouteImport } from './routes/_app/settings.pricing'
 import { Route as AppSettingsUsersRouteImport } from './routes/_app/settings.users'
 import { Route as AppCustomersCustomerIdIndexRouteImport } from './routes/_app/customers.$customerId.index'
 import { Route as AppCustomersCustomerIdEditRouteImport } from './routes/_app/customers.$customerId.edit'
@@ -164,6 +168,21 @@ const AppOrganizationsPartnersRoute =
     path: '/organizations/partners',
     getParentRoute: () => AppRoute,
   } as any)
+const AppProductsIndexRoute = AppProductsIndexRouteImport.update({
+  id: '/products/',
+  path: '/products/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProductsProductIdRoute = AppProductsProductIdRouteImport.update({
+  id: '/products/$productId',
+  path: '/products/$productId',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProductsItemsRoute = AppProductsItemsRouteImport.update({
+  id: '/products/items',
+  path: '/products/items',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSettingsActivityLogRoute = AppSettingsActivityLogRouteImport.update({
   id: '/activity-log',
   path: '/activity-log',
@@ -177,6 +196,11 @@ const AppSettingsCodeListsRoute = AppSettingsCodeListsRouteImport.update({
 const AppSettingsEmailLookRoute = AppSettingsEmailLookRouteImport.update({
   id: '/email-look',
   path: '/email-look',
+  getParentRoute: () => AppSettingsRoute,
+} as any)
+const AppSettingsPricingRoute = AppSettingsPricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => AppSettingsRoute,
 } as any)
 const AppSettingsUsersRoute = AppSettingsUsersRouteImport.update({
@@ -262,12 +286,16 @@ export interface FileRoutesByFullPath {
   '/organizations/customers': typeof AppOrganizationsCustomersRoute
   '/organizations/new': typeof AppOrganizationsNewRoute
   '/organizations/partners': typeof AppOrganizationsPartnersRoute
+  '/products/$productId': typeof AppProductsProductIdRoute
+  '/products/items': typeof AppProductsItemsRoute
   '/settings/activity-log': typeof AppSettingsActivityLogRoute
   '/settings/code-lists': typeof AppSettingsCodeListsRoute
   '/settings/email-look': typeof AppSettingsEmailLookRoute
+  '/settings/pricing': typeof AppSettingsPricingRoute
   '/settings/users': typeof AppSettingsUsersRoute
   '/customers/': typeof AppCustomersIndexRoute
   '/organizations/': typeof AppOrganizationsIndexRoute
+  '/products/': typeof AppProductsIndexRoute
   '/customers/$customerId/edit': typeof AppCustomersCustomerIdEditRoute
   '/emails/compose/$campaignId': typeof AppEmailsComposeCampaignIdRoute
   '/emails/inbox/$inboundId': typeof AppEmailsInboxInboundIdRoute
@@ -300,12 +328,16 @@ export interface FileRoutesByTo {
   '/organizations/customers': typeof AppOrganizationsCustomersRoute
   '/organizations/new': typeof AppOrganizationsNewRoute
   '/organizations/partners': typeof AppOrganizationsPartnersRoute
+  '/products/$productId': typeof AppProductsProductIdRoute
+  '/products/items': typeof AppProductsItemsRoute
   '/settings/activity-log': typeof AppSettingsActivityLogRoute
   '/settings/code-lists': typeof AppSettingsCodeListsRoute
   '/settings/email-look': typeof AppSettingsEmailLookRoute
+  '/settings/pricing': typeof AppSettingsPricingRoute
   '/settings/users': typeof AppSettingsUsersRoute
   '/customers': typeof AppCustomersIndexRoute
   '/organizations': typeof AppOrganizationsIndexRoute
+  '/products': typeof AppProductsIndexRoute
   '/customers/$customerId/edit': typeof AppCustomersCustomerIdEditRoute
   '/emails/compose/$campaignId': typeof AppEmailsComposeCampaignIdRoute
   '/emails/inbox/$inboundId': typeof AppEmailsInboxInboundIdRoute
@@ -340,12 +372,16 @@ export interface FileRoutesById {
   '/_app/organizations/customers': typeof AppOrganizationsCustomersRoute
   '/_app/organizations/new': typeof AppOrganizationsNewRoute
   '/_app/organizations/partners': typeof AppOrganizationsPartnersRoute
+  '/_app/products/$productId': typeof AppProductsProductIdRoute
+  '/_app/products/items': typeof AppProductsItemsRoute
   '/_app/settings/activity-log': typeof AppSettingsActivityLogRoute
   '/_app/settings/code-lists': typeof AppSettingsCodeListsRoute
   '/_app/settings/email-look': typeof AppSettingsEmailLookRoute
+  '/_app/settings/pricing': typeof AppSettingsPricingRoute
   '/_app/settings/users': typeof AppSettingsUsersRoute
   '/_app/customers/': typeof AppCustomersIndexRoute
   '/_app/organizations/': typeof AppOrganizationsIndexRoute
+  '/_app/products/': typeof AppProductsIndexRoute
   '/_app/customers/$customerId/edit': typeof AppCustomersCustomerIdEditRoute
   '/_app/emails_/compose/$campaignId': typeof AppEmailsComposeCampaignIdRoute
   '/_app/emails_/inbox/$inboundId': typeof AppEmailsInboxInboundIdRoute
@@ -380,12 +416,16 @@ export interface FileRouteTypes {
     | '/organizations/customers'
     | '/organizations/new'
     | '/organizations/partners'
+    | '/products/$productId'
+    | '/products/items'
     | '/settings/activity-log'
     | '/settings/code-lists'
     | '/settings/email-look'
+    | '/settings/pricing'
     | '/settings/users'
     | '/customers/'
     | '/organizations/'
+    | '/products/'
     | '/customers/$customerId/edit'
     | '/emails/compose/$campaignId'
     | '/emails/inbox/$inboundId'
@@ -418,12 +458,16 @@ export interface FileRouteTypes {
     | '/organizations/customers'
     | '/organizations/new'
     | '/organizations/partners'
+    | '/products/$productId'
+    | '/products/items'
     | '/settings/activity-log'
     | '/settings/code-lists'
     | '/settings/email-look'
+    | '/settings/pricing'
     | '/settings/users'
     | '/customers'
     | '/organizations'
+    | '/products'
     | '/customers/$customerId/edit'
     | '/emails/compose/$campaignId'
     | '/emails/inbox/$inboundId'
@@ -457,12 +501,16 @@ export interface FileRouteTypes {
     | '/_app/organizations/customers'
     | '/_app/organizations/new'
     | '/_app/organizations/partners'
+    | '/_app/products/$productId'
+    | '/_app/products/items'
     | '/_app/settings/activity-log'
     | '/_app/settings/code-lists'
     | '/_app/settings/email-look'
+    | '/_app/settings/pricing'
     | '/_app/settings/users'
     | '/_app/customers/'
     | '/_app/organizations/'
+    | '/_app/products/'
     | '/_app/customers/$customerId/edit'
     | '/_app/emails_/compose/$campaignId'
     | '/_app/emails_/inbox/$inboundId'
@@ -649,6 +697,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrganizationsPartnersRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/products/': {
+      id: '/_app/products/'
+      path: '/products'
+      fullPath: '/products/'
+      preLoaderRoute: typeof AppProductsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/products/$productId': {
+      id: '/_app/products/$productId'
+      path: '/products/$productId'
+      fullPath: '/products/$productId'
+      preLoaderRoute: typeof AppProductsProductIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/products/items': {
+      id: '/_app/products/items'
+      path: '/products/items'
+      fullPath: '/products/items'
+      preLoaderRoute: typeof AppProductsItemsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/settings/activity-log': {
       id: '/_app/settings/activity-log'
       path: '/activity-log'
@@ -668,6 +737,13 @@ declare module '@tanstack/react-router' {
       path: '/email-look'
       fullPath: '/settings/email-look'
       preLoaderRoute: typeof AppSettingsEmailLookRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
+    '/_app/settings/pricing': {
+      id: '/_app/settings/pricing'
+      path: '/pricing'
+      fullPath: '/settings/pricing'
+      preLoaderRoute: typeof AppSettingsPricingRouteImport
       parentRoute: typeof AppSettingsRoute
     }
     '/_app/settings/users': {
@@ -772,6 +848,7 @@ interface AppSettingsRouteChildren {
   AppSettingsActivityLogRoute: typeof AppSettingsActivityLogRoute
   AppSettingsCodeListsRoute: typeof AppSettingsCodeListsRoute
   AppSettingsEmailLookRoute: typeof AppSettingsEmailLookRoute
+  AppSettingsPricingRoute: typeof AppSettingsPricingRoute
   AppSettingsUsersRoute: typeof AppSettingsUsersRoute
 }
 
@@ -779,6 +856,7 @@ const AppSettingsRouteChildren: AppSettingsRouteChildren = {
   AppSettingsActivityLogRoute: AppSettingsActivityLogRoute,
   AppSettingsCodeListsRoute: AppSettingsCodeListsRoute,
   AppSettingsEmailLookRoute: AppSettingsEmailLookRoute,
+  AppSettingsPricingRoute: AppSettingsPricingRoute,
   AppSettingsUsersRoute: AppSettingsUsersRoute,
 }
 
@@ -798,8 +876,11 @@ interface AppRouteChildren {
   AppOrganizationsCustomersRoute: typeof AppOrganizationsCustomersRoute
   AppOrganizationsNewRoute: typeof AppOrganizationsNewRoute
   AppOrganizationsPartnersRoute: typeof AppOrganizationsPartnersRoute
+  AppProductsProductIdRoute: typeof AppProductsProductIdRoute
+  AppProductsItemsRoute: typeof AppProductsItemsRoute
   AppCustomersIndexRoute: typeof AppCustomersIndexRoute
   AppOrganizationsIndexRoute: typeof AppOrganizationsIndexRoute
+  AppProductsIndexRoute: typeof AppProductsIndexRoute
   AppCustomersCustomerIdEditRoute: typeof AppCustomersCustomerIdEditRoute
   AppEmailsComposeCampaignIdRoute: typeof AppEmailsComposeCampaignIdRoute
   AppEmailsInboxInboundIdRoute: typeof AppEmailsInboxInboundIdRoute
@@ -822,8 +903,11 @@ const AppRouteChildren: AppRouteChildren = {
   AppOrganizationsCustomersRoute: AppOrganizationsCustomersRoute,
   AppOrganizationsNewRoute: AppOrganizationsNewRoute,
   AppOrganizationsPartnersRoute: AppOrganizationsPartnersRoute,
+  AppProductsProductIdRoute: AppProductsProductIdRoute,
+  AppProductsItemsRoute: AppProductsItemsRoute,
   AppCustomersIndexRoute: AppCustomersIndexRoute,
   AppOrganizationsIndexRoute: AppOrganizationsIndexRoute,
+  AppProductsIndexRoute: AppProductsIndexRoute,
   AppCustomersCustomerIdEditRoute: AppCustomersCustomerIdEditRoute,
   AppEmailsComposeCampaignIdRoute: AppEmailsComposeCampaignIdRoute,
   AppEmailsInboxInboundIdRoute: AppEmailsInboxInboundIdRoute,

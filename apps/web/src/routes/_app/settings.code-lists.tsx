@@ -29,7 +29,8 @@ import { cn } from '@/lib/utils';
 
 const t = sk.codeLists;
 type Section = CodeList | 'tags';
-const SECTIONS: readonly Section[] = ['product', 'source', 'template_category', 'tags'];
+// Products moved to Produkty (docs/products.md R-1); an old link to them opens the sources.
+const SECTIONS: readonly Section[] = ['source', 'template_category', 'tags'];
 
 export const Route = createFileRoute('/_app/settings/code-lists')({
   validateSearch: z.object({
@@ -40,14 +41,14 @@ export const Route = createFileRoute('/_app/settings/code-lists')({
 
 /** Settings › Číselníky: the lists on the left, the chosen one on the right. */
 function CodeListsPage() {
-  const { list = 'product' } = Route.useSearch();
+  const search = Route.useSearch();
+  const list = !search.list || search.list === 'product' ? 'source' : search.list;
   const navigate = useNavigate({ from: Route.fullPath });
-  const products = useQuery(trpc.codeList.list.queryOptions({ list: 'product' }));
   const sources = useQuery(trpc.codeList.list.queryOptions({ list: 'source' }));
   const categories = useQuery(trpc.codeList.list.queryOptions({ list: 'template_category' }));
   const tags = useQuery(trpc.codeList.tags.queryOptions());
   const count = {
-    product: products.data?.items.length,
+    product: undefined,
     source: sources.data?.items.length,
     template_category: categories.data?.items.length,
     tags: tags.data?.length,
