@@ -138,7 +138,17 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     firstContact: flag,
     fields: subsetOf(CUSTOMER_FIELDS),
     deleted: flag,
-    contact: oneOf(['created', 'updated', 'primary', 'deleted', 'unsubscribed', 'resubscribed']),
+    contact: oneOf([
+      'created',
+      'updated',
+      'primary',
+      'deleted',
+      'unsubscribed',
+      'resubscribed',
+      'linked',
+      'unlinked',
+    ]),
+    primary: flag,
     reason: oneOf(['too_many', 'not_interested', 'left_position', 'other']),
     contactId: uuid,
     ids: uuidList,
@@ -156,6 +166,7 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     resultCount: number,
     filters: subsetOf([
       'search',
+      'role',
       'status',
       'kind',
       'contactTypeId',
@@ -163,6 +174,27 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
       'region',
       'tagId',
       'ownerUserId',
+    ]),
+  },
+  /**
+   * A person of Kontakty: created or deleted, which of their fields changed (names), at how many
+   * organizations. Never a name, an e-mail, a phone or a note.
+   */
+  person: {
+    created: flag,
+    deleted: flag,
+    count: number,
+    fields: subsetOf([
+      'titleBefore',
+      'firstName',
+      'lastName',
+      'titleAfter',
+      'gender',
+      'salutation',
+      'email',
+      'phone',
+      'note',
+      'receivesBulk',
     ]),
   },
   /** Settings › Číselníky: which list, which fields, switched on or off. Names are not kept. */
@@ -267,6 +299,7 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     deleted: flag,
     filters: subsetOf([
       'search',
+      'role',
       'status',
       'kind',
       'contactTypeId',

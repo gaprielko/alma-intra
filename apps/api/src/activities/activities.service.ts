@@ -5,7 +5,7 @@ import {
   richTextToPlain,
   type TimelineFilter,
 } from '@intra/shared/schemas';
-import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
+import { type AnyColumn, and, asc, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import type { Db, Tx } from '../db/db.module.js';
 import {
@@ -381,6 +381,25 @@ const TIMELINE_LIMIT = 100;
  */
 export async function timeline(db: Db, customerId: string, filter: TimelineFilter) {
   await liveCustomer(db, customerId);
+  return timelineOf(db, { customerId }, filter);
+}
+
+/**
+ * The timeline of an organization, or of one person (D-8): only the activities they took part in,
+ * the e-mails sent to them and their replies, from all their organizations, each item naming its
+ * organization. A person's changes are not in it.
+ */
+export async function timelineOf(
+  db: Db,
+  scope: { customerId: string } | { contactId: string },
+  filter: TimelineFilter,
+) {
+  const customerId = 'customerId' in scope ? scope.customerId : null;
+  const contactId = 'contactId' in scope ? scope.contactId : null;
+  const activityScope = customerId
+    ? eq(activities.organizationId, customerId)
+    : sql`exists (select 1 from activity_participants p
+        where p.activity_id = ${activities.id} and p.contact_id = ${contactId})`;
   const kindFilter =
     filter === 'notes'
       ? [eq(activities.kind, 'note')]
@@ -403,10 +422,11 @@ export async function timeline(db: Db, customerId: string, filter: TimelineFilte
           author: author.name,
           attachmentCount: sql<number>`(select count(*)::int from activity_attachments aa
             where aa.activity_id = "activities"."id")`,
+          organization: organizationJson(activities.organizationId),
         })
         .from(activities)
         .leftJoin(author, eq(author.id, activities.authorUserId))
-        .where(and(eq(activities.organizationId, customerId), alive, ...kindFilter))
+        .where(and(activityScope, alive, ...kindFilter))
         .orderBy(desc(activities.occurredAt))
         .limit(TIMELINE_LIMIT)
     : [];
@@ -435,13 +455,16 @@ export async function timeline(db: Db, customerId: string, filter: TimelineFilte
               toName: campaignMessages.toName,
               at: sql<Date>`coalesce(${campaignMessages.sentAt}, ${campaignMessages.queuedAt})`,
               sender: users.name,
+              organization: organizationJson(campaignMessages.organizationId),
             })
             .from(campaignMessages)
             .innerJoin(campaigns, eq(campaigns.id, campaignMessages.campaignId))
             .innerJoin(users, eq(users.id, campaigns.senderUserId))
             .where(
               and(
-                eq(campaignMessages.organizationId, customerId),
+                customerId
+                  ? eq(campaignMessages.organizationId, customerId)
+                  : eq(campaignMessages.contactId, contactId!),
                 isNotNull(campaignMessages.queuedAt),
               ),
             )
@@ -461,11 +484,14 @@ export async function timeline(db: Db, customerId: string, filter: TimelineFilte
                 '\\s+', ' ', 'g'), 200)`,
               at: inboundMessages.receivedAt,
               attachmentCount: sql<number>`jsonb_array_length(${inboundMessages.attachments})`,
+              organization: organizationJson(inboundMessages.organizationId),
             })
             .from(inboundMessages)
             .where(
               and(
-                eq(inboundMessages.organizationId, customerId),
+                customerId
+                  ? eq(inboundMessages.organizationId, customerId)
+                  : eq(inboundMessages.contactId, contactId!),
                 eq(inboundMessages.status, 'assigned'),
               ),
             )
@@ -473,7 +499,7 @@ export async function timeline(db: Db, customerId: string, filter: TimelineFilte
             .limit(TIMELINE_LIMIT)
         ).map((reply) => ({ type: 'reply' as const, at: reply.at, reply }))
       : []),
-    ...(filter === 'all' || filter === 'changes'
+    ...(customerId && (filter === 'all' || filter === 'changes')
       ? (await customerHistory(db, customerId))
           // A download of the CSV is not news about the customer.
           .filter((event) => event.diff?.exported !== true)
@@ -484,6 +510,12 @@ export async function timeline(db: Db, customerId: string, filter: TimelineFilte
     .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
     .slice(0, TIMELINE_LIMIT);
 }
+
+/** The organization a timeline item belongs to, for a person's timeline that spans several. */
+const organizationJson = (column: AnyColumn) =>
+  sql<{ id: string; name: string; role: 'customer' | 'partner' } | null>`(select
+    json_build_object('id', o.id, 'name', o.name, 'role', o.role)
+    from organizations o where o.id = ${column})`;
 
 /** „Moje ďalšie kroky“: the open next steps of one person, the ones due first. */
 export async function myNextSteps(db: Db, userId: string) {

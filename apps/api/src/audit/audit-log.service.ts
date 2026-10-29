@@ -9,6 +9,7 @@ import { auditEvents, users } from '../db/schema/index.js';
  */
 const subjectName = sql<string | null>`case ${auditEvents.entityType}
   when 'customer' then (select c.name from organizations c where c.id::text = ${auditEvents.entityId})
+  when 'person' then (select concat_ws(' ', p.first_name, p.last_name) from contacts p where p.id::text = ${auditEvents.entityId})
   when 'file' then (select f.name from files f where f.id::text = ${auditEvents.entityId})
   when 'campaign' then (select c.subject_text from campaigns c where c.id::text = ${auditEvents.entityId})
   when 'inbound' then (select i.subject from inbound_messages i where i.id::text = ${auditEvents.entityId})

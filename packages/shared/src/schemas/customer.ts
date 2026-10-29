@@ -164,7 +164,7 @@ export type CustomerSort = (typeof CUSTOMER_SORTS)[number];
  * One value or several (D-12): every dropdown filter of the lists takes any number of them. A
  * single value, as saved segments and older links have it, reads as a list of one.
  */
-const oneOrMore = <T extends z.ZodTypeAny>(item: T) =>
+export const oneOrMore = <T extends z.ZodTypeAny>(item: T) =>
   z
     .union([item, z.array(item).min(1).max(50)])
     .transform((value): z.output<T>[] => (Array.isArray(value) ? value : [value]))
