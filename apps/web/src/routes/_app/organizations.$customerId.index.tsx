@@ -16,6 +16,8 @@ import { ActivitySheet } from '@/components/activities/activity-sheet';
 import { ActivityItem, EmailItem, ReplyItem } from '@/components/activities/timeline-items';
 import { Avatar } from '@/components/avatar';
 import { ContactDialog, type Contact } from '@/components/customers/contact-dialog';
+import { EstablishmentDialog } from '@/components/customers/establishment-dialog';
+import { EstablishmentChip, EstablishmentsCard } from '@/components/customers/establishments-card';
 import { ExistingPersonDialog } from '@/components/customers/existing-person-dialog';
 import {
   CustomerAvatar,
@@ -63,6 +65,8 @@ function CustomerDetailPage() {
   const [changingRole, setChangingRole] = useState(false);
   const [documenting, setDocumenting] = useState(false);
   const [recording, setRecording] = useState(false);
+  const [addingEstablishment, setAddingEstablishment] = useState(false);
+  const [editingEstablishment, setEditingEstablishment] = useState(false);
   const canRecord = useCan('activity.write');
   const canSend = useCan('email.send');
   const navigateTo = useNavigate();
@@ -106,26 +110,49 @@ function CustomerDetailPage() {
     );
   }
   const c = customer.data;
+  const parent = c.parent;
+  const ico = parent ? parent.ico : c.ico;
   const meta = [
     sk.organizations.persons.roles[c.role],
     c.kind === 'individual' ? sk.customers.kind.individual : null,
     c.city,
-    c.ico ? t.ico(c.ico.replace(/^(\d{2})(\d{3})(\d{3})$/, '$1 $2 $3')) : null,
+    ico ? t.ico(ico.replace(/^(\d{2})(\d{3})(\d{3})$/, '$1 $2 $3')) : null,
+    parent
+      ? null
+      : c.establishmentCount > 0
+        ? sk.establishments.detail.count(c.establishmentCount)
+        : null,
   ]
     .filter(Boolean)
     .join(' · ');
+  const status = parent ? parent.status : c.status;
 
   return (
     <div className="min-w-0">
       <PageHeader
         title={c.name}
         subtitle={meta}
-        back={{
-          to: c.role === 'partner' ? '/organizations/partners' : '/organizations/customers',
-          label:
-            c.role === 'partner' ? sk.organizations.tabs.partners : sk.organizations.tabs.customers,
-        }}
-        badge={c.status ? <CustomerStatusBadge status={c.status} /> : undefined}
+        back={
+          parent
+            ? {
+                to: '/organizations/$customerId',
+                params: { customerId: parent.id },
+                label: parent.name,
+              }
+            : {
+                to: c.role === 'partner' ? '/organizations/partners' : '/organizations/customers',
+                label:
+                  c.role === 'partner'
+                    ? sk.organizations.tabs.partners
+                    : sk.organizations.tabs.customers,
+              }
+        }
+        badge={
+          <span className="flex flex-wrap items-center gap-2">
+            {parent ? <EstablishmentChip name={sk.establishments.badge} /> : null}
+            {status ? <CustomerStatusBadge status={status} /> : null}
+          </span>
+        }
       >
         {canSend ? (
           <Button
@@ -143,12 +170,19 @@ function CustomerDetailPage() {
             {a.record}
           </Button>
         ) : null}
-        <Button variant="secondary" asChild>
-          <Link to="/organizations/$customerId/edit" params={{ customerId }}>
+        {parent ? (
+          <Button variant="secondary" onClick={() => setEditingEstablishment(true)}>
             <Pencil className="size-4" aria-hidden />
             {t.edit}
-          </Link>
-        </Button>
+          </Button>
+        ) : (
+          <Button variant="secondary" asChild>
+            <Link to="/organizations/$customerId/edit" params={{ customerId }}>
+              <Pencil className="size-4" aria-hidden />
+              {t.edit}
+            </Link>
+          </Button>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button size="icon" aria-label={t.more}>
@@ -156,16 +190,23 @@ function CustomerDetailPage() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={() => setChangingRole(true)}>
-              {c.role === 'customer'
-                ? sk.organizations.roleChange.toPartner
-                : sk.organizations.roleChange.toCustomer}
-            </DropdownMenuItem>
+            {parent ? null : (
+              <DropdownMenuItem onSelect={() => setChangingRole(true)}>
+                {c.role === 'customer'
+                  ? sk.organizations.roleChange.toPartner
+                  : sk.organizations.roleChange.toCustomer}
+              </DropdownMenuItem>
+            )}
+            {!parent && c.kind === 'organization' ? (
+              <DropdownMenuItem onSelect={() => setAddingEstablishment(true)}>
+                {sk.establishments.add}
+              </DropdownMenuItem>
+            ) : null}
             <DropdownMenuItem onSelect={() => setDocumenting(true)}>
               {sk.documents.menu}
             </DropdownMenuItem>
             <DropdownMenuItem destructive onSelect={() => setDeleting(true)}>
-              {t.delete}
+              {parent ? sk.establishments.delete : t.delete}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -173,17 +214,29 @@ function CustomerDetailPage() {
 
       <main className="grid max-w-[1400px] items-start gap-5 px-7 pt-5 pb-10 xl:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
         <div className="min-w-0 space-y-5">
+          {!parent && c.establishmentCount > 0 ? (
+            <EstablishmentsCard parentId={c.id} parentName={c.name} />
+          ) : null}
           {c.kind === 'organization' ? <ContactsCard customer={c} /> : null}
           <TimelineCard customer={c} />
         </div>
         <div className="min-w-0 space-y-5">
-          {c.kind === 'organization' ? (
-            <OrganizationCard customer={c} />
+          {parent ? (
+            <>
+              <EstablishmentCard customer={c} />
+              <ParentCard parent={parent} />
+            </>
           ) : (
-            <PersonCard customer={c} />
+            <>
+              {c.kind === 'organization' ? (
+                <OrganizationCard customer={c} />
+              ) : (
+                <PersonCard customer={c} />
+              )}
+              <ClassificationCard customer={c} />
+              <CustomerFilesCard customerId={customerId} />
+            </>
           )}
-          <ClassificationCard customer={c} />
-          <CustomerFilesCard customerId={customerId} />
         </div>
       </main>
 
@@ -191,6 +244,21 @@ function CustomerDetailPage() {
       {changingRole ? <ChangeRole customer={c} onClose={() => setChangingRole(false)} /> : null}
       {documenting ? (
         <CreateDocumentDialog customer={c} onClose={() => setDocumenting(false)} />
+      ) : null}
+      {addingEstablishment ? (
+        <EstablishmentDialog
+          parentId={c.id}
+          parentName={c.name}
+          onClose={() => setAddingEstablishment(false)}
+        />
+      ) : null}
+      {editingEstablishment && parent ? (
+        <EstablishmentDialog
+          parentId={parent.id}
+          parentName={parent.name}
+          establishment={c}
+          onClose={() => setEditingEstablishment(false)}
+        />
       ) : null}
       {recording ? (
         <ActivityDialog
@@ -256,6 +324,82 @@ function OrganizationCard({ customer: c }: { customer: Customer }) {
           ) : null}
         </Row>
       </Rows>
+    </Card>
+  );
+}
+
+/** A prevádzka's own data (docs/establishments.md 5). */
+function EstablishmentCard({ customer: c }: { customer: Customer }) {
+  const e = sk.establishments.detail;
+  return (
+    <Card>
+      <CardHeader title={e.data} />
+      <Rows>
+        <Row label={f.address}>{address(c)}</Row>
+        <Row label={f.region}>{c.region ? sk.customers.region[c.region] : null}</Row>
+        <Row label={f.phone}>
+          {c.phone ? <a href={`tel:${c.phone.replace(/\s/g, '')}`}>{c.phone}</a> : null}
+        </Row>
+        <Row label={f.email}>
+          {c.email ? (
+            <a href={`mailto:${c.email}`} className="text-primary-text hover:underline">
+              {c.email}
+            </a>
+          ) : null}
+        </Row>
+        <Row label={f.almaId}>{c.almaOrganizationId}</Row>
+        <Row label={f.note}>
+          {c.note ? <span className="whitespace-pre-line">{c.note}</span> : null}
+        </Row>
+      </Rows>
+    </Card>
+  );
+}
+
+/** What a prevádzka shares with its organization, read only; files live there too. */
+function ParentCard({ parent }: { parent: NonNullable<Customer['parent']> }) {
+  const e = sk.establishments.detail;
+  return (
+    <Card>
+      <CardHeader
+        title={e.organization}
+        action={<span className="text-xs text-muted">{e.sharedHint}</span>}
+      />
+      <Rows>
+        <Row label={f.name}>
+          <Link
+            to="/organizations/$customerId"
+            params={{ customerId: parent.id }}
+            className="font-semibold text-primary-text hover:underline"
+          >
+            {parent.name}
+          </Link>
+        </Row>
+        <Row label={f.ico}>{parent.ico}</Row>
+        <Row label={sk.customers.form.classification.status}>
+          {parent.status ? <CustomerStatusBadge status={parent.status} /> : null}
+        </Row>
+        <Row label={f.owner}>{parent.owner?.name}</Row>
+        <Row label={f.tags}>
+          {parent.tags.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {parent.tags.map((tag) => (
+                <TagChip key={tag.id}>{tag.name}</TagChip>
+              ))}
+            </div>
+          ) : null}
+        </Row>
+      </Rows>
+      <p className="px-5 pb-5 text-[13px] text-muted">
+        {e.files}{' '}
+        <Link
+          to="/organizations/$customerId"
+          params={{ customerId: parent.id }}
+          className="font-semibold text-primary-text hover:underline"
+        >
+          {e.openFolder(parent.name)}
+        </Link>
+      </p>
     </Card>
   );
 }
