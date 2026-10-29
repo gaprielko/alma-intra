@@ -76,8 +76,7 @@ header carries them. Next to the name the role, status and tags; under it a line
 phone, e-mail and web; under that, a little apart, the products with „Prevádzky: 3“ and
 „Sestry: 18“. On the right, under the buttons and level with the products, the owner and the source.
 The timeline's title is followed by a small „+“ (record an activity); the switch „Aj prevádzky“ sits
-on the right of the same row. „Sestry“ is the number of nurses: today a tag, proposed as an optional
-number field of the organization (to be agreed with the products spec). The persons
+on the right of the same row. „Sestry“ is the number of nurses, computed from the products (products.md R-12). The persons
 table puts the position under the name and the e-mail over the phone, so it fits beside the
 timeline. The prevádzka's detail uses the same layout.
 

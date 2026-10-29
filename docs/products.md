@@ -5,7 +5,7 @@ the canvas page „Produkty · návrh“). How a product is assigned to an organ
 shown on its detail follows once this is agreed (section 9); it continues
 [establishments.md](establishments.md) section 4.4.
 
-Marks: **[R-n]** a decision of this spec (section 11), _proposed_ until the user agrees.
+Marks: **[R-n]** a decision of this spec (section 11).
 
 ---
 
