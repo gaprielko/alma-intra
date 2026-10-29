@@ -123,10 +123,13 @@ Board `ProdDetail`, at `/products/<id>`. One page that is edited in place (no se
   | Implementácia | jednorazovo | 0 | 450 € | 1 | |
 
   „Pridať položku“ opens the item picker (section 7).
-- **Výpočet ceny** (right): counts per item, the result as „107 € / mesiac + 450 € jednorazovo“,
-  each line explained („Sestra: 10, z toho 4 v cene, 6 × 8 € = 48 €“). It is a calculator for
-  offers; it stores nothing [R-6].
-- **Majú ho** (right): the organizations and prevádzky with this product (once assignment exists).
+- **Výpočet ceny** (right): counts per item, each line explained („Sestra: 10, z toho 4 v cene,
+  6 × 8 € = 48 €“), and the totals in a small table: monthly, yearly (12 months; for a yearly product
+  the month is a twelfth) and one-off, each without and with VAT. It is a calculator for offers; it
+  stores nothing [R-6].
+- **Majú ho** (under the price list): a table of the organizations and prevádzky with the product:
+  name (and whose prevádzka), what they have („2 admin · 10 sestier“), the monthly and the yearly
+  price without VAT. Its numbers come with the product at a customer (section 9).
 - **História zmien**: who changed which price when (the audit, as elsewhere).
 
 Saving changes a product for the future; what it does to customers who already have it is section

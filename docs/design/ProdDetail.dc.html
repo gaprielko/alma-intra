@@ -186,6 +186,20 @@ tr:first-child td{border-top:0}
           </div>
           <div class="foot"><span>Názvy položiek sú spoločné pre všetky produkty, spravujú sa v záložke <a href="ProdItems.dc.html">Položky</a>.</span></div>
         </section>
+        <section class="card">
+          <div class="card-h"><h2>Majú ho <span class="count">· 14</span></h2><a href="#" style="font-size: 13px; font-weight: 600">Všetci</a></div>
+          <div class="tblwrap">
+            <table>
+              <thead><tr><th>Organizácia / prevádzka</th><th>Rozsah</th><th style="text-align: right">Mesačne bez DPH</th><th style="text-align: right">Ročne bez DPH</th></tr></thead>
+              <tbody>
+                <tr><td><a href="EstOrgDetail.dc.html" class="name">ADOS Harmónia, s.r.o.</a><span class="sub">organizácia</span></td><td style="font-size: 13px; color: #48625f">2 admin · 10 sestier</td><td style="text-align: right; white-space: nowrap"><strong>107,00 €</strong></td><td style="text-align: right; white-space: nowrap">1 284,00 €</td></tr>
+                <tr><td><a href="EstDetail.dc.html" class="name">ADOS Harmónia Prešov</a><span class="sub">prevádzka ADOS Harmónia</span></td><td style="font-size: 13px; color: #48625f">1 admin · 4 sestry</td><td style="text-align: right; white-space: nowrap"><strong>49,00 €</strong></td><td style="text-align: right; white-space: nowrap">588,00 €</td></tr>
+                <tr><td><a href="#" class="name">ADOS Medicare Žilina, s.r.o.</a><span class="sub">organizácia</span></td><td style="font-size: 13px; color: #48625f">1 admin · 6 sestier · Superadmin</td><td style="text-align: right; white-space: nowrap"><strong>90,00 €</strong></td><td style="text-align: right; white-space: nowrap">1 080,00 €</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="foot"><span>3 z 14</span><span>Rozsah a cena podľa toho, čo má zákazník pridelené (doladí sa pri produkte u zákazníka)</span></div>
+        </section>
       </div>
       <div style="flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
         <section class="card">
@@ -202,18 +216,16 @@ tr:first-child td{border-top:0}
                 <span class="sub" style="grid-column: 1 / -1">{{ it.note }}</span>
               </div>
             </sc-for>
-            <div class="total"><span style="font-size: 14px; font-weight: 600">Spolu bez DPH</span><span style="text-align: right"><strong style="font-size: 20px">{{ recurring }}</strong><span class="sub">{{ once }}</span></span></div>
-            <div class="total" style="border-top-width: 1px; padding-top: 10px"><span style="font-size: 14px; font-weight: 600">s DPH 23 %</span><span style="text-align: right"><strong style="font-size: 16px">{{ recurringGross }}</strong><span class="sub">{{ onceGross }}</span></span></div>
-            <p class="meta" style="margin: 10px 0 0">Základná cena 49 € bez DPH zahŕňa 1 admin prístup a 4 sestry. DPH sa počíta zo súčtu a zaokrúhľuje na centy.</p>
+            <table style="margin-top: 6px; font-size: 14px">
+              <thead><tr><th style="background: transparent; padding-left: 0">Spolu</th><th style="background: transparent; text-align: right">bez DPH</th><th style="background: transparent; text-align: right; padding-right: 0">s DPH 23 %</th></tr></thead>
+              <tbody>
+                <tr><td style="padding-left: 0; font-weight: 600">Mesačne</td><td style="text-align: right"><strong style="font-size: 17px">{{ m }}</strong></td><td style="text-align: right; padding-right: 0">{{ mG }}</td></tr>
+                <tr><td style="padding-left: 0; font-weight: 600">Ročne</td><td style="text-align: right"><strong style="font-size: 17px">{{ y }}</strong></td><td style="text-align: right; padding-right: 0">{{ yG }}</td></tr>
+                <tr><td style="padding-left: 0; font-weight: 600">Jednorazovo</td><td style="text-align: right">{{ o }}</td><td style="text-align: right; padding-right: 0">{{ oG }}</td></tr>
+              </tbody>
+            </table>
+            <p class="meta" style="margin: 10px 0 0">Základná cena 49 € bez DPH zahŕňa 1 admin prístup a 4 sestry. Ročná cena je 12 mesačných, pri ročnom produkte naopak. DPH sa počíta zo súčtu a zaokrúhľuje na centy.</p>
           </div>
-        </section>
-        <section class="card">
-          <div class="card-h"><h2>Majú ho <span class="count">· 14</span></h2><a href="#" style="font-size: 13px; font-weight: 600">Všetci</a></div>
-          <ul style="list-style: none; margin: 0; padding: 10px 20px 18px; display: flex; flex-direction: column; gap: 8px; font-size: 14px">
-            <li style="display: flex; justify-content: space-between; gap: 8px"><a href="EstOrgDetail.dc.html">ADOS Harmónia, s.r.o.</a><span class="meta">organizácia</span></li>
-            <li style="display: flex; justify-content: space-between; gap: 8px"><a href="EstDetail.dc.html">ADOS Harmónia Prešov</a><span class="meta">prevádzka</span></li>
-            <li style="display: flex; justify-content: space-between; gap: 8px"><a href="#">ADOS Medicare Žilina, s.r.o.</a><span class="meta">organizácia</span></li>
-          </ul>
         </section>
         <section class="card">
           <div class="card-h"><h2>História zmien</h2></div>
@@ -263,10 +275,12 @@ class Component extends DCLogic {
     const gross = (n) => Math.round(n * (1 + vat) * 100) / 100;
     return {
       calc,
-      recurring: eur(recurring) + ' / mesiac',
-      once: once ? '+ ' + eur(once) + ' jednorazovo' : 'bez jednorazových položiek',
-      recurringGross: eur(gross(recurring)) + ' / mesiac',
-      onceGross: once ? '+ ' + eur(gross(once)) + ' jednorazovo' : '',
+      m: eur(recurring),
+      mG: eur(gross(recurring)),
+      y: eur(recurring * 12),
+      yG: eur(gross(recurring * 12)),
+      o: eur(once),
+      oG: eur(gross(once)),
     };
   }
 }
