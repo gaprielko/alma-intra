@@ -37,7 +37,11 @@ export function SegmentsMenu({
   filter,
   onApply,
 }: {
-  /** The filters set now; empty means there is nothing to save. */
+  /**
+   * The filters set now, the tab's role included: a segment is saved for its tab and offered on it
+   * only (customers' segments on Zákazníci, partners' on Partneri). Nothing but the role: nothing to
+   * save.
+   */
   filter: CustomerFilter;
   onApply: (filter: CustomerFilter) => void;
 }) {
@@ -54,7 +58,11 @@ export function SegmentsMenu({
       onError: (error) => toast('error', errorMessage(error)),
     }),
   );
-  const hasFilter = Object.keys(filter).length > 0;
+  const hasFilter = Object.keys(filter).some((key) => key !== 'role');
+  // Segments saved before the tabs have no role and show on both.
+  const offered = (segments.data ?? []).filter(
+    (segment) => !segment.filters.role || segment.filters.role === filter.role,
+  );
   return (
     <>
       <DropdownMenu>
@@ -66,10 +74,10 @@ export function SegmentsMenu({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-72">
-          {(segments.data ?? []).length === 0 ? (
+          {offered.length === 0 ? (
             <DropdownMenuLabel className="font-normal text-muted">{t.empty}</DropdownMenuLabel>
           ) : (
-            segments.data!.map((segment) => (
+            offered.map((segment) => (
               <DropdownMenuItem key={segment.id} onSelect={() => onApply(segment.filters)}>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate">{segment.name}</span>
