@@ -229,6 +229,20 @@ export const emailLookSchema = z.object({
 export type EmailLook = z.infer<typeof emailLookSchema>;
 
 /**
+ * The brand's name in the header of an e-mail: the words after the first stand out (D-48), on a
+ * dark header in a light colour, as the accents are too dark to read there, on a light one in the
+ * accent.
+ */
+export function brandParts(look: Pick<EmailLook, 'brandName' | 'headerStyle' | 'accent'>) {
+  const [first = '', ...rest] = look.brandName.split(' ');
+  return {
+    first,
+    rest: rest.join(' '),
+    restColor: look.headerStyle === 'dark' ? '#5fd0c9' : look.accent,
+  };
+}
+
+/**
  * A product's own look (D-39): what it sets over the global one. The company's name, its IČO, the
  * sending address and where replies go stay common.
  */

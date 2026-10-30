@@ -1,5 +1,6 @@
 import { sk } from '@intra/shared/i18n';
 import {
+  brandParts,
   type CustomField,
   type EmailLook,
   type EmailNode,
@@ -390,6 +391,7 @@ export function EmailBodyEditor({
   };
 
   const dark = look.headerStyle === 'dark';
+  const brand = brandParts(look);
   return (
     <EmailEditorContext.Provider value={context}>
       <div
@@ -585,7 +587,8 @@ export function EmailBodyEditor({
                 <img src={`/m/${look.logoKey}`} alt="" className="h-9 w-auto rounded-lg" />
               ) : null}
               <span className={cn('text-xl font-bold', dark ? 'text-white' : 'text-[#0c3b3c]')}>
-                {look.brandName}
+                {brand.first}
+                {brand.rest ? <span style={{ color: brand.restColor }}> {brand.rest}</span> : null}
               </span>
               <span className={cn('ml-auto text-xs', dark ? 'text-[#a9c9c7]' : 'text-[#616e7c]')}>
                 {look.headerText}
