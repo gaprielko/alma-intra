@@ -138,7 +138,9 @@ const EMAIL_DOC_RULE =
   '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Ponuka pre "},' +
   '{"type":"variable","attrs":{"name":"customer.name"}}]}]}. A body holds paragraph, heading ' +
   '(attrs.level 2 or 3), bulletList and orderedList (of listItem, each with a paragraph), ' +
-  'hardBreak, horizontalRule, button (attrs.text, attrs.href), callout (a highlighted block of ' +
+  'hardBreak, horizontalRule, button (attrs.text, attrs.href; or instead of href ' +
+  'attrs.interestProductId, a product id: the button then records the interest of each ' +
+  'recipient in that product in Aktivity), callout (a highlighted block of ' +
   'paragraphs), columns (two column nodes) and image (attrs.src, the key from ' +
   'templates_image_from_file; attrs.width in px, 536 at most). Within a paragraph, logo is a ' +
   'logo at the height of the text: attrs.src a key from templates_image_from_file, or no attrs ' +

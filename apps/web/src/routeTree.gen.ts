@@ -16,12 +16,15 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OdhlasenieRouteImport } from './routes/odhlasenie'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as ZaujemRouteImport } from './routes/zaujem'
 import { Route as AppAccountRouteImport } from './routes/_app/account'
 import { Route as AppEmailsRouteImport } from './routes/_app/emails'
 import { Route as AppFilesRouteImport } from './routes/_app/files'
 import { Route as AppOverviewRouteImport } from './routes/_app/overview'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as OauthConsentRouteImport } from './routes/oauth.consent'
+import { Route as AppActivitiesIndexRouteImport } from './routes/_app/activities.index'
+import { Route as AppActivitiesActivityIdRouteImport } from './routes/_app/activities.$activityId'
 import { Route as AppContactsPersonIdRouteImport } from './routes/_app/contacts.$personId'
 import { Route as AppCustomersIndexRouteImport } from './routes/_app/customers.index'
 import { Route as AppCustomersNewRouteImport } from './routes/_app/customers.new'
@@ -86,6 +89,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ZaujemRoute = ZaujemRouteImport.update({
+  id: '/zaujem',
+  path: '/zaujem',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppAccountRoute = AppAccountRouteImport.update({
   id: '/account',
   path: '/account',
@@ -115,6 +123,16 @@ const OauthConsentRoute = OauthConsentRouteImport.update({
   id: '/oauth/consent',
   path: '/oauth/consent',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppActivitiesIndexRoute = AppActivitiesIndexRouteImport.update({
+  id: '/activities/',
+  path: '/activities/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppActivitiesActivityIdRoute = AppActivitiesActivityIdRouteImport.update({
+  id: '/activities/$activityId',
+  path: '/activities/$activityId',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppContactsPersonIdRoute = AppContactsPersonIdRouteImport.update({
   id: '/contacts/$personId',
@@ -278,12 +296,14 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/odhlasenie': typeof OdhlasenieRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/zaujem': typeof ZaujemRoute
   '/account': typeof AppAccountRoute
   '/emails': typeof AppEmailsRouteWithChildren
   '/files': typeof AppFilesRoute
   '/overview': typeof AppOverviewRoute
   '/settings': typeof AppSettingsRouteWithChildren
   '/oauth/consent': typeof OauthConsentRoute
+  '/activities/$activityId': typeof AppActivitiesActivityIdRoute
   '/contacts/$personId': typeof AppContactsPersonIdRoute
   '/customers/new': typeof AppCustomersNewRoute
   '/emails/drafts': typeof AppEmailsDraftsRoute
@@ -299,6 +319,7 @@ export interface FileRoutesByFullPath {
   '/settings/email-look': typeof AppSettingsEmailLookRoute
   '/settings/pricing': typeof AppSettingsPricingRoute
   '/settings/users': typeof AppSettingsUsersRoute
+  '/activities/': typeof AppActivitiesIndexRoute
   '/customers/': typeof AppCustomersIndexRoute
   '/organizations/': typeof AppOrganizationsIndexRoute
   '/products/': typeof AppProductsIndexRoute
@@ -321,12 +342,14 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/odhlasenie': typeof OdhlasenieRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/zaujem': typeof ZaujemRoute
   '/account': typeof AppAccountRoute
   '/emails': typeof AppEmailsRouteWithChildren
   '/files': typeof AppFilesRoute
   '/overview': typeof AppOverviewRoute
   '/settings': typeof AppSettingsRouteWithChildren
   '/oauth/consent': typeof OauthConsentRoute
+  '/activities/$activityId': typeof AppActivitiesActivityIdRoute
   '/contacts/$personId': typeof AppContactsPersonIdRoute
   '/customers/new': typeof AppCustomersNewRoute
   '/emails/drafts': typeof AppEmailsDraftsRoute
@@ -342,6 +365,7 @@ export interface FileRoutesByTo {
   '/settings/email-look': typeof AppSettingsEmailLookRoute
   '/settings/pricing': typeof AppSettingsPricingRoute
   '/settings/users': typeof AppSettingsUsersRoute
+  '/activities': typeof AppActivitiesIndexRoute
   '/customers': typeof AppCustomersIndexRoute
   '/organizations': typeof AppOrganizationsIndexRoute
   '/products': typeof AppProductsIndexRoute
@@ -366,12 +390,14 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/odhlasenie': typeof OdhlasenieRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/zaujem': typeof ZaujemRoute
   '/_app/account': typeof AppAccountRoute
   '/_app/emails': typeof AppEmailsRouteWithChildren
   '/_app/files': typeof AppFilesRoute
   '/_app/overview': typeof AppOverviewRoute
   '/_app/settings': typeof AppSettingsRouteWithChildren
   '/oauth/consent': typeof OauthConsentRoute
+  '/_app/activities/$activityId': typeof AppActivitiesActivityIdRoute
   '/_app/contacts/$personId': typeof AppContactsPersonIdRoute
   '/_app/customers/new': typeof AppCustomersNewRoute
   '/_app/emails/drafts': typeof AppEmailsDraftsRoute
@@ -387,6 +413,7 @@ export interface FileRoutesById {
   '/_app/settings/email-look': typeof AppSettingsEmailLookRoute
   '/_app/settings/pricing': typeof AppSettingsPricingRoute
   '/_app/settings/users': typeof AppSettingsUsersRoute
+  '/_app/activities/': typeof AppActivitiesIndexRoute
   '/_app/customers/': typeof AppCustomersIndexRoute
   '/_app/organizations/': typeof AppOrganizationsIndexRoute
   '/_app/products/': typeof AppProductsIndexRoute
@@ -411,12 +438,14 @@ export interface FileRouteTypes {
     | '/login'
     | '/odhlasenie'
     | '/reset-password'
+    | '/zaujem'
     | '/account'
     | '/emails'
     | '/files'
     | '/overview'
     | '/settings'
     | '/oauth/consent'
+    | '/activities/$activityId'
     | '/contacts/$personId'
     | '/customers/new'
     | '/emails/drafts'
@@ -432,6 +461,7 @@ export interface FileRouteTypes {
     | '/settings/email-look'
     | '/settings/pricing'
     | '/settings/users'
+    | '/activities/'
     | '/customers/'
     | '/organizations/'
     | '/products/'
@@ -454,12 +484,14 @@ export interface FileRouteTypes {
     | '/login'
     | '/odhlasenie'
     | '/reset-password'
+    | '/zaujem'
     | '/account'
     | '/emails'
     | '/files'
     | '/overview'
     | '/settings'
     | '/oauth/consent'
+    | '/activities/$activityId'
     | '/contacts/$personId'
     | '/customers/new'
     | '/emails/drafts'
@@ -475,6 +507,7 @@ export interface FileRouteTypes {
     | '/settings/email-look'
     | '/settings/pricing'
     | '/settings/users'
+    | '/activities'
     | '/customers'
     | '/organizations'
     | '/products'
@@ -498,12 +531,14 @@ export interface FileRouteTypes {
     | '/login'
     | '/odhlasenie'
     | '/reset-password'
+    | '/zaujem'
     | '/_app/account'
     | '/_app/emails'
     | '/_app/files'
     | '/_app/overview'
     | '/_app/settings'
     | '/oauth/consent'
+    | '/_app/activities/$activityId'
     | '/_app/contacts/$personId'
     | '/_app/customers/new'
     | '/_app/emails/drafts'
@@ -519,6 +554,7 @@ export interface FileRouteTypes {
     | '/_app/settings/email-look'
     | '/_app/settings/pricing'
     | '/_app/settings/users'
+    | '/_app/activities/'
     | '/_app/customers/'
     | '/_app/organizations/'
     | '/_app/products/'
@@ -543,6 +579,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   OdhlasenieRoute: typeof OdhlasenieRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ZaujemRoute: typeof ZaujemRoute
   OauthConsentRoute: typeof OauthConsentRoute
 }
 
@@ -597,6 +634,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/zaujem': {
+      id: '/zaujem'
+      path: '/zaujem'
+      fullPath: '/zaujem'
+      preLoaderRoute: typeof ZaujemRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/account': {
       id: '/_app/account'
       path: '/account'
@@ -638,6 +682,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/oauth/consent'
       preLoaderRoute: typeof OauthConsentRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/activities/': {
+      id: '/_app/activities/'
+      path: '/activities'
+      fullPath: '/activities/'
+      preLoaderRoute: typeof AppActivitiesIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/activities/$activityId': {
+      id: '/_app/activities/$activityId'
+      path: '/activities/$activityId'
+      fullPath: '/activities/$activityId'
+      preLoaderRoute: typeof AppActivitiesActivityIdRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/contacts/$personId': {
       id: '/_app/contacts/$personId'
@@ -889,6 +947,7 @@ interface AppRouteChildren {
   AppFilesRoute: typeof AppFilesRoute
   AppOverviewRoute: typeof AppOverviewRoute
   AppSettingsRoute: typeof AppSettingsRouteWithChildren
+  AppActivitiesActivityIdRoute: typeof AppActivitiesActivityIdRoute
   AppContactsPersonIdRoute: typeof AppContactsPersonIdRoute
   AppCustomersNewRoute: typeof AppCustomersNewRoute
   AppOrganizationsContactsRoute: typeof AppOrganizationsContactsRoute
@@ -897,6 +956,7 @@ interface AppRouteChildren {
   AppOrganizationsPartnersRoute: typeof AppOrganizationsPartnersRoute
   AppProductsProductIdRoute: typeof AppProductsProductIdRoute
   AppProductsItemsRoute: typeof AppProductsItemsRoute
+  AppActivitiesIndexRoute: typeof AppActivitiesIndexRoute
   AppCustomersIndexRoute: typeof AppCustomersIndexRoute
   AppOrganizationsIndexRoute: typeof AppOrganizationsIndexRoute
   AppProductsIndexRoute: typeof AppProductsIndexRoute
@@ -917,6 +977,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppFilesRoute: AppFilesRoute,
   AppOverviewRoute: AppOverviewRoute,
   AppSettingsRoute: AppSettingsRouteWithChildren,
+  AppActivitiesActivityIdRoute: AppActivitiesActivityIdRoute,
   AppContactsPersonIdRoute: AppContactsPersonIdRoute,
   AppCustomersNewRoute: AppCustomersNewRoute,
   AppOrganizationsContactsRoute: AppOrganizationsContactsRoute,
@@ -925,6 +986,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppOrganizationsPartnersRoute: AppOrganizationsPartnersRoute,
   AppProductsProductIdRoute: AppProductsProductIdRoute,
   AppProductsItemsRoute: AppProductsItemsRoute,
+  AppActivitiesIndexRoute: AppActivitiesIndexRoute,
   AppCustomersIndexRoute: AppCustomersIndexRoute,
   AppOrganizationsIndexRoute: AppOrganizationsIndexRoute,
   AppProductsIndexRoute: AppProductsIndexRoute,
@@ -949,6 +1011,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   OdhlasenieRoute: OdhlasenieRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ZaujemRoute: ZaujemRoute,
   OauthConsentRoute: OauthConsentRoute,
 }
 export const routeTree = rootRouteImport

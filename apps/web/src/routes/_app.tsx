@@ -8,6 +8,7 @@ import { Avatar } from '@/components/avatar';
 import { IdleWarning } from '@/components/idle-warning';
 import { NotificationBell } from '@/components/notification-bell';
 import {
+  ActivitiesMark,
   CustomersMark,
   EmailsMark,
   FilesMark,
@@ -51,6 +52,12 @@ function AppShell() {
               collapsed={collapsed}
             />
             <SidebarLink to="/emails" icon={EmailsMark} label={nav.emails} collapsed={collapsed} />
+            <SidebarLink
+              to="/activities"
+              icon={ActivitiesMark}
+              label={nav.activities}
+              collapsed={collapsed}
+            />
             <SidebarLink
               to="/organizations"
               icon={CustomersMark}

@@ -110,11 +110,24 @@ const nodeSchema: z.ZodType<EmailNode> = z.lazy(() =>
   }),
 );
 
+/**
+ * The product of a button that records interest (docs/activities.md): `attrs.interestProductId`.
+ * The recipient's own link is made at sending, so such a button has no address.
+ */
+export const interestProductOf = (node: EmailNode): string | null => {
+  const id = node.type === 'button' ? node.attrs?.interestProductId : null;
+  return typeof id === 'string' && idSchema.safeParse(id).success ? id : null;
+};
+
 /** Every node that carries something to check: links, images, buttons, variables. */
 function* walk(node: EmailNode): Generator<EmailNode> {
   yield node;
   for (const child of node.content ?? []) yield* walk(child);
 }
+
+/** Whether a document has a button that records interest in a product. */
+export const hasInterestButton = (doc: EmailNode) =>
+  [...walk(doc)].some((node) => interestProductOf(node) !== null);
 
 /** Why a document is refused, or `null`. `keys`: the template's custom field keys. */
 export function emailDocProblem(doc: EmailNode, keys: ReadonlySet<string>): string | null {
@@ -124,7 +137,9 @@ export function emailDocProblem(doc: EmailNode, keys: ReadonlySet<string>): stri
     for (const mark of node.marks ?? []) {
       if (mark.type === 'link' && !safeHref(mark.attrs?.href)) return 'invalid_link';
     }
-    if (node.type === 'button' && !safeHref(node.attrs?.href)) return 'invalid_link';
+    if (node.type === 'button' && !interestProductOf(node) && !safeHref(node.attrs?.href)) {
+      return 'invalid_link';
+    }
     if (
       node.type === 'image' &&
       !(typeof node.attrs?.src === 'string' && IMAGE_KEY.test(node.attrs.src))

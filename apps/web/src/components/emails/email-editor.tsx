@@ -1,4 +1,5 @@
 import { sk } from '@intra/shared/i18n';
+import { useQuery } from '@tanstack/react-query';
 import {
   brandParts,
   type CustomField,
@@ -38,6 +39,7 @@ import {
   Columns,
   EmailButton,
   EmailEditorContext,
+  type ButtonAttrs,
   type EmailEditorContextValue,
   EmailImage,
   Logo,
@@ -65,7 +67,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectItem } from '@/components/ui/select';
 import { useToast } from '@/components/ui/toast';
 import { ImageNotAllowed, uploadEmailImage } from '@/lib/email-images';
-import { trpcClient } from '@/lib/trpc';
+import { trpc, trpcClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 
 const t = sk.templates;
@@ -268,18 +270,31 @@ const Sep = () => <span aria-hidden className="mx-1 h-5 w-px bg-border" />;
 /** The text box under the toolbar where a link's address or a button's is typed. */
 function ButtonDialog({
   initial,
+  defaultProductId,
   onClose,
   onSave,
   onRemove,
 }: {
-  initial: { text: string; href: string };
+  initial: ButtonAttrs;
+  /** The product a button that records interest starts on: the look's. */
+  defaultProductId: string | null;
   onClose: () => void;
-  onSave: (attrs: { text: string; href: string }) => void;
+  onSave: (attrs: ButtonAttrs) => void;
   onRemove: () => void;
 }) {
   const [text, setText] = useState(initial.text);
   const [href, setHref] = useState(initial.href);
-  const valid = text.trim() !== '' && /^(https?:\/\/|mailto:)./i.test(href.trim());
+  const [records, setRecords] = useState(initial.interestProductId !== null);
+  const [productId, setProductId] = useState(initial.interestProductId ?? defaultProductId ?? '');
+  const products = useQuery({ ...trpc.product.list.queryOptions(), enabled: records });
+  const chosen = productId || products.data?.[0]?.id || '';
+  const valid =
+    text.trim() !== '' && (records ? chosen !== '' : /^(https?:\/\/|mailto:)./i.test(href.trim()));
+  const option = (on: boolean) =>
+    cn(
+      'flex cursor-pointer items-start gap-2.5 rounded-xl border px-3 py-2.5 text-sm',
+      on ? 'border-primary bg-[#f0f8f7]' : 'border-border',
+    );
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
@@ -290,7 +305,12 @@ function ButtonDialog({
           className="space-y-4"
           onSubmit={(event) => {
             event.preventDefault();
-            if (valid) onSave({ text: text.trim(), href: href.trim() });
+            if (!valid) return;
+            onSave(
+              records
+                ? { text: text.trim(), href: '', interestProductId: chosen }
+                : { text: text.trim(), href: href.trim(), interestProductId: null },
+            );
           }}
         >
           <div className="space-y-2">
@@ -303,15 +323,57 @@ function ButtonDialog({
               onChange={(e) => setText(e.target.value)}
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="button-href">{t.editor.buttonHref}</Label>
-            <Input
-              id="button-href"
-              maxLength={2000}
-              value={href}
-              onChange={(e) => setHref(e.target.value)}
-            />
-          </div>
+          <fieldset className="space-y-2">
+            <legend className="mb-2 text-sm font-medium">{t.editor.buttonAction}</legend>
+            <label className={option(!records)}>
+              <input
+                type="radio"
+                name="button-action"
+                checked={!records}
+                onChange={() => setRecords(false)}
+                className="mt-0.5 accent-[#0f766e]"
+              />
+              <span>
+                {t.editor.buttonLink}
+                <span className="block text-xs text-muted">{t.editor.buttonLinkHint}</span>
+              </span>
+            </label>
+            <label className={option(records)}>
+              <input
+                type="radio"
+                name="button-action"
+                checked={records}
+                onChange={() => setRecords(true)}
+                className="mt-0.5 accent-[#0f766e]"
+              />
+              <span>
+                {t.editor.buttonInterest}
+                <span className="block text-xs text-muted">{t.editor.buttonInterestHint}</span>
+              </span>
+            </label>
+          </fieldset>
+          {records ? (
+            <div className="space-y-2">
+              <Label htmlFor="button-product">{t.editor.buttonProduct}</Label>
+              <Select id="button-product" value={chosen} onChange={setProductId}>
+                {(products.data ?? []).map((product) => (
+                  <SelectItem key={product.id} value={product.id}>
+                    {product.name}
+                  </SelectItem>
+                ))}
+              </Select>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="button-href">{t.editor.buttonHref}</Label>
+              <Input
+                id="button-href"
+                maxLength={2000}
+                value={href}
+                onChange={(e) => setHref(e.target.value)}
+              />
+            </div>
+          )}
           <DialogFooter>
             <Button
               type="button"
@@ -347,12 +409,15 @@ export function EmailBodyEditor({
   senderName,
   signature = true,
   unsubscribe = true,
+  defaultProductId = null,
 }: {
   value: EmailNode;
   onChange: (value: EmailNode) => void;
   fields: readonly CustomField[];
   look: EmailLook;
   senderName: string;
+  /** The product of the look, where a button that records interest starts. */
+  defaultProductId?: string | null;
   /** Off when the signature is part of the text itself, as in an answer. */
   signature?: boolean;
   /** Off for correspondence, which goes without an unsubscribe link (D-14). */
@@ -361,7 +426,7 @@ export function EmailBodyEditor({
   const toast = useToast();
   const imageInput = useRef<HTMLInputElement>(null);
   const [linking, setLinking] = useState<string | null>(null);
-  const [button, setButton] = useState<{ pos: number; text: string; href: string } | null>(null);
+  const [button, setButton] = useState<({ pos: number } & ButtonAttrs) | null>(null);
   const [uploading, setUploading] = useState(false);
   const [picking, setPicking] = useState<'image' | 'logo' | null>(null);
   const editor = useEditor({
@@ -710,6 +775,7 @@ export function EmailBodyEditor({
       {button ? (
         <ButtonDialog
           initial={button}
+          defaultProductId={defaultProductId}
           onClose={() => setButton(null)}
           onRemove={() => {
             editor?.chain().focus().setNodeSelection(button.pos).deleteSelection().run();

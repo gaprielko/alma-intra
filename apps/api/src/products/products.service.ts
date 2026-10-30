@@ -10,6 +10,7 @@ import {
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { Db, Tx } from '../db/db.module.js';
 import {
+  leadActivities,
   organizationProducts,
   organizations,
   pricingSettings,
@@ -344,6 +345,14 @@ export async function deleteProduct(db: Db, id: string) {
       .where(and(eq(organizationProducts.productId, id), isNull(organizations.deletedAt)))
       .limit(1);
     if (held) throw new ProductError('IN_USE');
+    // Somebody's interest in it keeps the product; one already removed from Aktivity does not.
+    const [wanted] = await tx
+      .select({ id: leadActivities.id })
+      .from(leadActivities)
+      .where(and(eq(leadActivities.productId, id), isNull(leadActivities.deletedAt)))
+      .limit(1);
+    if (wanted) throw new ProductError('IN_USE');
+    await tx.delete(leadActivities).where(eq(leadActivities.productId, id));
     await tx.delete(organizationProducts).where(eq(organizationProducts.productId, id));
     const [row] = await tx
       .delete(products)

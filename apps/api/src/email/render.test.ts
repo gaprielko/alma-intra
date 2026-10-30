@@ -129,4 +129,36 @@ describe('the brand in the header', () => {
     const out = await rendered({ brandName: 'Alma' });
     expect(header(out.html)).not.toContain('#5fd0c9');
   });
+
+  describe('a button that records interest', () => {
+    const PRODUCT = '00000000-0000-4000-8000-0000000000a1';
+    const withButton: EmailNode = {
+      type: 'doc',
+      content: [
+        { type: 'button', attrs: { text: 'Mám záujem', href: '', interestProductId: PRODUCT } },
+      ],
+    };
+    const options = {
+      look,
+      baseUrl: 'https://intra.test',
+      subject: withButton,
+      body: withButton,
+      values: {},
+      labels: {},
+      signature: false,
+    };
+
+    it('carries the link made for the recipient', async () => {
+      const out = await renderEmail({
+        ...options,
+        interestUrl: (id) => `https://intra.test/zaujem#token-${id}`,
+      });
+      expect(out.html).toContain(`https://intra.test/zaujem#token-${PRODUCT}`);
+    });
+
+    it('in a preview or a test opens the page without a token', async () => {
+      const out = await renderEmail(options);
+      expect(out.html).toContain('href="https://intra.test/zaujem"');
+    });
+  });
 });

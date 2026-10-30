@@ -6,7 +6,14 @@ export const ACTIVITY_KINDS = ['call', 'meeting', 'video_call', 'note'] as const
 export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
 
 /** What a customer's timeline shows. `emails` stays empty until sending (E5) exists. */
-export const TIMELINE_FILTERS = ['all', 'activities', 'emails', 'notes', 'changes'] as const;
+export const TIMELINE_FILTERS = [
+  'all',
+  'activities',
+  'interest',
+  'emails',
+  'notes',
+  'changes',
+] as const;
 export type TimelineFilter = (typeof TIMELINE_FILTERS)[number];
 
 /**

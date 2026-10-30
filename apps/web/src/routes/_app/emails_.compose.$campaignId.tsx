@@ -681,6 +681,7 @@ function ContentStep({
             onChange={setBody}
             fields={fields}
             look={look.data.look}
+            defaultProductId={campaign.lookProductId}
             senderName={me ? userFullName(me) : ''}
           />
         </div>
@@ -1064,6 +1065,7 @@ function PreviewStep({
                 onChange={setEditing}
                 fields={campaign.customFields}
                 look={look.data.look}
+                defaultProductId={campaign.lookProductId}
                 senderName={me ? userFullName(me) : ''}
               />
               <div className="flex justify-end gap-2 border-t border-border-subtle px-4 py-3">

@@ -21,7 +21,7 @@ export const ACTIONS = [
   'file.write',
   'file.delete',
   // Activities: calls, meetings and notes with a customer; anyone may edit one, and every edit is
-  // audited.
+  // audited. The same actions cover the list in Aktivity (docs/activities.md).
   'activity.read',
   'activity.write',
   'activity.delete',

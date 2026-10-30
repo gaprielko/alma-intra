@@ -7,6 +7,7 @@ import { customerRouter } from './customer.router.js';
 import { documentRouter } from './document.router.js';
 import { fileRouter } from './file.router.js';
 import { inboundRouter } from './inbound.router.js';
+import { interestRouter, leadActivityRouter } from './lead-activity.router.js';
 import { notificationRouter } from './notification.router.js';
 import { oauthRouter } from './oauth.router.js';
 import { overviewRouter } from './overview.router.js';
@@ -30,6 +31,8 @@ export const appRouter = router({
   file: fileRouter,
   document: documentRouter,
   activity: activityRouter,
+  leadActivity: leadActivityRouter,
+  interest: interestRouter,
   template: templateRouter,
   campaign: campaignRouter,
   inbound: inboundRouter,

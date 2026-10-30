@@ -15,6 +15,7 @@ import {
   auditEvents,
   campaignMessages,
   campaigns,
+  contactFullName,
   contactLinks,
   contacts,
   files,
@@ -22,8 +23,10 @@ import {
   folders,
   fullNameOf,
   inboundMessages,
+  leadActivities,
   messageAttachments,
   organizations,
+  products,
   users,
 } from '../db/schema/index.js';
 import { customerHistory, familyOf, fileUnder } from '../customers/customers.service.js';
@@ -559,6 +562,31 @@ export async function timelineOf(
             .orderBy(desc(inboundMessages.receivedAt))
             .limit(TIMELINE_LIMIT)
         ).map((reply) => ({ type: 'reply' as const, at: reply.at, reply }))
+      : []),
+    ...(filter === 'all' || filter === 'interest'
+      ? (
+          await db
+            .select({
+              id: leadActivities.id,
+              at: leadActivities.createdAt,
+              product: products.name,
+              contact: contactFullName,
+              organization: organizationJson(leadActivities.organizationId),
+            })
+            .from(leadActivities)
+            .innerJoin(products, eq(products.id, leadActivities.productId))
+            .leftJoin(contacts, eq(contacts.id, leadActivities.contactId))
+            .where(
+              and(
+                customerIds
+                  ? inArray(leadActivities.organizationId, customerIds)
+                  : eq(leadActivities.contactId, contactId!),
+                isNull(leadActivities.deletedAt),
+              ),
+            )
+            .orderBy(desc(leadActivities.createdAt))
+            .limit(TIMELINE_LIMIT)
+        ).map((interest) => ({ type: 'interest' as const, at: interest.at, interest }))
       : []),
     ...(customerIds && (filter === 'all' || filter === 'changes')
       ? (

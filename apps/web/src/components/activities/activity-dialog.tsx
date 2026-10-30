@@ -64,7 +64,7 @@ const initials = (name: string) =>
     .toUpperCase();
 
 /**
- * „Zapísať aktivitu“ and its edit: the kind, subject, when and how long, who took part, the notes,
+ * „Zapísať záznam“ and its edit: the kind, subject, when and how long, who took part, the notes,
  * attachments and an optional next step (D-23).
  */
 export function ActivityDialog({
