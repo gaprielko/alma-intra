@@ -62,9 +62,35 @@ export function detailsOfUser(user: {
 }
 
 /**
- * A new contact, or the removed one with the same e-mail back, so that its activities, e-mails and
- * replies come with it (D-48). What was given wins and what was not stays, a contact that
- * unsubscribed stays unsubscribed, and one made from a user takes the user's details.
+ * Gives the contact the activities, e-mails and replies of the other removed contacts with its
+ * e-mail. A campaign has one message for a person at an organization: another one stays where it is.
+ */
+async function mergeRemovedHistory(tx: Tx, contactId: string, email: string) {
+  const removed = sql`(select id from contacts where lower(email) = ${email.toLowerCase()}
+    and deleted_at is not null and id <> ${contactId})`;
+  await tx.execute(sql`delete from activity_participants p where p.contact_id in ${removed}
+    and exists (select 1 from activity_participants q
+      where q.activity_id = p.activity_id and q.contact_id = ${contactId})`);
+  await tx.execute(sql`delete from activity_participants p where p.contact_id in ${removed}
+    and p.id not in (select distinct on (x.activity_id) x.id from activity_participants x
+      where x.contact_id in ${removed} order by x.activity_id, x.id)`);
+  await tx.execute(sql`update activity_participants set contact_id = ${contactId}
+    where contact_id in ${removed}`);
+  await tx.execute(sql`update campaign_messages set contact_id = ${contactId}
+    where id in (select distinct on (x.campaign_id, x.organization_id) x.id
+      from campaign_messages x where x.contact_id in ${removed}
+      and not exists (select 1 from campaign_messages q where q.campaign_id = x.campaign_id
+        and q.organization_id = x.organization_id and q.contact_id = ${contactId})
+      order by x.campaign_id, x.organization_id, x.id)`);
+  await tx.execute(sql`update inbound_messages set contact_id = ${contactId}
+    where contact_id in ${removed}`);
+}
+
+/**
+ * A new contact, or the removed one with the same e-mail back: the e-mail is the person, so the
+ * history of all the removed contacts with it comes along (D-48). What was given wins and what was
+ * not stays, a contact that unsubscribed stays unsubscribed, and one made from a user takes the
+ * user's details.
  */
 export async function insertOrRestoreContact(tx: Tx, values: typeof contacts.$inferInsert) {
   const [removed] = values.email
@@ -99,6 +125,7 @@ export async function insertOrRestoreContact(tx: Tx, values: typeof contacts.$in
       updatedAt: new Date(),
     })
     .where(eq(contacts.id, removed.id));
+  await mergeRemovedHistory(tx, removed.id, values.email!);
   return { id: removed.id };
 }
 
