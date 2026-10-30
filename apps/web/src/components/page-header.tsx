@@ -1,6 +1,14 @@
-import { Link, type RegisteredRouter, type ValidateLinkOptions } from '@tanstack/react-router';
-import { ChevronLeft } from 'lucide-react';
+import { sk } from '@intra/shared/i18n';
+import {
+  Link,
+  useLocation,
+  useRouter,
+  type RegisteredRouter,
+  type ValidateLinkOptions,
+} from '@tanstack/react-router';
+import { ArrowLeft, ChevronLeft } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
+import { forgetAfter, usePreviousLocation } from '@/lib/previous-location';
 import { cn } from '@/lib/utils';
 
 /**
@@ -37,6 +45,44 @@ export function useScrolled(threshold = SCROLLED_AT): boolean {
 /** W2: the breadcrumb, 12 px medium in tertiary. */
 const BACK_CLASS =
   'inline-flex max-w-full items-center gap-0.5 text-xs font-medium text-tertiary transition-colors hover:text-primary-text';
+
+/** „Späť“: a small framed button, so it reads apart from the breadcrumb beside it. */
+const RETURN_CLASS =
+  'inline-flex shrink-0 items-center gap-1 rounded-lg border border-primary/25 bg-primary-soft px-2 py-0.5 text-xs font-semibold text-primary-text transition-colors hover:bg-[#d6ebe9]';
+
+/**
+ * The way back, at the very bottom left of the header. The breadcrumb leads to the screen's own
+ * list; when the user came from somewhere else (a product opened from a customer), „Späť“ before
+ * it returns there.
+ */
+function BackRow({ back }: { back: PageHeaderBack }) {
+  const router = useRouter();
+  const { pathname } = useLocation();
+  const previous = usePreviousLocation(pathname);
+  const target = router.buildLocation(back as Parameters<typeof router.buildLocation>[0]).pathname;
+  const elsewhere = previous && previous.pathname !== target ? previous : null;
+  return (
+    <div className="flex basis-full items-center gap-3">
+      {elsewhere ? (
+        <button
+          type="button"
+          className={RETURN_CLASS}
+          onClick={() => {
+            forgetAfter(elsewhere);
+            void router.navigate({ href: elsewhere.href });
+          }}
+        >
+          <ArrowLeft className="size-3.5" aria-hidden />
+          {sk.common.back}
+        </button>
+      ) : null}
+      <Link {...(back as ValidateLinkOptions)} className={BACK_CLASS}>
+        <ChevronLeft className="size-3.5 shrink-0" aria-hidden />
+        <span className="truncate">{back.label}</span>
+      </Link>
+    </div>
+  );
+}
 
 /**
  * The sticky header of every screen: title (never cut), its badge and subtitle on the left, the
@@ -79,15 +125,7 @@ export function PageHeader({
           {children}
         </div>
       ) : null}
-      {back ? (
-        // The way back sits at the very bottom left, under everything else in the header.
-        <div className="basis-full">
-          <Link {...(back as ValidateLinkOptions)} className={BACK_CLASS}>
-            <ChevronLeft className="size-3.5 shrink-0" aria-hidden />
-            <span className="truncate">{back.label}</span>
-          </Link>
-        </div>
-      ) : null}
+      {back ? <BackRow back={back} /> : null}
     </header>
   );
 }
