@@ -2428,6 +2428,7 @@ export const sk = {
       heading3: 'Podnadpis',
       bold: 'Tučné',
       italic: 'Kurzíva',
+      justify: 'Zarovnať do bloku',
       accent: 'Farba značky',
       link: 'Odkaz',
       bulletList: 'Odrážky',

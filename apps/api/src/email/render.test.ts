@@ -112,6 +112,56 @@ describe('a logo of its own within a line', () => {
   });
 });
 
+describe('a paragraph set to the width of the e-mail', () => {
+  const paragraphOf = async (node: EmailNode) => {
+    const doc: EmailNode = { type: 'doc', content: [node] };
+    const out = await renderEmail({
+      look,
+      baseUrl: 'https://intra.example.test',
+      subject: doc,
+      body: doc,
+      values: {},
+      labels: {},
+      signature: false,
+    });
+    return paragraph(out.html);
+  };
+  const name: EmailNode[] = [
+    { type: 'text', text: 'o produkt ' },
+    { type: 'logo' },
+    { type: 'text', text: 'Alma ', marks: [{ type: 'bold' }] },
+    { type: 'text', text: 'ADOS', marks: [{ type: 'bold' }, { type: 'accent' }] },
+    { type: 'text', text: ' a za kontakt' },
+  ];
+
+  it('is justified only when it says so', async () => {
+    const line = { type: 'paragraph' as const, content: [{ type: 'text' as const, text: 'ADOS' }] };
+    expect(await paragraphOf({ ...line, attrs: { align: 'justify' } })).toContain(
+      'text-align:justify',
+    );
+    expect(await paragraphOf(line)).not.toContain('text-align');
+  });
+
+  it('keeps a logo on one line with the name after it, and the rest of the text out', async () => {
+    const line = await paragraphOf({ type: 'paragraph', content: name });
+    const glued = /<span style="white-space:nowrap">(.*?)<\/span>(?=\s*(<!-- -->)? a)/s.exec(line)!;
+    expect(glued[1]).toContain('/m/abcdefghijklmnop.png');
+    expect(glued[1]).toContain('Alma');
+    expect(glued[1]).toContain('ADOS');
+    expect(glued[1]).not.toContain('kontakt');
+    expect(line).toContain('za kontakt');
+  });
+
+  it('cuts a text at its first ordinary space when the name is in one piece', async () => {
+    const line = await paragraphOf({
+      type: 'paragraph',
+      content: [{ type: 'logo' }, { type: 'text', text: 'Alma ADOS a za' }],
+    });
+    expect(line).toMatch(/white-space:nowrap.*Alma.ADOS<\/span>/s);
+    expect(line).toContain('za');
+  });
+});
+
 describe('who an e-mail is from', () => {
   const from = (footerCompany: string, brandName = 'Alma ADOS') =>
     fromAddress({ ...look, brandName, footerCompany }, 'info@mail.test');

@@ -650,6 +650,7 @@ both attach files.
 | D-48  | In the header of an e-mail the words of the brand's name after the first stand out, so „Alma ADOS“ reads as the product's logo: a light colour on a dark header, the accent on a light one (30 Oct 2026) |
 | D-49  | A picture for an e-mail (an image, a logo within a line, a look's logo) can be taken from Files, in the app and through MCP. A PNG or JPG of 2 MB at most is copied among the images of e-mails, as an e-mail needs an address open to anybody that does not change with a new version of the file; EXIF of a JPG is dropped (30 Oct 2026) |
 | D-50  | From shows „značka | názov organizácie“ instead of the user's name (replaces this part of D-17a). A person without an opening line gets one from their gender and position or surname, else „Dobrý deň“ (30 Oct 2026) |
+| D-51  | A paragraph of an e-mail can be justified, and a logo within a line never parts from the words right after it. Keeping one-letter words off the line's end is written in the text itself, with non-breaking spaces (30 Oct 2026) |
 
 ### Still to verify (not decisions)
 

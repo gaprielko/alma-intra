@@ -1,5 +1,6 @@
 import { sk } from '@intra/shared/i18n';
 import {
+  Extension,
   Mark,
   mergeAttributes,
   Node,
@@ -89,6 +90,27 @@ export const Variable = Node.create({
 });
 
 /** „Farba značky“: text in the look's accent, which the editor's frame sets as a CSS variable. */
+export const ParagraphAlign = Extension.create({
+  name: 'paragraphAlign',
+  addGlobalAttributes() {
+    return [
+      {
+        types: ['paragraph'],
+        attributes: {
+          align: {
+            default: null,
+            parseHTML: (el) => (el.dataset.align === 'justify' ? 'justify' : null),
+            renderHTML: (attrs) =>
+              attrs.align === 'justify'
+                ? { 'data-align': 'justify', style: 'text-align: justify' }
+                : {},
+          },
+        },
+      },
+    ];
+  },
+});
+
 export const Accent = Mark.create({
   name: 'accent',
   parseHTML() {

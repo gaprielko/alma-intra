@@ -17,6 +17,7 @@ import {
 } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import {
+  AlignJustify,
   Bold,
   Braces,
   Columns2,
@@ -43,6 +44,7 @@ import {
   type EmailEditorContextValue,
   EmailImage,
   Logo,
+  ParagraphAlign,
   Variable,
 } from '@/components/emails/email-nodes';
 import { FilePicker } from '@/components/files/file-picker';
@@ -106,6 +108,7 @@ const bodyExtensions = [
   EmailImage,
   Accent,
   Logo,
+  ParagraphAlign,
 ];
 
 /** The subject: one line of text and variables. */
@@ -458,6 +461,7 @@ export function EmailBodyEditor({
     selector: ({ editor: e }) => ({
       bold: e?.isActive('bold') ?? false,
       italic: e?.isActive('italic') ?? false,
+      justify: e?.isActive('paragraph', { align: 'justify' }) ?? false,
       accent: e?.isActive('accent') ?? false,
       link: e?.isActive('link') ?? false,
       bulletList: e?.isActive('bulletList') ?? false,
@@ -559,6 +563,17 @@ export function EmailBodyEditor({
           onClick={() => chain()?.toggleItalic().run()}
         >
           <Italic className="size-4" aria-hidden />
+        </ToolButton>
+        <ToolButton
+          label={t.editor.justify}
+          active={state?.justify}
+          onClick={() =>
+            chain()
+              ?.updateAttributes('paragraph', { align: state?.justify ? null : 'justify' })
+              .run()
+          }
+        >
+          <AlignJustify className="size-4" aria-hidden />
         </ToolButton>
         <ToolButton
           label={t.editor.accent}

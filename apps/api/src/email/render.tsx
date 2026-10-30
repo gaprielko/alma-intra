@@ -142,6 +142,42 @@ function Nodes({ nodes, ctx }: { nodes: EmailNode[] | undefined; ctx: Ctx }) {
   );
 }
 
+/**
+ * The content of a paragraph. A logo stays on one line with the words right after it, up to the
+ * first ordinary space: „[logo] Alma ADOS“ never breaks, when a non-breaking space joins the name.
+ */
+function InlineNodes({ nodes, ctx }: { nodes: EmailNode[] | undefined; ctx: Ctx }) {
+  const all = nodes ?? [];
+  const out: ReactNode[] = [];
+  for (let i = 0; i < all.length; i++) {
+    const node = all[i]!;
+    if (node.type !== 'logo') {
+      out.push(<NodeView key={i} node={node} ctx={ctx} />);
+      continue;
+    }
+    const glued = [node];
+    let rest: EmailNode | null = null;
+    while (all[i + 1]?.type === 'text') {
+      const next = all[++i]!;
+      const space = (next.text ?? '').indexOf(' ');
+      if (space === -1) {
+        glued.push(next);
+        continue;
+      }
+      if (space > 0) glued.push({ ...next, text: next.text!.slice(0, space) });
+      rest = { ...next, text: next.text!.slice(space) };
+      break;
+    }
+    out.push(
+      <span key={`glued-${i}`} style={{ whiteSpace: 'nowrap' }}>
+        <Nodes nodes={glued} ctx={ctx} />
+      </span>,
+    );
+    if (rest) out.push(<NodeView key={i} node={rest} ctx={ctx} />);
+  }
+  return <>{out}</>;
+}
+
 interface Ctx {
   input: RenderInput;
   accent: string;
@@ -154,8 +190,8 @@ function NodeView({ node, ctx }: { node: EmailNode; ctx: Ctx }): ReactNode {
       return <Nodes nodes={node.content} ctx={ctx} />;
     case 'paragraph':
       return (
-        <Text style={text}>
-          <Nodes nodes={node.content} ctx={ctx} />
+        <Text style={node.attrs?.align === 'justify' ? { ...text, textAlign: 'justify' } : text}>
+          <InlineNodes nodes={node.content} ctx={ctx} />
         </Text>
       );
     case 'heading': {
