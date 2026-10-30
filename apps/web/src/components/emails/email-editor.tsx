@@ -244,12 +244,12 @@ function productNameNodes(look: EmailLook): JSONContent[] {
   const bold = { type: 'bold' };
   return [
     { type: 'logo' },
-    { type: 'text', text: rest ? `${first}00a0` : first, marks: [bold] },
+    { type: 'text', text: rest ? `${first} ` : first, marks: [bold] },
     ...(rest
       ? [
           {
             type: 'text',
-            text: rest.replaceAll(' ', '00a0'),
+            text: rest.replaceAll(' ', ' '),
             marks: [bold, { type: 'accent' }],
           },
         ]
