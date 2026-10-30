@@ -8,6 +8,7 @@ import { ContactDialog } from '@/components/customers/contact-dialog';
 import { CustomerAvatar, MultiFilterMenu } from '@/components/customers/customer-bits';
 import { EstablishmentChip } from '@/components/customers/establishments-card';
 import { ExistingPersonDialog } from '@/components/customers/existing-person-dialog';
+import { UserContactDialog } from '@/components/customers/user-contact-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader } from '@/components/ui/card';
@@ -63,6 +64,7 @@ export function PersonsTable({
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<{ person: Person; at: string } | 'new' | null>(null);
   const [picking, setPicking] = useState(false);
+  const [pickingUser, setPickingUser] = useState(false);
   const [removing, setRemoving] = useState<{ person: Person; at: string } | null>(null);
   const refresh = () => queryClient.invalidateQueries(trpc.customer.pathFilter());
   const primary = useMutation(
@@ -149,6 +151,14 @@ export function PersonsTable({
                   <span className="block font-medium">{sk.organizations.addExistingPerson}</span>
                   <span className="block text-xs text-muted">
                     {sk.organizations.addExistingPersonHint}
+                  </span>
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setPickingUser(true)}>
+                <span>
+                  <span className="block font-medium">{sk.organizations.addUserPerson}</span>
+                  <span className="block text-xs text-muted">
+                    {sk.organizations.addUserPersonHint}
                   </span>
                 </span>
               </DropdownMenuItem>
@@ -342,6 +352,13 @@ export function PersonsTable({
       )}
       {picking ? (
         <ExistingPersonDialog customerId={organizationId} onClose={() => setPicking(false)} />
+      ) : null}
+      {pickingUser ? (
+        <UserContactDialog
+          customerId={organizationId}
+          customerName={organizationName}
+          onClose={() => setPickingUser(false)}
+        />
       ) : null}
       {editing ? (
         <ContactDialog
