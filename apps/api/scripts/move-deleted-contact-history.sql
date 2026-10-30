@@ -85,5 +85,5 @@ order by 1;
   \echo Saved.
 \else
   rollback;
-  \echo Nothing saved. To save it: \\set apply 1 and run the script again.
+  \echo Nothing saved. To save it, set apply to 1 and run the script again.
 \endif
