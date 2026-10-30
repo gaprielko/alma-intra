@@ -19,10 +19,11 @@ export const Route = createFileRoute('/_app/emails')({
   component: EmailsLayout,
 });
 
+// The same tabs as Organizácie and Produkty.
 const tabClass =
-  'relative inline-flex h-10 items-center px-1 text-sm font-medium text-muted transition-colors hover:text-foreground';
-const activeTabClass =
-  'text-foreground after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-full after:bg-primary';
+  '-mb-px inline-flex h-[46px] items-center gap-2 border-b-2 px-3.5 text-sm font-semibold whitespace-nowrap';
+const activeTabClass = 'border-primary text-primary-text';
+const inactive = { className: 'border-transparent text-muted hover:text-foreground' };
 
 /** E-maily: the header with „Nový e-mail“, the tabs, and the chosen list. */
 function EmailsLayout() {
@@ -53,25 +54,44 @@ function EmailsLayout() {
           </Button>
         ) : null}
       </PageHeader>
-      <nav aria-label={t.tabs.label} className="flex gap-6 border-b border-border px-7">
-        <Link to="/emails/inbox" className={tabClass} activeProps={{ className: activeTabClass }}>
+      <nav
+        aria-label={t.tabs.label}
+        className="flex gap-1 overflow-x-auto border-b border-border bg-white/80 px-7"
+      >
+        <Link
+          to="/emails/inbox"
+          className={tabClass}
+          activeProps={{ className: activeTabClass }}
+          inactiveProps={inactive}
+        >
           {t.tabs.inbox}
           {unassigned ? (
-            <span className="ml-1.5 rounded-full bg-warning-soft px-1.5 text-xs font-semibold text-warning">
+            <span className="rounded-full bg-warning-soft px-2 text-xs font-semibold text-warning tabular-nums">
               {unassigned}
             </span>
           ) : null}
         </Link>
-        <Link to="/emails/sent" className={tabClass} activeProps={{ className: activeTabClass }}>
+        <Link
+          to="/emails/sent"
+          className={tabClass}
+          activeProps={{ className: activeTabClass }}
+          inactiveProps={inactive}
+        >
           {t.tabs.sent}
         </Link>
-        <Link to="/emails/drafts" className={tabClass} activeProps={{ className: activeTabClass }}>
+        <Link
+          to="/emails/drafts"
+          className={tabClass}
+          activeProps={{ className: activeTabClass }}
+          inactiveProps={inactive}
+        >
           {t.tabs.drafts}
         </Link>
         <Link
           to="/emails/templates"
           className={tabClass}
           activeProps={{ className: activeTabClass }}
+          inactiveProps={inactive}
         >
           {t.tabs.templates}
         </Link>
