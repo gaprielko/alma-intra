@@ -21,6 +21,7 @@ type Person = {
   firstName: string;
   lastName: string;
   titleBefore: string | null;
+  titleAfter: string | null;
   email: string | null;
   phone: string | null;
   gender: string | null;
@@ -160,10 +161,12 @@ describe('A contact made from a user (D-47)', () => {
     const { data } = await jana.call<{ id: string }>('person.addUser', {
       userId: me.data.id,
       customerId: other,
+      position: 'Konateľka',
     });
     const changed = await jana.call('account.updateProfile', {
       name: 'Jana Horváthová Nová',
       phone: '+421 900 000 306',
+      position: 'konateľka',
     });
     expect(changed.code).toBeUndefined();
     expect(await person(data.id)).toMatchObject({
@@ -171,6 +174,51 @@ describe('A contact made from a user (D-47)', () => {
       lastName: 'Nová',
       phone: '+421 900 000 306',
     });
+    expect((await person(data.id)).organizations[0]?.position).toBe('konateľka');
+  });
+
+  it('carries every field, the position where it was not written by hand', async () => {
+    const userId = await invite('gita.mala@alma-care.test', 'Gita Malá', '+421 900 000 307');
+    await jana.call('user.update', {
+      userId,
+      name: 'Gita Malá',
+      titleBefore: 'Mgr.',
+      titleAfter: 'PhD.',
+      phone: '+421 900 000 307',
+      position: 'konzultantka',
+    });
+    const { data } = await jana.call<{ id: string }>('person.addUser', {
+      userId,
+      customerId: HARMONIA,
+      position: 'konzultantka',
+    });
+    await jana.call('person.addUser', { userId, customerId: other, position: 'členka rady' });
+
+    const changed = await jana.call('user.update', {
+      userId,
+      name: 'Gita Veľká',
+      titleBefore: '',
+      titleAfter: '',
+      phone: '',
+      position: 'riaditeľka',
+    });
+    expect(changed.code).toBeUndefined();
+    const now = await person(data.id);
+    expect(now).toMatchObject({
+      firstName: 'Gita',
+      lastName: 'Veľká',
+      titleBefore: null,
+      titleAfter: null,
+      phone: null,
+    });
+    const positionAt = (id: string) => now.organizations.find((o) => o.id === id)?.position;
+    expect(positionAt(HARMONIA)).toBe('riaditeľka');
+    expect(positionAt(other)).toBe('členka rady');
+
+    const cleared = await jana.call('user.update', { userId, name: 'Gita Veľká', position: '' });
+    expect(cleared.code).toBeUndefined();
+    const after = await person(data.id);
+    expect(after.organizations.find((o) => o.id === HARMONIA)?.position).toBeNull();
   });
 
   it('connects a contact with the same e-mail only after it was shown what changes', async () => {

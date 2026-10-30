@@ -1,7 +1,7 @@
 import { personName } from '@intra/shared/schemas';
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import type { Db, Tx } from '../db/db.module.js';
-import { contacts, users } from '../db/schema/index.js';
+import { contactLinks, contacts, users } from '../db/schema/index.js';
 
 /**
  * A contact made from a user follows the user, never the other way round
@@ -61,8 +61,16 @@ export function detailsOfUser(user: {
   };
 }
 
-/** Writes the user's details to their contact; a private person's record carries the name. */
-export async function syncContactFromUser(tx: Db | Tx, userId: string) {
+/**
+ * Writes the user's details to their contact; a private person's record carries the name. The
+ * position belongs to each organization: it follows wherever it still is the user's previous one,
+ * and one written by hand for an organization stays.
+ */
+export async function syncContactFromUser(
+  tx: Db | Tx,
+  userId: string,
+  previousPosition: string | null,
+) {
   const [user] = await tx
     .select({
       name: users.name,
@@ -70,6 +78,7 @@ export async function syncContactFromUser(tx: Db | Tx, userId: string) {
       titleAfter: users.titleAfter,
       email: users.email,
       phone: users.phone,
+      position: users.position,
     })
     .from(users)
     .where(eq(users.id, userId));
@@ -82,6 +91,17 @@ export async function syncContactFromUser(tx: Db | Tx, userId: string) {
     .returning({ id: contacts.id });
   if (!contact) return;
   await renameOwnRecord(tx, contact.id, details);
+  if (user.position !== previousPosition) {
+    await tx
+      .update(contactLinks)
+      .set({ position: user.position })
+      .where(
+        and(
+          eq(contactLinks.contactId, contact.id),
+          sql`coalesce(${contactLinks.position}, '') = ${previousPosition ?? ''}`,
+        ),
+      );
+  }
 }
 
 /** A private person's record is called as the person is. */

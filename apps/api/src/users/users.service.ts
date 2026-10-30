@@ -83,7 +83,13 @@ export async function inviteUser(db: Db | Tx, invitedBy: string, input: InviteUs
 /** A colleague's details. Her e-mail is her login and stays. */
 export async function updateUser(db: Db | Tx, input: UpdateUserInput) {
   await db.transaction(async (tx) => {
-    const updated = await tx
+    const [before] = await tx
+      .select({ position: users.position })
+      .from(users)
+      .where(and(eq(users.id, input.userId), alive))
+      .for('update');
+    if (!before) throw new UserError('NOT_FOUND');
+    await tx
       .update(users)
       .set({
         name: input.name,
@@ -93,10 +99,8 @@ export async function updateUser(db: Db | Tx, input: UpdateUserInput) {
         ...(input.position === undefined ? {} : { position: input.position || null }),
         updatedAt: sql`now()`,
       })
-      .where(and(eq(users.id, input.userId), alive))
-      .returning({ id: users.id });
-    if (updated.length === 0) throw new UserError('NOT_FOUND');
-    await syncContactFromUser(tx, input.userId);
+      .where(eq(users.id, input.userId));
+    await syncContactFromUser(tx, input.userId, before.position);
   });
 }
 
