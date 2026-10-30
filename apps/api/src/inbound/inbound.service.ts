@@ -18,15 +18,21 @@ export class InboundError extends Error {
   }
 }
 
+/**
+ * A column of the received e-mail inside a subquery, named with its table: unqualified, Postgres
+ * takes the subquery's own column of that name (`contact_links.contact_id`, `m.subject`).
+ */
+const own = (column: string) => sql.raw(`"inbound_messages"."${column}"`);
+
 /** The first characters of the plain text, for a list line. */
 const PREVIEW = sql<string>`left(regexp_replace(coalesce(${inboundMessages.text}, ''), '\\s+', ' ', 'g'), 160)`;
 
 const customerName = sql<string | null>`(select c.name from organizations c
-  where c.id = ${inboundMessages.organizationId})`;
+  where c.id = ${own('organization_id')})`;
 
 /** The person the e-mail is filed under, as Kontakty names them. */
 const contactName = sql<string | null>`(select concat_ws(' ', p.title_before, p.first_name,
-  p.last_name, p.title_after) from contacts p where p.id = ${inboundMessages.contactId})`;
+  p.last_name, p.title_after) from contacts p where p.id = ${own('contact_id')})`;
 
 const likePattern = (text: string) => `%${text.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
@@ -46,8 +52,8 @@ const threadKey = sql`coalesce(${inboundMessages.organizationId}::text, lower(${
   || '|' || ${subjectKey(inboundMessages.subject)}`;
 /** Our e-mails in the same conversation: sent to that organization under the same subject. */
 const ourInThread = sql<number>`(select count(*)::int from campaign_messages m
-  where m.organization_id = ${inboundMessages.organizationId} and m.sent_at is not null
-    and ${subjectKey(sql`m.subject`)} = ${subjectKey(inboundMessages.subject)})`;
+  where m.organization_id = ${own('organization_id')} and m.sent_at is not null
+    and ${subjectKey(sql`m.subject`)} = ${subjectKey(own('subject'))})`;
 
 /**
  * „Prijaté“: one page of conversations, each shown by its newest received e-mail with how many
@@ -209,14 +215,14 @@ export async function getInbound(db: Db, id: string) {
       contactName,
       /** The person's position at the organization the e-mail is filed under. */
       contactPosition: sql<string | null>`(select l.position from contact_links l
-        where l.contact_id = ${inboundMessages.contactId}
-          and l.organization_id = ${inboundMessages.organizationId})`,
+        where l.contact_id = ${own('contact_id')}
+          and l.organization_id = ${own('organization_id')})`,
       original: sql<{
         campaignId: string;
         subject: string | null;
         sentAt: string | null;
       } | null>`(select json_build_object('campaignId', m.campaign_id, 'subject', m.subject,
-        'sentAt', m.sent_at) from campaign_messages m where m.id = ${inboundMessages.messageId})`,
+        'sentAt', m.sent_at) from campaign_messages m where m.id = ${own('message_id')})`,
     })
     .from(inboundMessages)
     .where(and(eq(inboundMessages.id, id), ne(inboundMessages.status, 'discarded')));
