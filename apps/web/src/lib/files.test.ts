@@ -24,6 +24,7 @@ describe('files', () => {
 
   it('the preview dialog shows HTML, PDFs and photos, nothing else', () => {
     expect(previewKind('Ponuka.HTML')).toBe('html');
+    expect(previewKind('Navod.md')).toBe('markdown');
     expect(previewKind('a.pdf')).toBe('pdf');
     expect(previewKind('a.png')).toBe('image');
     expect(previewKind('a.svg')).toBeNull();

@@ -1726,7 +1726,7 @@ export const sk = {
       loading: 'Načítava sa náhľad',
       failed: 'Náhľad sa nepodarilo načítať.',
       none: 'Náhľad tohto typu súboru zatiaľ nie je k dispozícii.',
-      htmlNote: 'Skripty sa nespúšťajú a obsah z internetu sa nenačítava.',
+      htmlNote: 'Skripty sa nespúšťajú. Z internetu sa načítavajú len obrázky.',
       download: 'Stiahnuť',
     },
     drop: {

@@ -653,6 +653,7 @@ both attach files.
 | D-51  | A paragraph of an e-mail can be justified, and a logo within a line never parts from the words right after it. Keeping one-letter words off the line's end is written in the text itself, with non-breaking spaces (30 Oct 2026) |
 | D-52  | Aktivity have a code list of types, and a button in an e-mail records any of them (`docs/activity-types.md`) (30 Oct 2026) |
 | D-53  | Podnety from Alma ADOS arrive as activities, assigned by the organization's id and the reporter's e-mail; their text only in the detail. Intra owns organizations, prevádzky and product validity and will create them in ADOS (`docs/activities-from-apps.md`, `docs/integrations/ados-organizations.md`). The way back to Alma comes later (30 Oct 2026) |
+| D-54  | The file preview takes almost the whole screen and also shows Markdown. HTML and Markdown stay in a frame without scripts; their pictures load, also from the internet, and no referrer goes with them. An e-mail's frame still loads nothing from outside (30 Oct 2026) |
 
 ### Still to verify (not decisions)
 

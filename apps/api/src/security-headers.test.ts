@@ -30,6 +30,12 @@ const directive = (csp: string, name: string) =>
 const HOST_SOURCE = /^'self'$|^(\w+:\/\/)?[\w*-]+(\.[\w*-]+)+(:\d+)?(\/.*)?$/;
 
 describe('security headers', () => {
+  it('lets the pictures of a previewed document load, and no script from a host', () => {
+    const csp = headersFor('/')['content-security-policy']!;
+    expect(directive(csp, 'img-src')).toContain('https:');
+    expect(directive(csp, 'frame-src')).not.toContain('https:');
+  });
+
   it.each(['/', '/users', '/assets/index.js'])(
     'gives the app (%s) a strict script policy: a fresh nonce and strict-dynamic, no host',
     (path) => {

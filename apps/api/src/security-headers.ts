@@ -38,7 +38,9 @@ export function securityHeaders(storageOrigin: string[] = []) {
         'base-uri': ["'none'"],
         // storageOrigin: the browser uploads files straight to object storage via signed URLs.
         'connect-src': ["'self'", ...storageOrigin],
-        'img-src': ["'self'", 'data:', 'blob:', ...storageOrigin],
+        // https: the pictures of a document in the file preview. Its frame, an e-mail's too, narrows
+        // this further with its own policy (apps/web/src/lib/safe-html.ts).
+        'img-src': ["'self'", 'data:', 'blob:', 'https:', ...storageOrigin],
         // blob: a PDF shown in the file preview, always typed as a PDF so it cannot run as a page.
         'frame-src': ["'self'", 'blob:'],
       },

@@ -25,9 +25,10 @@ export function canPreview(name: string): boolean {
 }
 
 /** What the preview dialog can show of a file: `null` means it can only be saved. */
-export function previewKind(name: string): 'html' | 'pdf' | 'image' | null {
+export function previewKind(name: string): 'html' | 'markdown' | 'pdf' | 'image' | null {
   const ext = fileExtension(name);
   if (ext === 'html') return 'html';
+  if (ext === 'md') return 'markdown';
   if (ext === 'pdf') return 'pdf';
   return ext !== null && FILE_TYPES[ext].group === 'image' && FILE_TYPES[ext].preview
     ? 'image'

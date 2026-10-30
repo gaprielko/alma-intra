@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/compone
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
 import { formatSize, previewKind } from '@/lib/files';
-import { safeDocument } from '@/lib/safe-html';
+import { fileDocument, markdownDocument } from '@/lib/safe-html';
 import { trpcClient } from '@/lib/trpc';
 import { downloadFile } from '@/lib/uploads';
 
@@ -25,8 +25,9 @@ export interface PreviewedFile {
 }
 
 /**
- * A file over the list: its name, „Verzie“ and „Stiahnuť“, and what can be shown of it. HTML runs in
- * a frame without scripts (it is whoever wrote it, and must not act as the app). A PDF becomes a
+ * A file over the list, as large as the screen allows: its name, „Verzie“ and „Stiahnuť“, and what can
+ * be shown of it. HTML and Markdown run in a frame without scripts (they are whoever wrote them, and
+ * must not act as the app); their pictures show, also from the internet. A PDF becomes a
  * blob typed as a PDF, whatever the bytes are, so it can only open in the browser's PDF viewer: a
  * sandboxed frame would stop that viewer. A type that cannot be shown says so.
  */
@@ -53,7 +54,11 @@ export function FilePreviewDialog({
       if (kind === 'image') return { image: url };
       const response = await fetch(url);
       if (!response.ok) throw new Error(`GET ${response.status}`);
-      if (kind === 'html') return { html: await response.text() };
+      if (kind === 'html') return { html: fileDocument(await response.text()) };
+      if (kind === 'markdown') {
+        const { marked } = await import('marked');
+        return { html: markdownDocument(await marked.parse(await response.text())) };
+      }
       return { pdf: new Blob([await response.arrayBuffer()], { type: 'application/pdf' }) };
     },
   });
@@ -91,7 +96,7 @@ export function FilePreviewDialog({
         size={kind ? 'lg' : 'md'}
         className={
           kind
-            ? 'h-[calc(100vh-2rem)] max-w-[65rem] gap-0 overflow-hidden p-0'
+            ? 'h-[calc(100dvh-1rem)] max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-none gap-0 overflow-hidden rounded-2xl p-0'
             : 'gap-0 overflow-hidden p-0'
         }
       >
@@ -137,7 +142,7 @@ export function FilePreviewDialog({
                 // No scripts, no forms, no popups. The origin is kept only so the frame paints;
                 // without scripts nothing can use it.
                 sandbox="allow-same-origin"
-                srcDoc={safeDocument(content.data.html)}
+                srcDoc={content.data.html}
                 className="block h-full w-full border-0 bg-white"
               />
             ) : null}
