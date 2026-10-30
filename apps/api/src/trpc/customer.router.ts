@@ -169,6 +169,14 @@ export const customerRouter = router({
       return { ok: true as const };
     }),
 
+  holdingDelete: authorizedProcedure('customer.write')
+    .input(holdingKeySchema)
+    .mutation(async ({ ctx, input }) => {
+      await runHolding(() => holdings.deleteHolding(ctx.db, input.organizationId, input.productId));
+      auditCustomer(ctx, input.organizationId, { holding: 'deleted', productId: input.productId });
+      return { ok: true as const };
+    }),
+
   /** An organization's prevádzky (docs/establishments.md). */
   establishments: authorizedProcedure('customer.read')
     .input(customerIdSchema)

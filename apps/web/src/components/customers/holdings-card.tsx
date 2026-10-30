@@ -70,6 +70,20 @@ export function HoldingsCard({
   });
   const [editing, setEditing] = useState<Holding | 'new' | null>(null);
   const [ending, setEnding] = useState<Holding | null>(null);
+  const [removing, setRemoving] = useState<Holding | null>(null);
+  const remove = useMutation(
+    trpc.customer.holdingDelete.mutationOptions({
+      onSuccess: async () => {
+        toast('success', t.removeDone);
+        setRemoving(null);
+        await Promise.all([
+          queryClient.invalidateQueries(trpc.customer.pathFilter()),
+          queryClient.invalidateQueries(trpc.product.pathFilter()),
+        ]);
+      },
+      onError: (error) => toast('error', errorMessage(error, t.errors)),
+    }),
+  );
   const end = useMutation(
     trpc.customer.holdingEnd.mutationOptions({
       onSuccess: async () => {
@@ -159,6 +173,9 @@ export function HoldingsCard({
                   {t.end}
                 </DropdownMenuItem>
               ) : null}
+              <DropdownMenuItem destructive onSelect={() => setRemoving(h)}>
+                {t.remove}
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </TableCell>
@@ -252,6 +269,23 @@ export function HoldingsCard({
           pending={end.isPending}
           onConfirm={() =>
             end.mutate({ organizationId: ending.organizationId, productId: ending.productId })
+          }
+        />
+      ) : null}
+      {removing ? (
+        <ConfirmDialog
+          open
+          onOpenChange={(open) => !open && setRemoving(null)}
+          title={`${t.remove}: ${removing.product.name}`}
+          description={t.removeText}
+          confirmLabel={t.remove}
+          destructive
+          pending={remove.isPending}
+          onConfirm={() =>
+            remove.mutate({
+              organizationId: removing.organizationId,
+              productId: removing.productId,
+            })
           }
         />
       ) : null}

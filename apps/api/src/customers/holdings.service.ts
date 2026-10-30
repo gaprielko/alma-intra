@@ -270,6 +270,20 @@ export async function saveHolding(db: Db, input: HoldingInput) {
 }
 
 /** „Ukončiť“: the product ends today; it stays in the history (R-10). */
+/** Removes a holding entered by mistake; ending it (above) keeps it in the record. */
+export async function deleteHolding(db: Db, organizationId: string, productId: string) {
+  const [row] = await db
+    .delete(organizationProducts)
+    .where(
+      and(
+        eq(organizationProducts.organizationId, organizationId),
+        eq(organizationProducts.productId, productId),
+      ),
+    )
+    .returning({ id: organizationProducts.productId });
+  if (!row) throw new HoldingError('NOT_FOUND');
+}
+
 export async function endHolding(db: Db, organizationId: string, productId: string) {
   const [row] = await db
     .update(organizationProducts)

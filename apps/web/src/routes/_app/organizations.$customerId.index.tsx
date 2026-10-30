@@ -612,6 +612,8 @@ function describe(event: HistoryEvent): ReactNode {
       return named(diff.holding === 'added' ? h.holdingAdded : h.holdingChanged, diff.productId);
     case 'customer.holdingEnd':
       return named(h.holdingEnded, diff.productId);
+    case 'customer.holdingDelete':
+      return named(h.holdingRemoved, diff.productId);
     case 'customer.bulkAddTag':
       return nameOf(diff.tagId) ? `${h.tagAdded}: ${nameOf(diff.tagId)}` : h.tagAdded;
     case 'customer.bulkSetStatus':

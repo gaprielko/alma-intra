@@ -1021,6 +1021,7 @@ export const sk = {
         holdingAdded: 'Pridelený produkt',
         holdingChanged: 'Upravený produkt',
         holdingEnded: 'Ukončený produkt',
+        holdingRemoved: 'Odstránený produkt',
         personLinked: 'Priradená kontaktná osoba',
         personUnlinked: 'Odobratá kontaktná osoba',
         none: 'nezadané',
@@ -1238,6 +1239,10 @@ export const sk = {
     edit: 'Upraviť',
     end: 'Ukončiť',
     endDone: 'Produkt je ukončený.',
+    remove: 'Odstrániť',
+    removeText:
+      'Produkt zmizne z tabuľky aj z cien, akoby nikdy nebol pridelený. Ak ho organizácia len prestala používať, zvoľte radšej Ukončiť.',
+    removeDone: 'Produkt je odstránený.',
     empty: 'Zatiaľ žiadny produkt. Pridelíte ho tlačidlom vyššie.',
     menu: (name: string) => `Akcie pre ${name}`,
     dialog: {
