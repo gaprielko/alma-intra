@@ -4,8 +4,6 @@ import {
   FILE_ACCEPT,
   FILE_GROUPS,
   FILE_PERIODS,
-  FILE_TYPES,
-  fileExtension,
   isoDateSchema,
 } from '@intra/shared/schemas';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -36,6 +34,7 @@ import { z } from 'zod';
 import { FilterMenu } from '@/components/customers/customer-bits';
 import { ChangedBy, FileBadge, FolderTile } from '@/components/files/file-bits';
 import { type FilesDialog, FilesDialogs } from '@/components/files/file-dialogs';
+import { FilePreviewDialog } from '@/components/files/file-preview-dialog';
 import { FileSheet } from '@/components/files/file-sheet';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
@@ -54,12 +53,12 @@ import { StatusBanner } from '@/components/ui/status-banner';
 import { CELL_LINK, TableCell, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
-import { canPreview, formatSize } from '@/lib/files';
+import { formatSize, previewKind } from '@/lib/files';
 import { formatDate, formatRecent } from '@/lib/format';
 import { loadFailed } from '@/lib/query-view';
 import { useCan } from '@/lib/session';
-import { type RouterOutputs, trpc, trpcClient } from '@/lib/trpc';
-import { downloadFile, previewFile, uploadFiles } from '@/lib/uploads';
+import { type RouterOutputs, trpc } from '@/lib/trpc';
+import { downloadFile, uploadFiles } from '@/lib/uploads';
 import { cn } from '@/lib/utils';
 
 const t = sk.files;
@@ -560,7 +559,7 @@ function ContentsSection({
   const [dragging, setDragging] = useState(false);
   const depth = useRef(0);
   const searchBox = useRef<HTMLInputElement>(null);
-  const [photo, setPhoto] = useState<FileRow | null>(null);
+  const [previewing, setPreviewing] = useState<FileRow | null>(null);
   const [dragged, setDragged] = useState<DragItem | null>(null);
   const [over, setOver] = useState<string | null>(null);
   const [drop, setDrop] = useState<{ item: DragItem; target: FolderRef } | null>(null);
@@ -696,19 +695,8 @@ function ContentsSection({
     );
   }
 
-  /** A click on a file: a photo shows here, a PDF in a new tab, anything else its detail. */
-  const openFile = (file: FileRow) => {
-    const ext = fileExtension(file.name);
-    if (ext && FILE_TYPES[ext].group === 'image' && FILE_TYPES[ext].preview) {
-      setPhoto(file);
-    } else if (canPreview(file.name)) {
-      void previewFile(file.id).catch((error: unknown) =>
-        toast('error', errorMessage(error, t.errors)),
-      );
-    } else {
-      onOpenFile(file.id);
-    }
-  };
+  /** A click on a file shows its preview; only „Verzie“ opens its detail. */
+  const openFile = (file: FileRow) => setPreviewing(file);
 
   const fileMenu = (file: FileRow) => (
     <DropdownMenu>
@@ -731,16 +719,8 @@ function ContentsSection({
         >
           {t.menu.download}
         </DropdownMenuItem>
-        {canPreview(file.name) ? (
-          <DropdownMenuItem
-            onSelect={() =>
-              void previewFile(file.id).catch((error: unknown) =>
-                toast('error', errorMessage(error, t.errors)),
-              )
-            }
-          >
-            {t.menu.preview}
-          </DropdownMenuItem>
+        {previewKind(file.name) ? (
+          <DropdownMenuItem onSelect={() => setPreviewing(file)}>{t.menu.preview}</DropdownMenuItem>
         ) : null}
         {canWrite ? (
           <>
@@ -860,7 +840,7 @@ function ContentsSection({
               <div className="min-w-0">
                 <button
                   type="button"
-                  className="block max-w-full truncate text-left text-[15px] font-semibold hover:text-primary-text hover:underline"
+                  className="block max-w-full truncate text-left text-[15px] font-semibold"
                   onClick={(event) => {
                     event.stopPropagation();
                     openFile(file);
@@ -902,9 +882,9 @@ function ContentsSection({
                 event.stopPropagation();
                 onOpenFile(file.id);
               }}
-              className="inline-flex h-[22px] items-center rounded-md border border-border-subtle bg-surface px-2 text-xs font-semibold text-muted hover:border-primary hover:text-primary-text"
+              className="inline-flex h-7 items-center rounded-lg border border-border-subtle bg-surface px-2.5 text-xs font-semibold whitespace-nowrap text-muted hover:border-primary hover:text-primary-text"
             >
-              v{file.version}
+              {t.versions(file.version)}
             </button>
           </TableCell>
           <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
@@ -1070,14 +1050,16 @@ function ContentsSection({
         </div>
       ) : null}
       <DropDialog drop={drop} onClose={() => setDrop(null)} />
-      <PhotoViewer
-        file={photo}
-        onClose={() => setPhoto(null)}
-        onDetail={(id) => {
-          setPhoto(null);
-          onOpenFile(id);
-        }}
-      />
+      {previewing ? (
+        <FilePreviewDialog
+          file={previewing}
+          onClose={() => setPreviewing(null)}
+          onVersions={() => {
+            setPreviewing(null);
+            onOpenFile(previewing.id);
+          }}
+        />
+      ) : null}
     </section>
   );
 }
@@ -1142,50 +1124,6 @@ function DropDialog({
             {t.drop.move}
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-/** A photo shown in the page, over the list: its name, the picture, and a way to its detail. */
-function PhotoViewer({
-  file,
-  onClose,
-  onDetail,
-}: {
-  file: FileRow | null;
-  onClose: () => void;
-  onDetail: (id: string) => void;
-}) {
-  const url = useQuery({
-    queryKey: ['file-photo', file?.id, file?.version],
-    queryFn: () => trpcClient.file.download.mutate({ id: file!.id, inline: true }),
-    enabled: file !== null,
-    staleTime: 4 * 60_000,
-  });
-  return (
-    <Dialog open={file !== null} onOpenChange={(open) => (open ? null : onClose())}>
-      <DialogContent size="lg" className="gap-3">
-        <DialogTitle className="truncate pr-10">{file?.name}</DialogTitle>
-        <DialogDescription className="sr-only">{file?.name}</DialogDescription>
-        <div className="flex min-h-[40vh] items-center justify-center rounded-xl bg-surface">
-          {url.data ? (
-            <img
-              src={url.data.url}
-              alt={file?.name ?? ''}
-              className="max-h-[75vh] max-w-full rounded-lg object-contain"
-            />
-          ) : (
-            <p className="text-sm text-muted">{url.isError ? t.imageFailed : t.imageLoading}</p>
-          )}
-        </div>
-        {file ? (
-          <div className="flex justify-end">
-            <Button variant="secondary" onClick={() => onDetail(file.id)}>
-              {t.detailOf(file.name)}
-            </Button>
-          </div>
-        ) : null}
       </DialogContent>
     </Dialog>
   );

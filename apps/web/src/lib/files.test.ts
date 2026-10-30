@@ -1,5 +1,5 @@
 import { MAX_FILE_BYTES } from '@intra/shared/schemas';
-import { canPreview, fileBadge, formatSize, splitName, uploadRefusal } from './files';
+import { canPreview, fileBadge, formatSize, previewKind, splitName, uploadRefusal } from './files';
 
 describe('files', () => {
   it('sizes in Slovak: bytes, kB under a megabyte, MB with a decimal comma', () => {
@@ -20,6 +20,15 @@ describe('files', () => {
     expect(canPreview('a.jpg')).toBe(true);
     expect(canPreview('a.docx')).toBe(false);
     expect(canPreview('a.svg')).toBe(false);
+  });
+
+  it('the preview dialog shows HTML, PDFs and photos, nothing else', () => {
+    expect(previewKind('Ponuka.HTML')).toBe('html');
+    expect(previewKind('a.pdf')).toBe('pdf');
+    expect(previewKind('a.png')).toBe('image');
+    expect(previewKind('a.svg')).toBeNull();
+    expect(previewKind('a.docx')).toBeNull();
+    expect(previewKind('bez prípony')).toBeNull();
   });
 
   it('refuses before uploading: unknown or empty, or too large', () => {

@@ -39,6 +39,8 @@ export function securityHeaders(storageOrigin: string[] = []) {
         // storageOrigin: the browser uploads files straight to object storage via signed URLs.
         'connect-src': ["'self'", ...storageOrigin],
         'img-src': ["'self'", 'data:', 'blob:', ...storageOrigin],
+        // blob: a PDF shown in the file preview, always typed as a PDF so it cannot run as a page.
+        'frame-src': ["'self'", 'blob:'],
       },
     },
     // The origin only, never the path: no customer id in a URL leaves the page.

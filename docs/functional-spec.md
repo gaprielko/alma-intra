@@ -416,8 +416,10 @@ its files; they never store bytes themselves.
   breadcrumbs, search by name across folders, filters (type, changed by, period).
 - Upload by drag and drop or a button, several at once, progress, direct to the bucket via a signed
   URL (bytes never pass through the API).
-- **Preview** in the browser: PDF and images inline; DOCX / XLSX / PPTX and other files are
-  downloaded (no PDF renditions, **[D-30]**).
+- **Preview** in a dialog over the list, opened by a click on the file: PDF, images and HTML (in a
+  frame without scripts or anything from the internet, **[D-43]**); DOCX / XLSX / PPTX and other
+  files say they have no preview and offer the download (no PDF renditions, **[D-30]**). „Verzie“
+  alone opens the file's detail.
 - Rename, move, new version, version history, download, trash, restore.
 - „Priložiť k e-mailu“ and „Priložiť k aktivite“ from a file's menu; in the e-mail wizard and the
   activity form a **file picker** that opens the customer's folder first, with a switch to the
@@ -632,6 +634,7 @@ both attach files.
 | D-37  | Old e-mail is imported by forwarding it with an agreed line from a listed private address, when a setting allows it (30 Oct 2026, docs/email-import.md); replaced by D-41 |
 | D-41  | A forwarded e-mail arrives as any other; a user adds it with „Pridaj do konverzácie“, no detection on arrival and no setting (30 Oct 2026, docs/email-import.md) |
 | D-42  | Claude may create and change organizations, their persons and prevádzky through MCP, on the user's request, with `customer.write`; no deleting, no sending, private persons stay in the app (30 Oct 2026) |
+| D-43  | A click on a file shows its preview in a dialog, HTML included; „Verzie“ alone opens its detail (30 Oct 2026) |
 
 ### Still to verify (not decisions)
 

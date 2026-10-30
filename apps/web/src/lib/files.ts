@@ -24,6 +24,16 @@ export function canPreview(name: string): boolean {
   return ext !== null && FILE_TYPES[ext].preview;
 }
 
+/** What the preview dialog can show of a file: `null` means it can only be saved. */
+export function previewKind(name: string): 'html' | 'pdf' | 'image' | null {
+  const ext = fileExtension(name);
+  if (ext === 'html') return 'html';
+  if (ext === 'pdf') return 'pdf';
+  return ext !== null && FILE_TYPES[ext].group === 'image' && FILE_TYPES[ext].preview
+    ? 'image'
+    : null;
+}
+
 /** Why a picked file cannot be uploaded, before anything is sent; `null` when it can. */
 export function uploadRefusal(file: {
   name: string;
