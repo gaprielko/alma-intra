@@ -45,6 +45,7 @@ describe('security headers', () => {
       expect(directive(csp, 'object-src')).toBe("object-src 'none'");
       expect(directive(csp, 'base-uri')).toBe("base-uri 'none'");
       expect(directive(csp, 'connect-src')).toBe("connect-src 'self'");
+      expect(directive(csp, 'frame-src')).toBe("frame-src 'self' blob:");
       expect(csp).not.toMatch(/'unsafe-eval'/);
     },
   );

@@ -101,7 +101,8 @@ export const fileRouter = router({
       ctx.audit.set({
         entityType: 'file',
         entityId: input.id,
-        diff: { versionId: result.versionId, version: result.number, inline: result.inline },
+        // Asked to be shown: an HTML file is fetched as bytes for the preview, never served inline.
+        diff: { versionId: result.versionId, version: result.number, inline: input.inline },
       });
       return { url: result.url, inline: result.inline };
     }),

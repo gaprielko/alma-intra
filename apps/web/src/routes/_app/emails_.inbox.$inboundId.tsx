@@ -39,6 +39,7 @@ import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
 import { formatDateTime, formatRecent } from '@/lib/format';
 import { loadFailed } from '@/lib/query-view';
+import { safeDocument } from '@/lib/safe-html';
 import { downloadFile } from '@/lib/uploads';
 import { type RouterOutputs, trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
@@ -48,16 +49,6 @@ const t = sk.inbound;
 export const Route = createFileRoute('/_app/emails_/inbox/$inboundId')({
   component: InboundPage,
 });
-
-/**
- * The received HTML as a document of its own, for a frame without scripts: its CSP lets nothing
- * load from outside (no tracking pixels, no remote fonts or styles), only what the e-mail carries.
- */
-const safeDocument = (html: string) =>
-  `<!doctype html><html><head><meta charset="utf-8">` +
-  `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:">` +
-  `<style>body{margin:16px;font:14px/1.5 system-ui,sans-serif;color:#1b2424;overflow-wrap:anywhere}</style>` +
-  `</head><body>${html}</body></html>`;
 
 /** One received e-mail: who, when, under whom it is filed, the text, and what to do with it. */
 function InboundPage() {
