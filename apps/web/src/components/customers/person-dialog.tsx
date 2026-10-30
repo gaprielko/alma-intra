@@ -36,7 +36,19 @@ type LinkRow = { customerId: string; position: string; isPrimary: boolean };
  * one, any number of organizations with a position each (D-2, D-3). An e-mail already in Kontakty
  * offers that person instead of a second one (D-7).
  */
-export function PersonDialog({ person, onClose }: { person?: Person; onClose: () => void }) {
+export function PersonDialog({
+  person,
+  initialEmail,
+  onCreated,
+  onClose,
+}: {
+  person?: Person;
+  /** A new person's address, e.g. the sender of an e-mail being filed. */
+  initialEmail?: string | undefined;
+  /** Instead of opening the new person: their id and first organization, to go on with. */
+  onCreated?: ((created: { id: string; customerId: string | null }) => void) | undefined;
+  onClose: () => void;
+}) {
   const ids = useId();
   const toast = useToast();
   const navigate = useNavigate();
@@ -48,7 +60,7 @@ export function PersonDialog({ person, onClose }: { person?: Person; onClose: ()
     titleAfter: person?.titleAfter ?? '',
     gender: person?.gender ?? '',
     salutation: person?.salutation ?? '',
-    email: person?.email ?? '',
+    email: person?.email ?? initialEmail ?? '',
     phone: person?.phone ?? '',
     note: person?.note ?? '',
   });
@@ -75,7 +87,9 @@ export function PersonDialog({ person, onClose }: { person?: Person; onClose: ()
       queryClient.invalidateQueries(trpc.customer.pathFilter()),
     ]);
     onClose();
-    if (!person) await navigate({ to: '/contacts/$personId', params: { personId: id } });
+    if (person) return;
+    if (onCreated) onCreated({ id, customerId: links[0]?.customerId ?? null });
+    else await navigate({ to: '/contacts/$personId', params: { personId: id } });
   };
   const onError = (error: unknown) => toast('error', errorMessage(error, p.errors));
   const create = useMutation(

@@ -2072,6 +2072,26 @@ export const sk = {
       submit: 'Priradiť',
     },
     assigned: 'E-mail je priradený.',
+    contactSearch: {
+      label: 'Hľadať organizáciu, prevádzku alebo kontakt',
+      organizations: 'Organizácie',
+      establishments: 'Prevádzky',
+      persons: 'Kontakty',
+      nothing: 'Nič sa nenašlo.',
+      establishmentOf: (organization: string) => `prevádzka ${organization}`,
+    },
+    filters: {
+      search: 'Hľadať v e-mailoch: odosielateľ, kontakt, predmet, text, prílohy',
+      contact: 'Kontakt',
+      withAttachments: 'S prílohou',
+      clear: (name: string) => `Zrušiť filter ${name}`,
+      emptyFiltered: 'Takýto e-mail sa nenašiel.',
+    },
+    quickAssign: {
+      open: (from: string) => `Priradiť e-mail od ${from}`,
+      newContact: (email: string) => `Nový kontakt s adresou ${email}`,
+      noOrganization: 'Kontakt nepatrí k žiadnej organizácii. Priraďte e-mail organizácii.',
+    },
     discardConfirm: {
       title: 'Zahodiť e-mail?',
       text: 'Zmizne z prijatých e-mailov aj z časovej osi kontaktu.',
