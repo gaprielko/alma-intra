@@ -85,6 +85,113 @@ describe('Claude through MCP', () => {
     expect(spis.persons).toEqual([expect.objectContaining({ name: 'Iveta Spišská' })]);
   });
 
+  describe('e-mail templates', () => {
+    const doc = (...content: unknown[]) => ({
+      type: 'doc',
+      content: [{ type: 'paragraph', content }],
+    });
+    const text = (value: string) => ({ type: 'text', text: value });
+    const variable = (name: string) => ({ type: 'variable', attrs: { name } });
+    const auditCount = async (action: string) => {
+      const rows = await api.db.execute<{ n: number }>(
+        sql`select count(*)::int as n from audit_events
+          where action = ${action} and actor_kind = 'claude'`,
+      );
+      return rows.rows[0]!.n;
+    };
+
+    it('creates a template the web can read, finds it, previews it and sends nothing', async () => {
+      const made = await tool('templates_create', {
+        name: 'Ponuka MCP',
+        subject: doc(text('Ponuka pre '), variable('customer.name')),
+        body: doc(variable('salutation'), text(' posielame ponuku '), variable('custom.price')),
+        customFields: [{ key: 'price', label: 'Cena', type: 'money', scope: 'common' }],
+      });
+      expect(made.error).toBe(false);
+      const { templateId } = JSON.parse(made.text) as { templateId: string };
+
+      const read = await jana.call<{ name: string; active: boolean; categoryId: string | null }>(
+        'template.get',
+        { id: templateId },
+      );
+      expect(read.data).toMatchObject({ name: 'Ponuka MCP', active: true, categoryId: null });
+      expect(await auditCount('mcp.templates_create')).toBeGreaterThan(0);
+
+      const found = JSON.parse((await tool('templates_search', { query: 'Ponuka MCP' })).text) as {
+        templates: { id: string; subject: string }[];
+        categories: unknown[];
+        products: unknown[];
+      };
+      expect(found.templates.map((t) => t.id)).toEqual([templateId]);
+      expect(found.products.length).toBeGreaterThan(0);
+
+      const shown = JSON.parse(
+        (await tool('templates_preview', { templateId, values: { price: '120 €' } })).text,
+      ) as { subject: string; text: string; missing: string[] };
+      expect(shown.text).toContain('120 €');
+      expect(shown.missing).toContain('customer.name');
+      expect(shown.missing).not.toContain('custom.price');
+    });
+
+    it('changes only the fields it names and switches a template off', async () => {
+      const { templateId } = JSON.parse(
+        (
+          await tool('templates_create', {
+            name: 'Zmena MCP',
+            subject: doc(text('Predmet')),
+            body: doc(text('Pôvodné telo')),
+          })
+        ).text,
+      ) as { templateId: string };
+
+      const changed = await tool('templates_update', {
+        templateId,
+        changes: { name: 'Zmena MCP 2', active: false },
+      });
+      expect(JSON.parse(changed.text)).toEqual({
+        templateId,
+        changed: ['active', 'name'],
+      });
+      const got = JSON.parse((await tool('templates_get', { templateId })).text) as {
+        name: string;
+        active: boolean;
+        body: unknown;
+      };
+      expect(got).toMatchObject({ name: 'Zmena MCP 2', active: false });
+      expect(JSON.stringify(got.body)).toContain('Pôvodné telo');
+
+      const inactive = JSON.parse(
+        (await tool('templates_search', { categoryId: 'inactive' })).text,
+      ) as { templates: { id: string }[] };
+      expect(inactive.templates.map((t) => t.id)).toContain(templateId);
+    });
+
+    it('refuses in words what the editor would not take', async () => {
+      const unknown = await tool('templates_create', {
+        name: 'Zlá MCP',
+        subject: doc(text('Predmet')),
+        body: doc(variable('customer.shoeSize')),
+      });
+      expect(unknown.error).toBe(true);
+      expect(unknown.text).toContain('body (unknown_variable)');
+
+      const script = await tool('templates_create', {
+        name: 'Zlá MCP',
+        subject: doc(text('Predmet')),
+        body: { type: 'doc', content: [{ type: 'script', text: 'x' }] },
+      });
+      expect(script.error).toBe(true);
+      expect(script.text).toContain('body.content.0.type');
+
+      const missing = await tool('templates_update', {
+        templateId: '00000000-0000-4000-8000-0000000000ff',
+        changes: { name: 'Nikde' },
+      });
+      expect(missing.error).toBe(true);
+      expect(missing.text).toContain('templates_search');
+    });
+  });
+
   describe('organizations, their persons and prevádzky', () => {
     const history = async (id: string) =>
       (await jana.call<{ action: string }[]>('customer.history', { id })).data.map((e) => e.action);

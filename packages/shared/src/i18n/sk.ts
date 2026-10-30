@@ -453,6 +453,11 @@ export const sk = {
       'mcp.contacts_update': 'Claude upravil kontaktnú osobu',
       'mcp.establishments_create': 'Claude vytvoril prevádzku',
       'mcp.establishments_update': 'Claude upravil prevádzku',
+      'mcp.templates_search': 'Claude hľadal šablóny e-mailov',
+      'mcp.templates_get': 'Claude čítal šablónu e-mailu',
+      'mcp.templates_preview': 'Claude zobrazil náhľad šablóny e-mailu',
+      'mcp.templates_create': 'Claude vytvoril šablónu e-mailu',
+      'mcp.templates_update': 'Claude upravil šablónu e-mailu',
     } as Record<string, string>,
   },
   users: {
