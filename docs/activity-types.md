@@ -80,5 +80,6 @@ old documents above. It is saved anew with `activityTypeId` so that it no longer
 
 ## 6. Not in this step
 
-Workflows, more seeded types, activities that do not come from an e-mail button, MCP tools for the
+Workflows. They come later on this tab: rows get checkboxes, and a panel beside the table sets the
+workflow of the checked types, one or several at once. More seeded types, activities that do not come from an e-mail button, MCP tools for the
 code list.
