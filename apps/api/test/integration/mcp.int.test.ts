@@ -85,6 +85,188 @@ describe('Claude through MCP', () => {
     expect(spis.persons).toEqual([expect.objectContaining({ name: 'Iveta Spišská' })]);
   });
 
+  describe('organizations, their persons and prevádzky', () => {
+    const history = async (id: string) =>
+      (await jana.call<{ action: string }[]>('customer.history', { id })).data.map((e) => e.action);
+
+    it('creates an organization with its first person, and refuses its IČO a second time', async () => {
+      const customer = {
+        role: 'customer',
+        name: 'ADOS MCP s.r.o.',
+        ico: '36596612',
+        dic: '2022054815',
+        street: 'SNP 3961/110',
+        postalCode: '075 01',
+        city: 'Trebišov',
+        tags: ['z-veľtrhu'],
+      };
+      const made = await tool('customers_create', {
+        customer,
+        firstContact: { firstName: 'Helena', lastName: 'Mcpová', position: 'sestra' },
+      });
+      expect(made.error).toBe(false);
+      const { customerId } = JSON.parse(made.text) as { customerId: string };
+      const read = await jana.call<{
+        name: string;
+        ico: string;
+        pricesWithVat: boolean;
+        contacts: { firstName: string; position: string; isPrimary: boolean }[];
+      }>('customer.get', { id: customerId });
+      expect(read.data).toMatchObject({ name: 'ADOS MCP s.r.o.', ico: '36596612' });
+      expect(read.data.contacts[0]).toMatchObject({
+        firstName: 'Helena',
+        position: 'sestra',
+        isPrimary: true,
+      });
+      expect(await history(customerId)).toContain('mcp.customers_create');
+
+      const again = await tool('customers_create', { customer });
+      expect(again.error).toBe(true);
+      expect(again.text).toContain('customers_search');
+    });
+
+    it('changes only the fields it names and clears one with an empty string', async () => {
+      const { customerId } = JSON.parse(
+        (
+          await tool('customers_create', {
+            customer: {
+              role: 'customer',
+              name: 'ADOS Zmena s.r.o.',
+              ico: '36662445',
+              web: 'ados-zmena.sk',
+              city: 'Považská Bystrica',
+              tags: ['ostáva'],
+              pricesWithVat: false,
+            },
+          })
+        ).text,
+      ) as { customerId: string };
+      const updated = await tool('customers_update', {
+        customerId,
+        changes: { phone: '+421 905 804 125', web: '' },
+      });
+      expect(updated.error).toBe(false);
+      expect(JSON.parse(updated.text).changed.sort()).toEqual(['phone', 'web']);
+      const read = await jana.call<{
+        name: string;
+        ico: string;
+        city: string;
+        web: string | null;
+        phone: string;
+        pricesWithVat: boolean;
+        role: string;
+        tags: { name: string }[];
+      }>('customer.get', { id: customerId });
+      expect(read.data).toMatchObject({
+        name: 'ADOS Zmena s.r.o.',
+        ico: '36662445',
+        city: 'Považská Bystrica',
+        web: null,
+        pricesWithVat: false,
+        role: 'customer',
+      });
+      expect(read.data.phone).toContain('905');
+      expect(read.data.tags.map((t) => t.name)).toEqual(['ostáva']);
+      expect(await history(customerId)).toContain('mcp.customers_update');
+
+      const bad = await tool('customers_update', {
+        customerId: '00000000-0000-4000-8000-000000000999',
+        changes: { city: 'Nikde' },
+      });
+      expect(bad.error).toBe(true);
+    });
+
+    it('adds and changes a person, keeping what is not named and their unsubscribe', async () => {
+      const { customerId } = JSON.parse(
+        (
+          await tool('customers_create', {
+            customer: { role: 'customer', name: 'ADOS Osoby s.r.o.', ico: '36279935' },
+          })
+        ).text,
+      ) as { customerId: string };
+      const { contactId } = JSON.parse(
+        (
+          await tool('contacts_create', {
+            customerId,
+            contact: {
+              titleBefore: 'Mgr.',
+              firstName: 'Darina',
+              lastName: 'Osobná',
+              email: 'darina.osobna@example.sk',
+              position: 'konateľka',
+            },
+          })
+        ).text,
+      ) as { contactId: string };
+      const updated = await tool('contacts_update', {
+        contactId,
+        customerId,
+        changes: { phone: '+421 903 465 338' },
+      });
+      expect(updated.error).toBe(false);
+      expect(JSON.parse(updated.text).changed).toEqual(['phone']);
+      const read = await jana.call<{ contacts: Record<string, unknown>[] }>('customer.get', {
+        id: customerId,
+      });
+      expect(read.data.contacts[0]).toMatchObject({
+        titleBefore: 'Mgr.',
+        email: 'darina.osobna@example.sk',
+        position: 'konateľka',
+        unsubscribedAt: null,
+      });
+      expect(await history(customerId)).toEqual(
+        expect.arrayContaining(['mcp.contacts_create', 'mcp.contacts_update']),
+      );
+
+      const taken = await tool('contacts_create', {
+        customerId,
+        contact: { firstName: 'Iná', lastName: 'Osoba', email: 'darina.osobna@example.sk' },
+      });
+      expect(taken.error).toBe(true);
+      expect(taken.text).toContain('contacts_search');
+    });
+
+    it('adds and changes a prevádzka, told in its organization’s history', async () => {
+      const { customerId: parentId } = JSON.parse(
+        (
+          await tool('customers_create', {
+            customer: { role: 'customer', name: 'ADOS Pobočky s.r.o.', ico: '36620505' },
+          })
+        ).text,
+      ) as { customerId: string };
+      const made = JSON.parse(
+        (
+          await tool('establishments_create', {
+            parentId,
+            establishment: { name: 'ADOS Sečovce', street: 'SNP 807/9', city: 'Sečovce' },
+            primary: { kind: 'new', contact: { firstName: 'Eva', lastName: 'Prevádzková' } },
+          })
+        ).text,
+      ) as { establishmentId: string; contactId: string };
+      expect(made.contactId).toBeTruthy();
+      const updated = await tool('establishments_update', {
+        establishmentId: made.establishmentId,
+        changes: { postalCode: '078 01' },
+      });
+      expect(JSON.parse(updated.text).changed).toEqual(['postalCode']);
+      const list = await jana.call<{ id: string; street: string; postalCode: string }[]>(
+        'customer.establishments',
+        { id: parentId },
+      );
+      expect(list.data[0]).toMatchObject({ street: 'SNP 807/9', postalCode: '078 01' });
+      expect(await history(parentId)).toEqual(
+        expect.arrayContaining(['mcp.establishments_create', 'mcp.establishments_update']),
+      );
+
+      const wrongTool = await tool('customers_update', {
+        customerId: made.establishmentId,
+        changes: { city: 'Košice' },
+      });
+      expect(wrongTool.error).toBe(true);
+      expect(wrongTool.text).toContain('establishments_update');
+    });
+  });
+
   it('finds a customer and writes a file there as a new version, never over it', async () => {
     const found = JSON.parse((await tool('customers_search', { query: 'Harmónia' })).text) as {
       id: string;

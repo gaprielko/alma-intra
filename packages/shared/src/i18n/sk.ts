@@ -447,6 +447,12 @@ export const sk = {
       'mcp.files_update': 'Claude uložil novú verziu',
       'mcp.files_move': 'Claude presunul súbor',
       'mcp.files_rename': 'Claude premenoval súbor',
+      'mcp.customers_create': 'Claude vytvoril organizáciu',
+      'mcp.customers_update': 'Claude upravil organizáciu',
+      'mcp.contacts_create': 'Claude vytvoril kontaktnú osobu',
+      'mcp.contacts_update': 'Claude upravil kontaktnú osobu',
+      'mcp.establishments_create': 'Claude vytvoril prevádzku',
+      'mcp.establishments_update': 'Claude upravil prevádzku',
     } as Record<string, string>,
   },
   users: {

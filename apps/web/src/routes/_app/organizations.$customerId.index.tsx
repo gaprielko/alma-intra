@@ -599,6 +599,7 @@ function describe(event: HistoryEvent): ReactNode {
     : '';
   switch (event.action) {
     case 'customer.create':
+    case 'mcp.customers_create':
       return [
         h.created,
         productsAdded.length > 0 ? `${h.fieldNames.products}: ${productsAdded.join(', ')}` : null,
@@ -611,10 +612,12 @@ function describe(event: HistoryEvent): ReactNode {
         ? named(h.establishmentDeleted, diff.establishmentId)
         : h.deleted;
     case 'customer.establishmentCreate':
+    case 'mcp.establishments_create':
       return named(h.establishmentCreated, diff.establishmentId);
     case 'customer.establishmentAttach':
       return named(h.establishmentAttached, diff.establishmentId);
     case 'customer.establishmentUpdate':
+    case 'mcp.establishments_update':
       return fieldList
         ? `${named(h.establishmentUpdated, diff.establishmentId)} (${fieldList})`
         : named(h.establishmentUpdated, diff.establishmentId);
@@ -631,8 +634,10 @@ function describe(event: HistoryEvent): ReactNode {
     case 'customer.exportCsv':
       return h.exported;
     case 'customer.contactCreate':
+    case 'mcp.contacts_create':
       return withContact(h.contactCreated);
     case 'customer.contactUpdate':
+    case 'mcp.contacts_update':
       return fieldList
         ? `${withContact(h.contactUpdated)} (${fieldList})`
         : withContact(h.contactUpdated);
@@ -644,7 +649,8 @@ function describe(event: HistoryEvent): ReactNode {
       return withContact(h.personLinked);
     case 'person.unlink':
       return withContact(h.personUnlinked);
-    case 'customer.update': {
+    case 'customer.update':
+    case 'mcp.customers_update': {
       const parts: ReactNode[] = [];
       if (statusChange) parts.push(<span key="s">{statusChange}</span>);
       if (diff.ownerUserId) {

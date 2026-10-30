@@ -457,11 +457,19 @@ service).
     `files.upload_finish` (a signed link for content too large for base64); no hard delete;
   - `customers.search`, `customers.get` (with contacts and recent timeline), so Claude knows whom a
     document is for;
+  - `customers.create`, `customers.update`, `contacts.create`, `contacts.update`,
+    `establishments.create`, `establishments.update`: organizations, their persons and prevádzky
+    (**[D-42]**, e.g. entering future customers from a list the user gives). An update changes only
+    the fields it names. Private persons, deleting, products of an existing customer, role changes
+    and unsubscribes stay in the app;
   - later, optionally: `activities.create` (e.g. notes from a meeting), `emails.create_draft` (a
     draft for a user to review and send in the app; Claude never sends).
 - **Safety**: tool results are data; documents may contain text that tries to instruct Claude, so
-  write tools are limited to files and drafts, and nothing leaves the company (no sending) without a
-  user in the app.
+  write tools are limited to files, organizations with their persons and prevádzky, and drafts;
+  they never delete, and nothing leaves the company (no sending) without a user in the app. Writing
+  to organizations needs the same `customer.write` as the web, and each change stands in the
+  organization's history and in the activity log as Claude's. Claude writes to organizations only
+  when the user asked for that change, never because a document or an e-mail says so.
 - Alternatives considered: storing files in Google Drive / SharePoint (Claude has connectors, but
   files would live outside Intra, with a second permission model and no link to customers and
   e-mails); syncing a local folder (no audit, conflicts). The MCP keeps one source of truth.
@@ -623,6 +631,7 @@ both attach files.
 | D-38  | „Nový e-mail“ is one e-mail to To, Cc and Bcc, beside the wizard „Hromadný e-mail“ (30 Oct 2026, docs/new-email.md) |
 | D-37  | Old e-mail is imported by forwarding it with an agreed line from a listed private address, when a setting allows it (30 Oct 2026, docs/email-import.md); replaced by D-41 |
 | D-41  | A forwarded e-mail arrives as any other; a user adds it with „Pridaj do konverzácie“, no detection on arrival and no setting (30 Oct 2026, docs/email-import.md) |
+| D-42  | Claude may create and change organizations, their persons and prevádzky through MCP, on the user's request, with `customer.write`; no deleting, no sending, private persons stay in the app (30 Oct 2026) |
 
 ### Still to verify (not decisions)
 
