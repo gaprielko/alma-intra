@@ -15,13 +15,14 @@ import {
   messageAttachments,
   users,
 } from '../db/schema/index.js';
-import { getLook } from '../email/templates.service.js';
+import { getLook, lookFor } from '../email/templates.service.js';
 import { replyAddress, replyToken } from '../inbound/inbound.js';
 import { describeError } from '../logging/describe-error.js';
 import { notify } from '../notifications/notifications.service.js';
 import { MailProviderError, type MailTransport } from '../mail/transport.js';
 import type { Storage } from '../storage/storage.js';
 import { settleCampaigns, tokenHash, unsubscribeToken } from './campaigns.service.js';
+import { directAddresses } from './direct.service.js';
 
 const logger = new Logger('campaign-sender');
 
@@ -82,12 +83,14 @@ export async function drainCampaigns(
 ) {
   const ids = await claim(db);
   if (ids.length === 0) return 0;
-  const look = await getLook(db);
   for (const id of ids) {
     if (signal?.aborted) break;
     const [m] = await db
       .select({
         id: campaignMessages.id,
+        campaignId: campaignMessages.campaignId,
+        kind: campaigns.kind,
+        lookProductId: campaigns.lookProductId,
         to: campaignMessages.toEmail,
         subject: campaignMessages.subject,
         html: campaignMessages.html,
@@ -105,6 +108,7 @@ export async function drainCampaigns(
       .innerJoin(users, eq(users.id, campaigns.senderUserId))
       .where(and(eq(campaignMessages.id, id), eq(campaignMessages.status, 'queued')));
     if (!m?.to || !m.html || !m.subject) continue;
+    const look = await lookFor(db, m.lookProductId);
     try {
       const attached = await db
         .select({ key: fileVersions.storageKey, mime: fileVersions.mime, name: files.name })
@@ -129,30 +133,34 @@ export async function drainCampaigns(
       const oneClick = `${env.WEB_URL}/u/${unsubscribeToken(env, id)}`;
       const inboundReplyTo = look.replyMode === 'intra' ? replyAddress(env, id) : null;
       const replyTo = replyToFor(look, inboundReplyTo, m.senderEmail);
+      const direct = m.kind === 'direct';
       const sent = await transport.send(
         {
           to: m.to,
+          ...(direct ? await directAddresses(db, m.campaignId) : {}),
           subject: m.subject,
           html: m.html,
           text: m.text ?? '',
           from: `${m.senderName} | ${look.brandName} <${env.CAMPAIGN_FROM_ADDRESS}>`,
           replyTo,
-          headers: m.answers
-            ? {
-                // Correspondence (D-14): threaded, without an unsubscribe link.
-                ...(m.answers.messageId
-                  ? {
-                      'In-Reply-To': m.answers.messageId,
-                      References: [m.answers.references, m.answers.messageId]
-                        .filter(Boolean)
-                        .join(' '),
-                    }
-                  : {}),
-              }
-            : {
-                'List-Unsubscribe': `<${oneClick}>`,
-                'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-              },
+          headers: direct
+            ? {}
+            : m.answers
+              ? {
+                  // Correspondence (D-14): threaded, without an unsubscribe link.
+                  ...(m.answers.messageId
+                    ? {
+                        'In-Reply-To': m.answers.messageId,
+                        References: [m.answers.references, m.answers.messageId]
+                          .filter(Boolean)
+                          .join(' '),
+                      }
+                    : {}),
+                }
+              : {
+                  'List-Unsubscribe': `<${oneClick}>`,
+                  'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+                },
           ...(attachments.length > 0 ? { attachments } : {}),
         },
         `campaign-message/${id}`,
@@ -171,6 +179,22 @@ export async function drainCampaigns(
               },
         )
         .where(eq(campaignMessages.id, id));
+      // The other recipients of a direct e-mail: it went to them in this one send.
+      if (direct) {
+        await db
+          .update(campaignMessages)
+          .set(
+            sent.skipped
+              ? { status: 'skipped', skipReason: 'reserved' }
+              : { status: 'sent', sentAt: new Date() },
+          )
+          .where(
+            and(
+              eq(campaignMessages.campaignId, m.campaignId),
+              eq(campaignMessages.status, 'queued'),
+            ),
+          );
+      }
     } catch (error) {
       const permanent = error instanceof MailProviderError && error.permanent;
       const code = error instanceof MailProviderError ? `provider:${error.providerCode}` : 'error';
@@ -187,6 +211,17 @@ export async function drainCampaigns(
               },
         )
         .where(eq(campaignMessages.id, id));
+      if (giveUp && m.kind === 'direct') {
+        await db
+          .update(campaignMessages)
+          .set({ status: 'failed', errorCode: code })
+          .where(
+            and(
+              eq(campaignMessages.campaignId, m.campaignId),
+              eq(campaignMessages.status, 'queued'),
+            ),
+          );
+      }
       logger.warn({
         msg: 'campaign message not sent',
         messageId: id,
@@ -380,7 +415,8 @@ export async function setUnsubscribed(db: Db, token: string, unsubscribed: boole
         ),
       );
   }
-  return { customerId: row.customerId, contactId: row.contactId };
+  // Only bulk e-mails carry an unsubscribe token, and their recipients have an organization.
+  return { customerId: row.customerId!, contactId: row.contactId };
 }
 
 /** Queued messages to a recipient who unsubscribed meanwhile do not leave. */
@@ -394,6 +430,8 @@ export async function dropForUnsubscribed(
     .where(
       and(
         eq(campaignMessages.status, 'queued'),
+        // A direct e-mail is correspondence: it goes anyway.
+        isNull(campaignMessages.recipientRole),
         recipient.contactId
           ? eq(campaignMessages.contactId, recipient.contactId)
           : and(

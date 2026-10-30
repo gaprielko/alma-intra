@@ -2,7 +2,16 @@ import { sk } from '@intra/shared/i18n';
 import { personName } from '@intra/shared/schemas';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { Building2, ChevronDown, Paperclip, Reply, Trash2, UserRound } from 'lucide-react';
+import {
+  Building2,
+  ChevronDown,
+  MessageSquarePlus,
+  MoreHorizontal,
+  Paperclip,
+  Reply,
+  Trash2,
+  UserRound,
+} from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
 import { ReplyDialog } from '@/components/emails/reply-dialog';
 import { ErrorState } from '@/components/empty-state';
@@ -59,6 +68,7 @@ function InboundPage() {
   const [assigning, setAssigning] = useState(false);
   const [discarding, setDiscarding] = useState(false);
   const [replying, setReplying] = useState(false);
+  const [importing, setImporting] = useState(false);
   const inbound = useQuery(trpc.inbound.get.queryOptions({ id: inboundId }));
   // Opening a conversation reads it; the list shows that, this page has what it needs.
   const { mutate: markRead } = useMutation(
@@ -134,6 +144,7 @@ function InboundPage() {
           <MessageHeader
             message={m}
             onReply={m.status === 'assigned' ? () => setReplying(true) : undefined}
+            onImport={m.importKey ? undefined : () => setImporting(true)}
           />
           {m.html ? (
             <iframe
@@ -173,6 +184,7 @@ function InboundPage() {
           onClose={() => setReplying(false)}
         />
       ) : null}
+      {importing ? <ImportDialog inboundId={m.id} onClose={() => setImporting(false)} /> : null}
       <ConfirmDialog
         open={discarding}
         onOpenChange={setDiscarding}
@@ -195,10 +207,13 @@ type Message = RouterOutputs['inbound']['get'];
 function MessageHeader({
   message: m,
   onReply,
+  onImport,
 }: {
   message: Message;
   /** „Odpovedať“, next to the attachments; an unassigned e-mail is assigned first. */
   onReply: (() => void) | undefined;
+  /** „Pridaj do konverzácie“ behind the three dots; one already added has nothing to add. */
+  onImport: (() => void) | undefined;
 }) {
   const toast = useToast();
   const who = m.contactName ?? m.fromName ?? m.fromEmail;
@@ -286,7 +301,105 @@ function MessageHeader({
           </DropdownMenuContent>
         </DropdownMenu>
       ) : null}
+      {onImport ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" aria-label={t.importForward.more}>
+              <MoreHorizontal className="size-4" aria-hidden />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={onImport}>
+              <MessageSquarePlus className="size-4" aria-hidden />
+              {t.importForward.action}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : null}
     </header>
+  );
+}
+
+/**
+ * „Pridaj do konverzácie“: who wrote the original a forward carries, to whom and where it would go.
+ * Nothing changes until it is confirmed, because the forward itself is replaced by the original.
+ */
+function ImportDialog({ inboundId, onClose }: { inboundId: string; onClose: () => void }) {
+  const toast = useToast();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const d = t.importForward;
+  const preview = useQuery({
+    ...trpc.inbound.importPreview.queryOptions({ id: inboundId }),
+    retry: false,
+  });
+  const add = useMutation(
+    trpc.inbound.importForward.mutationOptions({
+      onSuccess: async ({ outcome }) => {
+        await queryClient.invalidateQueries(trpc.inbound.pathFilter());
+        await queryClient.invalidateQueries(trpc.activity.timeline.pathFilter());
+        toast('success', d.done[outcome]);
+        // Its own e-mail has left „Prijaté“ for „Odoslané“.
+        if (outcome === 'sent') await navigate({ to: '/emails/inbox' });
+        else onClose();
+      },
+      onError: (error) => toast('error', errorMessage(error, t.errors)),
+    }),
+  );
+  const p = preview.data;
+  const names = p?.organizations.join(', ') ?? '';
+  const where = !p
+    ? ''
+    : p.direction === 'sent'
+      ? names
+        ? d.sent(names)
+        : d.sentUnknown
+      : names
+        ? d.received(names)
+        : d.receivedUnknown;
+  const rows: [string, string][] = p
+    ? [
+        [d.from, p.fromName ? `${p.fromName} <${p.fromEmail}>` : p.fromEmail],
+        [d.to, p.to.join(', ') || '–'],
+        ...(p.cc.length > 0 ? ([[d.cc, p.cc.join(', ')]] as [string, string][]) : []),
+        [d.date, formatDateTime(p.date)],
+        [d.subject, p.subject || t.noSubject],
+        [d.where, where],
+      ]
+    : [];
+  return (
+    <Dialog open onOpenChange={(open) => (open ? null : onClose())}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{d.title}</DialogTitle>
+        </DialogHeader>
+        {preview.isError ? (
+          <p className="text-sm text-danger">{errorMessage(preview.error, t.errors)}</p>
+        ) : p ? (
+          <div className="space-y-3">
+            <p className="text-sm text-muted">{d.lead}</p>
+            <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-sm">
+              {rows.map(([label, value]) => (
+                <div key={label} className="contents">
+                  <dt className="text-muted">{label}</dt>
+                  <dd className="break-words">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        ) : (
+          <p className="text-sm text-muted">{sk.common.loading}</p>
+        )}
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
+            {sk.common.cancel}
+          </Button>
+          <Button disabled={!p || add.isPending} onClick={() => add.mutate({ id: inboundId })}>
+            {d.submit}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

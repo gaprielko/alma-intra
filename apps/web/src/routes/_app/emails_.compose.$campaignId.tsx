@@ -33,6 +33,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectItem } from '@/components/ui/select';
@@ -588,7 +589,9 @@ function ContentStep({
   const toast = useToast();
   const refresh = useRefresh(campaign.id);
   const me = useSession((s) => s.user);
-  const look = useQuery(trpc.template.look.queryOptions());
+  const look = useQuery(
+    trpc.template.effectiveLook.queryOptions({ productId: campaign.lookProductId }),
+  );
   const [subject, setSubject] = useState<EmailNode>(campaign.subject);
   const [body, setBody] = useState<EmailNode>(campaign.body);
   const [common, setCommon] = useState<Record<string, string>>(campaign.commonValues);
@@ -880,7 +883,9 @@ function PreviewStep({
   const refresh = useRefresh(campaign.id);
   const queryClient = useQueryClient();
   const me = useSession((s) => s.user);
-  const look = useQuery(trpc.template.look.queryOptions());
+  const look = useQuery(
+    trpc.template.effectiveLook.queryOptions({ productId: campaign.lookProductId }),
+  );
   const sendable = campaign.messages.filter((m) => !m.skipReason);
   const [index, setIndex] = useState(0);
   const [editing, setEditing] = useState<EmailNode | null>(null);
@@ -1292,12 +1297,12 @@ function ReviewStep({ campaign, onBack }: { campaign: Campaign; onBack: () => vo
             <div className="mt-3 grid grid-cols-2 gap-2">
               <div>
                 <Label htmlFor="schedule-date">{r.date}</Label>
-                <Input
+                <DatePicker
                   id="schedule-date"
-                  type="date"
+                  clearable={false}
                   className="mt-1.5"
                   value={day}
-                  onChange={(event) => setDay(event.target.value)}
+                  onChange={setDay}
                 />
               </div>
               <div>

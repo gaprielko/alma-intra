@@ -46,6 +46,7 @@ import { Route as AppEmailsSentIndexRouteImport } from './routes/_app/emails.sen
 import { Route as AppEmailsTemplatesIndexRouteImport } from './routes/_app/emails.templates.index'
 import { Route as AppEmailsComposeCampaignIdRouteImport } from './routes/_app/emails_.compose.$campaignId'
 import { Route as AppEmailsInboxInboundIdRouteImport } from './routes/_app/emails_.inbox.$inboundId'
+import { Route as AppEmailsNewCampaignIdRouteImport } from './routes/_app/emails_.new.$campaignId'
 import { Route as AppEmailsSentCampaignIdRouteImport } from './routes/_app/emails_.sent.$campaignId'
 import { Route as AppEmailsTemplatesTemplateIdRouteImport } from './routes/_app/emails_.templates.$templateId'
 import { Route as AppOrganizationsCustomerIdIndexRouteImport } from './routes/_app/organizations.$customerId.index'
@@ -241,6 +242,11 @@ const AppEmailsInboxInboundIdRoute = AppEmailsInboxInboundIdRouteImport.update({
   path: '/emails/inbox/$inboundId',
   getParentRoute: () => AppRoute,
 } as any)
+const AppEmailsNewCampaignIdRoute = AppEmailsNewCampaignIdRouteImport.update({
+  id: '/emails_/new/$campaignId',
+  path: '/emails/new/$campaignId',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppEmailsSentCampaignIdRoute = AppEmailsSentCampaignIdRouteImport.update({
   id: '/emails_/sent/$campaignId',
   path: '/emails/sent/$campaignId',
@@ -299,6 +305,7 @@ export interface FileRoutesByFullPath {
   '/customers/$customerId/edit': typeof AppCustomersCustomerIdEditRoute
   '/emails/compose/$campaignId': typeof AppEmailsComposeCampaignIdRoute
   '/emails/inbox/$inboundId': typeof AppEmailsInboxInboundIdRoute
+  '/emails/new/$campaignId': typeof AppEmailsNewCampaignIdRoute
   '/emails/sent/$campaignId': typeof AppEmailsSentCampaignIdRoute
   '/emails/templates/$templateId': typeof AppEmailsTemplatesTemplateIdRoute
   '/organizations/$customerId/edit': typeof AppOrganizationsCustomerIdEditRoute
@@ -341,6 +348,7 @@ export interface FileRoutesByTo {
   '/customers/$customerId/edit': typeof AppCustomersCustomerIdEditRoute
   '/emails/compose/$campaignId': typeof AppEmailsComposeCampaignIdRoute
   '/emails/inbox/$inboundId': typeof AppEmailsInboxInboundIdRoute
+  '/emails/new/$campaignId': typeof AppEmailsNewCampaignIdRoute
   '/emails/sent/$campaignId': typeof AppEmailsSentCampaignIdRoute
   '/emails/templates/$templateId': typeof AppEmailsTemplatesTemplateIdRoute
   '/organizations/$customerId/edit': typeof AppOrganizationsCustomerIdEditRoute
@@ -385,6 +393,7 @@ export interface FileRoutesById {
   '/_app/customers/$customerId/edit': typeof AppCustomersCustomerIdEditRoute
   '/_app/emails_/compose/$campaignId': typeof AppEmailsComposeCampaignIdRoute
   '/_app/emails_/inbox/$inboundId': typeof AppEmailsInboxInboundIdRoute
+  '/_app/emails_/new/$campaignId': typeof AppEmailsNewCampaignIdRoute
   '/_app/emails_/sent/$campaignId': typeof AppEmailsSentCampaignIdRoute
   '/_app/emails_/templates/$templateId': typeof AppEmailsTemplatesTemplateIdRoute
   '/_app/organizations/$customerId/edit': typeof AppOrganizationsCustomerIdEditRoute
@@ -429,6 +438,7 @@ export interface FileRouteTypes {
     | '/customers/$customerId/edit'
     | '/emails/compose/$campaignId'
     | '/emails/inbox/$inboundId'
+    | '/emails/new/$campaignId'
     | '/emails/sent/$campaignId'
     | '/emails/templates/$templateId'
     | '/organizations/$customerId/edit'
@@ -471,6 +481,7 @@ export interface FileRouteTypes {
     | '/customers/$customerId/edit'
     | '/emails/compose/$campaignId'
     | '/emails/inbox/$inboundId'
+    | '/emails/new/$campaignId'
     | '/emails/sent/$campaignId'
     | '/emails/templates/$templateId'
     | '/organizations/$customerId/edit'
@@ -514,6 +525,7 @@ export interface FileRouteTypes {
     | '/_app/customers/$customerId/edit'
     | '/_app/emails_/compose/$campaignId'
     | '/_app/emails_/inbox/$inboundId'
+    | '/_app/emails_/new/$campaignId'
     | '/_app/emails_/sent/$campaignId'
     | '/_app/emails_/templates/$templateId'
     | '/_app/organizations/$customerId/edit'
@@ -795,6 +807,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppEmailsInboxInboundIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/emails_/new/$campaignId': {
+      id: '/_app/emails_/new/$campaignId'
+      path: '/emails/new/$campaignId'
+      fullPath: '/emails/new/$campaignId'
+      preLoaderRoute: typeof AppEmailsNewCampaignIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/emails_/sent/$campaignId': {
       id: '/_app/emails_/sent/$campaignId'
       path: '/emails/sent/$campaignId'
@@ -884,6 +903,7 @@ interface AppRouteChildren {
   AppCustomersCustomerIdEditRoute: typeof AppCustomersCustomerIdEditRoute
   AppEmailsComposeCampaignIdRoute: typeof AppEmailsComposeCampaignIdRoute
   AppEmailsInboxInboundIdRoute: typeof AppEmailsInboxInboundIdRoute
+  AppEmailsNewCampaignIdRoute: typeof AppEmailsNewCampaignIdRoute
   AppEmailsSentCampaignIdRoute: typeof AppEmailsSentCampaignIdRoute
   AppEmailsTemplatesTemplateIdRoute: typeof AppEmailsTemplatesTemplateIdRoute
   AppOrganizationsCustomerIdEditRoute: typeof AppOrganizationsCustomerIdEditRoute
@@ -911,6 +931,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCustomersCustomerIdEditRoute: AppCustomersCustomerIdEditRoute,
   AppEmailsComposeCampaignIdRoute: AppEmailsComposeCampaignIdRoute,
   AppEmailsInboxInboundIdRoute: AppEmailsInboxInboundIdRoute,
+  AppEmailsNewCampaignIdRoute: AppEmailsNewCampaignIdRoute,
   AppEmailsSentCampaignIdRoute: AppEmailsSentCampaignIdRoute,
   AppEmailsTemplatesTemplateIdRoute: AppEmailsTemplatesTemplateIdRoute,
   AppOrganizationsCustomerIdEditRoute: AppOrganizationsCustomerIdEditRoute,

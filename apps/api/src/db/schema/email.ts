@@ -13,7 +13,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { codeListColumns } from './customers.js';
+import { codeListColumns, products } from './customers.js';
 import { files } from './files.js';
 import { users } from './users.js';
 
@@ -32,6 +32,8 @@ export const emailTemplates = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     name: text('name').notNull(),
     categoryId: uuid('category_id').references(() => templateCategories.id),
+    /** Whose look its e-mails wear; NULL: the global one (D-39). */
+    lookProductId: uuid('look_product_id').references(() => products.id, { onDelete: 'set null' }),
     language: text('language').notNull().default('sk'),
     subject: jsonb('subject').$type<EmailNode>().notNull(),
     body: jsonb('body').$type<EmailNode>().notNull(),
@@ -82,6 +84,25 @@ export const emailImages = pgTable('email_images', {
   confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
 });
 
+/** A product's own look over the global one (D-39); no row or off: the global one. */
+export const productEmailLooks = pgTable('product_email_looks', {
+  productId: uuid('product_id')
+    .primaryKey()
+    .references(() => products.id, { onDelete: 'cascade' }),
+  enabled: boolean('enabled').notNull().default(false),
+  logoKey: text('logo_key'),
+  headerStyle: text('header_style', { enum: ['dark', 'light'] })
+    .notNull()
+    .default('dark'),
+  brandName: text('brand_name').notNull().default('Alma'),
+  headerText: text('header_text').notNull().default(''),
+  accent: text('accent').notNull().default('#0f766e'),
+  footerWeb: text('footer_web').notNull().default(''),
+  footerEmail: text('footer_email').notNull().default(''),
+  updatedByUserId: uuid('updated_by_user_id').references(() => users.id),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 /** Settings › Vzhľad e-mailov: one row, the company look every e-mail wears. */
 export const emailLook = pgTable(
   'email_look',
@@ -98,8 +119,6 @@ export const emailLook = pgTable(
     footerIco: text('footer_ico').notNull().default(''),
     footerWeb: text('footer_web').notNull().default(''),
     footerEmail: text('footer_email').notNull().default(''),
-    /** Forwards with the agreed line become the original e-mails (docs/email-import.md). */
-    importEnabled: boolean('import_enabled').notNull().default(false),
     replyMode: text('reply_mode', { enum: ['intra', 'company', 'sender'] })
       .notNull()
       .default('company'),

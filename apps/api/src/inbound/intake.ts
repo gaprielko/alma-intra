@@ -6,7 +6,6 @@ import { inboundMessages, users } from '../db/schema/index.js';
 import { describeError } from '../logging/describe-error.js';
 import type { Storage } from '../storage/storage.js';
 import { saveInboundAttachments } from './attachments.js';
-import { importForwarded } from './import.js';
 import { type InboundSource, receiveInbound } from './inbound.js';
 
 /**
@@ -23,7 +22,7 @@ export async function takeInReceived(
 ) {
   const email = await source.get(providerEmailId);
   if (!email) return false;
-  const filed = (await importForwarded(db, email)) ?? (await receiveInbound(db, loadEnv(), email));
+  const filed = await receiveInbound(db, loadEnv(), email);
   if (filed.repeated) return false;
   logger.log({ msg: 'e-mail received', inboundId: filed.id, matched: filed.matched });
   if (filed.id && filed.userId) {

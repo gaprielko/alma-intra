@@ -21,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Input, Textarea } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SegmentedChoice } from '@/components/ui/segmented';
@@ -333,22 +334,16 @@ export function HoldingDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="holding-from">{d.validFrom}</Label>
-              <Input
+              <DatePicker
                 id="holding-from"
-                type="date"
+                clearable={false}
                 value={validFrom}
-                onChange={(event) => setValidFrom(event.target.value)}
+                onChange={setValidFrom}
               />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="holding-to">{d.validTo}</Label>
-              <Input
-                id="holding-to"
-                type="date"
-                value={validTo}
-                min={validFrom}
-                onChange={(event) => setValidTo(event.target.value)}
-              />
+              <DatePicker id="holding-to" value={validTo} min={validFrom} onChange={setValidTo} />
             </div>
           </div>
 

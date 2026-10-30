@@ -6,22 +6,22 @@
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-/** `2026-12-31` → `31. 12. 2026` (how dates are written everywhere in the app); `''` → `''`. */
+/** `2026-12-31` → `31.12.2026` (how dates are written everywhere in the app); `''` → `''`. */
 export function formatDateText(iso: string): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
-  return match ? `${Number(match[3])}. ${Number(match[2])}. ${match[1]}` : '';
+  return match ? `${Number(match[3])}.${Number(match[2])}.${match[1]}` : '';
 }
 
 /**
  * A typed date → `YYYY-MM-DD`, or `null` while it is not a whole, real date. Takes `31.12.2026`,
- * `31. 12. 2026`, `1.2.2026` and `2026-12-31` (pasted from elsewhere); the year has four digits.
+ * `31. 12. 2026`, `1.2.2026`, `1.2.26` and `2026-12-31` (pasted from elsewhere).
  */
 export function parseDateText(text: string): string | null {
   const s = text.trim();
   let parts: [string, string, string] | null = null;
-  const dotted = /^(\d{1,2})\s*\.\s*(\d{1,2})\s*\.\s*(\d{4})$/.exec(s);
+  const dotted = /^(\d{1,2})\s*\.\s*(\d{1,2})\s*\.\s*(\d{4}|\d{2})$/.exec(s);
   const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s);
-  if (dotted) parts = [dotted[3]!, dotted[2]!, dotted[1]!];
+  if (dotted) parts = [dotted[3]!.padStart(4, '20'), dotted[2]!, dotted[1]!];
   else if (iso) parts = [iso[1]!, iso[2]!, iso[3]!];
   if (!parts) return null;
   const [year, month, day] = parts.map(Number) as [number, number, number];

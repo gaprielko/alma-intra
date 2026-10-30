@@ -281,6 +281,27 @@
       "when": 1793356336961,
       "tag": "0039_oval_frightful_four",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1793359361096,
+      "tag": "0040_shocking_johnny_blaze",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1793360947355,
+      "tag": "0041_zippy_puff_adder",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1793361744356,
+      "tag": "0042_nosy_sebastian_shaw",
+      "breakpoints": true
     }
   ]
 }

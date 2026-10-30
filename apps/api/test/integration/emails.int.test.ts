@@ -309,9 +309,9 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     expect(await subjects({ search: 'nikto', withAttachments: true })).toEqual([]);
   });
 
-  it('imports forwarded e-mails only when on, from a private address, once each', async () => {
+  it('adds a forwarded e-mail to the conversation only when asked, once', async () => {
     const OWN = 'sukromna@example.org';
-    const forward = (id: string, from: string, block: string, sender = OWN) => {
+    const forward = async (id: string, from: string, block: string, sender = OWN) => {
       const email = {
         providerEmailId: `import-${id}-${Date.now()}`,
         from: sender,
@@ -320,7 +320,7 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
         receivedFor: [],
         subject: 'Fwd: stará pošta',
         html: null,
-        text: `Alma Intra: add mail\n\n---------- Forwarded message ---------\nFrom: ${from}\n${block}`,
+        text: `---------- Forwarded message ---------\nFrom: ${from}\n${block}`,
         headerMessageId: null,
         inReplyTo: null,
         references: null,
@@ -335,8 +335,15 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
         },
         recent: async () => [],
       };
-      return takeInReceived(api.db, null, source, email.providerEmailId, new Logger('test'));
+      await takeInReceived(api.db, null, source, email.providerEmailId, new Logger('test'));
+      const [row] = await api.db
+        .execute<{ id: string }>(
+          sql`select id from inbound_messages where provider_email_id = ${email.providerEmailId}`,
+        )
+        .then((result) => result.rows);
+      return row!.id;
     };
+    const add = (id: string) => jana.call<{ outcome: string }>('inbound.importForward', { id });
     const fromEva = `Date: Tue, Mar 10, 2026 at 9:00 AM\nSubject: Import ponuka\nTo: <${OWN}>\n\nĎakujem za ponuku.\n\nOn Mon, Mar 9, 2026 at 8:00 AM <${OWN}> wrote:\n> Staré.\n`;
     const toEva = `Date: Mon, Mar 9, 2026 at 8:00 AM\nSubject: Import ponuka\nTo: Eva <eva.tothova@adosharmonia.sk>\n\nPosielam ponuku.\n`;
     const list = async (search: string) =>
@@ -352,29 +359,45 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
         }>('inbound.list', { view: 'all', search })
       ).data.items;
 
-    // Off: an ordinary e-mail, with the forward's own subject.
-    await forward('off', 'Eva <eva.tothova@adosharmonia.sk>', fromEva);
-    expect((await list('Import ponuka')).map((row) => row.subject)).toEqual(['Fwd: stará pošta']);
-    const stored = await jana.call<{ id: string }>('inbound.get', {
-      id: (await list('Import ponuka'))[0]!.id,
-    });
-    await jana.call('inbound.discard', { id: stored.data.id });
-
-    const { look } = (await jana.call<{ look: Record<string, unknown> }>('template.look')).data;
-    expect(
-      (await jana.call('template.updateLook', { ...look, importEnabled: true })).code,
-    ).toBeUndefined();
     await jana.call('account.setImportAddresses', { addresses: [OWN.toUpperCase()] });
 
-    // From an address nobody listed: ordinary too.
-    await forward('stranger', 'Eva <eva.tothova@adosharmonia.sk>', fromEva, 'cudzi@example.org');
+    // Until asked: an ordinary e-mail, with the forward's own subject and sender.
+    const received0 = await forward('received', 'Eva <eva.tothova@adosharmonia.sk>', fromEva);
+    const [waitingToAdd] = await list('Import ponuka');
+    expect(waitingToAdd).toMatchObject({ subject: 'Fwd: stará pošta', fromEmail: OWN });
+
+    // An e-mail that carries no original refuses, and stays as it is.
+    const plain = await receiveInbound(api.db, loadEnv(), {
+      providerEmailId: `import-plain-${Date.now()}`,
+      from: OWN,
+      to: ['info@alma-care.eu'],
+      cc: [],
+      receivedFor: [],
+      subject: 'Bežný e-mail',
+      html: null,
+      text: 'Dobrý deň',
+      headerMessageId: null,
+      inReplyTo: null,
+      references: null,
+      attachments: [],
+      receivedAt: new Date(),
+    });
+    expect((await add(plain.id!)).message).toBe('NOT_A_FORWARD');
+
+    // The preview says where it goes and stores nothing.
+    const preview = await jana.call<{ direction: string; organizations: string[] }>(
+      'inbound.importPreview',
+      { id: received0 },
+    );
+    expect(preview.data.direction).toBe('received');
+    expect(preview.data.organizations).toHaveLength(1);
     expect((await list('Import ponuka'))[0]!.subject).toBe('Fwd: stará pošta');
-    await jana.call('inbound.discard', { id: (await list('Import ponuka'))[0]!.id });
 
     // Received: the original's sender, subject and date, the quote left out.
-    await forward('received', 'Eva <eva.tothova@adosharmonia.sk>', fromEva);
+    expect((await add(received0)).data.outcome).toBe('received');
     const [received] = await list('Import ponuka');
     expect(received).toMatchObject({
+      id: received0,
       subject: 'Import ponuka',
       fromEmail: 'eva.tothova@adosharmonia.sk',
       status: 'assigned',
@@ -387,13 +410,16 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     expect(opened.data.text).toBe('Ďakujem za ponuku.');
     expect(opened.data.readAt).not.toBeNull();
 
-    // Forwarded again: once.
-    await forward('again', 'Eva <eva.tothova@adosharmonia.sk>', fromEva);
-    expect(await list('Import ponuka')).toHaveLength(1);
+    // Added once: neither that row again, nor the same original forwarded again.
+    expect((await add(received0)).message).toBe('ALREADY_IMPORTED');
+    const again = await forward('again', 'Eva <eva.tothova@adosharmonia.sk>', fromEva);
+    expect((await add(again)).message).toBe('ALREADY_IMPORTED');
+    await jana.call('inbound.discard', { id: again });
 
     // Own: in „Odoslané“ with the original date, in the same conversation, and nothing goes out.
     const queuedBefore = outbox.length;
-    await forward('own', `Ja <${OWN}>`, toEva);
+    const own = await forward('own', `Ja <${OWN}>`, toEva);
+    expect((await add(own)).data.outcome).toBe('sent');
     await drainCampaigns(api.db, memoryTransport({ quiet: true }), null, loadEnv());
     expect(outbox.length).toBe(queuedBefore);
     const thread = await jana.call<{ kind: string; at: string; to: string }[]>('inbound.thread', {
@@ -409,11 +435,12 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     expect(await list('Import ponuka')).toHaveLength(1);
 
     // Own, to nobody known: waits among the unassigned; filed, it is sent mail.
-    await forward(
+    const unknown = await forward(
       'unknown',
       `Ja <${OWN}>`,
       `Date: Wed, Mar 11, 2026 at 10:00 AM\nSubject: Komu neviem\nTo: nikto@example.net\n\nText.\n`,
     );
+    expect((await add(unknown)).data.outcome).toBe('waiting');
     const [waiting] = await list('Komu neviem');
     expect(waiting).toMatchObject({ status: 'unassigned', fromEmail: OWN });
     await jana.call('inbound.assign', { id: waiting!.id, customerId: HARMONIA, contactId: null });
@@ -422,8 +449,184 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
       sql`select to_email, status from campaign_messages where subject = 'Komu neviem'`,
     );
     expect(sent.rows).toEqual([{ to_email: 'nikto@example.net', status: 'sent' }]);
+  });
 
-    await jana.call('template.updateLook', { ...look, importEnabled: false });
+  it('Nový e-mail: one send to To, Cc and Bcc, known recipients on the timeline', async () => {
+    const created = await jana.call<{ id: string }>('campaign.createDirect');
+    const id = created.data.id;
+    const body = doc('Dobrý deň, posielam podklady.');
+    const save = (recipients: unknown[], subject = 'Podklady pre zmluvu') =>
+      jana.call('campaign.saveDirect', {
+        id,
+        recipients,
+        subject,
+        body,
+        templateId: null,
+        lookProductId: null,
+        attachmentFileIds: [],
+      });
+    // Without anyone in Komu it does not leave.
+    await save([]);
+    expect((await jana.call('campaign.sendDirect', { id })).message).toBe('NO_RECIPIENTS');
+
+    await save([
+      {
+        role: 'bcc',
+        email: 'tajny@example.net',
+        name: null,
+        contactId: null,
+        organizationId: null,
+      },
+      {
+        role: 'to',
+        email: 'eva.tothova@adosharmonia.sk',
+        name: 'Eva',
+        contactId: EVA,
+        organizationId: HARMONIA,
+      },
+      { role: 'cc', email: 'kopia@example.net', name: null, contactId: null, organizationId: null },
+      { role: 'to', email: 'novy@example.net', name: null, contactId: null, organizationId: null },
+    ]);
+    const before = outbox.length;
+    expect((await jana.call('campaign.sendDirect', { id })).code).toBeUndefined();
+    await drainCampaigns(api.db, memoryTransport({ quiet: true }), null, loadEnv());
+
+    // One e-mail, not four, with everybody on it and no unsubscribe link.
+    expect(outbox.length).toBe(before + 1);
+    const mail = outbox.at(-1)!;
+    expect(mail).toMatchObject({
+      to: 'eva.tothova@adosharmonia.sk',
+      alsoTo: ['novy@example.net'],
+      cc: ['kopia@example.net'],
+      bcc: ['tajny@example.net'],
+      subject: 'Podklady pre zmluvu',
+    });
+    expect(mail.headers?.['List-Unsubscribe']).toBeUndefined();
+    expect(mail.html).toContain('posielam podklady');
+    expect(mail.html).not.toContain('odhlasenie');
+
+    const rows = await api.db.execute<{ to_email: string; status: string; role: string }>(
+      sql`select to_email, status, recipient_role as role from campaign_messages
+        where campaign_id = ${id} order by position`,
+    );
+    expect(rows.rows.map((r) => [r.to_email, r.role, r.status])).toEqual([
+      ['eva.tothova@adosharmonia.sk', 'to', 'sent'],
+      ['novy@example.net', 'to', 'sent'],
+      ['kopia@example.net', 'cc', 'sent'],
+      ['tajny@example.net', 'bcc', 'sent'],
+    ]);
+    // In „Odoslané“, and its detail opens though some recipients have no organization.
+    const sentList = await jana.call<{ items: { id: string; kind: string }[] }>('campaign.list', {
+      status: 'sent',
+      page: 1,
+    });
+    expect(sentList.data.items.find((c) => c.id === id)?.kind).toBe('direct');
+    const opened = await jana.call<{ messages: { email: string | null }[] }>('campaign.get', {
+      id,
+    });
+    expect(opened.code).toBeUndefined();
+    expect(opened.data.messages).toHaveLength(4);
+    // Sent, it is no longer a draft to edit.
+    expect((await save([])).code).toBe('CONFLICT');
+  });
+
+  it('Nový e-mail: a template comes with its variables written out', async () => {
+    const withVariable = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: 'Pre ' },
+            { type: 'variable', attrs: { name: 'customer.name' } },
+          ],
+        },
+      ],
+    };
+    const template = await jana.call<{ id: string }>('template.create', {
+      name: `Priamy ${Date.now()}`,
+      categoryId: null,
+      subject: withVariable,
+      body: withVariable,
+    });
+    const filled = await jana.call<{ subject: string; body: unknown }>(
+      'campaign.directFromTemplate',
+      { templateId: template.data.id, contactId: EVA, organizationId: HARMONIA },
+    );
+    expect(filled.code).toBeUndefined();
+    expect(filled.data.subject).toContain('ADOS Harmónia');
+    expect(JSON.stringify(filled.data.body)).toContain('ADOS Harmónia');
+    expect(JSON.stringify(filled.data.body)).not.toContain('"variable"');
+  });
+
+  it('a product look: over the global one when on, by the template and the new e-mail', async () => {
+    type Looks = { productId: string; name: string; look: Record<string, unknown> }[];
+    const looks = (await jana.call<Looks>('template.productLooks')).data;
+    const ados = looks.find((p) => p.name === 'ADOS')!;
+    const save = (enabled: boolean) =>
+      jana.call('template.saveProductLook', {
+        productId: ados.productId,
+        look: { ...ados.look, enabled, brandName: 'Alma Skuska', footerWeb: 'skuska.example.net' },
+      });
+    const brandOf = async (productId: string | null) =>
+      (await jana.call<{ look: { brandName: string } }>('template.effectiveLook', { productId }))
+        .data.look.brandName;
+
+    expect((await save(true)).code).toBeUndefined();
+    expect(await brandOf(ados.productId)).toBe('Alma Skuska');
+    expect(await brandOf(null)).not.toBe('Alma Skuska');
+
+    // A template wears it, and hands it to the wizard's draft.
+    const text = doc('Text');
+    const template = await jana.call<{ id: string }>('template.create', {
+      name: `S vzhľadom ${Date.now()}`,
+      categoryId: null,
+      lookProductId: ados.productId,
+      subject: doc('Predmet'),
+      body: text,
+    });
+    const shown = await jana.call<{ html: string }>('template.preview', {
+      subject: doc('Predmet'),
+      body: text,
+      lookProductId: ados.productId,
+    });
+    expect(shown.data.html).toContain('Alma Skuska');
+    const id = await draft();
+    await jana.call('campaign.chooseTemplate', { id, templateId: template.data.id });
+    expect(
+      (await jana.call<{ lookProductId: string | null }>('campaign.get', { id })).data
+        .lookProductId,
+    ).toBe(ados.productId);
+
+    // A direct e-mail goes out in it, under its brand.
+    const direct = await jana.call<{ id: string }>('campaign.createDirect');
+    await jana.call('campaign.saveDirect', {
+      id: direct.data.id,
+      recipients: [
+        {
+          role: 'to',
+          email: 'vzhlad@example.net',
+          name: null,
+          contactId: null,
+          organizationId: null,
+        },
+      ],
+      subject: 'So vzhľadom',
+      body: text,
+      templateId: null,
+      lookProductId: ados.productId,
+      attachmentFileIds: [],
+    });
+    await jana.call('campaign.sendDirect', { id: direct.data.id });
+    await drainCampaigns(api.db, memoryTransport({ quiet: true }), null, loadEnv());
+    const mail = outbox.at(-1)!;
+    expect(mail.to).toBe('vzhlad@example.net');
+    expect(mail.from).toContain('| Alma Skuska <');
+    expect(mail.html).toContain('skuska.example.net');
+
+    // Switched off, the product wears the global look again.
+    await save(false);
+    expect(await brandOf(ados.productId)).not.toBe('Alma Skuska');
   });
 
   it('groups a conversation by its subject: one row, the rest in the thread', async () => {

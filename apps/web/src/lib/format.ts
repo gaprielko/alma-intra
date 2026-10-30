@@ -3,11 +3,11 @@ import { sk } from '@intra/shared/i18n';
 
 const asDate = (value: string | Date) => (typeof value === 'string' ? parseISO(value) : value);
 
-/** `27. 10. 2026` */
-export const formatDate = (value: string | Date) => format(asDate(value), 'd. M. yyyy');
+/** `27.10.2026` */
+export const formatDate = (value: string | Date) => format(asDate(value), 'd.M.yyyy');
 
-/** `27. 10. 2026 9:40` */
-export const formatDateTime = (value: string | Date) => format(asDate(value), 'd. M. yyyy H:mm');
+/** `27.10.2026 9:40` */
+export const formatDateTime = (value: string | Date) => format(asDate(value), 'd.M.yyyy H:mm');
 
 /** „Dnes 9:12“, „Včera 16:40“, or the date for anything older. */
 export function formatRecent(value: string | Date): string {

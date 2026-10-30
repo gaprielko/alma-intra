@@ -28,7 +28,7 @@ import {
   users,
 } from '../db/schema/index.js';
 import { missingOf, plainOf, renderEmail } from '../email/render.js';
-import { getLook, valuesFor } from '../email/templates.service.js';
+import { lookFor, valuesFor } from '../email/templates.service.js';
 import { DOWNLOAD_LINK_DAYS, downloadToken } from './download-link.js';
 
 export class CampaignError extends Error {
@@ -87,7 +87,7 @@ const listSubject = (
     labelsOf(fields),
   );
 
-async function draft(tx: Db | Tx, id: string, lock = false) {
+export async function draft(tx: Db | Tx, id: string, lock = false) {
   const query = tx.select().from(campaigns).where(eq(campaigns.id, id));
   const [row] = await (lock ? query.for('update') : query);
   if (!row) throw new CampaignError('NOT_FOUND');
@@ -283,6 +283,7 @@ export async function reuseCampaign(db: Db, userId: string, id: string) {
       .values({
         senderUserId: userId,
         templateId: source.templateId,
+        lookProductId: source.lookProductId,
         subject: source.subject,
         body: source.body,
         customFields: source.customFields,
@@ -307,7 +308,8 @@ export async function reuseCampaign(db: Db, userId: string, id: string) {
       .where(eq(campaignMessages.campaignId, id))
       .orderBy(asc(campaignMessages.position));
     const candidates = await recipientCandidates(tx, [
-      ...new Set(messages.map((m) => m.organizationId)),
+      // A bulk e-mail: its recipients all have an organization.
+      ...new Set(messages.map((m) => m.organizationId!)),
     ]);
     const kept = messages.filter((m) => {
       const customer = candidates.find((c) => c.id === m.organizationId);
@@ -368,7 +370,7 @@ async function writeRecipients(
     })
     .from(campaignMessages)
     .where(eq(campaignMessages.campaignId, campaignId));
-  const key = (r: { customerId: string; contactId: string | null }) =>
+  const key = (r: { customerId: string | null; contactId: string | null }) =>
     `${r.customerId}:${r.contactId ?? ''}`;
   const wanted = new Map(unique.map((r, i) => [key(r), i]));
   const gone = existing.filter((row) => !wanted.has(key(row))).map((row) => row.id);
@@ -415,6 +417,7 @@ export async function chooseTemplate(db: Db, id: string, templateId: string | nu
     await draft(tx, id, true);
     let content = {
       templateId: null as string | null,
+      lookProductId: null as string | null,
       subject: EMPTY_SUBJECT,
       body: EMPTY_BODY,
       customFields: [] as CustomField[],
@@ -428,6 +431,7 @@ export async function chooseTemplate(db: Db, id: string, templateId: string | nu
       if (!template) throw new CampaignError('TEMPLATE_NOT_FOUND');
       content = {
         templateId,
+        lookProductId: template.lookProductId,
         subject: template.subject,
         body: template.body,
         customFields: template.customFields,
@@ -453,7 +457,7 @@ export async function chooseTemplate(db: Db, id: string, templateId: string | nu
   });
 }
 
-async function liveFiles(tx: Db | Tx, fileIds: string[]) {
+export async function liveFiles(tx: Db | Tx, fileIds: string[]) {
   const unique = [...new Set(fileIds)];
   if (unique.length === 0) return;
   const found = await tx
@@ -465,7 +469,7 @@ async function liveFiles(tx: Db | Tx, fileIds: string[]) {
   if (found.length !== unique.length) throw new CampaignError('FILE_NOT_FOUND');
 }
 
-async function writeCommonAttachments(tx: Tx, campaignId: string, fileIds: string[]) {
+export async function writeCommonAttachments(tx: Tx, campaignId: string, fileIds: string[]) {
   await tx.delete(campaignAttachments).where(eq(campaignAttachments.campaignId, campaignId));
   const unique = [...new Set(fileIds)];
   if (unique.length > 0) {
@@ -587,6 +591,7 @@ export async function getCampaign(db: Db, id: string) {
       id: campaignMessages.id,
       customerId: campaignMessages.organizationId,
       contactId: campaignMessages.contactId,
+      recipientRole: campaignMessages.recipientRole,
       customerName: organizations.name,
       customerKind: organizations.kind,
       contactTitleBefore: contacts.titleBefore,
@@ -612,7 +617,7 @@ export async function getCampaign(db: Db, id: string) {
       complainedAt: campaignMessages.complainedAt,
     })
     .from(campaignMessages)
-    .innerJoin(organizations, eq(organizations.id, campaignMessages.organizationId))
+    .leftJoin(organizations, eq(organizations.id, campaignMessages.organizationId))
     .leftJoin(contacts, eq(contacts.id, campaignMessages.contactId))
     .where(eq(campaignMessages.campaignId, id))
     .orderBy(asc(campaignMessages.position));
@@ -638,6 +643,8 @@ export async function getCampaign(db: Db, id: string) {
   return {
     id: c.id,
     status: c.status,
+    kind: c.kind,
+    lookProductId: c.lookProductId,
     templateId: c.templateId,
     templateName: row.templateName,
     subject: c.subject ?? EMPTY_SUBJECT,
@@ -669,7 +676,7 @@ export async function getCampaign(db: Db, id: string) {
           }
         : {
             // A message names its person since stage O2; an older one without stays readable.
-            name: m.customerName,
+            name: m.customerName ?? m.toEmail ?? '',
             salutation: null,
             email: null,
             unsubscribedAt: null,
@@ -677,8 +684,10 @@ export async function getCampaign(db: Db, id: string) {
           };
       const draftState = c.status === 'draft';
       return {
+        // The wizard only opens bulk e-mails, whose recipients all have an organization.
+        customerId: m.customerId as string,
+        recipientRole: m.recipientRole,
         id: m.id,
-        customerId: m.customerId,
         contactId: m.contactId,
         customerName: m.customerName,
         customerKind: m.customerKind,
@@ -717,6 +726,7 @@ export async function listCampaigns(db: Db, status: 'sent' | 'draft', page: numb
     .select({
       id: campaigns.id,
       status: campaigns.status,
+      kind: campaigns.kind,
       subjectText: campaigns.subjectText,
       subject: campaigns.subject,
       customFields: campaigns.customFields,
@@ -811,7 +821,7 @@ async function renderFor(
   );
   const body = message.bodyOverride ?? campaign.body;
   const rendered = await renderEmail({
-    look: await getLook(db),
+    look: await lookFor(db, campaign.lookProductId),
     baseUrl: env.WEB_URL,
     subject: campaign.subject,
     body,
@@ -840,7 +850,7 @@ export async function previewMessage(db: Db, env: Env, messageId: string) {
   if (!row) throw new CampaignError('NOT_FOUND');
   const campaign = await getCampaign(db, row.campaignId);
   const message = campaign.messages.find((m) => m.id === messageId)!;
-  const look = await getLook(db);
+  const look = await lookFor(db, campaign.lookProductId);
   const from = `${campaign.sender.name} | ${look.brandName} <${env.CAMPAIGN_FROM_ADDRESS}>`;
   if (campaign.status !== 'draft' && row.html) {
     return { subject: row.subject ?? '', html: row.html, missing: [], from, to: message.email };
@@ -859,7 +869,7 @@ export async function previewMessage(db: Db, env: Env, messageId: string) {
 // Sending
 
 /** The versions an e-mail would carry today: the common files and the recipient's own. */
-async function versionsOf(tx: Db | Tx, fileIds: string[]) {
+export async function versionsOf(tx: Db | Tx, fileIds: string[]) {
   if (fileIds.length === 0) return [];
   const rows = await tx
     .select({
@@ -1060,7 +1070,7 @@ export async function testMessage(db: Db, env: Env, id: string) {
   const first = campaign.messages.find((m) => !m.skipReason);
   if (!first) throw new CampaignError('NO_RECIPIENTS');
   const out = await renderFor(db, env, campaign, first, `${env.WEB_URL}/odhlasenie`);
-  const look = await getLook(db);
+  const look = await lookFor(db, campaign.lookProductId);
   return {
     to: campaign.sender.email,
     from: `${campaign.sender.name} | ${look.brandName} <${env.CAMPAIGN_FROM_ADDRESS}>`,

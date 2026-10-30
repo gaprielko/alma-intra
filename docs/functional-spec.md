@@ -618,7 +618,11 @@ both attach files.
 | D-34  | Prevádzky are organizations under an organization, one level deep, with their own persons, timeline and products (establishments.md, P-1…P-14; 29 Oct 2026) |
 | D-35  | Products have price lists of shared items; a holder's price follows the list unless fixed or discounted; workloads count items (products.md, R-1…R-15; 29 Oct 2026) |
 | D-36  | The Reply-To of e-mails to customers is a setting: company address (default), back to Intra, or the sender (29 Oct 2026) |
-| D-37  | Old e-mail is imported by forwarding it with an agreed line from a listed private address, when a setting allows it (30 Oct 2026, docs/email-import.md) |
+| D-40  | Dates are written d.M.yyyy everywhere; every date field uses the app's own calendar (30 Oct 2026) |
+| D-39  | E-mail look per product over a global one; chosen on the template and on a new e-mail; sending address and replies are common (30 Oct 2026) |
+| D-38  | „Nový e-mail“ is one e-mail to To, Cc and Bcc, beside the wizard „Hromadný e-mail“ (30 Oct 2026, docs/new-email.md) |
+| D-37  | Old e-mail is imported by forwarding it with an agreed line from a listed private address, when a setting allows it (30 Oct 2026, docs/email-import.md); replaced by D-41 |
+| D-41  | A forwarded e-mail arrives as any other; a user adds it with „Pridaj do konverzácie“, no detection on arrival and no setting (30 Oct 2026, docs/email-import.md) |
 
 ### Still to verify (not decisions)
 

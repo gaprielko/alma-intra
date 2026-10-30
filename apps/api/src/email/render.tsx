@@ -355,9 +355,9 @@ export function EmailDocument({ input }: { input: RenderInput }) {
                   ))}
                   <Text style={{ ...text, margin: '6px 0 0', fontSize: '13px', color: MUTED }}>
                     {t.downloads.valid(
-                      input.downloads.expiresAt.toLocaleDateString('sk-SK', {
-                        timeZone: 'Europe/Bratislava',
-                      }),
+                      input.downloads.expiresAt
+                        .toLocaleDateString('sk-SK', { timeZone: 'Europe/Bratislava' })
+                        .replace(/\s/g, ''),
                     )}
                   </Text>
                 </Section>

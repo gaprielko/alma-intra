@@ -24,6 +24,7 @@ export function BulkEmailButton({ size }: { size?: 'sm' | undefined }) {
   return (
     <Button
       size={size}
+      variant="secondary"
       disabled={create.isPending}
       onClick={() => create.mutate({ customerIds: [] })}
     >

@@ -9,6 +9,7 @@ import { TRPCError } from '@trpc/server';
 import { Logger } from '@nestjs/common';
 import { loadEnv } from '../config/env.js';
 import { saveInboundAttachments } from '../inbound/attachments.js';
+import { importInbound, previewImport } from '../inbound/import.js';
 import { InboundFetchError, inboundSource } from '../inbound/inbound.js';
 import { syncInbound } from '../inbound/intake.js';
 import * as inbound from '../inbound/inbound.service.js';
@@ -74,6 +75,29 @@ export const inboundRouter = router({
         },
       });
       return { ok: true };
+    }),
+
+  /** „Pridaj do konverzácie“: what the forward holds, shown before anything is stored. */
+  importPreview: authorizedProcedure('email.read')
+    .input(inboundIdSchema)
+    .query(({ ctx, input }) => run(() => previewImport(ctx.db, input.id, ctx.session.userId))),
+
+  /** „Pridaj do konverzácie“: the forward becomes the original it carries. */
+  importForward: authorizedProcedure('email.read')
+    .input(inboundIdSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { outcome } = await run(() => importInbound(ctx.db, input.id, ctx.session.userId));
+      // As on filing: the attachments go into the folder now; the import stands even if they fail.
+      await saveInboundAttachments(ctx.db, ctx.storage, inboundSource(loadEnv()), input.id).catch(
+        (error: unknown) =>
+          logger.warn({
+            msg: 'attachments of a received e-mail not saved',
+            inboundId: input.id,
+            ...describeError(error),
+          }),
+      );
+      ctx.audit.set({ entityType: 'inbound', entityId: input.id, diff: { imported: outcome } });
+      return { outcome };
     }),
 
   /** „Odpovedať“: the answer is queued like any e-mail to a customer and leaves within seconds. */
