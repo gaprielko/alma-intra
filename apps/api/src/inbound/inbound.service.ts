@@ -24,6 +24,10 @@ const PREVIEW = sql<string>`left(regexp_replace(coalesce(${inboundMessages.text}
 const customerName = sql<string | null>`(select c.name from organizations c
   where c.id = ${inboundMessages.organizationId})`;
 
+/** The person the e-mail is filed under, as Kontakty names them. */
+const contactName = sql<string | null>`(select concat_ws(' ', p.title_before, p.first_name,
+  p.last_name, p.title_after) from contacts p where p.id = ${inboundMessages.contactId})`;
+
 /**
  * „Prijaté“: one page of received e-mail, the unassigned first (or only), newest first, and how
  * many wait to be assigned.
@@ -46,6 +50,7 @@ export async function listInbound(db: Db, raw: InboundListInput) {
         receivedAt: inboundMessages.receivedAt,
         customerId: inboundMessages.organizationId,
         customerName,
+        contactName,
         attachmentCount: sql<number>`jsonb_array_length(${inboundMessages.attachments})`,
         total: sql<number>`count(*) over ()`.mapWith(Number),
       })
@@ -78,8 +83,7 @@ export async function getInbound(db: Db, id: string) {
     .select({
       inbound: inboundMessages,
       customerName,
-      contactName: sql<string | null>`(select concat_ws(' ', p.title_before, p.first_name,
-        p.last_name) from contacts p where p.id = ${inboundMessages.contactId})`,
+      contactName,
       original: sql<{
         campaignId: string;
         subject: string | null;

@@ -107,10 +107,11 @@ function InboxPage() {
           {rows.map((row) => (
             <TableRow key={row.id} href={`/emails/inbox/${row.id}`}>
               <TableCell className="max-w-56">
+                {/* Filed under a person: their name from Kontakty, the address under it. */}
                 <RowLink href={`/emails/inbox/${row.id}`} className="block truncate font-semibold">
-                  {row.fromName ?? row.fromEmail}
+                  {row.contactName || row.fromName || row.fromEmail}
                 </RowLink>
-                {row.fromName ? (
+                {row.contactName || row.fromName ? (
                   <p className="truncate text-xs text-muted">{row.fromEmail}</p>
                 ) : null}
               </TableCell>
