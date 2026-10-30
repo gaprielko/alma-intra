@@ -39,6 +39,7 @@ const fields = {
   type: leadActivities.type,
   createdAt: leadActivities.createdAt,
   lastConfirmedAt: leadActivities.lastConfirmedAt,
+  confirmedCount: leadActivities.confirmedCount,
   email: leadActivities.email,
   productId: products.id,
   productName: products.name,
@@ -204,7 +205,7 @@ export async function interestInfo(db: Db, env: Env, token: string) {
 
 /**
  * The confirm button: the first confirmation makes the entry and tells whoever sent the e-mail,
- * a further one only moves `lastConfirmedAt`.
+ * a further one only moves `lastConfirmedAt` and adds to the count.
  */
 export async function confirmInterest(db: Db, env: Env, token: string) {
   const target = await targetOf(db, env, token);
@@ -233,7 +234,10 @@ export async function confirmInterest(db: Db, env: Env, token: string) {
     } else {
       await tx
         .update(leadActivities)
-        .set({ lastConfirmedAt: new Date() })
+        .set({
+          lastConfirmedAt: new Date(),
+          confirmedCount: sql`${leadActivities.confirmedCount} + 1`,
+        })
         .where(sameInterest(target));
     }
     return { ...target, repeated: !created };

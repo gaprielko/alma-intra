@@ -1,6 +1,15 @@
 import { LEAD_ACTIVITY_TYPES } from '@intra/shared/schemas';
 import { sql } from 'drizzle-orm';
-import { index, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import {
+  index,
+  integer,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { campaignMessages } from './campaigns.js';
 import { contacts, organizations, products } from './customers.js';
 
@@ -14,7 +23,8 @@ export const leadActivityType = pgEnum('lead_activity_type', LEAD_ACTIVITY_TYPES
 /**
  * What a customer or a partner did on their own, the main menu's „Aktivity“
  * (docs/activities.md), apart from `activities`, which colleagues write. One row per contact and
- * product while it is alive: a further confirmation moves `lastConfirmedAt`. A private person has
+ * product while it is alive: a further confirmation moves `lastConfirmedAt` and adds to
+ * `confirmedCount`. A private person has
  * no contact. `email` is the address the e-mail went to, as it was then. Soft deleted.
  */
 export const leadActivities = pgTable(
@@ -35,6 +45,8 @@ export const leadActivities = pgTable(
     email: text('email'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     lastConfirmedAt: timestamp('last_confirmed_at', { withTimezone: true }).notNull().defaultNow(),
+    /** How many times the contact confirmed. Counted from here on: older clicks were not. */
+    confirmedCount: integer('confirmed_count').notNull().default(1),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
   },
   (t) => [

@@ -41,6 +41,7 @@ next step and attachments, editable). One row per contact and product [A-3].
 | `email` | the address the e-mail went to, kept as it was then |
 | `created_at` | when it entered the system |
 | `last_confirmed_at` | the latest confirmation |
+| `confirmed_count` | how many times it was confirmed, shown beside the date in the list when above 1 |
 | `deleted_at` | soft delete [A-7] |
 
 Unique while alive: organization, contact (NULL as one value) and product, with the type.
@@ -77,7 +78,7 @@ The template's own button is changed from `mailto:` once this works. It has not 
 - **[A-2] Two kinds of „Aktivity“.** Recommended: the menu stays „Aktivity“; those on the timeline
   become „Záznamy“ (words only, no data change).
 - **[A-3] A repeated confirmation.** Recommended: one row per contact and product; it moves
-  `last_confirmed_at`, the page says the interest is already recorded.
+  `last_confirmed_at` and adds to `confirmed_count`, the page says the interest is already recorded.
 - **[A-4] On the detail of the organization and the contact?** Recommended: yes, read only. The
   customer's sales status does not change by itself.
 - **[A-5] Notify the sender?** Recommended: yes, the bell, because the e-mail promises more
