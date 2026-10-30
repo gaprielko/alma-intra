@@ -1,12 +1,11 @@
 import { sk } from '@intra/shared/i18n';
-import { LEAD_ACTIVITY_TYPES, type LeadActivityType } from '@intra/shared/schemas';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { Search } from 'lucide-react';
 import { useState } from 'react';
 import { useDebounced } from '@/components/customers/organization-list';
 import { ErrorState } from '@/components/empty-state';
-import { PageHeader } from '@/components/page-header';
+import { ActivitiesHeader } from '@/components/activities/activities-header';
 import { TablePagination, TableShell } from '@/components/table-shell';
 import { Badge } from '@/components/ui/badge';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -22,21 +21,27 @@ export const Route = createFileRoute('/_app/activities/')({ component: Activitie
 
 const t = sk.leadActivities;
 
+const feedbackKindOf = (kind: string | null) =>
+  kind ? ((t.feedbackKinds as Record<string, string>)[kind] ?? kind) : null;
+const feedbackClientOf = (client: string | null) =>
+  client ? ((t.feedbackClients as Record<string, string>)[client] ?? client) : null;
+
 /** Aktivity: what customers and partners did on their own, the newest first (docs/activities.md). */
 function ActivitiesPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [type, setType] = useState<LeadActivityType | ''>('');
+  const [type, setType] = useState('');
   const [productId, setProductId] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const term = useDebounced(search.trim(), 250);
   const products = useQuery(trpc.product.list.queryOptions());
+  const types = useQuery(trpc.activityType.list.queryOptions());
   const list = useQuery({
     ...trpc.leadActivity.list.queryOptions({
       page,
       ...(term ? { search: term } : {}),
-      ...(type ? { type } : {}),
+      ...(type ? { typeId: type } : {}),
       ...(productId ? { productId } : {}),
       ...(from ? { from } : {}),
       ...(to ? { to } : {}),
@@ -54,7 +59,7 @@ function ActivitiesPage() {
   const c = t.columns;
   return (
     <div className="min-w-0">
-      <PageHeader title={t.title} subtitle={t.subtitle} />
+      <ActivitiesHeader active="list" count={list.data?.total} />
       <main className="space-y-4 px-7 pt-5 pb-10">
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative min-w-60 flex-1 sm:max-w-sm">
@@ -71,15 +76,11 @@ function ActivitiesPage() {
             />
           </div>
           <div className="w-52">
-            <Select
-              aria-label={t.filters.type}
-              value={type}
-              onChange={(value) => filter(setType)(value as LeadActivityType | '')}
-            >
+            <Select aria-label={t.filters.type} value={type} onChange={filter(setType)}>
               <SelectItem value="">{t.filters.allTypes}</SelectItem>
-              {LEAD_ACTIVITY_TYPES.map((key) => (
-                <SelectItem key={key} value={key}>
-                  {t.types[key]}
+              {(types.data ?? []).map((item) => (
+                <SelectItem key={item.id} value={item.id}>
+                  {item.name}
                 </SelectItem>
               ))}
             </Select>
@@ -152,21 +153,46 @@ function ActivitiesPage() {
                   </TableCell>
                   <TableCell>
                     <Badge tone="info" dot>
-                      {t.types[row.type]}
+                      {row.typeName}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <span className="inline-flex rounded-md bg-info-soft px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-info">
-                      {row.productName}
-                    </span>
+                    {row.productName ? (
+                      <span className="inline-flex rounded-md bg-info-soft px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-info">
+                        {row.productName}
+                      </span>
+                    ) : (
+                      sk.common.none
+                    )}
                   </TableCell>
                   <TableCell>
-                    <RowLink href={`/organizations/${row.organizationId}`} className={CELL_LINK}>
-                      {row.organizationName}
-                    </RowLink>
-                    <p className="mt-1 text-xs text-muted">
-                      {[row.parentName, t.roles[row.organizationRole]].filter(Boolean).join(' · ')}
-                    </p>
+                    {row.organizationId ? (
+                      <>
+                        <RowLink
+                          href={`/organizations/${row.parentId ?? row.organizationId}`}
+                          className={CELL_LINK}
+                        >
+                          {row.parentName ?? row.organizationName}
+                        </RowLink>
+                        {row.parentName ? (
+                          <p className="mt-1 text-xs text-muted">
+                            {t.workplace(row.organizationName ?? '')}
+                          </p>
+                        ) : null}
+                        {row.organizationRole ? (
+                          <p className="mt-1 text-xs text-muted">{t.roles[row.organizationRole]}</p>
+                        ) : null}
+                      </>
+                    ) : (
+                      <>
+                        <span className="font-semibold text-warning">{t.unassigned}</span>
+                        {row.sourceOrganizationName ? (
+                          <p className="mt-1 text-xs text-muted">
+                            {t.inApp(row.sourceOrganizationName)}
+                          </p>
+                        ) : null}
+                      </>
+                    )}
                   </TableCell>
                   <TableCell>
                     {row.contactId ? (
@@ -174,7 +200,9 @@ function ActivitiesPage() {
                         {row.contactName}
                       </RowLink>
                     ) : (
-                      <span className="text-[13px] text-muted">{t.noContact}</span>
+                      <span className="text-[13px] text-muted">
+                        {row.reporterName ?? t.noContact}
+                      </span>
                     )}
                     {row.email ? (
                       <p className={cn('text-xs text-muted', row.contactId && 'mt-1')}>
@@ -183,10 +211,23 @@ function ActivitiesPage() {
                     ) : null}
                   </TableCell>
                   <TableCell>
-                    <p className="text-[13px]">{row.subject ?? sk.common.none}</p>
-                    {row.sentAt ? (
-                      <p className="text-xs text-muted">{t.sentOn(formatDate(row.sentAt))}</p>
-                    ) : null}
+                    {row.source === 'app' ? (
+                      <>
+                        <p className="text-[13px]">{t.fromApp(row.productName ?? '')}</p>
+                        <p className="text-xs text-muted">
+                          {[feedbackKindOf(row.feedbackKind), feedbackClientOf(row.feedbackClient)]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-[13px]">{row.subject ?? sk.common.none}</p>
+                        {row.sentAt ? (
+                          <p className="text-xs text-muted">{t.sentOn(formatDate(row.sentAt))}</p>
+                        ) : null}
+                      </>
+                    )}
                   </TableCell>
                 </TableRow>
               );

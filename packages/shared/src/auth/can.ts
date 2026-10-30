@@ -25,6 +25,9 @@ export const ACTIONS = [
   'activity.read',
   'activity.write',
   'activity.delete',
+  // The code list of Aktivity's types (docs/activity-types.md).
+  'activity_type.read',
+  'activity_type.write',
   // E-mail templates (reading them is part of sending), and Settings › Vzhľad e-mailov.
   'template.read',
   'template.write',
@@ -66,6 +69,8 @@ const POLICY: Record<Action, readonly Role[]> = {
   'activity.read': ['admin'],
   'activity.write': ['admin'],
   'activity.delete': ['admin'],
+  'activity_type.read': ['admin'],
+  'activity_type.write': ['admin'],
   'template.read': ['admin'],
   'template.write': ['admin'],
   'email_look.manage': ['admin'],

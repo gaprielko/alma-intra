@@ -1,7 +1,7 @@
-# Aktivity: types of activity as a code list (draft)
+# Aktivity: types of activity as a code list
 
-Status: **draft, waiting for the user's approval** (2026-10-30). Screens: page „Aktivity“ on the
-canvas „Alma Intra – screens“. Nothing is implemented yet. Builds on `docs/activities.md`.
+Status: **implemented** (2026-10-30), with the recommendations of section 4. Screens: page „Aktivity“
+on the canvas „Alma Intra – screens“. Builds on `docs/activities.md`.
 
 ---
 
@@ -32,7 +32,7 @@ New table `activity_types`:
 | --- | --- |
 | `id` | a uuid; the seeded „Záujem o produkt“ has a fixed one |
 | `name` | „Záujem o produkt“; unique among the live types |
-| `confirm_label` | the public page's button: „Áno, mám vážny záujem“ |
+| `confirm_label` | the public page's button: „Áno, mám vážny záujem“; NULL on a type no button records, „Podnet“ |
 | `asks_product` | the button picks a product, and the activity holds it |
 | `active` | offered in the button dialog |
 | `position`, `created_at`, `updated_at` | as other code lists |
@@ -64,8 +64,9 @@ and means the seeded type, so e-mails already sent keep working.
   elsewhere in the app, and delete only when the type is used nowhere. Recommended: used means an
   entry, or a button in a template or an e-mail. A used type can only be switched off: it is then not
   offered for new buttons, but buttons already sent keep recording and its entries stay.
-- **[T-5] Notification.** Recommended: the bell tells the sender about every type, with the type's
-  name, on the first confirmation only.
+- **[T-5] Notification.** Recommended: the bell tells the sender about every type, on the first
+  confirmation only. It says „Nová aktivita“ and the organization, without the type's name, which the
+  notification does not hold.
 - **[T-6] Where the code list lives.** Recommended: the tab in Aktivity, as asked, not
   Settings › Číselníky, with `can()` actions `activity_type.read` and `activity_type.write`.
 
@@ -81,5 +82,5 @@ old documents above. It is saved anew with `activityTypeId` so that it no longer
 ## 6. Not in this step
 
 Workflows. They come later on this tab: rows get checkboxes, and a panel beside the table sets the
-workflow of the checked types, one or several at once. More seeded types, activities that do not come from an e-mail button, MCP tools for the
-code list.
+workflow of the checked types, one or several at once. More seeded types, MCP tools for the code
+list. Activities from an application are in `docs/activities-from-apps.md`.

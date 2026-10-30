@@ -1,6 +1,7 @@
 import { sk } from '@intra/shared/i18n';
 import { useQuery } from '@tanstack/react-query';
 import {
+  ACTIVITY_TYPE_INTEREST_ID,
   brandParts,
   type CustomField,
   type EmailLook,
@@ -311,13 +312,28 @@ function ButtonDialog({
 }) {
   const [text, setText] = useState(initial.text);
   const [href, setHref] = useState(initial.href);
-  const [records, setRecords] = useState(initial.interestProductId !== null);
-  const [productId, setProductId] = useState(initial.interestProductId ?? defaultProductId ?? '');
+  const wasRecording = initial.activityTypeId !== null || initial.interestProductId !== null;
+  const [records, setRecords] = useState(wasRecording);
+  const [typeId, setTypeId] = useState(
+    initial.activityTypeId ?? (wasRecording ? ACTIVITY_TYPE_INTEREST_ID : ''),
+  );
+  const [productId, setProductId] = useState(
+    initial.productId ?? initial.interestProductId ?? defaultProductId ?? '',
+  );
   const [centered, setCentered] = useState(initial.align === 'center');
   const products = useQuery({ ...trpc.product.list.queryOptions(), enabled: records });
-  const chosen = productId || products.data?.[0]?.id || '';
+  const types = useQuery({ ...trpc.activityType.list.queryOptions(), enabled: records });
+  // A type switched off is not offered for a new button, one already holding it keeps it.
+  const offered = (types.data ?? []).filter(
+    (item) => item.confirmLabel !== null && (item.active || item.id === initial.activityTypeId),
+  );
+  const chosenType = offered.find((item) => item.id === typeId) ?? offered[0] ?? null;
+  const chosen = chosenType?.asksProduct ? productId || products.data?.[0]?.id || '' : '';
   const valid =
-    text.trim() !== '' && (records ? chosen !== '' : /^(https?:\/\/|mailto:)./i.test(href.trim()));
+    text.trim() !== '' &&
+    (records
+      ? chosenType !== null && (!chosenType.asksProduct || chosen !== '')
+      : /^(https?:\/\/|mailto:)./i.test(href.trim()));
   const option = (on: boolean) =>
     cn(
       'flex cursor-pointer items-start gap-2.5 rounded-xl border px-3 py-2.5 text-sm',
@@ -337,8 +353,22 @@ function ButtonDialog({
             const align = centered ? 'center' : null;
             onSave(
               records
-                ? { text: text.trim(), href: '', interestProductId: chosen, align }
-                : { text: text.trim(), href: href.trim(), interestProductId: null, align },
+                ? {
+                    text: text.trim(),
+                    href: '',
+                    activityTypeId: chosenType?.id ?? null,
+                    productId: chosen || null,
+                    interestProductId: null,
+                    align,
+                  }
+                : {
+                    text: text.trim(),
+                    href: href.trim(),
+                    activityTypeId: null,
+                    productId: null,
+                    interestProductId: null,
+                    align,
+                  },
             );
           }}
         >
@@ -382,16 +412,30 @@ function ButtonDialog({
             </label>
           </fieldset>
           {records ? (
-            <div className="space-y-2">
-              <Label htmlFor="button-product">{t.editor.buttonProduct}</Label>
-              <Select id="button-product" value={chosen} onChange={setProductId}>
-                {(products.data ?? []).map((product) => (
-                  <SelectItem key={product.id} value={product.id}>
-                    {product.name}
-                  </SelectItem>
-                ))}
-              </Select>
-            </div>
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="button-type">{t.editor.buttonType}</Label>
+                <Select id="button-type" value={chosenType?.id ?? ''} onChange={setTypeId}>
+                  {offered.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name}
+                    </SelectItem>
+                  ))}
+                </Select>
+              </div>
+              {chosenType?.asksProduct ? (
+                <div className="space-y-2">
+                  <Label htmlFor="button-product">{t.editor.buttonProduct}</Label>
+                  <Select id="button-product" value={chosen} onChange={setProductId}>
+                    {(products.data ?? []).map((product) => (
+                      <SelectItem key={product.id} value={product.id}>
+                        {product.name}
+                      </SelectItem>
+                    ))}
+                  </Select>
+                </div>
+              ) : null}
+            </>
           ) : (
             <div className="space-y-2">
               <Label htmlFor="button-href">{t.editor.buttonHref}</Label>

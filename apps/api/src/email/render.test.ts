@@ -220,7 +220,7 @@ describe('the brand in the header', () => {
     it('carries the link made for the recipient', async () => {
       const out = await renderEmail({
         ...options,
-        interestUrl: (id) => `https://intra.test/zaujem#token-${id}`,
+        activityUrl: ({ productId }) => `https://intra.test/zaujem#token-${productId}`,
       });
       expect(out.html).toContain(`https://intra.test/zaujem#token-${PRODUCT}`);
     });

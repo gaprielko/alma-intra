@@ -93,7 +93,10 @@ export type TimelineInterest = Extract<
   { type: 'interest' }
 >['interest'];
 
-/** Somebody's confirmed interest in a product, read only; opens its entry in Aktivity. */
+/**
+ * What somebody did on their own, read only; opens its entry in Aktivity. Of a podnet only its kind
+ * and origin: the text may hold health data and stays in the detail.
+ */
 export function InterestItem({ item }: { item: TimelineInterest }) {
   return (
     <li className="relative">
@@ -108,9 +111,25 @@ export function InterestItem({ item }: { item: TimelineInterest }) {
         params={{ activityId: item.id }}
         className="block rounded-lg hover:bg-hover/60"
       >
-        <p className="text-sm font-semibold">{a.timeline.interest(item.product)}</p>
+        <p className="text-sm font-semibold">
+          {item.source === 'app'
+            ? a.timeline.feedback(
+                item.typeName,
+                (sk.leadActivities.feedbackKinds as Record<string, string>)[
+                  item.feedbackKind ?? ''
+                ] ?? '',
+              )
+            : [item.typeName, item.product].filter(Boolean).join(' ')}
+        </p>
         <p className="text-xs text-muted">
-          {a.timeline.interestBy(item.contact, formatRecent(item.at))}
+          {item.source === 'app'
+            ? a.timeline.feedbackBy(
+                item.contact ?? item.reporterName,
+                item.product ?? '',
+                item.workplace,
+                formatRecent(item.at),
+              )
+            : a.timeline.interestBy(item.contact, formatRecent(item.at))}
         </p>
       </Link>
     </li>

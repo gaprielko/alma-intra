@@ -1,4 +1,5 @@
 import { sk } from '@intra/shared/i18n';
+import { ACTIVITY_TYPE_INTEREST_ID } from '@intra/shared/schemas';
 import { useMutation } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { Check } from 'lucide-react';
@@ -13,8 +14,9 @@ const t = sk.interest;
 export const Route = createFileRoute('/zaujem')({ component: InterestPage });
 
 /**
- * The page behind an e-mail's „Mám vážny záujem“ (`/zaujem#<token>`), public. Opening it records
- * nothing, a mail scanner opens links too: only the button does (docs/activities.md, A-1).
+ * The page behind an e-mail's button that records an activity (`/zaujem#<token>`), public. Opening it
+ * records nothing, a mail scanner opens links too: only the button does (docs/activities.md, A-1).
+ * Interest in a product has its own words; any other type says its name and its own button.
  */
 function InterestPage() {
   const token = useFragmentToken();
@@ -36,6 +38,8 @@ function InterestPage() {
 
   const email = info.data?.email ?? '';
   const product = info.data?.product ?? '';
+  const interest = info.data?.typeId === ACTIVITY_TYPE_INTEREST_ID;
+  const name = [info.data?.type, info.data?.product].filter(Boolean).join(': ');
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center bg-[#f4f6f6] px-4 py-10">
       <div className="w-full max-w-[30rem] rounded-2xl bg-white p-7 shadow-raised">
@@ -53,8 +57,10 @@ function InterestPage() {
           </p>
         ) : state === 'ask' ? (
           <div>
-            <h1 className="text-xl font-bold">{t.title(product)}</h1>
-            <p className="mt-2 text-sm text-muted">{t.text(email)}</p>
+            <h1 className="text-xl font-bold">{interest ? t.title(product) : name}</h1>
+            <p className="mt-2 text-sm text-muted">
+              {interest ? t.text(email) : t.otherText(email)}
+            </p>
             <Button
               className="mt-5 w-full"
               disabled={confirm.isPending}
@@ -68,7 +74,7 @@ function InterestPage() {
                 )
               }
             >
-              {t.confirm}
+              {info.data?.confirmLabel ?? t.confirm}
             </Button>
             <p className="mt-5 border-t border-border-subtle pt-4 text-[13px] text-muted">
               {t.dismiss}
@@ -83,10 +89,20 @@ function InterestPage() {
               <Check className="size-6" />
             </span>
             <h1 className="mt-4 text-xl font-bold">
-              {state === 'again' ? t.againTitle : t.doneTitle}
+              {!interest
+                ? state === 'again'
+                  ? t.otherAgainTitle
+                  : t.otherDoneTitle
+                : state === 'again'
+                  ? t.againTitle
+                  : t.doneTitle}
             </h1>
             <p className="mt-2 text-sm text-muted">
-              {state === 'again' ? t.againText(product) : t.doneText(product, email)}
+              {!interest
+                ? t.otherDoneText
+                : state === 'again'
+                  ? t.againText(product)
+                  : t.doneText(product, email)}
             </p>
             {info.data?.contact ? (
               <p className="mt-5 border-t border-border-subtle pt-4 text-[13px] text-muted">

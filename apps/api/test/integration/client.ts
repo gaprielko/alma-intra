@@ -1,3 +1,4 @@
+import { mountAdosBody } from '../../src/integrations/ados.module.js';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module.js';
@@ -15,8 +16,9 @@ export async function startApi(options: { storage?: Storage } = {}) {
   if (options.storage) builder.overrideProvider(STORAGE).useValue(options.storage);
   const moduleRef = await builder.compile();
   const app: INestApplication = moduleRef.createNestApplication({ logger: false, rawBody: true });
-  // What main.ts adds outside the modules: the OAuth endpoints of the MCP server.
+  // What main.ts adds outside the modules: the OAuth endpoints of the MCP server, the raw body of ADOS.
   mountOAuth(app, loadEnv());
+  mountAdosBody(app);
   await app.listen(0);
   const baseUrl = await app.getUrl();
   return {

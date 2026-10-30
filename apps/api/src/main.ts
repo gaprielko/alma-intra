@@ -5,6 +5,7 @@ import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module.js';
 import { loadEnv, storageEnvOf } from './config/env.js';
 import { securityHeaders } from './security-headers.js';
+import { mountAdosBody } from './integrations/ados.module.js';
 import { mountOAuth } from './mcp/oauth.js';
 import { serveWeb } from './spa-shell.js';
 
@@ -30,6 +31,8 @@ async function bootstrap() {
   // Intra is the OAuth server of its MCP endpoint (D-31): metadata, client registration,
   // /authorize (on to the consent page), /token and /revoke, from the MCP SDK.
   mountOAuth(app, env);
+
+  mountAdosBody(app);
 
   // The image serves the built web app from the same origin as the API, its shell with the CSP
   // nonce of each response (spa-shell.ts). Unset in dev, where Vite serves it.

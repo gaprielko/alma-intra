@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { idSchema } from './common.js';
+import { ACTIVITY_TYPE_INTEREST_ID } from './lead-activity.js';
 
 /** Languages of a template (D-20b): only Slovak is offered at first. */
 export const TEMPLATE_LANGUAGES = ['sk'] as const;
@@ -110,13 +111,23 @@ const nodeSchema: z.ZodType<EmailNode> = z.lazy(() =>
   }),
 );
 
+const anId = (value: unknown) =>
+  typeof value === 'string' && idSchema.safeParse(value).success ? value : null;
+
 /**
- * The product of a button that records interest (docs/activities.md): `attrs.interestProductId`.
- * The recipient's own link is made at sending, so such a button has no address.
+ * What a button records (docs/activity-types.md): `attrs.activityTypeId` and, when the type asks for
+ * one, `attrs.productId`. A document saved before the types has `attrs.interestProductId`, which
+ * means interest in that product. The recipient's own link is made at sending, so such a button has
+ * no address.
  */
-export const interestProductOf = (node: EmailNode): string | null => {
-  const id = node.type === 'button' ? node.attrs?.interestProductId : null;
-  return typeof id === 'string' && idSchema.safeParse(id).success ? id : null;
+export const recordedActivityOf = (
+  node: EmailNode,
+): { typeId: string; productId: string | null } | null => {
+  if (node.type !== 'button') return null;
+  const typeId = anId(node.attrs?.activityTypeId);
+  if (typeId) return { typeId, productId: anId(node.attrs?.productId) };
+  const productId = anId(node.attrs?.interestProductId);
+  return productId ? { typeId: ACTIVITY_TYPE_INTEREST_ID, productId } : null;
 };
 
 /** Every node that carries something to check: links, images, buttons, variables. */
@@ -125,9 +136,9 @@ function* walk(node: EmailNode): Generator<EmailNode> {
   for (const child of node.content ?? []) yield* walk(child);
 }
 
-/** Whether a document has a button that records interest in a product. */
-export const hasInterestButton = (doc: EmailNode) =>
-  [...walk(doc)].some((node) => interestProductOf(node) !== null);
+/** Whether a document has a button that records an activity. */
+export const hasActivityButton = (doc: EmailNode) =>
+  [...walk(doc)].some((node) => recordedActivityOf(node) !== null);
 
 /** Why a document is refused, or `null`. `keys`: the template's custom field keys. */
 export function emailDocProblem(doc: EmailNode, keys: ReadonlySet<string>): string | null {
@@ -137,7 +148,7 @@ export function emailDocProblem(doc: EmailNode, keys: ReadonlySet<string>): stri
     for (const mark of node.marks ?? []) {
       if (mark.type === 'link' && !safeHref(mark.attrs?.href)) return 'invalid_link';
     }
-    if (node.type === 'button' && !interestProductOf(node) && !safeHref(node.attrs?.href)) {
+    if (node.type === 'button' && !recordedActivityOf(node) && !safeHref(node.attrs?.href)) {
       return 'invalid_link';
     }
     if (

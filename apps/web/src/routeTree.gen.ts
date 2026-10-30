@@ -25,6 +25,7 @@ import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as OauthConsentRouteImport } from './routes/oauth.consent'
 import { Route as AppActivitiesIndexRouteImport } from './routes/_app/activities.index'
 import { Route as AppActivitiesActivityIdRouteImport } from './routes/_app/activities.$activityId'
+import { Route as AppActivitiesTypesRouteImport } from './routes/_app/activities.types'
 import { Route as AppContactsPersonIdRouteImport } from './routes/_app/contacts.$personId'
 import { Route as AppCustomersIndexRouteImport } from './routes/_app/customers.index'
 import { Route as AppCustomersNewRouteImport } from './routes/_app/customers.new'
@@ -132,6 +133,11 @@ const AppActivitiesIndexRoute = AppActivitiesIndexRouteImport.update({
 const AppActivitiesActivityIdRoute = AppActivitiesActivityIdRouteImport.update({
   id: '/activities/$activityId',
   path: '/activities/$activityId',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppActivitiesTypesRoute = AppActivitiesTypesRouteImport.update({
+  id: '/activities/types',
+  path: '/activities/types',
   getParentRoute: () => AppRoute,
 } as any)
 const AppContactsPersonIdRoute = AppContactsPersonIdRouteImport.update({
@@ -304,6 +310,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AppSettingsRouteWithChildren
   '/oauth/consent': typeof OauthConsentRoute
   '/activities/$activityId': typeof AppActivitiesActivityIdRoute
+  '/activities/types': typeof AppActivitiesTypesRoute
   '/contacts/$personId': typeof AppContactsPersonIdRoute
   '/customers/new': typeof AppCustomersNewRoute
   '/emails/drafts': typeof AppEmailsDraftsRoute
@@ -350,6 +357,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AppSettingsRouteWithChildren
   '/oauth/consent': typeof OauthConsentRoute
   '/activities/$activityId': typeof AppActivitiesActivityIdRoute
+  '/activities/types': typeof AppActivitiesTypesRoute
   '/contacts/$personId': typeof AppContactsPersonIdRoute
   '/customers/new': typeof AppCustomersNewRoute
   '/emails/drafts': typeof AppEmailsDraftsRoute
@@ -398,6 +406,7 @@ export interface FileRoutesById {
   '/_app/settings': typeof AppSettingsRouteWithChildren
   '/oauth/consent': typeof OauthConsentRoute
   '/_app/activities/$activityId': typeof AppActivitiesActivityIdRoute
+  '/_app/activities/types': typeof AppActivitiesTypesRoute
   '/_app/contacts/$personId': typeof AppContactsPersonIdRoute
   '/_app/customers/new': typeof AppCustomersNewRoute
   '/_app/emails/drafts': typeof AppEmailsDraftsRoute
@@ -446,6 +455,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/oauth/consent'
     | '/activities/$activityId'
+    | '/activities/types'
     | '/contacts/$personId'
     | '/customers/new'
     | '/emails/drafts'
@@ -492,6 +502,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/oauth/consent'
     | '/activities/$activityId'
+    | '/activities/types'
     | '/contacts/$personId'
     | '/customers/new'
     | '/emails/drafts'
@@ -539,6 +550,7 @@ export interface FileRouteTypes {
     | '/_app/settings'
     | '/oauth/consent'
     | '/_app/activities/$activityId'
+    | '/_app/activities/types'
     | '/_app/contacts/$personId'
     | '/_app/customers/new'
     | '/_app/emails/drafts'
@@ -695,6 +707,13 @@ declare module '@tanstack/react-router' {
       path: '/activities/$activityId'
       fullPath: '/activities/$activityId'
       preLoaderRoute: typeof AppActivitiesActivityIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/activities/types': {
+      id: '/_app/activities/types'
+      path: '/activities/types'
+      fullPath: '/activities/types'
+      preLoaderRoute: typeof AppActivitiesTypesRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/contacts/$personId': {
@@ -948,6 +967,7 @@ interface AppRouteChildren {
   AppOverviewRoute: typeof AppOverviewRoute
   AppSettingsRoute: typeof AppSettingsRouteWithChildren
   AppActivitiesActivityIdRoute: typeof AppActivitiesActivityIdRoute
+  AppActivitiesTypesRoute: typeof AppActivitiesTypesRoute
   AppContactsPersonIdRoute: typeof AppContactsPersonIdRoute
   AppCustomersNewRoute: typeof AppCustomersNewRoute
   AppOrganizationsContactsRoute: typeof AppOrganizationsContactsRoute
@@ -978,6 +998,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppOverviewRoute: AppOverviewRoute,
   AppSettingsRoute: AppSettingsRouteWithChildren,
   AppActivitiesActivityIdRoute: AppActivitiesActivityIdRoute,
+  AppActivitiesTypesRoute: AppActivitiesTypesRoute,
   AppContactsPersonIdRoute: AppContactsPersonIdRoute,
   AppCustomersNewRoute: AppCustomersNewRoute,
   AppOrganizationsContactsRoute: AppOrganizationsContactsRoute,
