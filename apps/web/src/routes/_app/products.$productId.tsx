@@ -34,6 +34,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { TablePagination } from '@/components/table-shell';
+import { RowActions } from '@/components/ui/table';
 import { Input, Textarea } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SegmentedChoice } from '@/components/ui/segmented';
@@ -425,10 +426,10 @@ function ProductEditor({ product, rate }: { product: Product | undefined; rate: 
                     {draft.rows.map((row, index) => (
                       <tr
                         key={row.itemId}
-                        className="border-t border-border-subtle first:border-t-0"
+                        className="group/row border-t border-border-subtle first:border-t-0"
                       >
                         <td className="py-2 pl-3">
-                          <div className="flex flex-col">
+                          <RowActions className="flex-col gap-0">
                             <button
                               type="button"
                               aria-label={d.moveUp}
@@ -447,7 +448,7 @@ function ProductEditor({ product, rate }: { product: Product | undefined; rate: 
                             >
                               <ChevronDown className="size-4" aria-hidden />
                             </button>
-                          </div>
+                          </RowActions>
                         </td>
                         <td className="px-2 py-2">
                           <span className="block font-semibold">{row.name}</span>
@@ -519,19 +520,21 @@ function ProductEditor({ product, rate }: { product: Product | undefined; rate: 
                           />
                         </td>
                         <td className="pr-3">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            aria-label={d.remove(row.name)}
-                            onClick={() =>
-                              setDraft((c) => ({
-                                ...c,
-                                rows: c.rows.filter((_, i) => i !== index),
-                              }))
-                            }
-                          >
-                            <Trash2 className="size-4" aria-hidden />
-                          </Button>
+                          <RowActions>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              aria-label={d.remove(row.name)}
+                              onClick={() =>
+                                setDraft((c) => ({
+                                  ...c,
+                                  rows: c.rows.filter((_, i) => i !== index),
+                                }))
+                              }
+                            >
+                              <Trash2 className="size-4" aria-hidden />
+                            </Button>
+                          </RowActions>
                         </td>
                       </tr>
                     ))}

@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+  RowActions,
   CELL_LINK,
   Table,
   TableBody,
@@ -152,26 +153,28 @@ export function EstablishmentsCard({
                   {row.lastContactAt ? formatRecent(row.lastContactAt) : sk.common.none}
                 </TableCell>
                 <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button size="icon" aria-label={e.menu(row.name)}>
-                        <MoreHorizontal className="size-4" aria-hidden />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem asChild>
-                        <Link to="/organizations/$customerId" params={{ customerId: row.id }}>
-                          {e.edit}
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => setRecording(row)}>
-                        {sk.activities.record}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem destructive onSelect={() => setRemoving(row)}>
-                        {e.delete}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <RowActions>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="icon" aria-label={e.menu(row.name)}>
+                          <MoreHorizontal className="size-4" aria-hidden />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link to="/organizations/$customerId" params={{ customerId: row.id }}>
+                            {e.edit}
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => setRecording(row)}>
+                          {sk.activities.record}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem destructive onSelect={() => setRemoving(row)}>
+                          {e.delete}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </RowActions>
                 </TableCell>
               </TableRow>
             ))}

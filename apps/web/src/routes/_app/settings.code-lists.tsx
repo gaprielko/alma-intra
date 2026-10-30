@@ -19,7 +19,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { TableCell, TableRow } from '@/components/ui/table';
+import { RowActions, TableCell, TableRow } from '@/components/ui/table';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
@@ -185,7 +185,7 @@ function ItemsTable({ list }: { list: CodeList }) {
         {rows.map((row, index) => (
           <TableRow key={row.id}>
             <TableCell>
-              <div className="flex gap-1">
+              <RowActions className="justify-start">
                 <Button
                   size="icon"
                   className="size-8"
@@ -204,7 +204,7 @@ function ItemsTable({ list }: { list: CodeList }) {
                 >
                   <ArrowDown className="size-3.5" aria-hidden />
                 </Button>
-              </div>
+              </RowActions>
             </TableCell>
             <TableCell className={cn('font-medium', !row.active && 'text-muted')}>
               {row.name}
@@ -221,7 +221,7 @@ function ItemsTable({ list }: { list: CodeList }) {
               />
             </TableCell>
             <TableCell>
-              <div className="flex justify-end gap-1">
+              <RowActions>
                 <Button
                   size="icon"
                   className="size-8"
@@ -245,7 +245,7 @@ function ItemsTable({ list }: { list: CodeList }) {
                     </Button>
                   </span>
                 </Tooltip>
-              </div>
+              </RowActions>
             </TableCell>
           </TableRow>
         ))}
@@ -340,7 +340,7 @@ function TagsTable() {
             <TableCell className="font-medium">{tag.name}</TableCell>
             <TableCell className="text-muted tabular-nums">{tag.customers}</TableCell>
             <TableCell>
-              <div className="flex justify-end gap-1">
+              <RowActions>
                 <Button
                   size="icon"
                   className="size-8"
@@ -362,7 +362,7 @@ function TagsTable() {
                     </Button>
                   </span>
                 </Tooltip>
-              </div>
+              </RowActions>
             </TableCell>
           </TableRow>
         ))}

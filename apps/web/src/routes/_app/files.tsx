@@ -50,7 +50,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { StatusBanner } from '@/components/ui/status-banner';
-import { CELL_LINK, TableCell, TableRow } from '@/components/ui/table';
+import { CELL_LINK, RowActions, TableCell, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
 import { formatSize, previewKind } from '@/lib/files';
@@ -787,41 +787,43 @@ function ContentsSection({
             <TableCell />
             <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
               {canWrite || canDelete ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      size="icon"
-                      className="size-8 border-0 bg-transparent"
-                      aria-label={t.actionsFor(folder.name)}
-                    >
-                      <MoreVertical className="size-[18px]" aria-hidden />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {canWrite ? (
-                      <>
-                        <DropdownMenuItem
-                          onSelect={() => onDialog({ kind: 'renameFolder', folder: ref })}
-                        >
-                          {t.menu.renameFolder}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={() => onDialog({ kind: 'moveFolder', folder: ref })}
-                        >
-                          {t.menu.moveFolder}
-                        </DropdownMenuItem>
-                      </>
-                    ) : null}
-                    {canDelete ? (
-                      <DropdownMenuItem
-                        destructive
-                        onSelect={() => onDialog({ kind: 'deleteFolder', folder: ref })}
+                <RowActions>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="icon"
+                        className="size-8 border-0 bg-transparent"
+                        aria-label={t.actionsFor(folder.name)}
                       >
-                        {t.menu.deleteFolder}
-                      </DropdownMenuItem>
-                    ) : null}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                        <MoreVertical className="size-[18px]" aria-hidden />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {canWrite ? (
+                        <>
+                          <DropdownMenuItem
+                            onSelect={() => onDialog({ kind: 'renameFolder', folder: ref })}
+                          >
+                            {t.menu.renameFolder}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onSelect={() => onDialog({ kind: 'moveFolder', folder: ref })}
+                          >
+                            {t.menu.moveFolder}
+                          </DropdownMenuItem>
+                        </>
+                      ) : null}
+                      {canDelete ? (
+                        <DropdownMenuItem
+                          destructive
+                          onSelect={() => onDialog({ kind: 'deleteFolder', folder: ref })}
+                        >
+                          {t.menu.deleteFolder}
+                        </DropdownMenuItem>
+                      ) : null}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </RowActions>
               ) : null}
             </TableCell>
           </TableRow>
@@ -888,7 +890,7 @@ function ContentsSection({
             </button>
           </TableCell>
           <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
-            {fileMenu(file)}
+            <RowActions>{fileMenu(file)}</RowActions>
           </TableCell>
         </TableRow>
       ))}

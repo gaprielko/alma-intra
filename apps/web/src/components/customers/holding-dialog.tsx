@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { DatePicker } from '@/components/ui/date-picker';
+import { RowActions } from '@/components/ui/table';
 import { Input, Textarea } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SegmentedChoice } from '@/components/ui/segmented';
@@ -681,7 +682,7 @@ function WorkloadsDialog({
           </thead>
           <tbody>
             {rows.map((row, index) => (
-              <tr key={index} className="border-t border-border-subtle">
+              <tr key={index} className="group/row border-t border-border-subtle">
                 <td className="py-2">
                   <div className="flex items-center gap-2">
                     <Button
@@ -727,15 +728,17 @@ function WorkloadsDialog({
                   {row.persons} × {rounded(row.percent)} %
                 </td>
                 <td className="py-2 text-right">
-                  <Button
-                    type="button"
-                    size="icon"
-                    aria-label={w.remove}
-                    disabled={rows.length <= 1}
-                    onClick={() => setRows((all) => all.filter((_, i) => i !== index))}
-                  >
-                    <Trash2 className="size-4" aria-hidden />
-                  </Button>
+                  <RowActions>
+                    <Button
+                      type="button"
+                      size="icon"
+                      aria-label={w.remove}
+                      disabled={rows.length <= 1}
+                      onClick={() => setRows((all) => all.filter((_, i) => i !== index))}
+                    >
+                      <Trash2 className="size-4" aria-hidden />
+                    </Button>
+                  </RowActions>
                 </td>
               </tr>
             ))}

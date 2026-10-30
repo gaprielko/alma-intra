@@ -13,6 +13,7 @@ import { Card } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
 import {
+  RowActions,
   Table,
   TableBody,
   TableCell,
@@ -187,14 +188,16 @@ function ProductsPage() {
                           {canWrite ? (
                             <TableCell>
                               {row.customers === 0 ? (
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  aria-label={p.detail.deleteConfirm.title(row.name)}
-                                  onClick={() => setRemoving({ id: row.id, name: row.name })}
-                                >
-                                  <Trash2 className="size-4" aria-hidden />
-                                </Button>
+                                <RowActions>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    aria-label={p.detail.deleteConfirm.title(row.name)}
+                                    onClick={() => setRemoving({ id: row.id, name: row.name })}
+                                  >
+                                    <Trash2 className="size-4" aria-hidden />
+                                  </Button>
+                                </RowActions>
                               ) : null}
                             </TableCell>
                           ) : null}

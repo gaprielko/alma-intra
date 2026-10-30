@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+  RowActions,
   Table,
   TableBody,
   TableCell,
@@ -166,24 +167,26 @@ export function HoldingsCard({
           {formatEur(yearly(h))}
         </TableCell>
         <TableCell>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="icon" aria-label={t.menu(h.product.name)}>
-                <MoreHorizontal className="size-4" aria-hidden />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => setEditing(h)}>{t.edit}</DropdownMenuItem>
-              {h.active ? (
-                <DropdownMenuItem destructive onSelect={() => setEnding(h)}>
-                  {t.end}
+          <RowActions>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon" aria-label={t.menu(h.product.name)}>
+                  <MoreHorizontal className="size-4" aria-hidden />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => setEditing(h)}>{t.edit}</DropdownMenuItem>
+                {h.active ? (
+                  <DropdownMenuItem destructive onSelect={() => setEnding(h)}>
+                    {t.end}
+                  </DropdownMenuItem>
+                ) : null}
+                <DropdownMenuItem destructive onSelect={() => setRemoving(h)}>
+                  {t.remove}
                 </DropdownMenuItem>
-              ) : null}
-              <DropdownMenuItem destructive onSelect={() => setRemoving(h)}>
-                {t.remove}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </RowActions>
         </TableCell>
       </TableRow>
     );
