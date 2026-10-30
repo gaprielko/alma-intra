@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
- * Where „‹ …“ above the title leads: any link a `<Link>` takes, and the label that names the
+ * Where „‹ …“ at the bottom of the header leads: any link a `<Link>` takes, and the label that names the
  * destination („Zákazníci“), not the act of going back.
  */
 export type PageHeaderBack<
@@ -36,11 +36,11 @@ export function useScrolled(threshold = SCROLLED_AT): boolean {
 
 /** W2: the breadcrumb, 12 px medium in tertiary. */
 const BACK_CLASS =
-  'mb-0.5 inline-flex max-w-full items-center gap-0.5 text-xs font-medium text-tertiary transition-colors hover:text-primary-text';
+  'inline-flex max-w-full items-center gap-0.5 text-xs font-medium text-tertiary transition-colors hover:text-primary-text';
 
 /**
- * The sticky header of every screen: back link, title (never cut), its badge and subtitle on the
- * left, the screen's tools on the right. It wraps: the tools move under the title only when they
+ * The sticky header of every screen: title (never cut), its badge and subtitle on the left, the
+ * screen's tools on the right, and the back link at the bottom left. It wraps: the tools move under the title only when they
  * do not fit beside it.
  */
 export function PageHeader<TRouter extends RegisteredRouter, TOptions>(
@@ -62,12 +62,6 @@ export function PageHeader({
       )}
     >
       <div className="max-w-full min-w-0 flex-[1_1_auto]">
-        {back ? (
-          <Link {...(back as ValidateLinkOptions)} className={BACK_CLASS}>
-            <ChevronLeft className="size-3.5 shrink-0" aria-hidden />
-            <span className="truncate">{back.label}</span>
-          </Link>
-        ) : null}
         <div className="flex min-w-0 items-center gap-3">
           <h1 className="text-[22px] leading-7 font-bold tracking-[-0.01em] break-words">
             {title}
@@ -83,6 +77,15 @@ export function PageHeader({
       {children ? (
         <div className="ml-auto flex flex-[1_1_0] flex-wrap items-center justify-end gap-3">
           {children}
+        </div>
+      ) : null}
+      {back ? (
+        // The way back sits at the very bottom left, under everything else in the header.
+        <div className="basis-full">
+          <Link {...(back as ValidateLinkOptions)} className={BACK_CLASS}>
+            <ChevronLeft className="size-3.5 shrink-0" aria-hidden />
+            <span className="truncate">{back.label}</span>
+          </Link>
         </div>
       ) : null}
     </header>
