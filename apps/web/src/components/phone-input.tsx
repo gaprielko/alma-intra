@@ -58,6 +58,7 @@ export function PhoneInput({
     <div className="flex gap-2">
       <Select
         aria-label={sk.common.phoneCountry}
+        disabled={props.disabled}
         value={value ? parsed.country : country}
         onChange={(next) => {
           const pick = next as Country;

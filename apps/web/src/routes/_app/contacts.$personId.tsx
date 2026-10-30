@@ -1,7 +1,7 @@
 import { sk } from '@intra/shared/i18n';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { Mail, MoreHorizontal, Plus } from 'lucide-react';
+import { Lock, Mail, MoreHorizontal, Plus } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { ActivityDialog } from '@/components/activities/activity-dialog';
 import { ActivitySheet } from '@/components/activities/activity-sheet';
@@ -11,6 +11,7 @@ import { PersonDialog } from '@/components/customers/person-dialog';
 import { ErrorState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
 import { CardSkeleton } from '@/components/skeletons';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -104,7 +105,18 @@ function PersonPage() {
 
   return (
     <div className="min-w-0">
-      <PageHeader title={c.name} subtitle={subtitle || undefined} back={back}>
+      <PageHeader
+        title={c.name}
+        subtitle={subtitle || undefined}
+        back={back}
+        badge={
+          c.userId ? (
+            <Link to="/settings/users">
+              <Badge tone="info">{p.fromUser.badge}</Badge>
+            </Link>
+          ) : undefined
+        }
+      >
         {canWrite && !own ? (
           <Button variant="ghost" onClick={() => setDeleting(true)}>
             {p.delete}
@@ -173,6 +185,17 @@ function PersonalCard({ person: c }: { person: Person }) {
   return (
     <Card>
       <CardHeader title={p.personal} />
+      {c.userId ? (
+        <p className="mx-5 mt-2 flex items-start gap-1.5 text-xs leading-[17px] text-muted">
+          <Lock className="mt-px size-3.5 shrink-0" aria-hidden />
+          <span>
+            {p.fromUser.noteShort}{' '}
+            <Link to="/settings/users" className="font-semibold text-primary-text hover:underline">
+              {p.fromUser.link}
+            </Link>
+          </span>
+        </p>
+      ) : null}
       <Rows>
         <Row label={f.name}>{c.name}</Row>
         {c.gender ? <Row label={f.form}>{sk.contacts.dialog[c.gender]}</Row> : null}

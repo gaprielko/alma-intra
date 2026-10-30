@@ -1,0 +1,3 @@
+ALTER TABLE "contacts" ADD COLUMN "user_id" uuid;--> statement-breakpoint
+ALTER TABLE "contacts" ADD CONSTRAINT "contacts_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "contacts_user_unique" ON "contacts" USING btree ("user_id") WHERE "contacts"."deleted_at" is null and "contacts"."user_id" is not null;

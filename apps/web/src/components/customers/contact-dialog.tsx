@@ -45,6 +45,7 @@ export type Contact = Pick<
   | 'position'
   | 'note'
   | 'unsubscribedAt'
+  | 'userId'
 >;
 
 interface ContactFormValues {
@@ -160,7 +161,7 @@ export function ContactDialog({
               )(event)
             }
           >
-            <PersonFields prefix="contact" showPreview />
+            <PersonFields prefix="contact" showPreview followsUser={Boolean(contact?.userId)} />
             {contact ? (
               <FormField
                 control={form.control}

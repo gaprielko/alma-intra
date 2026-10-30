@@ -1,6 +1,7 @@
 import argon2 from 'argon2';
 import { and, eq, isNotNull, isNull, ne, sql } from 'drizzle-orm';
 import type { UpdateProfileInput } from '@intra/shared/schemas';
+import { syncContactFromUser } from '../customers/user-contact-sync.js';
 import type { Db, Tx } from '../db/db.module.js';
 import { authTokens, users } from '../db/schema/index.js';
 import type { BreachCheck } from '../security/breached-password.js';
@@ -274,10 +275,13 @@ export async function updateProfile(
     (key) => next[key] !== current[key],
   );
   if (changed.length > 0) {
-    await db
-      .update(users)
-      .set({ ...next, updatedAt: sql`now()` })
-      .where(eq(users.id, userId));
+    await db.transaction(async (tx) => {
+      await tx
+        .update(users)
+        .set({ ...next, updatedAt: sql`now()` })
+        .where(eq(users.id, userId));
+      await syncContactFromUser(tx, userId);
+    });
   }
   return changed;
 }

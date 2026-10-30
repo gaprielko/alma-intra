@@ -1,5 +1,6 @@
 import { sk } from '@intra/shared/i18n';
 import { type Gender, suggestSalutation } from '@intra/shared/schemas';
+import { Lock } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 import { SegmentedChoice } from '@/components/ui/segmented';
@@ -48,6 +49,7 @@ function TextField({
   autoComplete = 'off',
   description,
   className,
+  locked = false,
 }: {
   name: string;
   label: string;
@@ -55,6 +57,8 @@ function TextField({
   autoComplete?: string;
   description?: string;
   className?: string;
+  /** It follows the user: shown, not edited. */
+  locked?: boolean;
 }) {
   const { control } = useFormContext();
   return (
@@ -63,12 +67,16 @@ function TextField({
       name={name}
       render={({ field }) => (
         <FormItem className={className}>
-          <FormLabel>{label}</FormLabel>
+          <FormLabel>
+            {label}
+            {locked ? <Lock className="ml-1 inline size-3 text-tertiary" aria-hidden /> : null}
+          </FormLabel>
           <FormControl>
             {type === 'tel' ? (
               <PhoneInput
                 autoComplete={autoComplete}
                 {...field}
+                disabled={locked}
                 value={(field.value as string) ?? ''}
               />
             ) : (
@@ -76,6 +84,7 @@ function TextField({
                 type={type}
                 autoComplete={autoComplete}
                 {...field}
+                disabled={locked}
                 value={(field.value as string) ?? ''}
               />
             )}
@@ -97,10 +106,13 @@ export function PersonFields({
   prefix,
   withPosition = true,
   showPreview = false,
+  followsUser = false,
 }: {
   prefix: string;
   withPosition?: boolean;
   showPreview?: boolean;
+  /** A contact made from a user: the titles, name, e-mail and phone are theirs (D-47). */
+  followsUser?: boolean;
 }) {
   const { control, getValues, setValue } = useFormContext();
   const at = (field: string) => `${prefix}.${field}`;
@@ -129,10 +141,20 @@ export function PersonFields({
 
   return (
     <div className="grid gap-4 @md:grid-cols-[minmax(0,7rem)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,7rem)]">
-      <TextField name={at('titleBefore')} label={d.titleBefore} />
-      <TextField name={at('firstName')} label={d.firstName} autoComplete="given-name" />
-      <TextField name={at('lastName')} label={d.lastName} autoComplete="family-name" />
-      <TextField name={at('titleAfter')} label={d.titleAfter} />
+      <TextField name={at('titleBefore')} label={d.titleBefore} locked={followsUser} />
+      <TextField
+        name={at('firstName')}
+        label={d.firstName}
+        autoComplete="given-name"
+        locked={followsUser}
+      />
+      <TextField
+        name={at('lastName')}
+        label={d.lastName}
+        autoComplete="family-name"
+        locked={followsUser}
+      />
+      <TextField name={at('titleAfter')} label={d.titleAfter} locked={followsUser} />
       {withPosition ? (
         <TextField name={at('position')} label={d.position} className="@md:col-span-2" />
       ) : null}
@@ -156,8 +178,20 @@ export function PersonFields({
           </FormItem>
         )}
       />
-      <TextField name={at('email')} label={d.email} type="email" className="@md:col-span-2" />
-      <TextField name={at('phone')} label={d.phone} type="tel" className="@md:col-span-2" />
+      <TextField
+        name={at('email')}
+        label={d.email}
+        type="email"
+        className="@md:col-span-2"
+        locked={followsUser}
+      />
+      <TextField
+        name={at('phone')}
+        label={d.phone}
+        type="tel"
+        className="@md:col-span-2"
+        locked={followsUser}
+      />
       <TextField
         name={at('salutation')}
         label={d.salutation}

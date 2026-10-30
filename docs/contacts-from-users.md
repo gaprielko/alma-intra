@@ -1,6 +1,6 @@
 # A contact from a user of the app
 
-Agreed with the owner on 30 Oct 2026 (D-47). Screens are on the canvas for review, not implemented yet.
+Agreed with the owner on 30 Oct 2026 (D-47). Implemented.
 
 ## Goal
 
@@ -29,7 +29,8 @@ A contact made from a user points to them (`contacts.user_id`, unique, nullable)
 |                                            | Position, primary, per link |
 
 A user's change is written to the contact in the same transaction. `users.name` is one text: the last
-word becomes the last name and the rest the first name. The contact's change history records it.
+word becomes the last name and the rest the first name; a single word stands for both, until the user
+gets a full name. It is recorded in the user's history, not the contact's.
 
 The contact's page and „Upraviť osobu“ show the followed fields as read-only, with a note „Údaje sa
 preberajú z používateľa“ and a link to the user. `person.update` and the MCP tool `contacts_update`

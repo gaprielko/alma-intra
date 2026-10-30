@@ -56,6 +56,15 @@ export const updatePersonSchema = z.object({
 
 export const linkPersonSchema = personLinkSchema.extend({ id: idSchema });
 export const unlinkPersonSchema = z.object({ id: idSchema, customerId: idSchema });
+
+/** „Používateľ aplikácie“: who can be added to this organization (D-47). */
+export const userCandidatesSchema = z.object({ customerId: idSchema });
+export const addUserContactSchema = personLinkSchema.extend({
+  userId: idSchema,
+  /** A contact with the user's e-mail exists and the dialog has shown what connecting it changes. */
+  connect: z.boolean().default(false),
+});
+export type AddUserContactInput = z.infer<typeof addUserContactSchema>;
 export const personIdSchema = z.object({ id: idSchema });
 /** „Osoba s týmto e-mailom už v Kontaktoch je“: who has the address. */
 export const personByEmailSchema = z.object({ email: emailSchema });

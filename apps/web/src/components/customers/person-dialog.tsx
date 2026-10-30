@@ -1,7 +1,7 @@
 import { sk } from '@intra/shared/i18n';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { Plus, X } from 'lucide-react';
+import { Info, Lock, Plus, X } from 'lucide-react';
 import { useId, useState } from 'react';
 import { useDebounced } from '@/components/customers/organization-list';
 import { PhoneInput } from '@/components/phone-input';
@@ -104,7 +104,14 @@ export function PersonDialog({
       onError,
     }),
   );
-  const pending = create.isPending || update.isPending;
+  const followsUser = Boolean(person?.userId);
+  const disconnect = useMutation(
+    trpc.person.disconnectUser.mutationOptions({
+      onSuccess: () => done(p.fromUser.disconnected, person!.id),
+      onError,
+    }),
+  );
+  const pending = create.isPending || update.isPending || disconnect.isPending;
 
   const input = {
     titleBefore: values.titleBefore.trim() || undefined,
@@ -135,12 +142,22 @@ export function PersonDialog({
     }
   };
 
-  const field = (key: keyof typeof values, label: string, className: string, type = 'text') => (
+  const field = (
+    key: keyof typeof values,
+    label: string,
+    className: string,
+    type = 'text',
+    locked = false,
+  ) => (
     <div className={className}>
-      <Label htmlFor={`${ids}-${key}`}>{label}</Label>
+      <Label htmlFor={`${ids}-${key}`}>
+        {label}
+        {locked ? <Lock className="ml-1 inline size-3 text-tertiary" aria-hidden /> : null}
+      </Label>
       <Input
         id={`${ids}-${key}`}
         type={type}
+        disabled={locked}
         value={values[key]}
         onChange={(event) => set(key)(event.target.value)}
         className="mt-1.5"
@@ -163,15 +180,39 @@ export function PersonDialog({
             submit();
           }}
         >
-          {field('titleBefore', f.titleBefore, 'col-span-6 sm:col-span-1')}
-          {field('firstName', f.firstName, 'col-span-6 sm:col-span-2')}
-          {field('lastName', f.lastName, 'col-span-6 sm:col-span-2')}
-          {field('titleAfter', f.titleAfter, 'col-span-6 sm:col-span-1')}
-          {field('email', f.email, 'col-span-6 sm:col-span-3', 'email')}
+          {followsUser ? (
+            <p
+              role="note"
+              className="col-span-6 flex gap-2.5 rounded-xl bg-info-soft px-3.5 py-3 text-[13px] leading-5 text-info"
+            >
+              <Info className="mt-0.5 size-[18px] shrink-0" aria-hidden />
+              <span>
+                {p.fromUser.note}{' '}
+                <Link to="/settings/users" onClick={onClose} className="font-semibold underline">
+                  {p.fromUser.link}
+                </Link>
+              </span>
+            </p>
+          ) : null}
+          {field('titleBefore', f.titleBefore, 'col-span-6 sm:col-span-1', 'text', followsUser)}
+          {field('firstName', f.firstName, 'col-span-6 sm:col-span-2', 'text', followsUser)}
+          {field('lastName', f.lastName, 'col-span-6 sm:col-span-2', 'text', followsUser)}
+          {field('titleAfter', f.titleAfter, 'col-span-6 sm:col-span-1', 'text', followsUser)}
+          {field('email', f.email, 'col-span-6 sm:col-span-3', 'email', followsUser)}
           <div className="col-span-6 sm:col-span-3">
-            <Label htmlFor={`${ids}-phone`}>{f.phone}</Label>
+            <Label htmlFor={`${ids}-phone`}>
+              {f.phone}
+              {followsUser ? (
+                <Lock className="ml-1 inline size-3 text-tertiary" aria-hidden />
+              ) : null}
+            </Label>
             <div className="mt-1.5">
-              <PhoneInput id={`${ids}-phone`} value={values.phone} onChange={set('phone')} />
+              <PhoneInput
+                id={`${ids}-phone`}
+                disabled={followsUser}
+                value={values.phone}
+                onChange={set('phone')}
+              />
             </div>
           </div>
           {clash ? (
@@ -306,6 +347,17 @@ export function PersonDialog({
             />
           </div>
           <DialogFooter className="col-span-6">
+            {followsUser ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="sm:mr-auto"
+                disabled={pending}
+                onClick={() => disconnect.mutate({ id: person!.id })}
+              >
+                {p.fromUser.disconnect}
+              </Button>
+            ) : null}
             <Button type="button" variant="ghost" onClick={onClose}>
               {sk.common.cancel}
             </Button>

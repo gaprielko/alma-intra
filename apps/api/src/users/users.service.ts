@@ -3,6 +3,7 @@ import { and, asc, eq, isNull, ne, sql } from 'drizzle-orm';
 import { revokeAuthTokens } from '../auth/account.service.js';
 import { revokeUserSessions } from '../auth/auth.service.js';
 import { removeSecondFactor } from '../auth/second-factor.service.js';
+import { syncContactFromUser } from '../customers/user-contact-sync.js';
 import type { Db, Tx } from '../db/db.module.js';
 import { fullNameOf, userSecondFactors, users } from '../db/schema/index.js';
 import { dropQueuedInvitation, enqueueMail, invitationDelivery } from '../mail/mail-outbox.js';
@@ -81,19 +82,22 @@ export async function inviteUser(db: Db | Tx, invitedBy: string, input: InviteUs
 
 /** A colleague's details. Her e-mail is her login and stays. */
 export async function updateUser(db: Db | Tx, input: UpdateUserInput) {
-  const updated = await db
-    .update(users)
-    .set({
-      name: input.name,
-      ...(input.titleBefore === undefined ? {} : { titleBefore: input.titleBefore || null }),
-      ...(input.titleAfter === undefined ? {} : { titleAfter: input.titleAfter || null }),
-      ...(input.phone === undefined ? {} : { phone: input.phone || null }),
-      ...(input.position === undefined ? {} : { position: input.position || null }),
-      updatedAt: sql`now()`,
-    })
-    .where(and(eq(users.id, input.userId), alive))
-    .returning({ id: users.id });
-  if (updated.length === 0) throw new UserError('NOT_FOUND');
+  await db.transaction(async (tx) => {
+    const updated = await tx
+      .update(users)
+      .set({
+        name: input.name,
+        ...(input.titleBefore === undefined ? {} : { titleBefore: input.titleBefore || null }),
+        ...(input.titleAfter === undefined ? {} : { titleAfter: input.titleAfter || null }),
+        ...(input.phone === undefined ? {} : { phone: input.phone || null }),
+        ...(input.position === undefined ? {} : { position: input.position || null }),
+        updatedAt: sql`now()`,
+      })
+      .where(and(eq(users.id, input.userId), alive))
+      .returning({ id: users.id });
+    if (updated.length === 0) throw new UserError('NOT_FOUND');
+    await syncContactFromUser(tx, input.userId);
+  });
 }
 
 async function statusOf(tx: Tx, userId: string) {
