@@ -11,13 +11,9 @@ import {
 } from '../db/schema/index.js';
 import { notify } from '../notifications/notifications.service.js';
 import { paragraphs, recordSentImport } from './import.js';
+import { InboundError } from './inbound-error.js';
 
-/** A refusal the web words for itself (`sk.inbound.errors`). */
-export class InboundError extends Error {
-  constructor(readonly code: 'NOT_FOUND' | 'CUSTOMER_NOT_FOUND' | 'CONTACT_NOT_OF_CUSTOMER') {
-    super(code);
-  }
-}
+export { InboundError };
 
 /**
  * A column of the received e-mail inside a subquery, named with its table: unqualified, Postgres

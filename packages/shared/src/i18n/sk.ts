@@ -557,8 +557,8 @@ export const sk = {
   account: {
     title: 'Môj účet',
     importAddresses: {
-      title: 'Adresy na import e-mailov',
-      lead: 'Súkromné adresy, z ktorých preposielate staré e-maily do Intry. Podľa nich sa spozná, ktoré e-maily ste písali vy.',
+      title: 'Súkromné e-mailové adresy',
+      lead: 'Adresy, z ktorých ste písali zákazníkom mimo Intry. Podľa nich sa pri pridaní do konverzácie spozná, ktoré e-maily ste písali vy.',
       label: 'Adresy, každá na novom riadku',
       save: 'Uložiť adresy',
       saved: 'Adresy sú uložené.',
@@ -2219,6 +2219,28 @@ export const sk = {
       threadText: 'Všetky jej prijaté e-maily zmiznú z prijatých aj z časovej osi kontaktu.',
     },
     importedSent: 'Váš e-mail z importu, čaká na zaradenie',
+    importForward: {
+      more: 'Ďalšie akcie',
+      action: 'Pridaj do konverzácie',
+      title: 'Pridať do konverzácie',
+      lead: 'Toto je pôvodný e-mail nájdený v preposlanom. Uloží sa namiesto preposlaného, s pôvodným dátumom. Nikomu sa nič neodošle.',
+      from: 'Od',
+      to: 'Komu',
+      cc: 'Kópia',
+      date: 'Dátum',
+      subject: 'Predmet',
+      where: 'Zaradí sa',
+      received: (organizations: string) => `Prijaté: ${organizations}`,
+      receivedUnknown: 'Prijaté: nepriradené, odosielateľa v Kontaktoch nepoznáme',
+      sent: (organizations: string) => `Odoslané: ${organizations}`,
+      sentUnknown: 'Váš e-mail: počká v Prijatých, kým ho priradíte ku kontaktu',
+      submit: 'Pridať',
+      done: {
+        received: 'E-mail je pridaný do konverzácie.',
+        sent: 'E-mail je pridaný medzi Odoslané.',
+        waiting: 'E-mail je pridaný. Priraďte ho ku kontaktu.',
+      },
+    },
     rowActions: {
       markRead: 'Označiť ako prečítané',
       markUnread: 'Označiť ako neprečítané',
@@ -2242,6 +2264,9 @@ export const sk = {
       NOT_FOUND: 'E-mail sa nenašiel.',
       CUSTOMER_NOT_FOUND: 'Kontakt sa nenašiel.',
       CONTACT_NOT_OF_CUSTOMER: 'Kontaktná osoba nepatrí k tomuto kontaktu.',
+      NOT_A_FORWARD:
+        'V tomto e-maile sa nenašiel pôvodný e-mail. Treba preposlaný e-mail, v ktorom je pôvodný odosielateľ a dátum.',
+      ALREADY_IMPORTED: 'Tento e-mail už v konverzácii je.',
     },
   },
   templates: {
@@ -2448,10 +2473,6 @@ export const sk = {
       'Obchodné meno, IČO, adresa odosielateľa a odpovede zákazníkov sú spoločné, nastavujú sa v globálnom vzhľade.',
     field: 'Vzhľad e-mailu',
     fieldGlobal: 'Firemný',
-    importTitle: 'Import starých e-mailov',
-    importSwitch: 'Spracovať preposlané e-maily',
-    importHint:
-      'Keď je zapnuté, e-mail preposlaný z vašej adresy zapísanej v Môj účet so správou „Alma Intra: add mail“ sa uloží ako pôvodný e-mail, prijatý alebo odoslaný, s pôvodným dátumom. Nikomu sa nič neodošle. Keď je vypnuté, preposlané e-maily prídu ako bežné.',
     replyIntraNotReady:
       'Príjem odpovedí ešte nie je nastavený. Kým nebude, odpovede prídu odosielateľovi.',
     replyToAddress: 'Firemná adresa pre odpovede',

@@ -1,33 +1,33 @@
-# Importing e-mail from a private mailbox
+# Adding a forwarded e-mail to a conversation
 
-Agreed with the owner on 30 Oct 2026 (D-37). Implemented.
+Agreed with the owner on 30 Oct 2026 (D-37, changed by D-41). Implemented.
 
 ## Goal
 
 Before Intra existed, the owner handled customers from a private mailbox. That correspondence should
 live in Intra and read as if it had been written there: received e-mails in „Prijaté“, the owner's
-own in „Odoslané“, all of it on the organization's timeline and grouped into conversations.
+own in „Odoslané“, all of it on the organization's timeline and grouped into conversations. It stays
+usable at any time, not only for a one-off import.
 
 ## How it works
 
-The user forwards an old e-mail to `info@alma-care.eu`, which reaches Intra, with the message
-`Alma Intra: add mail`. Each e-mail of a conversation is forwarded on its own.
+Every received e-mail comes in the same way; nothing is detected on arrival, so a stranger's mail can
+never be turned into anything by what it says or by whom it claims to be from.
 
-Before a received e-mail is processed, Intra checks, in this order:
+A user forwards an old e-mail to Intra. Each e-mail of a conversation is forwarded on its own. The
+e-mail shows in „Prijaté“ as any other. On its page the three dots next to „Odpovedať“ and „Prílohy“
+offer „Pridaj do konverzácie“. A dialog shows what was read from the forward: from, to, date, subject
+and where it will go. Confirming replaces the forward by the original.
 
-1. **The setting**: Settings › Vzhľad e-mailov › „Import starých e-mailov“. Off (the default): no
-   e-mail is treated as an import.
-2. **The sender**: the forward's `From` is one of the private addresses a user entered in „Môj účet“.
-3. **The agreed line**: in the words above the forwarded block, ignoring case.
-4. **The original**: its block can be read, with at least a sender and a date.
-
-If any of these fails, the e-mail goes on as an ordinary received one, so nothing is lost.
+An e-mail in which no original can be read refuses with a message and stays as it is. An e-mail
+already added no longer offers the action.
 
 ## What is read
 
 A forward keeps the original's headers only in the text block the mail client adds, whose labels
 depend on the client's language. Slovak, Czech, English and German labels of Gmail and Outlook are
-recognised, and the date as those clients write it, taken as Bratislava time.
+recognised, and the date as those clients write it, taken as Bratislava time. The text part is tried
+first, then the HTML.
 
 Only the e-mail's own words are kept. What it quotes of earlier e-mails is cut, by the usual signs
 (`>`, „On … wrote:“, „Dňa … napísal(a):“, another header block). Earlier e-mails are forwarded
@@ -37,26 +37,30 @@ attachments of the forward are kept.
 
 ## Where it goes
 
-- **The original's sender is one of the importer's private addresses**: their own e-mail. It is
-  stored as a sent campaign of one with the original date, with a message for each recipient (To, Cc)
-  known in Kontakty. Nothing is queued, so nothing is ever sent. Its attachments go to the
-  organization's folder.
+The original counts as a colleague's own when its sender is a login or a private address („Môj účet“)
+of an active user, or the very address it was forwarded from (then it belongs to the user adding it).
+
+- **A colleague's own**: stored as a sent campaign of one with the original date, with a message for
+  each recipient (To, Cc) known in Kontakty. Nothing is queued, so nothing is ever sent. Its
+  attachments go to the organization's folder.
 - **Nobody among the recipients is known**: it waits in „Prijaté“ as „Nepriradené“, labelled as the
   user's own imported e-mail. A sent e-mail needs an organization (`organization_id` is required).
   Filing it there moves it to „Odoslané“.
 - **Anyone else's**: a received e-mail with the original's sender, subject and date, matched by the
   sender's address as any other, already read. Nobody is notified and no copy is forwarded.
 
+A forward filed by hand before it was added keeps that organization when the addresses tell nothing.
+
 ## Duplicates
 
 The same original (sender, minute of the date, subject, text) is stored once, however often it is
-forwarded (`inbound_messages.import_key`). A repeat leaves only a discarded row, so the provider's
-list does not offer it again.
+forwarded (`inbound_messages.import_key`). Adding a repeat refuses with a message; the user discards
+that forward.
 
 ## Known limits
 
-- **A forged sender**: Intra does not verify the forward's `From`. Someone who knows both a listed
-  private address and the agreed line could add a false e-mail to a timeline. It would send nothing.
-  The setting is meant to be on only while importing.
-- A client or language outside those recognised: the e-mail arrives as an ordinary one.
-- Whether `info@alma-care.eu` reaches Intra depends on the mailbox's forwarding, outside this repo.
+- The forward is replaced, not kept beside the original, so adding cannot be undone. That is why the
+  dialog shows the result first. The audit log records who added it and the outcome.
+- The contents of a forward can be forged by whoever forwards it, and adding it trusts them. A user
+  sees the result before confirming, and nothing is ever sent.
+- A client or language outside those recognised: the action refuses and the e-mail stays as it is.

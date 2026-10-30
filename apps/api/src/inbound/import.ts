@@ -1,19 +1,20 @@
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, ne, sql } from 'drizzle-orm';
 import type { Db, Tx } from '../db/db.module.js';
 import {
   campaignMessages,
   campaigns,
-  emailLook,
   inboundMessages,
+  organizations,
   users,
 } from '../db/schema/index.js';
 import { importKey, readForward } from './forwarded.js';
-import { bySender, type InboundEmail, parseAddress } from './inbound.js';
+import { InboundError } from './inbound-error.js';
+import { bySender, parseAddress } from './inbound.js';
 
 /**
- * Importing old e-mail (docs/email-import.md): a user forwards it to Intra from one of their private
- * addresses with the agreed line, and it is stored as the original, received or sent by them, as if
- * it had gone through Intra. Only when the setting is on; anything else takes the ordinary way.
+ * „Pridaj do konverzácie“ (docs/email-import.md): a received e-mail a user forwarded to Intra is, at
+ * their request, stored as the original it carries, received or sent, as if it had gone through
+ * Intra. Nothing happens to an e-mail until someone asks, and nothing is ever sent.
  */
 
 const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -75,99 +76,60 @@ export async function recordSentImport(
 }
 
 /**
- * The user the forward is from, when importing is on and the sender is one of their private
- * addresses.
+ * The colleague who wrote the original, by their login or a private address listed in „Môj účet“.
+ * Written from the address it was forwarded from, it is the forwarder's own, whoever asks: the
+ * user adding it, when that address is listed nowhere. Null: someone else wrote it.
  */
-async function importerOf(db: Db, senderEmail: string) {
-  const [look] = await db
-    .select({ importEnabled: emailLook.importEnabled })
-    .from(emailLook)
-    .where(eq(emailLook.id, 1));
-  if (!look?.importEnabled) return null;
+async function authorOf(db: Db, email: string, forwarder: string, userId: string) {
   const [user] = await db
-    .select({ id: users.id, addresses: users.importAddresses })
+    .select({ id: users.id, email: users.email, addresses: users.importAddresses })
     .from(users)
     .where(
-      sql`${users.importAddresses} @> ${JSON.stringify([senderEmail])}::jsonb and ${users.status} = 'active'`,
+      sql`(lower(${users.email}) = ${email} or ${users.importAddresses} @> ${JSON.stringify([email])}::jsonb)
+        and ${users.status} = 'active'`,
     )
     .limit(1);
-  return user ?? null;
+  if (user) {
+    return { id: user.id, addresses: [user.email.toLowerCase(), ...user.addresses, forwarder] };
+  }
+  return email === forwarder ? { id: userId, addresses: [forwarder] } : null;
 }
 
-/**
- * Takes a forward in as the e-mail it carries. Answers null when it is not one to import (it then
- * goes on as an ordinary received e-mail). The same original forwarded again is stored once: the
- * repeat only leaves a discarded row, so the provider's list does not offer it again.
- */
-export async function importForwarded(db: Db, email: InboundEmail) {
-  const [known] = await db
-    .select({ id: inboundMessages.id })
+/** What a forward holds and where it belongs; refused when it holds nothing to add. */
+async function planImport(db: Db, id: string, userId: string) {
+  const [row] = await db
+    .select()
     .from(inboundMessages)
-    .where(eq(inboundMessages.providerEmailId, email.providerEmailId));
-  if (known) return null;
-  const importer = await importerOf(db, parseAddress(email.from).email);
-  if (!importer) return null;
-  const { original } = readForward(email);
-  if (!original) return null;
+    .where(and(eq(inboundMessages.id, id), ne(inboundMessages.status, 'discarded')));
+  if (!row) throw new InboundError('NOT_FOUND');
+  if (row.importKey) throw new InboundError('ALREADY_IMPORTED');
+  const original = readForward(row);
+  if (!original) throw new InboundError('NOT_A_FORWARD');
 
   const from = parseAddress(original.from);
   const key = importKey(original, from.email);
-  const own = from.email && importer.addresses.includes(from.email);
-  const base = {
-    providerEmailId: email.providerEmailId,
-    fromEmail: from.email,
-    fromName: from.name,
-    toEmails: original.to.map((a) => parseAddress(a).email),
-    ccEmails: original.cc.map((a) => parseAddress(a).email),
-    subject: original.subject.slice(0, 998),
-    text: original.text,
-    attachments: email.attachments,
-    receivedAt: original.date,
-    readAt: new Date(),
-    importUserId: importer.id,
-  };
-
   const [same] = await db
     .select({ id: inboundMessages.id })
     .from(inboundMessages)
     .where(eq(inboundMessages.importKey, key));
-  if (same) {
-    await db
-      .insert(inboundMessages)
-      .values({ ...base, status: 'discarded', attachments: [] })
-      .onConflictDoNothing();
-    return { id: null, matched: null, repeated: true, userId: null };
+  if (same) throw new InboundError('ALREADY_IMPORTED');
+
+  // Filed by hand before it was added, the choice stands when the addresses tell nothing.
+  const filedByHand =
+    row.assignedByUserId && row.organizationId
+      ? { customerId: row.organizationId, contactId: row.contactId }
+      : null;
+  const author = await authorOf(db, from.email, row.fromEmail, userId);
+  if (!author) {
+    const match = (await bySender(db, from.email)) ?? filedByHand;
+    return { row, original, from, key, author, match, recipients: [] };
   }
 
-  if (!own) {
-    const match = await bySender(db, from.email);
-    const [row] = await db
-      .insert(inboundMessages)
-      .values({
-        ...base,
-        status: match ? 'assigned' : 'unassigned',
-        organizationId: match?.customerId ?? null,
-        contactId: match?.contactId ?? null,
-        importKey: key,
-        importDirection: 'received',
-      })
-      .onConflictDoNothing()
-      .returning({ id: inboundMessages.id });
-    if (!row) return { id: null, matched: null, repeated: true, userId: null };
-    // Old mail: nobody is told, no copy goes anywhere.
-    return {
-      id: row.id,
-      matched: match ? ('sender' as const) : null,
-      repeated: false,
-      userId: null,
-    };
-  }
-
-  // The user's own: to everyone it went to who is known. Nobody known: it waits to be filed.
+  // The user's own: to everyone it went to who is known.
+  const recipients: Parameters<typeof recordSentImport>[1]['recipients'] = [];
   const addressed = [...original.to, ...original.cc]
     .map((a) => parseAddress(a))
-    .filter((a) => !importer.addresses.includes(a.email));
-  const recipients: Parameters<typeof recordSentImport>[1]['recipients'] = [];
+    .filter((a) => !author.addresses.includes(a.email));
   for (const person of addressed) {
     const match = await bySender(db, person.email);
     if (match) {
@@ -179,34 +141,100 @@ export async function importForwarded(db: Db, email: InboundEmail) {
       });
     }
   }
-  return db.transaction(async (tx) => {
-    const [row] = await tx
-      .insert(inboundMessages)
-      .values({
-        ...base,
+  if (recipients.length === 0 && filedByHand) {
+    recipients.push({
+      organizationId: filedByHand.customerId,
+      contactId: filedByHand.contactId,
+      email: addressed[0]?.email ?? '',
+      name: addressed[0]?.name ?? null,
+    });
+  }
+  return { row, original, from, key, author, match: null, recipients };
+}
+
+/** What adding a forward would store, for the user to see before asking for it. Stores nothing. */
+export async function previewImport(db: Db, id: string, userId: string) {
+  const { original, from, author, match, recipients } = await planImport(db, id, userId);
+  const ids = author ? recipients.map((r) => r.organizationId) : match ? [match.customerId] : [];
+  const named =
+    ids.length > 0
+      ? await db
+          .select({ name: organizations.name })
+          .from(organizations)
+          .where(inArray(organizations.id, ids))
+      : [];
+  return {
+    direction: author ? ('sent' as const) : ('received' as const),
+    fromEmail: from.email,
+    fromName: from.name,
+    to: original.to,
+    cc: original.cc,
+    subject: original.subject,
+    date: original.date,
+    organizations: named.map((o) => o.name),
+  };
+}
+
+/**
+ * Stores a forward as the original it carries, in its own row, with the forward's attachments. Its
+ * own e-mail ends up in „Odoslané“ (`sent`), or waits to be filed (`waiting`) when nobody among the
+ * recipients is known; anyone else's stays in „Prijaté“ (`received`). Old mail: nobody is told.
+ */
+export async function importInbound(db: Db, id: string, userId: string) {
+  const { row, original, from, key, author, match, recipients } = await planImport(db, id, userId);
+  const fields = {
+    importKey: key,
+    importDirection: author ? ('sent' as const) : ('received' as const),
+    importUserId: author?.id ?? userId,
+    messageId: null,
+    userId: null,
+    fromEmail: from.email,
+    fromName: from.name,
+    toEmails: original.to.map((a) => parseAddress(a).email),
+    ccEmails: original.cc.map((a) => parseAddress(a).email),
+    subject: original.subject.slice(0, 998),
+    html: null,
+    text: original.text,
+    headerMessageId: null,
+    inReplyTo: null,
+    references: null,
+    receivedAt: original.date,
+    readAt: new Date(),
+  };
+
+  if (!author) {
+    await db
+      .update(inboundMessages)
+      .set({
+        ...fields,
+        status: match ? 'assigned' : 'unassigned',
+        organizationId: match?.customerId ?? null,
+        contactId: match?.contactId ?? null,
+      })
+      .where(eq(inboundMessages.id, row.id));
+    return { outcome: 'received' as const };
+  }
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(inboundMessages)
+      .set({
+        ...fields,
         // The row only keeps the attachments and the key once the e-mail is in „Odoslané“.
         status: recipients.length > 0 ? 'discarded' : 'unassigned',
         organizationId: recipients[0]?.organizationId ?? null,
-        importKey: key,
-        importDirection: 'sent',
+        contactId: null,
       })
-      .onConflictDoNothing()
-      .returning({ id: inboundMessages.id });
-    if (!row) return { id: null, matched: null, repeated: true, userId: null };
+      .where(eq(inboundMessages.id, row.id));
     if (recipients.length > 0) {
       await recordSentImport(tx, {
-        userId: importer.id,
-        subject: base.subject,
-        text: base.text,
+        userId: author.id,
+        subject: fields.subject,
+        text: original.text,
         date: original.date,
         recipients,
       });
     }
-    return {
-      id: row.id,
-      matched: recipients.length > 0 ? ('sender' as const) : null,
-      repeated: false,
-      userId: null,
-    };
   });
+  return { outcome: recipients.length > 0 ? ('sent' as const) : ('waiting' as const) };
 }

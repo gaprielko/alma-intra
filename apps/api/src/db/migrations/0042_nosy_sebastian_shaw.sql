@@ -1,0 +1,1 @@
+ALTER TABLE "email_look" DROP COLUMN "import_enabled";

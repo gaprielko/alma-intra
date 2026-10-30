@@ -430,19 +430,6 @@ function LookForm({
                   ) : null}
                 </Section>
 
-                <Section title={t.importTitle}>
-                  <span className="flex items-center gap-2 text-sm font-medium">
-                    <Switch
-                      checked={look.importEnabled}
-                      label={t.importSwitch}
-                      disabled={!canManage}
-                      onChange={() => set('importEnabled', !look.importEnabled)}
-                    />
-                    {t.importSwitch}
-                  </span>
-                  <p className="text-[13px] text-muted">{t.importHint}</p>
-                </Section>
-
                 <Section title={t.footer}>
                   {text('footerCompany', t.footerCompany, 200)}
                   <div className="grid grid-cols-2 gap-3">

@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { importKey, parseForwardDate, readForward } from './forwarded.js';
 
-const gmailSk = `Alma Intra: add mail
-
----------- Preposlaná správa ---------
+const gmailSk = `---------- Preposlaná správa ---------
 Od: Eva Tóthová <eva@ados.sk>
 Date: št 15. 10. 2026 o 9:12
 Subject: Re: Cenová ponuka
@@ -20,7 +18,7 @@ Dňa st 14. 10. 2026 o 16:00 Gabriel <gabriel@example.com> napísal(a):
 > Posielam ponuku.
 `;
 
-const gmailEn = `alma intra: ADD MAIL
+const gmailEn = `Pozri si toto.
 
 ---------- Forwarded message ---------
 From: Gabriel <gabriel@example.com>
@@ -36,9 +34,7 @@ wrote:
 > Pošlite ponuku.
 `;
 
-const outlook = `Alma Intra: add mail
-
-From: Eva Tóthová <eva@ados.sk>
+const outlook = `From: Eva Tóthová <eva@ados.sk>
 Sent: 15. októbra 2026 9:12
 To: Gabriel <mailto:gabriel@example.com>
 Subject: Zmluva
@@ -55,8 +51,7 @@ Staršia správa.
 
 describe('reading a forwarded e-mail', () => {
   it('Gmail in Slovak: who, when, what, and only its own words', () => {
-    const { asked, original } = readForward({ text: gmailSk, html: null });
-    expect(asked).toBe(true);
+    const original = readForward({ text: gmailSk, html: null });
     expect(original).toMatchObject({
       from: 'Eva Tóthová <eva@ados.sk>',
       to: ['Gabriel <gabriel@example.com>'],
@@ -67,8 +62,8 @@ describe('reading a forwarded e-mail', () => {
     expect(original!.date.toISOString()).toBe('2026-10-15T07:12:00.000Z');
   });
 
-  it('Gmail in English, the line in any case, the quote intro wrapped', () => {
-    const { original } = readForward({ text: gmailEn, html: null });
+  it('Gmail in English, words above the block, the quote intro wrapped', () => {
+    const original = readForward({ text: gmailEn, html: null });
     expect(original).toMatchObject({
       from: 'Gabriel <gabriel@example.com>',
       to: ['Eva Tóthová <eva@ados.sk>'],
@@ -79,8 +74,7 @@ describe('reading a forwarded e-mail', () => {
   });
 
   it('Outlook has no marker; what it quotes under it is left out', () => {
-    const { original } = readForward({ text: outlook, html: null });
-    expect(original).toMatchObject({
+    expect(readForward({ text: outlook, html: null })).toMatchObject({
       from: 'Eva Tóthová <eva@ados.sk>',
       to: ['Gabriel <gabriel@example.com>'],
       subject: 'Zmluva',
@@ -93,29 +87,26 @@ describe('reading a forwarded e-mail', () => {
       .split('\n')
       .map((line) => `<div>${line.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`)
       .join('');
-    expect(readForward({ text: null, html }).original?.subject).toBe('Cenová ponuka');
+    expect(readForward({ text: null, html })?.subject).toBe('Cenová ponuka');
   });
 
-  it('does nothing without the agreed line, even in the quoted part', () => {
-    expect(readForward({ text: 'Dobrý deň', html: null }).asked).toBe(false);
-    const quoted = gmailEn
-      .replace('alma intra: ADD MAIL', 'Pozri')
-      .replace('Posielam', 'Alma Intra: add mail');
-    expect(readForward({ text: quoted, html: null }).asked).toBe(false);
-  });
-
-  it('asked, but without a readable original: nothing to import', () => {
-    expect(readForward({ text: 'Alma Intra: add mail', html: null })).toEqual({
-      asked: true,
-      original: null,
+  it('reads the HTML when the text part has no block', () => {
+    const html = `<div>---------- Forwarded message ---------<br>From: <b>Eva</b> <span>&lt;<a href="mailto:eva@ados.sk">eva@ados.sk</a>&gt;</span><br>Date: Wed, Oct 14, 2026 at 4:00 PM<br>Subject: Zmluva<br>To: &lt;info@alma-care.eu&gt;<br></div><br><div>Text.</div>`;
+    expect(readForward({ text: 'Pozri', html })).toMatchObject({
+      from: 'Eva <eva@ados.sk>',
+      subject: 'Zmluva',
     });
-    const noDate = gmailEn.replace(/Date:.*\n/, '');
-    expect(readForward({ text: noDate, html: null }).original).toBeNull();
+  });
+
+  it('nothing to read: no block, or no date', () => {
+    expect(readForward({ text: 'Dobrý deň', html: null })).toBeNull();
+    expect(readForward({ text: null, html: null })).toBeNull();
+    expect(readForward({ text: gmailEn.replace(/Date:.*\n/, ''), html: null })).toBeNull();
   });
 
   it('the same original has one key, another reply another', () => {
-    const one = readForward({ text: gmailSk, html: null }).original!;
-    const again = readForward({ text: `${gmailSk}\n`, html: null }).original!;
+    const one = readForward({ text: gmailSk, html: null })!;
+    const again = readForward({ text: `${gmailSk}\n`, html: null })!;
     expect(importKey(one, 'eva@ados.sk')).toBe(importKey(again, 'eva@ados.sk'));
     expect(importKey({ ...one, text: 'Iná odpoveď' }, 'eva@ados.sk')).not.toBe(
       importKey(one, 'eva@ados.sk'),

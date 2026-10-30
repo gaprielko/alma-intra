@@ -295,6 +295,13 @@
       "when": 1793360947355,
       "tag": "0041_zippy_puff_adder",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1793361744356,
+      "tag": "0042_nosy_sebastian_shaw",
+      "breakpoints": true
     }
   ]
 }

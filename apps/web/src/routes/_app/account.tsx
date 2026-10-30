@@ -260,7 +260,7 @@ function ProfileForm({
   );
 }
 
-/** The private addresses old e-mail is forwarded from (docs/email-import.md). */
+/** The private addresses that tell the user's own old e-mail (docs/email-import.md). */
 function ImportAddressesCard() {
   const me = useMe();
   const toast = useToast();

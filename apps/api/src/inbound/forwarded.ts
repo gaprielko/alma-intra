@@ -6,8 +6,6 @@ import { createHash } from 'node:crypto';
  * works from that text. Untrusted, every field.
  */
 
-export const IMPORT_LINE = 'alma intra: add mail';
-
 /** The original e-mail a forward carries. */
 export interface ForwardedEmail {
   from: string;
@@ -175,25 +173,11 @@ export function ownText(lines: string[]) {
   return kept.join('\n').trim();
 }
 
-/** Whether the words before the original's block ask for an import. */
-function asksForImport(lines: string[], start: number) {
-  const before = start < 0 ? lines : lines.slice(0, start);
-  return before.some((line) => plain(line).includes(IMPORT_LINE));
-}
-
-/**
- * What a forward says: `asked` when it carries the agreed line, and the original when its block
- * can be read. Asked without a readable original, the e-mail goes on as an ordinary one.
- */
-export function readForward(email: { text: string | null; html: string | null }): {
-  asked: boolean;
-  original: ForwardedEmail | null;
-} {
-  const source = email.text?.trim() ? email.text : email.html ? htmlToText(email.html) : '';
+/** The original an e-mail's text carries, when its block can be read. */
+function readBlock(source: string): ForwardedEmail | null {
   const lines = source.replace(/\r\n?/g, '\n').split('\n');
   const start = blockStart(lines);
-  if (!asksForImport(lines, start)) return { asked: false, original: null };
-  if (start < 0) return { asked: true, original: null };
+  if (start < 0) return null;
 
   const found: Partial<Record<'from' | 'to' | 'cc' | 'subject' | 'date', string>> = {};
   let i = start;
@@ -214,18 +198,23 @@ export function readForward(email: { text: string | null; html: string | null })
   }
   const [from] = addressesOf(found.from ?? '');
   const date = parseForwardDate(found.date ?? '');
-  if (!from || !date) return { asked: true, original: null };
+  if (!from || !date) return null;
   return {
-    asked: true,
-    original: {
-      from,
-      to: addressesOf(found.to ?? ''),
-      cc: addressesOf(found.cc ?? ''),
-      subject: (found.subject ?? '').trim(),
-      date,
-      text: ownText(lines.slice(i + 1)),
-    },
+    from,
+    to: addressesOf(found.to ?? ''),
+    cc: addressesOf(found.cc ?? ''),
+    subject: (found.subject ?? '').trim(),
+    date,
+    text: ownText(lines.slice(i + 1)),
   };
+}
+
+/** The original a forward carries, from its text part or else its HTML; null without one. */
+export function readForward(email: { text: string | null; html: string | null }) {
+  return (
+    (email.text?.trim() ? readBlock(email.text) : null) ??
+    (email.html ? readBlock(htmlToText(email.html)) : null)
+  );
 }
 
 /** The same original, however often it is forwarded: one key. */
