@@ -1,0 +1,1 @@
+ALTER TABLE "lead_activities" ADD COLUMN "confirmed_count" integer DEFAULT 1 NOT NULL;

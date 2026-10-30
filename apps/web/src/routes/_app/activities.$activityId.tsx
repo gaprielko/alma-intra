@@ -88,6 +88,7 @@ function ActivityPage() {
             </Field>
             <Field label={d.createdAt}>{formatDateTime(row.createdAt)}</Field>
             <Field label={d.lastConfirmedAt}>{formatDateTime(row.lastConfirmedAt)}</Field>
+            <Field label={d.confirmedCount}>{row.confirmedCount}</Field>
             <Field label={d.way}>{d.wayButton}</Field>
           </dl>
         </Card>

@@ -23,6 +23,7 @@ interface Entry {
   subject: string | null;
   createdAt: string;
   lastConfirmedAt: string;
+  confirmedCount: number;
 }
 
 describe('Aktivity: serious interest from an e-mail button', () => {
@@ -124,6 +125,9 @@ describe('Aktivity: serious interest from an e-mail button', () => {
     expect(new Date(items[0]!.lastConfirmedAt).getTime()).toBeGreaterThan(
       new Date(first!.lastConfirmedAt).getTime(),
     );
+    expect(items[0]!.confirmedCount).toBe(first!.confirmedCount + 1);
+    await stranger.call('interest.confirm', { token });
+    expect((await entries()).items[0]!.confirmedCount).toBe(first!.confirmedCount + 2);
   });
 
   it('tells the sender once, in the bell', async () => {

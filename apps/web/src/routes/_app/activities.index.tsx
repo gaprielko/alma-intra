@@ -141,6 +141,14 @@ function ActivitiesPage() {
                     <RowLink href={href} className="font-semibold">
                       {formatDateTime(row.createdAt)}
                     </RowLink>
+                    {row.confirmedCount > 1 ? (
+                      <span
+                        title={t.detail.confirmedCount}
+                        className="ml-1.5 rounded-full bg-track px-1.5 text-[11px] font-bold text-muted"
+                      >
+                        {row.confirmedCount}
+                      </span>
+                    ) : null}
                   </TableCell>
                   <TableCell>
                     <Badge tone="info" dot>

@@ -2855,6 +2855,7 @@ export const sk = {
       product: 'Produkt',
       createdAt: 'Prišla do systému',
       lastConfirmedAt: 'Naposledy potvrdené',
+      confirmedCount: 'Počet potvrdení',
       way: 'Spôsob',
       wayButton: 'Tlačidlo v\u00a0e-maile a\u00a0potvrdenie na stránke',
       who: 'Kto',
