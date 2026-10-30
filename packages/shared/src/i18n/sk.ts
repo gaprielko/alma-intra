@@ -2443,6 +2443,7 @@ export const sk = {
       linkApply: 'Vložiť odkaz',
       buttonDialog: 'Tlačidlo',
       buttonText: 'Text tlačidla',
+      buttonCenter: 'Zarovnať na stred',
       buttonHref: 'Adresa (https://…)',
       buttonAction: 'Čo tlačidlo urobí',
       buttonLink: 'Otvorí adresu',

@@ -17,6 +17,8 @@ export interface ButtonAttrs {
   text: string;
   href: string;
   interestProductId: string | null;
+  /** `center` in the middle of the e-mail; otherwise at the left. */
+  align: string | null;
 }
 
 /** What the node views need from the editor around them: names of variables, the accent. */
@@ -155,9 +157,13 @@ function ButtonView({ node, getPos, selected }: NodeViewProps) {
     text: String(node.attrs.text ?? ''),
     href: String(node.attrs.href ?? ''),
     interestProductId: (node.attrs.interestProductId as string | null) ?? null,
+    align: (node.attrs.align as string | null) ?? null,
   };
   return (
-    <NodeViewWrapper className="my-2 mb-6" data-drag-handle>
+    <NodeViewWrapper
+      className={cn('my-2 mb-6', attrs.align === 'center' && 'text-center')}
+      data-drag-handle
+    >
       <button
         type="button"
         contentEditable={false}
@@ -188,6 +194,7 @@ export const EmailButton = Node.create({
       text: { default: t.editor.buttonDefault },
       href: { default: 'https://' },
       interestProductId: { default: null },
+      align: { default: null },
     };
   },
   parseHTML() {

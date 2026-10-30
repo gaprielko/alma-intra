@@ -247,7 +247,12 @@ function NodeView({ node, ctx }: { node: EmailNode; ctx: Ctx }): ReactNode {
         ? (input.interestUrl?.(interest) ?? `${input.baseUrl}/zaujem`)
         : str(node.attrs?.href);
       return (
-        <Section style={{ margin: '8px 0 24px' }}>
+        <Section
+          style={{
+            margin: '8px 0 24px',
+            ...(node.attrs?.align === 'center' ? { textAlign: 'center' } : {}),
+          }}
+        >
           <Button
             href={href}
             style={{

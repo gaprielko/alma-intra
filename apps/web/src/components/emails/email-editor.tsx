@@ -286,6 +286,7 @@ function ButtonDialog({
   const [href, setHref] = useState(initial.href);
   const [records, setRecords] = useState(initial.interestProductId !== null);
   const [productId, setProductId] = useState(initial.interestProductId ?? defaultProductId ?? '');
+  const [centered, setCentered] = useState(initial.align === 'center');
   const products = useQuery({ ...trpc.product.list.queryOptions(), enabled: records });
   const chosen = productId || products.data?.[0]?.id || '';
   const valid =
@@ -306,10 +307,11 @@ function ButtonDialog({
           onSubmit={(event) => {
             event.preventDefault();
             if (!valid) return;
+            const align = centered ? 'center' : null;
             onSave(
               records
-                ? { text: text.trim(), href: '', interestProductId: chosen }
-                : { text: text.trim(), href: href.trim(), interestProductId: null },
+                ? { text: text.trim(), href: '', interestProductId: chosen, align }
+                : { text: text.trim(), href: href.trim(), interestProductId: null, align },
             );
           }}
         >
@@ -374,6 +376,15 @@ function ButtonDialog({
               />
             </div>
           )}
+          <label className="flex cursor-pointer items-center gap-2.5 text-sm">
+            <input
+              type="checkbox"
+              checked={centered}
+              onChange={(event) => setCentered(event.target.checked)}
+              className="accent-[#0f766e]"
+            />
+            {t.editor.buttonCenter}
+          </label>
           <DialogFooter>
             <Button
               type="button"

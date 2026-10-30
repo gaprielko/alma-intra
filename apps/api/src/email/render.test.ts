@@ -161,4 +161,29 @@ describe('the brand in the header', () => {
       expect(out.html).toContain('href="https://intra.test/zaujem"');
     });
   });
+
+  describe('a button in the middle', () => {
+    const withButton = (attrs: Record<string, unknown>): EmailNode => ({
+      type: 'doc',
+      content: [{ type: 'button', attrs: { text: 'Viac', href: 'https://a.test', ...attrs } }],
+    });
+    const sectionOf = async (doc: EmailNode) => {
+      const out = await renderEmail({
+        look,
+        baseUrl: 'https://intra.test',
+        subject: doc,
+        body: doc,
+        values: {},
+        labels: {},
+        signature: false,
+      });
+      const at = out.html.indexOf('https://a.test');
+      return out.html.slice(out.html.lastIndexOf('<table', at), at);
+    };
+
+    it('is centred only when it says so', async () => {
+      expect(await sectionOf(withButton({ align: 'center' }))).toContain('text-align:center');
+      expect(await sectionOf(withButton({}))).not.toContain('text-align:center');
+    });
+  });
 });
