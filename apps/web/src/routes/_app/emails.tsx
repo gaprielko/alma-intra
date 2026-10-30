@@ -1,12 +1,8 @@
 import { sk } from '@intra/shared/i18n';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { createFileRoute, Link, Outlet, redirect, useNavigate } from '@tanstack/react-router';
-import { Plus } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { createFileRoute, Link, Outlet, redirect, useLocation } from '@tanstack/react-router';
+import { NewEmailButton } from '@/components/emails/new-email-button';
 import { PageHeader } from '@/components/page-header';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/toast';
-import { errorMessage } from '@/lib/errors';
-import { useCan } from '@/lib/session';
 import { trpc } from '@/lib/trpc';
 
 export const Route = createFileRoute('/_app/emails')({
@@ -25,37 +21,26 @@ const tabClass =
 const activeTabClass = 'border-primary text-primary-text';
 const inactive = { className: 'border-transparent text-muted hover:text-foreground' };
 
-/** E-maily: the header with „Nový e-mail“, the tabs, and the chosen list. */
+/**
+ * E-maily: the header with „Nový e-mail“, the tabs, and the chosen list. On Prijaté the button
+ * sits in the list's own toolbar, next to „Načítať nové“.
+ */
 function EmailsLayout() {
   const t = sk.emails;
-  const toast = useToast();
-  const navigate = useNavigate();
-  const canSend = useCan('email.send');
+  const inInbox = useLocation({ select: (l) => l.pathname.startsWith('/emails/inbox') });
   const look = useQuery(trpc.template.look.queryOptions());
   // Kept fresh with the list itself (every 30 s).
   const unassigned = useQuery({
     ...trpc.inbound.list.queryOptions({ view: 'unassigned' }),
     refetchInterval: 30_000,
   }).data?.unassigned;
-  const create = useMutation(
-    trpc.campaign.create.mutationOptions({
-      onSuccess: (created) =>
-        navigate({ to: '/emails/compose/$campaignId', params: { campaignId: created.id } }),
-      onError: (error) => toast('error', errorMessage(error, sk.campaigns.errors)),
-    }),
-  );
   return (
     <>
       <PageHeader
         title={t.title}
         subtitle={look.data ? t.subtitle(look.data.senderAddress) : undefined}
       >
-        {canSend ? (
-          <Button disabled={create.isPending} onClick={() => create.mutate({ customerIds: [] })}>
-            <Plus className="size-4" aria-hidden />
-            {sk.campaigns.newEmail}
-          </Button>
-        ) : null}
+        {inInbox ? null : <NewEmailButton />}
       </PageHeader>
       <nav
         aria-label={t.tabs.label}

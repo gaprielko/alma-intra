@@ -5,6 +5,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Paperclip, RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
+import { NewEmailButton } from '@/components/emails/new-email-button';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { TablePagination, TableShell } from '@/components/table-shell';
 import { Badge } from '@/components/ui/badge';
@@ -100,11 +101,12 @@ function InboxPage() {
           {chip('all', t.views.all)}
           {chip('unassigned', t.views.unassigned(list.data?.unassigned ?? 0))}
         </div>
+        <span className="ml-auto" />
+        <NewEmailButton size="sm" />
         <Button
           type="button"
           variant="secondary"
           size="sm"
-          className="ml-auto"
           disabled={sync.isPending}
           onClick={() => sync.mutate()}
         >
