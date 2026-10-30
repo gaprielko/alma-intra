@@ -57,8 +57,9 @@ const isVariableName = (name: unknown, keys: ReadonlySet<string>) =>
 
 /**
  * The e-mail body: a TipTap document of the blocks the editor offers (D-25). Paragraphs,
- * headings (2, 3), bold, italic, lists, links, images from the e-mail image store, a button,
- * a highlighted block, two columns, a divider, and variables as chips. Anything else is refused.
+ * headings (2, 3), bold, italic, the look's accent colour, lists, links, images from the e-mail
+ * image store, the look's logo within a line (D-46), a button, a highlighted block, two columns, a
+ * divider, and variables as chips. Anything else is refused.
  */
 const NODE_TYPES = [
   'doc',
@@ -76,8 +77,9 @@ const NODE_TYPES = [
   'columns',
   'column',
   'variable',
+  'logo',
 ] as const;
-const MARK_TYPES = ['bold', 'italic', 'link'] as const;
+const MARK_TYPES = ['bold', 'italic', 'link', 'accent'] as const;
 const MAX_DOC_CHARS = 200_000;
 
 export const safeHref = (href: unknown) =>

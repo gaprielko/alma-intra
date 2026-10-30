@@ -274,7 +274,7 @@ part in, the e-mails sent to them and their replies, from all their organization
 | Category      | offer, invitation, news, follow-up, … (code list, optional)                             |
 | Language      | a field on the template, only Slovak offered at first **[D-20b]**                        |
 | Subject       | may contain variables                                                                    |
-| Body          | TipTap document: paragraphs, headings, bold / italic, lists, links, **images**, a button, a divider, a two-column block **[D-25]** |
+| Body          | TipTap document: paragraphs, headings, bold / italic, the look's accent colour, lists, links, **images**, the look's logo within a line, a button, a divider, a two-column block **[D-25, D-46]** |
 | Attachments   | default attachments from the Files module                                                |
 | Custom fields | fields filled at sending (common or per recipient), e.g. price, number of nurses, date  |
 | Active        | inactive templates are not offered, never deleted (pattern `record_templates`)           |
@@ -641,6 +641,7 @@ both attach files.
 | D-42  | Claude may create and change organizations, their persons and prevádzky through MCP, on the user's request, with `customer.write`; no deleting, no sending, private persons stay in the app (30 Oct 2026) |
 | D-43  | A click on a file shows its preview in a dialog, HTML included; „Verzie“ alone opens its detail (30 Oct 2026) |
 | D-45  | Claude may read, preview, create and change e-mail templates through MCP, on the user's request, with `template.write`; no deleting, no sending, new images stay in the app (30 Oct 2026) |
+| D-46  | Text in an e-mail can take the look's accent colour and the look's logo within a line, so a product's name can be written as its logo; both follow the look, there is no free choice of colour or picture (30 Oct 2026) |
 
 ### Still to verify (not decisions)
 

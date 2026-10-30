@@ -1,5 +1,6 @@
 import { sk } from '@intra/shared/i18n';
 import {
+  Mark,
   mergeAttributes,
   Node,
   type NodeViewProps,
@@ -16,6 +17,8 @@ export interface EmailEditorContextValue {
   /** The label of a variable (`custom.nurses` → „Počet sestier“). */
   label: (name: string) => string;
   accent: string;
+  /** The look's logo, for the logo within a line. */
+  logoKey: string | null;
   /** Opens the button dialog for the button at this position. */
   editButton: (pos: number, attrs: { text: string; href: string }) => void;
 }
@@ -23,6 +26,7 @@ export interface EmailEditorContextValue {
 export const EmailEditorContext = createContext<EmailEditorContextValue>({
   label: (name) => name,
   accent: '#0f766e',
+  logoKey: null,
   editButton: () => undefined,
 });
 
@@ -72,6 +76,61 @@ export const Variable = Node.create({
   },
   addNodeView() {
     return ReactNodeViewRenderer(VariableChip);
+  },
+});
+
+/** „Farba značky“: text in the look's accent, which the editor's frame sets as a CSS variable. */
+export const Accent = Mark.create({
+  name: 'accent',
+  parseHTML() {
+    return [{ tag: 'span[data-accent]' }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return [
+      'span',
+      mergeAttributes(HTMLAttributes, {
+        'data-accent': '',
+        style: 'color: var(--email-accent)',
+      }),
+      0,
+    ];
+  },
+});
+
+/** The look's logo at the height of the text; without one, a chip, as the e-mail shows nothing. */
+function LogoView({ selected }: NodeViewProps) {
+  const { logoKey } = useContext(EmailEditorContext);
+  return (
+    <NodeViewWrapper as="span" data-logo="" className={cn(selected && 'outline-2 outline-primary')}>
+      {logoKey ? (
+        <img
+          src={`/m/${logoKey}`}
+          alt={t.editor.logo}
+          className="mr-1 inline-block h-[18px] w-auto rounded-[5px] align-[-3px]"
+        />
+      ) : (
+        <span className="mx-px inline-flex h-[22px] items-center rounded-md bg-hover px-2 align-[1px] text-[13px] font-semibold whitespace-nowrap text-muted">
+          {t.editor.logo}
+        </span>
+      )}
+    </NodeViewWrapper>
+  );
+}
+
+export const Logo = Node.create({
+  name: 'logo',
+  group: 'inline',
+  inline: true,
+  atom: true,
+  selectable: true,
+  parseHTML() {
+    return [{ tag: 'span[data-logo]' }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['span', mergeAttributes(HTMLAttributes, { 'data-logo': '' })];
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(LogoView);
   },
 });
 
