@@ -23,6 +23,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  CELL_LINK,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
@@ -104,7 +105,8 @@ export function HoldingsCard({
     return (
       <TableRow
         key={`${h.organizationId}-${h.productId}`}
-        href={`/products/${h.productId}`}
+        // The row edits the holding, as the first item of its menu; the product opens from its button.
+        onClick={() => setEditing(h)}
         className={cn('align-top', !h.active && 'opacity-60')}
       >
         <TableCell>
@@ -112,7 +114,7 @@ export function HoldingsCard({
             <Link
               to="/products/$productId"
               params={{ productId: h.productId }}
-              className="font-semibold"
+              className={CELL_LINK}
             >
               {h.product.name}
             </Link>
