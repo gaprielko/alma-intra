@@ -105,7 +105,7 @@ export function EstablishmentsCard({
           </TableHeader>
           <TableBody>
             {rows.map((row) => (
-              <TableRow key={row.id}>
+              <TableRow key={row.id} href={`/organizations/${row.id}`}>
                 <TableCell>
                   <Link
                     to="/organizations/$customerId"

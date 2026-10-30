@@ -104,6 +104,7 @@ export function HoldingsCard({
     return (
       <TableRow
         key={`${h.organizationId}-${h.productId}`}
+        href={`/products/${h.productId}`}
         className={cn('align-top', !h.active && 'opacity-60')}
       >
         <TableCell>

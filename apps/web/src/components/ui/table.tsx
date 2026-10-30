@@ -113,7 +113,7 @@ function openInNewTab(href: string) {
  * and pointer, a plain click opens it, Cmd/Ctrl/Shift or the middle button a new tab, and inner
  * buttons and checkboxes keep their own clicks. For the keyboard and for „Otvoriť v novej karte“
  * the row's first cell holds the same address as a real link (`RowLink`). A row given only
- * `onClick` (no address to open) keeps the tint and the click.
+ * `onClick` (no address to open) keeps the tint and the click, with the same care for inner controls.
  */
 export function TableRow({
   className,
@@ -146,6 +146,11 @@ export function TableRow({
               }
             }
           : onClick
+            ? (event) => {
+                // As with `href`: inner controls, menus and selected text keep their own clicks.
+                if (intentOf(event) === 'navigate') onClick(event);
+              }
+            : undefined
       }
       onAuxClick={
         href

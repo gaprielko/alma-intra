@@ -105,7 +105,10 @@ function ItemsPage() {
                   </TableHeader>
                   <TableBody>
                     {rows.map((item) => (
-                      <TableRow key={item.id}>
+                      <TableRow
+                        key={item.id}
+                        onClick={canWrite ? () => setEditing(item) : undefined}
+                      >
                         <TableCell className="font-semibold">{item.name}</TableCell>
                         <TableCell className="text-muted">{item.unit ?? sk.common.none}</TableCell>
                         <TableCell>

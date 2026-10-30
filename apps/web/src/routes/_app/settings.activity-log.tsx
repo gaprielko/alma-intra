@@ -29,6 +29,15 @@ function describeAction(action: string) {
 }
 
 /** Where a row's subject opens, when it is something the app shows on its own page. */
+/** Where a row of the trail leads: the customer, the e-mail or the received e-mail it is about. */
+function hrefOf(row: Row) {
+  if (!row.subject || !row.entityId) return undefined;
+  if (row.entityType === 'customer') return `/organizations/${row.entityId}`;
+  if (row.entityType === 'campaign') return `/emails/sent/${row.entityId}`;
+  if (row.entityType === 'inbound') return `/emails/inbox/${row.entityId}`;
+  return undefined;
+}
+
 function SubjectLink({ row }: { row: Row }) {
   if (!row.subject || !row.entityId) return <span className="text-muted">{sk.common.none}</span>;
   if (row.entityType === 'customer') {
@@ -147,7 +156,7 @@ function ActivityLogPage() {
           {rows.map((row) => {
             const action = describeAction(row.action);
             return (
-              <TableRow key={row.id}>
+              <TableRow key={row.id} href={hrefOf(row)}>
                 <TableCell className="whitespace-nowrap text-muted tabular-nums">
                   {formatDateTime(row.at)}
                 </TableCell>
