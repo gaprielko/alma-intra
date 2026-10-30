@@ -162,7 +162,7 @@ function ContactsTab() {
           </Button>
         ) : null}
       </OrganizationsHeader>
-      <div className="max-w-[1400px] px-7 pt-5 pb-10">
+      <div className="px-7 pt-5 pb-10">
         <TableShell
           header={
             <div>

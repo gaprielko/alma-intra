@@ -67,7 +67,7 @@ function ItemsPage() {
           </Button>
         ) : null}
       </ProductsHeader>
-      <main className="max-w-[1400px] px-7 pt-5 pb-10">
+      <main className="px-7 pt-5 pb-10">
         {items.isPending ? (
           <CardSkeleton lines={4} />
         ) : loadFailed(items) ? (

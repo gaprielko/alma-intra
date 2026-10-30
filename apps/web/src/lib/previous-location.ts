@@ -15,6 +15,8 @@ const LIMIT = 30;
 const FORM = /\/(new|edit)$/;
 
 let trail: VisitedLocation[] = [];
+/** The title each screen showed, so „Späť na …“ can name it. */
+const titles = new Map<string, string>();
 const listeners = new Set<() => void>();
 
 const emit = () => listeners.forEach((listener) => listener());
@@ -30,6 +32,16 @@ export function trackPreviousLocation(router: AnyRouter) {
         : [...trail, { pathname, href }].slice(-LIMIT);
     emit();
   });
+}
+
+/** The header of the screen at `pathname` tells its title. */
+export function nameLocation(pathname: string, title: string) {
+  titles.set(pathname, title);
+}
+
+/** The title the screen at `pathname` showed, if it had a header. */
+export function titleOf(pathname: string): string | null {
+  return titles.get(pathname) ?? null;
 }
 
 /** Going back to `to` forgets what came after it, so the next „Späť“ leads further back. */

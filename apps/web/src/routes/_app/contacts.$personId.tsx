@@ -132,7 +132,7 @@ function PersonPage() {
           </Button>
         ) : null}
       </PageHeader>
-      <div className="flex max-w-[1400px] flex-wrap items-start gap-5 px-7 pt-6 pb-10">
+      <div className="flex flex-wrap items-start gap-5 px-7 pt-6 pb-10">
         <div className="flex min-w-0 flex-[2_1_560px] flex-col gap-5">
           <PersonTimeline person={c} />
         </div>

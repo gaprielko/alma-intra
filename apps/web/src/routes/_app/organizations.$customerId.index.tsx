@@ -114,6 +114,7 @@ function CustomerDetailPage() {
       <PageHeader
         title={c.name}
         subtitle={<HeaderFacts customer={c} />}
+        backAside={<CountFacts customer={c} />}
         back={
           parent
             ? {
@@ -137,6 +138,10 @@ function CustomerDetailPage() {
           </span>
         }
       >
+        <OwnerLine
+          owner={(parent ?? c).owner?.name ?? null}
+          source={parent ? null : c.sourceName}
+        />
         {/* One row: the title side wraps first, the buttons stay together. */}
         <div className="flex flex-nowrap items-center gap-3">
           {canSend ? (
@@ -201,13 +206,9 @@ function CustomerDetailPage() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <OwnerLine
-          owner={(parent ?? c).owner?.name ?? null}
-          source={parent ? null : c.sourceName}
-        />
       </PageHeader>
 
-      <main className="grid max-w-[1400px] items-start gap-5 px-7 pt-5 pb-10 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
+      <main className="grid items-start gap-5 px-7 pt-5 pb-10 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
         <div className="min-w-0 space-y-5">
           {!parent && c.establishmentCount > 0 ? (
             <EstablishmentsCard parentId={c.id} parentName={c.name} />
@@ -372,10 +373,7 @@ function HeaderFacts({ customer: c }: { customer: Customer }) {
             </Fact>
             {parent.ico ? <Fact label={h.ico}>{formatIco(parent.ico)}</Fact> : null}
           </>
-        ) : c.establishmentCount > 0 ? (
-          <Fact label={h.establishments}>{c.establishmentCount}</Fact>
         ) : null}
-        {c.nurses !== null ? <Fact label={h.nurses}>{c.nurses}</Fact> : null}
         {parent ? (
           parent.tags.map((tag) => <TagChip key={tag.id}>{tag.name}</TagChip>)
         ) : (
@@ -386,14 +384,26 @@ function HeaderFacts({ customer: c }: { customer: Customer }) {
   );
 }
 
-/** Under the header's buttons: who has the record in hand and where it came from. */
+/** Before the header's buttons: who has the record in hand and where it came from, one under the other. */
 function OwnerLine({ owner, source }: { owner: string | null; source: string | null }) {
   if (!owner && !source) return null;
   return (
-    <p className="flex basis-full flex-wrap justify-end gap-x-3.5 text-[13px] text-muted">
+    <div className="mr-auto flex flex-col gap-0.5 self-start text-[13px] text-muted">
       {owner ? <Fact label={h.owner}>{owner}</Fact> : null}
       {source ? <Fact label={h.source}>{source}</Fact> : null}
-    </p>
+    </div>
+  );
+}
+
+/** At the right of the back row: how many prevádzky and nurses. */
+function CountFacts({ customer: c }: { customer: Customer }) {
+  const establishments = !c.parent && c.establishmentCount > 0;
+  if (!establishments && c.nurses === null) return null;
+  return (
+    <>
+      {establishments ? <Fact label={h.establishments}>{c.establishmentCount}</Fact> : null}
+      {c.nurses !== null ? <Fact label={h.nurses}>{c.nurses}</Fact> : null}
+    </>
   );
 }
 

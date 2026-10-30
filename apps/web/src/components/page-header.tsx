@@ -6,9 +6,9 @@ import {
   type RegisteredRouter,
   type ValidateLinkOptions,
 } from '@tanstack/react-router';
-import { ArrowLeft, ChevronLeft } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
-import { forgetAfter, usePreviousLocation } from '@/lib/previous-location';
+import { forgetAfter, nameLocation, titleOf, usePreviousLocation } from '@/lib/previous-location';
 import { cn } from '@/lib/utils';
 
 /**
@@ -25,6 +25,8 @@ interface PageHeaderProps<TRouter extends RegisteredRouter, TOptions> {
   subtitle?: ReactNode | undefined;
   back?: PageHeaderBack<TRouter, TOptions>;
   badge?: ReactNode;
+  /** Facts at the right end of the back row („Prevádzky: 5“). */
+  backAside?: ReactNode;
   children?: ReactNode;
 }
 
@@ -46,40 +48,45 @@ export function useScrolled(threshold = SCROLLED_AT): boolean {
 const BACK_CLASS =
   'inline-flex max-w-full items-center gap-0.5 text-xs font-medium text-tertiary transition-colors hover:text-primary-text';
 
-/** „Späť“: a small framed button, so it reads apart from the breadcrumb beside it. */
-const RETURN_CLASS =
-  'inline-flex shrink-0 items-center gap-1 rounded-lg border border-primary/25 bg-primary-soft px-2 py-0.5 text-xs font-semibold text-primary-text transition-colors hover:bg-[#d6ebe9]';
-
 /**
  * The way back, at the very bottom left of the header. The breadcrumb leads to the screen's own
- * list; when the user came from somewhere else (a product opened from a customer), „Späť“ before
- * it returns there.
+ * list; when the user came from somewhere else (a product opened from a customer), „‹ Späť na …“
+ * after it returns there, named by that screen's title.
  */
-function BackRow({ back }: { back: PageHeaderBack }) {
+function BackRow({ back, aside }: { back: PageHeaderBack; aside?: ReactNode }) {
   const router = useRouter();
   const { pathname } = useLocation();
   const previous = usePreviousLocation(pathname);
   const target = router.buildLocation(back as Parameters<typeof router.buildLocation>[0]).pathname;
   const elsewhere = previous && previous.pathname !== target ? previous : null;
   return (
-    <div className="flex basis-full items-center gap-3">
+    <div className="flex min-w-0 basis-full flex-wrap items-center gap-x-6 gap-y-1">
+      <Link {...(back as ValidateLinkOptions)} className={BACK_CLASS}>
+        <ChevronLeft className="size-3.5 shrink-0" aria-hidden />
+        <span className="truncate">{back.label}</span>
+      </Link>
       {elsewhere ? (
         <button
           type="button"
-          className={RETURN_CLASS}
+          className={BACK_CLASS}
           onClick={() => {
             forgetAfter(elsewhere);
             void router.navigate({ href: elsewhere.href });
           }}
         >
-          <ArrowLeft className="size-3.5" aria-hidden />
-          {sk.common.back}
+          <ChevronLeft className="size-3.5 shrink-0" aria-hidden />
+          <span className="truncate">
+            {titleOf(elsewhere.pathname)
+              ? sk.common.backTo(titleOf(elsewhere.pathname)!)
+              : sk.common.back}
+          </span>
         </button>
       ) : null}
-      <Link {...(back as ValidateLinkOptions)} className={BACK_CLASS}>
-        <ChevronLeft className="size-3.5 shrink-0" aria-hidden />
-        <span className="truncate">{back.label}</span>
-      </Link>
+      {aside ? (
+        <div className="ml-auto flex flex-wrap items-center gap-x-3.5 text-xs text-muted">
+          {aside}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -97,9 +104,12 @@ export function PageHeader({
   subtitle,
   back,
   badge,
+  backAside,
   children,
 }: PageHeaderProps<RegisteredRouter, unknown>) {
   const scrolled = useScrolled();
+  const { pathname } = useLocation();
+  useEffect(() => nameLocation(pathname, title), [pathname, title]);
   return (
     <header
       className={cn(
@@ -125,7 +135,7 @@ export function PageHeader({
           {children}
         </div>
       ) : null}
-      {back ? <BackRow back={back} /> : null}
+      {back ? <BackRow back={back} aside={backAside} /> : null}
     </header>
   );
 }
