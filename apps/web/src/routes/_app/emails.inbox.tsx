@@ -24,9 +24,9 @@ export const Route = createFileRoute('/_app/emails/inbox')({
   component: InboxPage,
 });
 
-/** „Prijaté“: received e-mail, the unassigned first; one opens on its own page. */
+/** „Prijaté“: received e-mail, all of it first, „Nepriradené“ a click away; one opens on its own page. */
 function InboxPage() {
-  const { view = 'unassigned' } = Route.useSearch();
+  const { view = 'all' } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const [page, setPage] = useState(1);
   const list = useQuery({
@@ -59,7 +59,7 @@ function InboxPage() {
       aria-pressed={view === key}
       onClick={() => {
         setPage(1);
-        void navigate({ search: { view: key === 'unassigned' ? undefined : key } });
+        void navigate({ search: { view: key === 'all' ? undefined : key } });
       }}
       className={cn(
         'inline-flex h-8 items-center rounded-full border px-3 text-[13px] font-medium whitespace-nowrap transition-colors',
@@ -75,8 +75,8 @@ function InboxPage() {
     <main className="max-w-[1440px] space-y-4 px-7 pt-5 pb-10">
       <div className="flex items-center gap-2">
         <div role="group" aria-label={t.views.label} className="flex gap-2">
-          {chip('unassigned', t.views.unassigned(list.data?.unassigned ?? 0))}
           {chip('all', t.views.all)}
+          {chip('unassigned', t.views.unassigned(list.data?.unassigned ?? 0))}
         </div>
         <Button
           type="button"
