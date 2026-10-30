@@ -281,6 +281,13 @@
       "when": 1793356336961,
       "tag": "0039_oval_frightful_four",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1793359361096,
+      "tag": "0040_shocking_johnny_blaze",
+      "breakpoints": true
     }
   ]
 }

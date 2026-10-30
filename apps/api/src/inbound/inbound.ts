@@ -235,8 +235,9 @@ export async function receiveInbound(
         .innerJoin(campaigns, eq(campaigns.id, campaignMessages.campaignId))
         .where(eq(campaignMessages.replyToken, token))
     : [];
-  const match = original
-    ? { by: 'token' as const, ...original }
+  // An answer to a direct e-mail to someone not in Kontakty names no organization: by the sender.
+  const match = original?.customerId
+    ? { by: 'token' as const, ...original, customerId: original.customerId }
     : await bySender(db, sender.email).then((found) =>
         found ? { by: 'sender' as const, id: null, userId: null, ...found } : null,
       );

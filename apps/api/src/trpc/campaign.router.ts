@@ -2,6 +2,8 @@ import {
   attachmentsAsLinksSchema,
   campaignContentSchema,
   campaignIdSchema,
+  directFromTemplateSchema,
+  saveDirectSchema,
   campaignListSchema,
   chooseTemplateSchema,
   createCampaignSchema,
@@ -18,6 +20,7 @@ import * as campaigns from '../campaigns/campaigns.service.js';
 import { dropForUnsubscribed, setUnsubscribed, unsubscribeInfo } from '../campaigns/delivery.js';
 import { MailProviderError } from '../mail/transport.js';
 import { RATE_LIMITS } from '../security/rate-limit.js';
+import * as direct from '../campaigns/direct.service.js';
 import { authorizedProcedure, limitPerIp, publicProcedure, router } from './trpc.js';
 
 /** The service's refusals as tRPC errors, with the code as message for the web to word. */
@@ -77,6 +80,43 @@ export const campaignRouter = router({
         diff: { count: input.customerIds.length },
       });
       return created;
+    }),
+
+  /** „Nový e-mail“: one e-mail to its To, Cc and Bcc (docs/new-email.md). */
+  createDirect: authorizedProcedure('email.send').mutation(async ({ ctx }) => {
+    const created = await direct.createDirect(ctx.db, ctx.session.userId);
+    ctx.audit.set({ entityType: 'campaign', entityId: created.id, diff: { direct: true } });
+    return created;
+  }),
+  getDirect: authorizedProcedure('email.read')
+    .input(campaignIdSchema)
+    .query(({ ctx, input }) => run(() => direct.getDirect(ctx.db, input.id))),
+  saveDirect: authorizedProcedure('email.send')
+    .input(saveDirectSchema)
+    .mutation(async ({ ctx, input }) => {
+      await run(() => direct.saveDirect(ctx.db, input));
+      ctx.audit.set({
+        entityType: 'campaign',
+        entityId: input.id,
+        diff: { count: input.recipients.length },
+      });
+      return { ok: true as const };
+    }),
+  directFromTemplate: authorizedProcedure('email.send')
+    .input(directFromTemplateSchema)
+    .mutation(({ ctx, input }) =>
+      run(() => direct.directFromTemplate(ctx.db, input, ctx.session.userId)),
+    ),
+  sendDirect: authorizedProcedure('email.send')
+    .input(campaignIdSchema)
+    .mutation(async ({ ctx, input }) => {
+      const result = await run(() => direct.sendDirect(ctx.db, ctx.env, input.id));
+      ctx.audit.set({
+        entityType: 'campaign',
+        entityId: input.id,
+        diff: { count: result.queued, direct: true },
+      });
+      return result;
     }),
 
   /** „Použiť znova“: a new draft from a sent campaign. */

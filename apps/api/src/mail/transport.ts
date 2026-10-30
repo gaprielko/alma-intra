@@ -4,6 +4,10 @@ import { isReservedAddress } from './reserved-domain.js';
 
 export interface OutgoingMail {
   to: string;
+  /** More addressees of one e-mail („Nový e-mail“): they see each other, as a Bcc is not seen. */
+  alsoTo?: string[];
+  cc?: string[];
+  bcc?: string[];
   subject: string;
   html: string;
   text: string;
@@ -112,12 +116,21 @@ export function resendTransport(
   return {
     async send(mail, idempotencyKey) {
       // Only the real provider skips: the in-memory outbox keeps these, tests read them there.
-      if (isReservedAddress(mail.to)) return { providerMessageId: null, skipped: true };
+      const { to: first, alsoTo = [], cc = [], bcc = [], ...rest } = mail;
+      const real = (list: string[]) => list.filter((address) => !isReservedAddress(address));
+      const to = real([first, ...alsoTo]);
+      const copies = { cc: real(cc), bcc: real(bcc) };
+      if (to.length + copies.cc.length + copies.bcc.length === 0) {
+        return { providerMessageId: null, skipped: true };
+      }
       const { data, error } = await emails.send(
         {
           from: config.from,
           ...(config.replyTo ? { replyTo: config.replyTo } : {}),
-          ...mail,
+          ...rest,
+          to: to.length === 1 ? to[0]! : to,
+          ...(copies.cc.length > 0 ? { cc: copies.cc } : {}),
+          ...(copies.bcc.length > 0 ? { bcc: copies.bcc } : {}),
         },
         idempotencyKey ? { idempotencyKey } : {},
       );

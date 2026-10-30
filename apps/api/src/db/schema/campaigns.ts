@@ -3,6 +3,7 @@ import {
   type CustomField,
   type EmailNode,
   MESSAGE_STATUSES,
+  type DirectRecipient,
 } from '@intra/shared/schemas';
 import { sql } from 'drizzle-orm';
 import {
@@ -36,6 +37,12 @@ export const campaigns = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     status: campaignStatus('status').notNull().default('draft'),
+    /** `direct`: „Nový e-mail“, one e-mail to its To, Cc and Bcc (docs/new-email.md). */
+    kind: text('kind', { enum: ['bulk', 'direct'] })
+      .notNull()
+      .default('bulk'),
+    /** Who a direct e-mail goes to, while it is a draft; sending makes the message rows. */
+    directRecipients: jsonb('direct_recipients').$type<DirectRecipient[]>().notNull().default([]),
     templateId: uuid('template_id').references(() => emailTemplates.id),
     subject: jsonb('subject').$type<EmailNode>(),
     body: jsonb('body').$type<EmailNode>(),
@@ -85,10 +92,11 @@ export const campaignMessages = pgTable(
     campaignId: uuid('campaign_id')
       .notNull()
       .references(() => campaigns.id, { onDelete: 'cascade' }),
-    organizationId: uuid('organization_id')
-      .notNull()
-      .references(() => organizations.id),
+    /** NULL only for a recipient of a direct e-mail who is not in Kontakty. */
+    organizationId: uuid('organization_id').references(() => organizations.id),
     contactId: uuid('contact_id').references(() => contacts.id),
+    /** A direct e-mail: `to`, `cc` or `bcc`; its first row carries the one send. */
+    recipientRole: text('recipient_role', { enum: ['to', 'cc', 'bcc'] }),
     position: integer('position').notNull().default(0),
     values: jsonb('values').$type<Record<string, string>>().notNull().default({}),
     ownFileIds: jsonb('own_file_ids').$type<string[]>().notNull().default([]),

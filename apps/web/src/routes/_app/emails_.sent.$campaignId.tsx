@@ -152,7 +152,8 @@ function CampaignPage() {
             {d.unschedule}
           </Button>
         ) : null}
-        {canSend ? (
+        {/* The wizard takes organizations; a direct e-mail may have gone to anyone. */}
+        {canSend && c.kind === 'bulk' ? (
           <Button
             variant="secondary"
             disabled={reuse.isPending}
@@ -187,7 +188,16 @@ function CampaignPage() {
             >
               <TableCell>
                 <p className="font-semibold">{m.name}</p>
-                <p className="text-xs text-muted">{m.customerName}</p>
+                <p className="text-xs text-muted">
+                  {[
+                    m.recipientRole && m.recipientRole !== 'to'
+                      ? sk.directEmail.roles[m.recipientRole]
+                      : null,
+                    m.customerName,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </p>
               </TableCell>
               <TableCell className="text-muted">{m.email ?? sk.common.none}</TableCell>
               <TableCell>

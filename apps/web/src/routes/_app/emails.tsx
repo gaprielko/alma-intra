@@ -2,6 +2,7 @@ import { sk } from '@intra/shared/i18n';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, Outlet, redirect, useLocation } from '@tanstack/react-router';
 import { BulkEmailButton } from '@/components/emails/bulk-email-button';
+import { NewEmailButton } from '@/components/emails/new-email-button';
 import { PageHeader } from '@/components/page-header';
 import { trpc } from '@/lib/trpc';
 
@@ -40,7 +41,12 @@ function EmailsLayout() {
         title={t.title}
         subtitle={look.data ? t.subtitle(look.data.senderAddress) : undefined}
       >
-        {inInbox ? null : <BulkEmailButton />}
+        {inInbox ? null : (
+          <>
+            <NewEmailButton />
+            <BulkEmailButton />
+          </>
+        )}
       </PageHeader>
       <nav
         aria-label={t.tabs.label}

@@ -426,6 +426,113 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     await jana.call('template.updateLook', { ...look, importEnabled: false });
   });
 
+  it('Nový e-mail: one send to To, Cc and Bcc, known recipients on the timeline', async () => {
+    const created = await jana.call<{ id: string }>('campaign.createDirect');
+    const id = created.data.id;
+    const body = doc('Dobrý deň, posielam podklady.');
+    const save = (recipients: unknown[], subject = 'Podklady pre zmluvu') =>
+      jana.call('campaign.saveDirect', {
+        id,
+        recipients,
+        subject,
+        body,
+        templateId: null,
+        attachmentFileIds: [],
+      });
+    // Without anyone in Komu it does not leave.
+    await save([]);
+    expect((await jana.call('campaign.sendDirect', { id })).message).toBe('NO_RECIPIENTS');
+
+    await save([
+      {
+        role: 'bcc',
+        email: 'tajny@example.net',
+        name: null,
+        contactId: null,
+        organizationId: null,
+      },
+      {
+        role: 'to',
+        email: 'eva.tothova@adosharmonia.sk',
+        name: 'Eva',
+        contactId: EVA,
+        organizationId: HARMONIA,
+      },
+      { role: 'cc', email: 'kopia@example.net', name: null, contactId: null, organizationId: null },
+      { role: 'to', email: 'novy@example.net', name: null, contactId: null, organizationId: null },
+    ]);
+    const before = outbox.length;
+    expect((await jana.call('campaign.sendDirect', { id })).code).toBeUndefined();
+    await drainCampaigns(api.db, memoryTransport({ quiet: true }), null, loadEnv());
+
+    // One e-mail, not four, with everybody on it and no unsubscribe link.
+    expect(outbox.length).toBe(before + 1);
+    const mail = outbox.at(-1)!;
+    expect(mail).toMatchObject({
+      to: 'eva.tothova@adosharmonia.sk',
+      alsoTo: ['novy@example.net'],
+      cc: ['kopia@example.net'],
+      bcc: ['tajny@example.net'],
+      subject: 'Podklady pre zmluvu',
+    });
+    expect(mail.headers?.['List-Unsubscribe']).toBeUndefined();
+    expect(mail.html).toContain('posielam podklady');
+    expect(mail.html).not.toContain('odhlasenie');
+
+    const rows = await api.db.execute<{ to_email: string; status: string; role: string }>(
+      sql`select to_email, status, recipient_role as role from campaign_messages
+        where campaign_id = ${id} order by position`,
+    );
+    expect(rows.rows.map((r) => [r.to_email, r.role, r.status])).toEqual([
+      ['eva.tothova@adosharmonia.sk', 'to', 'sent'],
+      ['novy@example.net', 'to', 'sent'],
+      ['kopia@example.net', 'cc', 'sent'],
+      ['tajny@example.net', 'bcc', 'sent'],
+    ]);
+    // In „Odoslané“, and its detail opens though some recipients have no organization.
+    const sentList = await jana.call<{ items: { id: string; kind: string }[] }>('campaign.list', {
+      status: 'sent',
+      page: 1,
+    });
+    expect(sentList.data.items.find((c) => c.id === id)?.kind).toBe('direct');
+    const opened = await jana.call<{ messages: { email: string | null }[] }>('campaign.get', {
+      id,
+    });
+    expect(opened.code).toBeUndefined();
+    expect(opened.data.messages).toHaveLength(4);
+    // Sent, it is no longer a draft to edit.
+    expect((await save([])).code).toBe('CONFLICT');
+  });
+
+  it('Nový e-mail: a template comes with its variables written out', async () => {
+    const withVariable = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: 'Pre ' },
+            { type: 'variable', attrs: { name: 'customer.name' } },
+          ],
+        },
+      ],
+    };
+    const template = await jana.call<{ id: string }>('template.create', {
+      name: `Priamy ${Date.now()}`,
+      categoryId: null,
+      subject: withVariable,
+      body: withVariable,
+    });
+    const filled = await jana.call<{ subject: string; body: unknown }>(
+      'campaign.directFromTemplate',
+      { templateId: template.data.id, contactId: EVA, organizationId: HARMONIA },
+    );
+    expect(filled.code).toBeUndefined();
+    expect(filled.data.subject).toContain('ADOS Harmónia');
+    expect(JSON.stringify(filled.data.body)).toContain('ADOS Harmónia');
+    expect(JSON.stringify(filled.data.body)).not.toContain('"variable"');
+  });
+
   it('groups a conversation by its subject: one row, the rest in the thread', async () => {
     const receive = (subject: string, minutes: number) =>
       receiveInbound(api.db, loadEnv(), {

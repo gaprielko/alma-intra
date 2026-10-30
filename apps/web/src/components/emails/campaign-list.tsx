@@ -19,6 +19,12 @@ const t = sk.campaigns.list;
 /** Odoslané (with delivery counts) or Koncepty (to continue or delete): the newest first. */
 export function CampaignList({ status }: { status: 'sent' | 'draft' }) {
   const [page, setPage] = useState(1);
+  const hrefOf = (row: { id: string; kind: 'bulk' | 'direct' }) =>
+    status === 'sent'
+      ? `/emails/sent/${row.id}`
+      : row.kind === 'direct'
+        ? `/emails/new/${row.id}`
+        : `/emails/compose/${row.id}`;
   const toast = useToast();
   const queryClient = useQueryClient();
   const [deleting, setDeleting] = useState<{ id: string; subject: string } | null>(null);
@@ -65,15 +71,9 @@ export function CampaignList({ status }: { status: 'sent' | 'draft' }) {
         }
       >
         {rows.map((row) => (
-          <TableRow
-            key={row.id}
-            href={status === 'sent' ? `/emails/sent/${row.id}` : `/emails/compose/${row.id}`}
-          >
+          <TableRow key={row.id} href={hrefOf(row)}>
             <TableCell>
-              <RowLink
-                href={sent ? `/emails/sent/${row.id}` : `/emails/compose/${row.id}`}
-                className="font-semibold"
-              >
+              <RowLink href={hrefOf(row)} className="font-semibold">
                 {row.subjectText || t.noSubject}
               </RowLink>
               {row.templateName ? <p className="text-xs text-muted">{row.templateName}</p> : null}

@@ -19,6 +19,7 @@ import { useDebounced } from '@/components/customers/organization-list';
 import { PersonDialog } from '@/components/customers/person-dialog';
 import { type ContactPick, ContactSearch } from '@/components/emails/contact-search';
 import { BulkEmailButton } from '@/components/emails/bulk-email-button';
+import { NewEmailButton } from '@/components/emails/new-email-button';
 import { ReplyDialog } from '@/components/emails/reply-dialog';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { TablePagination, TableShell } from '@/components/table-shell';
@@ -211,6 +212,7 @@ function InboxPage() {
           {chip('unassigned', t.views.unassigned(list.data?.unassigned ?? 0))}
         </div>
         <span className="ml-auto" />
+        <NewEmailButton size="sm" />
         <BulkEmailButton size="sm" />
         <Button
           type="button"

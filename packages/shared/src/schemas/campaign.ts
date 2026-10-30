@@ -41,6 +41,31 @@ export const createCampaignSchema = z.object({
 
 export const campaignIdSchema = z.object({ id: idSchema });
 
+/** „Nový e-mail“: who it goes to; a contact or organization only when known in Kontakty. */
+export const DIRECT_ROLES = ['to', 'cc', 'bcc'] as const;
+export const directRecipientSchema = z.object({
+  role: z.enum(DIRECT_ROLES),
+  email: z.string().trim().toLowerCase().email().max(254),
+  name: z.string().trim().max(300).nullable(),
+  contactId: idSchema.nullable(),
+  organizationId: idSchema.nullable(),
+});
+export type DirectRecipient = z.infer<typeof directRecipientSchema>;
+export const saveDirectSchema = z.object({
+  id: idSchema,
+  recipients: z.array(directRecipientSchema).max(100),
+  subject: z.string().trim().max(998),
+  body: emailDocSchema,
+  templateId: idSchema.nullable(),
+  attachmentFileIds: z.array(idSchema).max(20),
+});
+export type SaveDirectInput = z.infer<typeof saveDirectSchema>;
+export const directFromTemplateSchema = z.object({
+  templateId: idSchema,
+  contactId: idSchema.nullable(),
+  organizationId: idSchema.nullable(),
+});
+
 /** The review step's switch: files as download links valid 30 days (D-26). */
 export const attachmentsAsLinksSchema = z.object({ id: idSchema, asLinks: z.boolean() });
 
