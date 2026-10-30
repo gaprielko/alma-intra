@@ -116,6 +116,24 @@ export type ProductPricing = (typeof PRODUCT_PRICINGS)[number];
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
+/** One stretch of a discount: its percent, for so many months; NULL: for good (R-19). */
+export const discountStepSchema = z.object({
+  percent: z.number().min(0).max(100),
+  months: z.number().int().min(1).max(120).nullable(),
+});
+export type DiscountStep = z.infer<typeof discountStepSchema>;
+
+/** The percent off in a month counted from the start (0 is the first); after the steps, none. */
+export function discountAt(steps: DiscountStep[], month: number): number | null {
+  let end = 0;
+  for (const step of steps) {
+    if (step.months === null) return step.percent;
+    end += step.months;
+    if (month < end) return step.percent;
+  }
+  return null;
+}
+
 /** A product at an organization or a prevádzka (docs/products.md 9). */
 export const holdingSchema = z.object({
   organizationId: idSchema,
@@ -123,9 +141,8 @@ export const holdingSchema = z.object({
   validFrom: isoDate,
   validTo: isoDate.nullable(),
   pricing: z.enum(PRODUCT_PRICINGS),
-  discountPercent: z.number().min(0).max(100).nullable(),
-  /** The discount's months from `validFrom`; NULL: permanent. */
-  discountMonths: z.number().int().min(1).max(120).nullable(),
+  /** One after another from `validFrom`, then the list price; one without months: permanent. */
+  discountSteps: z.array(discountStepSchema).max(12),
   fixedPrice: money.nullable(),
   fixedPriceGross: money.nullable(),
   note: z.string().trim().max(1000).optional(),
@@ -155,8 +172,7 @@ export interface HeldPriceInput {
   counts: Record<string, number>;
   workloads: Record<string, { persons: number; percent: number }[]>;
   pricing: ProductPricing;
-  discountPercent: number | null;
-  discountMonths: number | null;
+  discountSteps: DiscountStep[];
   fixedPrice: number | null;
   validFrom: string;
 }
@@ -178,11 +194,9 @@ export function heldPrice(input: HeldPriceInput, today = new Date()) {
   const start = new Date(`${input.validFrom}T00:00:00`);
   const months =
     (today.getFullYear() - start.getFullYear()) * 12 + (today.getMonth() - start.getMonth());
-  const discounting =
-    input.pricing === 'discount' &&
-    input.discountPercent !== null &&
-    (input.discountMonths === null || months < input.discountMonths);
-  const factor = discounting ? 1 - (input.discountPercent ?? 0) / 100 : 1;
+  const percent = input.pricing === 'discount' ? discountAt(input.discountSteps, months) : null;
+  const discounting = percent !== null;
+  const factor = 1 - (percent ?? 0) / 100;
   const recurring =
     input.pricing === 'fixed' && input.fixedPrice !== null
       ? input.fixedPrice

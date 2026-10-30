@@ -1234,6 +1234,8 @@ export const sk = {
     modes: {
       list: 'podľa cenníka',
       discount: (percent: number) => `zľava ${percent} %`,
+      discountStep: (percent: number, months: number) => `${percent} % na ${months} mes.`,
+      discountSteps: (steps: string) => `zľava ${steps}`,
       fixed: 'pevná cena',
     },
     total: 'Spolu za organizáciu a prevádzky',
@@ -1279,12 +1281,17 @@ export const sk = {
       permanent: 'Trvalá',
       months: 'mesiacov',
       discountUntil: (date: string) => `zľava do ${date}, potom podľa cenníka`,
+      addStep: 'Pridať ďalšiu zľavu',
+      removeStep: 'Odobrať zľavu',
+      stepMonths: (from: number, to: number) =>
+        from === to ? `${from}. mesiac` : `${from}.–${to}. mesiac`,
       fixedNet: 'Pevná cena bez DPH (€)',
       fixedGross: (rate: number) => `s DPH ${rate} % (€)`,
       summary: {
         head: 'Cena',
         before: 'Mesačne pred zľavou',
         withDiscount: 'Mesačne so zľavou',
+        step: (months: string, percent: number) => `${months}, zľava ${percent} %`,
         monthly: 'Mesačne',
         firstYear: 'Prvých 12 mesiacov',
         yearly: 'Ročne',

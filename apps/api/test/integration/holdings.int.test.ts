@@ -83,8 +83,7 @@ describe('a product at an organization or a prevádzka', () => {
     validFrom: '2026-11-01',
     validTo: null,
     pricing: 'list',
-    discountPercent: null,
-    discountMonths: null,
+    discountSteps: [],
     fixedPrice: null,
     fixedPriceGross: null,
     counts: [{ itemId: admin, count: 2 }],
@@ -116,7 +115,12 @@ describe('a product at an organization or a prevádzka', () => {
   it('a discount lowers the price; the organization shows its prevádzka’s products too', async () => {
     await jana.call(
       'customer.holdingSave',
-      holding(est, { pricing: 'discount', discountPercent: 10, counts: [], workloads: [] }),
+      holding(est, {
+        pricing: 'discount',
+        discountSteps: [{ percent: 10, months: null }],
+        counts: [],
+        workloads: [],
+      }),
     );
     const held = await jana.call<Holding[]>('customer.holdings', { id: org });
     const atEst = held.data.find((h) => h.holder.isEstablishment)!;
@@ -127,6 +131,44 @@ describe('a product at an organization or a prevádzka', () => {
     );
     // 4 at the organization, 4 (the package) at the prevádzka.
     expect(detail.data.nurses).toBe(8);
+  });
+
+  it('a discount in steps: the current one applies, the list price after them', async () => {
+    const monthsAgo = (months: number) => {
+      const date = new Date();
+      date.setDate(1);
+      date.setMonth(date.getMonth() - months);
+      return date.toISOString().slice(0, 10);
+    };
+    const priced = async (validFrom: string) => {
+      await jana.call(
+        'customer.holdingSave',
+        holding(est, {
+          validFrom,
+          pricing: 'discount',
+          discountSteps: [
+            { percent: 100, months: 3 },
+            { percent: 50, months: 9 },
+          ],
+          counts: [],
+          workloads: [],
+        }),
+      );
+      const held = await jana.call<Holding[]>('customer.holdings', { id: est });
+      return held.data[0]!.price;
+    };
+    expect(await priced(monthsAgo(1))).toMatchObject({ monthly: 0, discounting: true });
+    expect(await priced(monthsAgo(4))).toMatchObject({ monthly: 24.5, discounting: true });
+    expect(await priced(monthsAgo(13))).toMatchObject({ monthly: 49, discounting: false });
+    await jana.call(
+      'customer.holdingSave',
+      holding(est, {
+        pricing: 'discount',
+        discountSteps: [{ percent: 10, months: null }],
+        counts: [],
+        workloads: [],
+      }),
+    );
   });
 
   it('keeps the counts when the form ticks the products again', async () => {

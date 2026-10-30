@@ -39,8 +39,14 @@ const scopeOf = (h: Holding) =>
     .filter((i) => i.billing === 'recurring' && i.count > 0)
     .map((i) => `${i.count} × ${i.name}`);
 
-const modeOf = (h: Holding) =>
-  h.pricing === 'discount' ? t.modes.discount(h.discountPercent ?? 0) : t.modes[h.pricing];
+const modeOf = (h: Holding) => {
+  if (h.pricing !== 'discount') return t.modes[h.pricing];
+  const [first] = h.discountSteps;
+  if (first?.months === null) return t.modes.discount(first.percent);
+  return t.modes.discountSteps(
+    h.discountSteps.map((step) => t.modes.discountStep(step.percent, step.months ?? 0)).join(', '),
+  );
+};
 
 /**
  * „Produkty“ of an organization (docs/products.md 9.1): its own rows, then „Produkty prevádzok“,

@@ -1,6 +1,7 @@
 import { sk } from '@intra/shared/i18n';
 import {
   countFromWorkloads,
+  discountAt,
   heldPrice,
   type ProductPricing,
   toCents,
@@ -8,7 +9,7 @@ import {
   withVat,
 } from '@intra/shared/schemas';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Search, Trash2, Users } from 'lucide-react';
+import { Plus, Search, Trash2, Users } from 'lucide-react';
 import { useState } from 'react';
 import { formatEur, moneyText, parseMoney } from '@/components/products/products-header';
 import { Button } from '@/components/ui/button';
@@ -90,13 +91,17 @@ export function HoldingDialog({
     ),
   );
   const [pricing, setPricing] = useState<ProductPricing>(holding?.pricing ?? 'list');
-  const [discount, setDiscount] = useState(
-    holding?.discountPercent === null || holding?.discountPercent === undefined
-      ? ''
-      : String(holding.discountPercent),
+  const [steps, setSteps] = useState<{ percent: string; months: string }[]>(
+    holding && holding.discountSteps.length > 0
+      ? holding.discountSteps.map((step) => ({
+          percent: String(step.percent),
+          months: String(step.months ?? 6),
+        }))
+      : [{ percent: '', months: '6' }],
   );
-  const [permanent, setPermanent] = useState(holding ? holding.discountMonths === null : true);
-  const [months, setMonths] = useState(String(holding?.discountMonths ?? 6));
+  const [permanent, setPermanent] = useState(holding?.discountSteps[0]?.months == null);
+  const setStep = (index: number, change: Partial<{ percent: string; months: string }>) =>
+    setSteps((now) => now.map((step, i) => (i === index ? { ...step, ...change } : step)));
   const [fixedNet, setFixedNet] = useState(moneyText(holding?.fixedPrice));
   const [fixedGross, setFixedGross] = useState(moneyText(holding?.fixedPriceGross));
   const [note, setNote] = useState(holding?.note ?? '');
@@ -134,8 +139,19 @@ export function HoldingDialog({
     setWorkloads({});
   };
 
-  const discountPercent = pricing === 'discount' ? parseMoney(discount) : null;
-  const discountMonths = pricing === 'discount' && !permanent ? Number(months) || null : null;
+  // A permanent discount is the first step, for good; the rest wait in case it is switched back.
+  const typedSteps = (permanent ? steps.slice(0, 1) : steps).map((step) => ({
+    percent: parseMoney(step.percent),
+    months: permanent ? null : Number(step.months) || 0,
+  }));
+  const stepsValid = typedSteps.every(
+    (step) =>
+      step.percent !== null && step.percent <= 100 && (step.months === null || step.months > 0),
+  );
+  const discountSteps =
+    pricing === 'discount' && stepsValid
+      ? typedSteps.map((step) => ({ percent: step.percent ?? 0, months: step.months }))
+      : [];
   const fixedPrice =
     pricing === 'fixed'
       ? (parseMoney(fixedNet) ??
@@ -153,8 +169,7 @@ export function HoldingDialog({
           counts,
           workloads,
           pricing,
-          discountPercent,
-          discountMonths,
+          discountSteps,
           fixedPrice,
           validFrom,
         },
@@ -166,7 +181,7 @@ export function HoldingDialog({
     product !== undefined &&
     /^\d{4}-\d{2}-\d{2}$/.test(validFrom) &&
     (validTo === '' || validTo >= validFrom) &&
-    (pricing !== 'discount' || (discountPercent !== null && discountPercent <= 100)) &&
+    (pricing !== 'discount' || stepsValid) &&
     (pricing !== 'fixed' || fixedPrice !== null);
 
   const submit = () => {
@@ -177,8 +192,7 @@ export function HoldingDialog({
       validFrom,
       validTo: validTo || null,
       pricing,
-      discountPercent,
-      discountMonths,
+      discountSteps,
       fixedPrice: pricing === 'fixed' ? parseMoney(fixedNet) : null,
       fixedPriceGross: pricing === 'fixed' ? parseMoney(fixedGross) : null,
       note,
@@ -195,13 +209,26 @@ export function HoldingDialog({
   const summary: [string, number][] = [];
   if (price) {
     if (pricing === 'discount') {
-      const discounted = discountMonths === null ? 12 : Math.min(12, discountMonths);
+      const after = (percent: number) => toCents(price.listMonthly * (1 - percent / 100));
       summary.push([d.summary.before, price.listMonthly]);
-      summary.push([d.summary.withDiscount, price.monthly]);
-      summary.push([
-        d.summary.firstYear,
-        toCents(price.monthly * discounted + price.listMonthly * (12 - discounted)),
-      ]);
+      if (discountSteps.length > 1 || discountSteps[0]?.months != null) {
+        let month = 1;
+        for (const step of discountSteps) {
+          const last = month + (step.months ?? 1) - 1;
+          summary.push([
+            d.summary.step(d.stepMonths(month, last), step.percent),
+            after(step.percent),
+          ]);
+          month = last + 1;
+        }
+      } else {
+        summary.push([d.summary.withDiscount, price.monthly]);
+      }
+      let firstYear = 0;
+      for (let month = 0; month < 12; month += 1) {
+        firstYear += after(discountAt(discountSteps, month) ?? 0);
+      }
+      summary.push([d.summary.firstYear, toCents(firstYear)]);
     } else {
       summary.push([d.summary.monthly, price.monthly]);
       summary.push([d.summary.yearly, price.yearly]);
@@ -445,19 +472,10 @@ export function HoldingDialog({
                 }))}
               />
               {pricing === 'discount' ? (
-                <div className="grid items-end gap-4 sm:grid-cols-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="holding-discount">{d.discount}</Label>
-                    <Input
-                      id="holding-discount"
-                      inputMode="decimal"
-                      value={discount}
-                      onChange={(event) => setDiscount(event.target.value)}
-                    />
-                  </div>
+                <div className="space-y-3">
                   <div className="space-y-1.5">
                     <span className="block text-sm font-medium">{d.duration}</span>
-                    <span className="flex h-10 items-center gap-2 text-sm">
+                    <span className="flex h-6 items-center gap-2 text-sm">
                       <Switch
                         checked={permanent}
                         label={d.permanent}
@@ -466,22 +484,69 @@ export function HoldingDialog({
                       {d.permanent}
                     </span>
                   </div>
+                  {(permanent ? steps.slice(0, 1) : steps).map((step, index) => (
+                    <div
+                      key={index}
+                      className="grid items-end gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.5rem]"
+                    >
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`holding-discount-${index}`}>{d.discount}</Label>
+                        <Input
+                          id={`holding-discount-${index}`}
+                          inputMode="decimal"
+                          value={step.percent}
+                          onChange={(event) => setStep(index, { percent: event.target.value })}
+                        />
+                      </div>
+                      {permanent ? null : (
+                        <div className="space-y-1.5">
+                          <Label htmlFor={`holding-months-${index}`}>{d.months}</Label>
+                          <Input
+                            id={`holding-months-${index}`}
+                            inputMode="numeric"
+                            value={step.months}
+                            onChange={(event) =>
+                              setStep(index, { months: event.target.value.replace(/\D/g, '') })
+                            }
+                          />
+                        </div>
+                      )}
+                      {!permanent && steps.length > 1 ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={d.removeStep}
+                          onClick={() => setSteps((now) => now.filter((_, i) => i !== index))}
+                        >
+                          <Trash2 className="size-4" aria-hidden />
+                        </Button>
+                      ) : null}
+                    </div>
+                  ))}
                   {permanent ? null : (
-                    <div className="space-y-1.5">
-                      <Label htmlFor="holding-months">{d.months}</Label>
-                      <Input
-                        id="holding-months"
-                        inputMode="numeric"
-                        value={months}
-                        onChange={(event) => setMonths(event.target.value.replace(/\D/g, ''))}
-                      />
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setSteps((now) => [...now, { percent: '', months: '6' }])}
+                      >
+                        <Plus className="size-4" aria-hidden />
+                        {d.addStep}
+                      </Button>
+                      {discountSteps.length > 0 ? (
+                        <p className="text-xs text-muted">
+                          {d.discountUntil(
+                            discountEnd(
+                              validFrom,
+                              discountSteps.reduce((sum, step) => sum + (step.months ?? 0), 0),
+                            ),
+                          )}
+                        </p>
+                      ) : null}
                     </div>
                   )}
-                  {!permanent && discountMonths ? (
-                    <p className="text-xs text-muted sm:col-span-3">
-                      {d.discountUntil(discountEnd(validFrom, discountMonths))}
-                    </p>
-                  ) : null}
                 </div>
               ) : null}
               {pricing === 'fixed' ? (
