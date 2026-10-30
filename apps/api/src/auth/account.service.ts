@@ -280,7 +280,7 @@ export async function updateProfile(
         .update(users)
         .set({ ...next, updatedAt: sql`now()` })
         .where(eq(users.id, userId));
-      await syncContactFromUser(tx, userId);
+      await syncContactFromUser(tx, userId, current.position);
     });
   }
   return changed;

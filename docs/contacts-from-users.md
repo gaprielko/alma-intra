@@ -26,11 +26,15 @@ A contact made from a user points to them (`contacts.user_id`, unique, nullable)
 | ------------------------------------------ | --------------------------- |
 | Titles, first name, last name              | Gender, salutation          |
 | E-mail, phone                              | Note, receiving bulk e-mail |
-|                                            | Position, primary, per link |
+|                                            | Primary, per link           |
 
 A user's change is written to the contact in the same transaction. `users.name` is one text: the last
 word becomes the last name and the rest the first name; a single word stands for both, until the user
 gets a full name. It is recorded in the user's history, not the contact's.
+
+The position belongs to each organization, but follows the user too: a change of the user's position
+reaches every organization where the contact still has the previous one. A position written by hand
+for one organization stays. The user's signature and private addresses have no place on a contact.
 
 The contact's page and „Upraviť osobu“ show the followed fields as read-only, with a note „Údaje sa
 preberajú z používateľa“ and a link to the user. `person.update` and the MCP tool `contacts_update`
