@@ -105,12 +105,6 @@ function InboundPage() {
           ) : undefined
         }
       >
-        {m.status === 'assigned' ? (
-          <Button onClick={() => setReplying(true)}>
-            <Reply className="size-4" aria-hidden />
-            {t.reply}
-          </Button>
-        ) : null}
         <Button variant="secondary" onClick={() => setAssigning(true)}>
           <Building2 className="size-4" aria-hidden />
           {m.status === 'unassigned' ? t.assign : t.reassign}
@@ -122,7 +116,10 @@ function InboundPage() {
       </PageHeader>
       <main className="max-w-[1100px] px-7 py-6">
         <Card className="overflow-hidden">
-          <MessageHeader message={m} />
+          <MessageHeader
+            message={m}
+            onReply={m.status === 'assigned' ? () => setReplying(true) : undefined}
+          />
           {m.html ? (
             <iframe
               title={t.plainText}
@@ -178,7 +175,14 @@ type Message = RouterOutputs['inbound']['get'];
  * Over the text, in short: the contact it is filed under (or the sender), to whom and when; the
  * attachments behind a button, each opened from its menu. The subject above says what it answers.
  */
-function MessageHeader({ message: m }: { message: Message }) {
+function MessageHeader({
+  message: m,
+  onReply,
+}: {
+  message: Message;
+  /** „Odpovedať“, next to the attachments; an unassigned e-mail is assigned first. */
+  onReply: (() => void) | undefined;
+}) {
   const toast = useToast();
   const who = m.contactName ?? m.fromName ?? m.fromEmail;
   return (
@@ -220,6 +224,12 @@ function MessageHeader({ message: m }: { message: Message }) {
           {[m.fromEmail, t.toLine(m.toEmails.join(', ')), formatDateTime(m.receivedAt)].join(' · ')}
         </p>
       </div>
+      {onReply ? (
+        <Button size="sm" onClick={onReply}>
+          <Reply className="size-3.5" aria-hidden />
+          {t.reply}
+        </Button>
+      ) : null}
       {m.attachments.length > 0 ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
