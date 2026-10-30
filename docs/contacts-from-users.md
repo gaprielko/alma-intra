@@ -1,6 +1,6 @@
 # A contact from a user of the app
 
-Proposal of 30 Oct 2026, waiting for the owner's agreement. Not implemented, no screens yet.
+Agreed with the owner on 30 Oct 2026 (D-47). Screens are on the canvas for review, not implemented yet.
 
 ## Goal
 
@@ -53,11 +53,3 @@ that change before confirming.
 
 A linked contact is a normal recipient of e-mails. Adding an imported e-mail still treats the
 address as a colleague's own first (`docs/email-import.md`). No login or permission depends on the link.
-
-## Open questions
-
-1. Is a deactivated user's contact left locked, as above, or should it become an ordinary contact?
-2. Does „Upraviť osobu“ keep gender and salutation editable, as above? The user has neither,
-   and personalised e-mails need them.
-3. Is the existing contact connected to the user after a confirmation, as above, or must it be solved by
-   hand?

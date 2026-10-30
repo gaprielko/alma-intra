@@ -640,6 +640,7 @@ both attach files.
 | D-41  | A forwarded e-mail arrives as any other; a user adds it with „Pridaj do konverzácie“, no detection on arrival and no setting (30 Oct 2026, docs/email-import.md) |
 | D-42  | Claude may create and change organizations, their persons and prevádzky through MCP, on the user's request, with `customer.write`; no deleting, no sending, private persons stay in the app (30 Oct 2026) |
 | D-43  | A click on a file shows its preview in a dialog, HTML included; „Verzie“ alone opens its detail (30 Oct 2026) |
+| D-47  | A contact can be made from a user; their details follow the user and never the other way round (30 Oct 2026) |
 | D-45  | Claude may read, preview, create and change e-mail templates through MCP, on the user's request, with `template.write`; no deleting, no sending, new images stay in the app (30 Oct 2026) |
 | D-46  | Text in an e-mail can take the look's accent colour and the look's logo within a line, so a product's name can be written as its logo; both follow the look, there is no free choice of colour or picture (30 Oct 2026) |
 
