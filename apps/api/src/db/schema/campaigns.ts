@@ -43,6 +43,10 @@ export const campaigns = pgTable(
       .default('bulk'),
     /** Who a direct e-mail goes to, while it is a draft; sending makes the message rows. */
     directRecipients: jsonb('direct_recipients').$type<DirectRecipient[]>().notNull().default([]),
+    /** A direct e-mail written from a received one (docs/conversation-reply.md). */
+    replyToInboundId: uuid('reply_to_inbound_id'),
+    /** How: an answer threads under the e-mail, a forward does not. */
+    replyMode: text('reply_mode', { enum: ['reply', 'replyAll', 'forward'] }),
     /** Whose look it wears; NULL: the global one (D-39). */
     lookProductId: uuid('look_product_id').references(() => products.id, { onDelete: 'set null' }),
     templateId: uuid('template_id').references(() => emailTemplates.id),

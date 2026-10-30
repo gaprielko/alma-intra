@@ -48,7 +48,3 @@ export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 export const markNotificationsSchema = z.object({ ids: z.array(idSchema).max(100).optional() });
 
 /** „Odpovedať“: the answer's own text; the quoted e-mail is added below it. */
-export const replyInboundSchema = z.object({
-  id: idSchema,
-  text: z.string().trim().min(1).max(10_000),
-});

@@ -61,6 +61,11 @@ export const saveDirectSchema = z.object({
   attachmentFileIds: z.array(idSchema).max(20),
 });
 export type SaveDirectInput = z.infer<typeof saveDirectSchema>;
+/** „Odpovedať“, „Odpovedať všetkým“, „Preposlať“: a direct e-mail written from a received one. */
+export const ANSWER_MODES = ['reply', 'replyAll', 'forward'] as const;
+export type AnswerMode = (typeof ANSWER_MODES)[number];
+export const replyDraftSchema = z.object({ inboundId: idSchema, mode: z.enum(ANSWER_MODES) });
+export const replyDraftsSchema = z.object({ inboundId: idSchema });
 export const directFromTemplateSchema = z.object({
   templateId: idSchema,
   contactId: idSchema.nullable(),

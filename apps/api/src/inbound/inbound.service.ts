@@ -1,16 +1,16 @@
-import { type InboundListInput, inboundListSchema, PAGE_SIZE } from '@intra/shared/schemas';
+import {
+  type EmailNode,
+  type InboundListInput,
+  inboundListSchema,
+  PAGE_SIZE,
+} from '@intra/shared/schemas';
 import { type AnyColumn, and, desc, eq, isNull, ne, type SQL, sql } from 'drizzle-orm';
 import type { Db } from '../db/db.module.js';
 import { fileUnder } from '../customers/customers.service.js';
-import {
-  campaignMessages,
-  campaigns,
-  contacts,
-  organizations,
-  inboundMessages,
-} from '../db/schema/index.js';
+import { campaignMessages, contacts, organizations, inboundMessages } from '../db/schema/index.js';
+import { plainOf } from '../email/render.js';
 import { notify } from '../notifications/notifications.service.js';
-import { paragraphs, recordSentImport } from './import.js';
+import { recordSentImport } from './import.js';
 import { InboundError } from './inbound-error.js';
 
 export { InboundError };
@@ -47,9 +47,17 @@ const subjectKey = (subject: SQL | AnyColumn) =>
   sql`lower(btrim(regexp_replace(coalesce(${subject}, ''), '^\\s*((re|fw|fwd|odp|aw|sv|wg)\\s*(\\[\\d+\\])?\\s*:\\s*)+', '', 'i')))`;
 const threadKey = sql`coalesce(${inboundMessages.organizationId}::text, lower(${inboundMessages.fromEmail}))
   || '|' || ${subjectKey(inboundMessages.subject)}`;
+/** Sent, or on its way: an answer shows in the conversation the moment it is written. */
+const goesOut = sql`(m.sent_at is not null or m.status = 'queued')`;
+/** A direct e-mail is one e-mail with a row per recipient: only one of its rows counts. */
+const oneOfDirect = sql`(c.kind <> 'direct' or m.position = (select min(o.position)
+  from campaign_messages o where o.campaign_id = m.campaign_id
+    and o.organization_id = m.organization_id))`;
 /** Our e-mails in the same conversation: sent to that organization under the same subject. */
 const ourInThread = sql<number>`(select count(*)::int from campaign_messages m
-  where m.organization_id = ${own('organization_id')} and m.sent_at is not null
+  join campaigns c on c.id = m.campaign_id
+  where m.organization_id = ${own('organization_id')} and ${goesOut}
+    and ${oneOfDirect}
     and ${subjectKey(sql`m.subject`)} = ${subjectKey(own('subject'))})`;
 
 /**
@@ -175,11 +183,15 @@ export async function inboundThread(db: Db, id: string) {
           to_email: string | null;
           at: string;
           text: string | null;
-        }>(sql`select m.id, u.name as sender, m.to_name, m.to_email, m.sent_at as at, m.text
+          kind: string;
+          body: EmailNode | null;
+        }>(sql`select m.id, u.name as sender, m.to_name, m.to_email,
+            coalesce(m.sent_at, m.queued_at) as at, m.text, c.kind, c.body
           from campaign_messages m
           join campaigns c on c.id = m.campaign_id
           left join users u on u.id = c.sender_user_id
-          where m.organization_id = ${self.organizationId} and m.sent_at is not null
+          where m.organization_id = ${self.organizationId} and ${goesOut}
+            and ${oneOfDirect}
             and ${subjectKey(sql`m.subject`)} = split_part(${self.key}, '|', 2)`)
       : Promise.resolve({ rows: [] }),
   ]);
@@ -201,7 +213,8 @@ export async function inboundThread(db: Db, id: string) {
       email: null,
       to: m.to_name ?? m.to_email ?? '',
       at: new Date(m.at).toISOString(),
-      text: m.text ?? '',
+      // A direct e-mail's own words, without the look's header and footer and what it quotes.
+      text: m.kind === 'direct' && m.body ? plainOf(m.body, {}, {}) : (m.text ?? ''),
       attachments: 0,
     })),
   ];
@@ -426,55 +439,4 @@ export async function discardInboundThread(db: Db, id: string) {
     .where(and(ne(inboundMessages.status, 'discarded'), sql`${threadKey} = ${key}`))
     .returning({ id: inboundMessages.id });
   return { count: rows.length };
-}
-
-const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-
-/**
- * „Odpovedať“ (spec 6.6): an answer to a received e-mail, queued like any e-mail to a customer (a
- * campaign of one, so it shows in „Odoslané“ and on the timeline), to the sender, with the subject
- * „Re: …“ and the received text quoted below. Correspondence, not marketing: it goes even to a
- * person who unsubscribed (D-14), and the worker threads it instead of adding an unsubscribe link.
- */
-export async function replyToInbound(db: Db, userId: string, input: { id: string; text: string }) {
-  const [received] = await db
-    .select()
-    .from(inboundMessages)
-    .where(and(eq(inboundMessages.id, input.id), eq(inboundMessages.status, 'assigned')));
-  if (!received?.organizationId) throw new InboundError('NOT_FOUND');
-  const subject = /^re:/i.test(received.subject) ? received.subject : `Re: ${received.subject}`;
-  const quoted = received.text?.trim() ?? '';
-  const sender = received.fromName
-    ? `${received.fromName} <${received.fromEmail}>`
-    : received.fromEmail;
-  const html =
-    `<div style="font:14px/1.5 Arial,sans-serif;color:#1b2424">${paragraphs(input.text)}` +
-    (quoted
-      ? `<blockquote style="margin:16px 0 0;padding-left:12px;border-left:3px solid #d5dede;color:#5b6b6b">` +
-        `<p style="margin:0 0 8px">${escapeHtml(sender)}:</p>${paragraphs(quoted)}</blockquote>`
-      : '') +
-    `</div>`;
-  const text = quoted ? `${input.text}\n\n${sender}:\n${quoted.replace(/^/gm, '> ')}` : input.text;
-  return db.transaction(async (tx) => {
-    const now = new Date();
-    const [campaign] = await tx
-      .insert(campaigns)
-      .values({ status: 'sending', subjectText: subject, senderUserId: userId, sentAt: now })
-      .returning({ id: campaigns.id });
-    await tx.insert(campaignMessages).values({
-      campaignId: campaign!.id,
-      organizationId: received.organizationId!,
-      contactId: received.contactId,
-      status: 'queued',
-      toEmail: received.fromEmail,
-      toName: received.fromName,
-      subject,
-      html,
-      text,
-      inReplyToInboundId: received.id,
-      queuedAt: now,
-      nextAttemptAt: now,
-    });
-    return { campaignId: campaign!.id };
-  });
 }

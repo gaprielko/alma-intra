@@ -302,12 +302,18 @@ export function EmailBodyEditor({
   fields,
   look,
   senderName,
+  signature = true,
+  unsubscribe = true,
 }: {
   value: EmailNode;
   onChange: (value: EmailNode) => void;
   fields: readonly CustomField[];
   look: EmailLook;
   senderName: string;
+  /** Off when the signature is part of the text itself, as in an answer. */
+  signature?: boolean;
+  /** Off for correspondence, which goes without an unsubscribe link (D-14). */
+  unsubscribe?: boolean;
 }) {
   const toast = useToast();
   const imageInput = useRef<HTMLInputElement>(null);
@@ -561,13 +567,15 @@ export function EmailBodyEditor({
             </div>
             <div className="px-8 pt-8 pb-2">
               <EditorContent editor={editor} />
-              <div className="mt-3 border-t border-[#e5eaea] pt-5 pb-6 text-[15px] leading-6">
-                <p>{t.signature.greeting}</p>
-                <p className="mt-3 font-bold">{senderName}</p>
-                <p className="text-sm text-[#616e7c]">
-                  {[v['sender.position'], look.brandName, v['sender.phone']].join(' · ')}
-                </p>
-              </div>
+              {signature ? (
+                <div className="mt-3 border-t border-[#e5eaea] pt-5 pb-6 text-[15px] leading-6">
+                  <p>{t.signature.greeting}</p>
+                  <p className="mt-3 font-bold">{senderName}</p>
+                  <p className="text-sm text-[#616e7c]">
+                    {[v['sender.position'], look.brandName, v['sender.phone']].join(' · ')}
+                  </p>
+                </div>
+              ) : null}
             </div>
             <div className="border-t border-[#e5eaea] bg-[#f7f9f9] px-8 py-5 text-xs leading-[18px] text-[#616e7c]">
               <p>
@@ -582,10 +590,12 @@ export function EmailBodyEditor({
               <p className="mt-0.5" style={{ color: look.accent }}>
                 {[look.footerEmail, look.footerWeb].filter(Boolean).join(' · ')}
               </p>
-              <p className="mt-2.5">
-                {t.footer.reason(v['customer.name'])}{' '}
-                <span style={{ color: look.accent }}>{t.footer.unsubscribe}</span>
-              </p>
+              {unsubscribe ? (
+                <p className="mt-2.5">
+                  {t.footer.reason(v['customer.name'])}{' '}
+                  <span style={{ color: look.accent }}>{t.footer.unsubscribe}</span>
+                </p>
+              ) : null}
             </div>
           </div>
         </div>

@@ -632,6 +632,7 @@ both attach files.
 | D-39  | E-mail look per product over a global one; chosen on the template and on a new e-mail; sending address and replies are common (30 Oct 2026) |
 | D-38  | „Nový e-mail“ is one e-mail to To, Cc and Bcc, beside the wizard „Hromadný e-mail“ (30 Oct 2026, docs/new-email.md) |
 | D-37  | Old e-mail is imported by forwarding it with an agreed line from a listed private address, when a setting allows it (30 Oct 2026, docs/email-import.md); replaced by D-41 |
+| D-44  | Answer, answer all and forward are written in a new row of the conversation, in the company or product look with an editable signature (30 Oct 2026, docs/conversation-reply.md) |
 | D-41  | A forwarded e-mail arrives as any other; a user adds it with „Pridaj do konverzácie“, no detection on arrival and no setting (30 Oct 2026, docs/email-import.md) |
 | D-42  | Claude may create and change organizations, their persons and prevádzky through MCP, on the user's request, with `customer.write`; no deleting, no sending, private persons stay in the app (30 Oct 2026) |
 | D-43  | A click on a file shows its preview in a dialog, HTML included; „Verzie“ alone opens its detail (30 Oct 2026) |

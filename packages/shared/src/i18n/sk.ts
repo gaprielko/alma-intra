@@ -2169,13 +2169,22 @@ export const sk = {
     reassign: 'Zmeniť kontakt',
     discard: 'Zahodiť',
     reply: 'Odpovedať',
-    replyDialog: {
-      title: (to: string) => `Odpoveď pre ${to}`,
-      text: 'Text odpovede',
-      quoted: 'Pôvodný e-mail sa pripojí pod text.',
-      submit: 'Odoslať',
-      sent: 'Odpoveď sa odosiela.',
+    replyMenu: {
+      collapse: 'Zbaliť e-mail',
+      more: 'Ďalšie možnosti odpovede',
+      replyAll: 'Odpovedať všetkým',
+      forward: 'Preposlať',
       assignFirst: 'Najprv e-mail priraďte ku kontaktu.',
+    },
+    replyDraft: {
+      titles: { reply: 'Odpoveď', replyAll: 'Odpoveď všetkým', forward: 'Preposlanie' },
+      saved: 'Koncept sa ukladá priebežne.',
+      showQuote: 'Zobraziť pôvodný e-mail',
+      hideQuote: 'Skryť pôvodný e-mail',
+      quoteReply: (who: string, at: string) => `${who}, ${at}:`,
+      quoteForward: (who: string, at: string) => `Preposlaný e-mail od ${who}, ${at}`,
+      leftOut: (n: number) =>
+        `Prílohy, ktoré nie sú uložené v Súboroch, sa nepreposielajú: ${n}. Uložia sa po priradení e-mailu ku kontaktu.`,
     },
     assignDialog: {
       title: 'Priradiť e-mail',
@@ -2193,7 +2202,7 @@ export const sk = {
     thread: {
       me: ', ja',
       count: (n: number) => plural(n, 'e-mail', 'e-maily', 'e-mailov'),
-      older: (n: number) => `Staršie v konverzácii · ${n}`,
+      older: (n: number) => `Ďalšie v konverzácii · ${n}`,
       expandAll: 'Rozbaliť všetky',
       collapseAll: 'Zbaliť všetky',
       sent: 'Odoslané z Intry',

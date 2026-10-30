@@ -485,6 +485,146 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     expect(fromCompany.rows).toEqual([{ to_email: 'eva.tothova@adosharmonia.sk' }]);
   });
 
+  it('answers and forwards a received e-mail from a draft of its own', async () => {
+    const OTHER = 'kolega.adresata@example.org';
+    const filed = await receiveInbound(api.db, loadEnv(), {
+      providerEmailId: `test-conversation-${Date.now()}`,
+      from: 'Eva Tóthová <eva.tothova@adosharmonia.sk>',
+      to: ['info@mail.alma-care.eu', OTHER],
+      cc: ['info@alma-care.eu', 'kopia@example.org'],
+      receivedFor: [],
+      subject: 'Konverzácia o zmluve',
+      html: null,
+      text: 'Pošlite prosím zmluvu.',
+      headerMessageId: '<conversation@ados>',
+      inReplyTo: null,
+      references: null,
+      attachments: [],
+      receivedAt: new Date(),
+    });
+    const inboundId = filed.id!;
+    type Draft = {
+      recipients: { role: string; email: string }[];
+      subject: string;
+      body: { content: { type: string; content?: { text?: string }[] }[] };
+      reply: { mode: string; quote: { text: string } };
+      lookProductId: string | null;
+      templateId: string | null;
+      attachments: unknown[];
+    };
+    const open = async (mode: string) => {
+      const { data } = await jana.call<{ id: string }>('campaign.replyDraft', { inboundId, mode });
+      return { id: data.id, draft: (await jana.call<Draft>('campaign.getDirect', data)).data };
+    };
+
+    // To the sender only; opened again it is the same draft.
+    const answer = await open('reply');
+    expect(answer.draft.recipients.map((r) => r.email)).toEqual(['eva.tothova@adosharmonia.sk']);
+    expect(answer.draft.subject).toBe('Re: Konverzácia o zmluve');
+    expect(answer.draft.reply.quote.text).toBe('Pošlite prosím zmluvu.');
+    expect((await open('reply')).id).toBe(answer.id);
+
+    // To everybody but Alma's own addresses.
+    const all = await open('replyAll');
+    expect(all.draft.recipients.map((r) => [r.role, r.email])).toEqual([
+      ['to', 'eva.tothova@adosharmonia.sk'],
+      ['to', OTHER],
+      ['cc', 'kopia@example.org'],
+    ]);
+
+    // To nobody yet.
+    const forward = await open('forward');
+    expect(forward.draft.recipients).toEqual([]);
+    expect(forward.draft.subject).toBe('Fwd: Konverzácia o zmluve');
+    const drafts = await jana.call<{ id: string }[]>('campaign.replyDrafts', { inboundId });
+    expect(drafts.data.map((d) => d.id).sort()).toEqual([answer.id, all.id, forward.id].sort());
+
+    // Only the signature says nothing.
+    const save = (id: string, draft: Draft, body: Draft['body']) =>
+      jana.call('campaign.saveDirect', {
+        id,
+        recipients: draft.recipients.map((r) => ({
+          name: null,
+          contactId: null,
+          organizationId: null,
+          ...r,
+        })),
+        subject: draft.subject,
+        body,
+        templateId: draft.templateId,
+        lookProductId: draft.lookProductId,
+        attachmentFileIds: [],
+      });
+    expect((await jana.call('campaign.sendDirect', { id: answer.id })).message).toBe('NO_CONTENT');
+
+    // Sent: the signature once, in the text; the quote under it; threaded under the e-mail.
+    const written = {
+      type: 'doc',
+      content: [
+        { type: 'paragraph', content: [{ type: 'text', text: 'Zmluvu posielam.' }] },
+        ...answer.draft.body.content.slice(1),
+      ],
+    };
+    expect((await save(answer.id, answer.draft, written)).code).toBeUndefined();
+    expect((await jana.call('campaign.sendDirect', { id: answer.id })).code).toBeUndefined();
+    const [sent] = await api.db
+      .execute<{ text: string; in_reply_to_inbound_id: string | null }>(
+        sql`select text, in_reply_to_inbound_id from campaign_messages where campaign_id = ${answer.id}`,
+      )
+      .then((result) => result.rows);
+    expect(sent!.in_reply_to_inbound_id).toBe(inboundId);
+    expect(sent!.text).toContain('Zmluvu posielam.');
+    expect(sent!.text).toContain('Pošlite prosím zmluvu.');
+    expect(sent!.text.match(/S pozdravom/g)).toHaveLength(1);
+    const left = await jana.call<{ id: string }[]>('campaign.replyDrafts', { inboundId });
+    expect(left.data.map((d) => d.id)).not.toContain(answer.id);
+
+    // A forward goes without threading, and says nothing of its own if it wishes.
+    expect(
+      (
+        await save(
+          forward.id,
+          {
+            ...forward.draft,
+            recipients: [{ role: 'to', email: OTHER }],
+          },
+          forward.draft.body,
+        )
+      ).code,
+    ).toBeUndefined();
+    expect((await jana.call('campaign.sendDirect', { id: forward.id })).code).toBeUndefined();
+    const [carried] = await api.db
+      .execute<{ in_reply_to_inbound_id: string | null }>(
+        sql`select in_reply_to_inbound_id from campaign_messages where campaign_id = ${forward.id}`,
+      )
+      .then((result) => result.rows);
+    expect(carried!.in_reply_to_inbound_id).toBeNull();
+    await drainCampaigns(api.db, memoryTransport({ quiet: true }), null, loadEnv());
+
+    // Not filed: no answer, a forward still.
+    const stranger = await receiveInbound(api.db, loadEnv(), {
+      providerEmailId: `test-conversation-stranger-${Date.now()}`,
+      from: 'Niekto <niekto@example.net>',
+      to: ['info@mail.alma-care.eu'],
+      cc: [],
+      receivedFor: [],
+      subject: 'Otázka',
+      html: null,
+      text: 'Text',
+      headerMessageId: null,
+      inReplyTo: null,
+      references: null,
+      attachments: [],
+      receivedAt: new Date(),
+    });
+    expect(
+      (await jana.call('campaign.replyDraft', { inboundId: stranger.id, mode: 'reply' })).code,
+    ).toBeDefined();
+    expect(
+      (await jana.call('campaign.replyDraft', { inboundId: stranger.id, mode: 'forward' })).code,
+    ).toBeUndefined();
+  });
+
   it('Nový e-mail: one send to To, Cc and Bcc, known recipients on the timeline', async () => {
     const created = await jana.call<{ id: string }>('campaign.createDirect');
     const id = created.data.id;

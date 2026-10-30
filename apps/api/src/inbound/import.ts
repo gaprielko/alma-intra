@@ -78,7 +78,7 @@ export async function recordSentImport(
 }
 
 /** The addresses Alma itself writes from: the sender of its e-mails and the company mailbox. */
-async function companyAddresses(db: Db) {
+export async function companyAddresses(db: Db) {
   const look = await getLook(db);
   return [loadEnv().CAMPAIGN_FROM_ADDRESS, look.replyToAddress, look.footerEmail]
     .filter(Boolean)

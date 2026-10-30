@@ -1,19 +1,22 @@
 import { sk } from '@intra/shared/i18n';
-import { personName } from '@intra/shared/schemas';
+import { personName, type AnswerMode } from '@intra/shared/schemas';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import {
   Building2,
   ChevronDown,
+  Forward,
   MessageSquarePlus,
   MoreHorizontal,
   Paperclip,
   Reply,
+  ReplyAll,
   Trash2,
   UserRound,
 } from 'lucide-react';
-import { type ReactNode, useEffect, useState } from 'react';
-import { ReplyDialog } from '@/components/emails/reply-dialog';
+import { type MouseEvent, type ReactNode, useEffect, useState } from 'react';
+import { z } from 'zod';
+import { ReplyDraftRow } from '@/components/emails/reply-draft';
 import { ErrorState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
 import { CardSkeleton } from '@/components/skeletons';
@@ -48,18 +51,29 @@ const t = sk.inbound;
 
 export const Route = createFileRoute('/_app/emails_/inbox/$inboundId')({
   component: InboundPage,
+  /** `compose`: arrived from a row's „Odpovedať“, the answer opens right away. */
+  validateSearch: z.object({ compose: z.enum(['reply']).optional().catch(undefined) }),
 });
 
 /** One received e-mail: who, when, under whom it is filed, the text, and what to do with it. */
 function InboundPage() {
   const { inboundId } = Route.useParams();
+  const { compose } = Route.useSearch();
   const toast = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [assigning, setAssigning] = useState(false);
   const [discarding, setDiscarding] = useState(false);
-  const [replying, setReplying] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const drafts = useQuery(trpc.campaign.replyDrafts.queryOptions({ inboundId }));
+  const { mutate: startDraft } = useMutation(
+    trpc.campaign.replyDraft.mutationOptions({
+      onSuccess: () => queryClient.invalidateQueries(trpc.campaign.replyDrafts.pathFilter()),
+      onError: (error) => toast('error', errorMessage(error, t.errors)),
+    }),
+  );
+  const start = (mode: AnswerMode) => startDraft({ inboundId, mode });
   const inbound = useQuery(trpc.inbound.get.queryOptions({ id: inboundId }));
   // Opening a conversation reads it; the list shows that, this page has what it needs.
   const { mutate: markRead } = useMutation(
@@ -71,6 +85,17 @@ function InboundPage() {
   useEffect(() => {
     if (unopened) markRead({ id: inboundId, read: true });
   }, [inboundId, unopened, markRead]);
+  const filed = inbound.data?.status === 'assigned';
+  useEffect(() => {
+    if (compose !== 'reply' || !filed) return;
+    startDraft({ inboundId, mode: 'reply' });
+    void navigate({
+      to: '/emails/inbox/$inboundId',
+      params: { inboundId },
+      search: {},
+      replace: true,
+    });
+  }, [compose, filed, inboundId, navigate, startDraft]);
   const thread = useQuery(trpc.inbound.thread.queryOptions({ id: inboundId }));
   const rest = thread.data ?? [];
   const discard = useMutation(
@@ -130,32 +155,42 @@ function InboundPage() {
           {t.discard}
         </Button>
       </PageHeader>
-      <main className="grid items-start gap-5 px-7 py-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
-        <Card className="min-w-0 overflow-hidden">
-          <MessageHeader
-            message={m}
-            onReply={m.status === 'assigned' ? () => setReplying(true) : undefined}
-            onImport={m.importKey ? undefined : () => setImporting(true)}
-          />
-          {m.html ? (
-            <iframe
-              title={t.plainText}
-              // No scripts, no forms, no popups: the HTML is the sender's and untrusted. The origin
-              // is kept only so the frame paints; without scripts nothing can use it.
-              sandbox="allow-same-origin"
-              srcDoc={safeDocument(m.html)}
-              className="block h-[65vh] w-full border-0 bg-white"
-            />
-          ) : m.text ? (
-            <pre className="p-5 font-sans text-sm whitespace-pre-wrap">{m.text}</pre>
+      <main className="flex flex-wrap items-start gap-5 px-7 py-6">
+        <Card className="min-w-0 flex-[1_1_35rem] overflow-hidden">
+          {(drafts.data ?? []).map((draft) => (
+            <ReplyDraftRow key={draft.id} id={draft.id} mode={draft.mode} />
+          ))}
+          {collapsed ? (
+            <CollapsedMessage message={m} onOpen={() => setCollapsed(false)} />
           ) : (
-            <p className="p-5 text-sm text-muted">{t.noBody}</p>
+            <>
+              <MessageHeader
+                message={m}
+                onToggle={() => setCollapsed(true)}
+                onReply={start}
+                onImport={m.importKey ? undefined : () => setImporting(true)}
+              />
+              {m.html ? (
+                <iframe
+                  title={t.plainText}
+                  // No scripts, no forms, no popups: the HTML is the sender's and untrusted. The
+                  // origin is kept only so the frame paints; without scripts nothing can use it.
+                  sandbox="allow-same-origin"
+                  srcDoc={safeDocument(m.html)}
+                  className="block h-[65vh] w-full border-0 bg-white"
+                />
+              ) : m.text ? (
+                <pre className="p-5 font-sans text-sm whitespace-pre-wrap">{m.text}</pre>
+              ) : (
+                <p className="p-5 text-sm text-muted">{t.noBody}</p>
+              )}
+              {m.html ? (
+                <p className="border-t border-border-subtle px-5 py-2 text-xs text-muted">
+                  {t.safeNote}
+                </p>
+              ) : null}
+            </>
           )}
-          {m.html ? (
-            <p className="border-t border-border-subtle px-5 py-2 text-xs text-muted">
-              {t.safeNote}
-            </p>
-          ) : null}
           {rest.length > 0 ? <OlderInThread items={rest} /> : null}
         </Card>
         <OtherConversations inboundId={m.id} who={m.contactName ?? m.fromName ?? m.fromEmail} />
@@ -166,13 +201,6 @@ function InboundPage() {
           fromEmail={m.fromEmail}
           current={m.customerId ? { id: m.customerId, name: m.customerName ?? '' } : null}
           onClose={() => setAssigning(false)}
-        />
-      ) : null}
-      {replying ? (
-        <ReplyDialog
-          inboundId={m.id}
-          to={m.fromName ?? m.fromEmail}
-          onClose={() => setReplying(false)}
         />
       ) : null}
       {importing ? <ImportDialog inboundId={m.id} onClose={() => setImporting(false)} /> : null}
@@ -197,26 +225,42 @@ type Message = RouterOutputs['inbound']['get'];
  */
 function MessageHeader({
   message: m,
+  onToggle,
   onReply,
   onImport,
 }: {
   message: Message;
-  /** „Odpovedať“, next to the attachments; an unassigned e-mail is assigned first. */
-  onReply: (() => void) | undefined;
+  /** A click on the header outside its links and buttons folds the e-mail. */
+  onToggle: () => void;
+  /** „Odpovedať“, in a place that never moves; an unassigned e-mail is assigned first. */
+  onReply: (mode: AnswerMode) => void;
   /** „Pridaj do konverzácie“ behind the three dots; one already added has nothing to add. */
   onImport: (() => void) | undefined;
 }) {
   const toast = useToast();
   const who = m.contactName ?? m.fromName ?? m.fromEmail;
+  const filed = m.status === 'assigned';
+  const m2 = t.replyMenu;
+  const toggleOutsideControls = (event: MouseEvent<HTMLElement>) => {
+    const target = event.target as Element;
+    if (!target.closest('a,button,[role=menu],[role=menuitem]')) onToggle();
+  };
   return (
-    <header className="flex items-start gap-3 border-b border-border-subtle px-5 py-4">
+    <header
+      onClick={toggleOutsideControls}
+      className="relative flex cursor-pointer flex-wrap items-start gap-3 border-b border-border-subtle px-5 py-4 hover:bg-hover"
+    >
+      {/* The pointer folds the e-mail on the header itself; the keyboard needs something to reach. */}
+      <button type="button" className="sr-only focus:not-sr-only" onClick={onToggle}>
+        {m2.collapse}
+      </button>
       <span
         aria-hidden
         className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-warning-soft text-xs font-bold text-warning"
       >
         {initialsOf(who)}
       </span>
-      <div className="min-w-0 flex-1 text-sm">
+      <div className="min-w-0 flex-[1_1_16rem] text-sm">
         <p>
           {m.contactId ? (
             <Link
@@ -247,12 +291,6 @@ function MessageHeader({
           {[m.fromEmail, t.toLine(m.toEmails.join(', ')), formatDateTime(m.receivedAt)].join(' · ')}
         </p>
       </div>
-      {onReply ? (
-        <Button size="sm" onClick={onReply}>
-          <Reply className="size-3.5" aria-hidden />
-          {t.reply}
-        </Button>
-      ) : null}
       {m.attachments.length > 0 ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -292,10 +330,44 @@ function MessageHeader({
           </DropdownMenuContent>
         </DropdownMenu>
       ) : null}
+      <span className="inline-flex gap-px">
+        <Button
+          size="sm"
+          className="rounded-r-none"
+          disabled={!filed}
+          title={filed ? undefined : m2.assignFirst}
+          onClick={() => onReply('reply')}
+        >
+          <Reply className="size-3.5" aria-hidden />
+          {t.reply}
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" className="rounded-l-none px-2" aria-label={m2.more}>
+              <ChevronDown className="size-3.5" aria-hidden />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem disabled={!filed} onSelect={() => onReply('replyAll')}>
+              <ReplyAll className="size-4" aria-hidden />
+              {m2.replyAll}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onReply('forward')}>
+              <Forward className="size-4" aria-hidden />
+              {m2.forward}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </span>
       {onImport ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" aria-label={t.importForward.more}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-8 px-0"
+              aria-label={t.importForward.more}
+            >
               <MoreHorizontal className="size-4" aria-hidden />
             </Button>
           </DropdownMenuTrigger>
@@ -306,8 +378,47 @@ function MessageHeader({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      ) : null}
+      ) : (
+        // The place of the three dots stays, so „Odpovedať“ never moves.
+        <span aria-hidden className="w-8" />
+      )}
     </header>
+  );
+}
+
+/** The newest e-mail folded: a row like the older ones under it. */
+function CollapsedMessage({ message: m, onOpen }: { message: Message; onOpen: () => void }) {
+  const who = m.contactName ?? m.fromName ?? m.fromEmail;
+  return (
+    <button
+      type="button"
+      aria-expanded={false}
+      onClick={onOpen}
+      className="flex w-full items-center gap-3 border-b border-border-subtle px-5 py-3.5 text-left hover:bg-hover"
+    >
+      <span
+        aria-hidden
+        className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-warning-soft text-[11px] font-bold text-warning"
+      >
+        {initialsOf(who)}
+      </span>
+      <span className="w-56 shrink-0 text-sm">
+        <span className="block truncate font-semibold">{who}</span>
+        <span className="block truncate text-xs text-muted">{t.toLine(m.toEmails.join(', '))}</span>
+      </span>
+      <span className="min-w-0 flex-1 truncate text-[13px] text-muted">
+        {(m.text ?? '').replace(/\s+/g, ' ').slice(0, 200)}
+      </span>
+      {m.attachments.length > 0 ? (
+        <span className="inline-flex shrink-0 items-center gap-0.5 text-xs text-muted">
+          <Paperclip className="size-3" aria-hidden />
+          {m.attachments.length}
+        </span>
+      ) : null}
+      <span className="shrink-0 text-xs whitespace-nowrap text-muted">
+        {formatDateTime(m.receivedAt)}
+      </span>
+    </button>
   );
 }
 
@@ -643,7 +754,7 @@ function OtherConversations({ inboundId, who }: { inboundId: string; who: string
   const items = others.data ?? [];
   if (items.length === 0) return null;
   return (
-    <Card className="min-w-0 overflow-hidden">
+    <Card className="min-w-0 flex-[0_1_24rem] overflow-hidden">
       <CardHeader
         title={
           <>
