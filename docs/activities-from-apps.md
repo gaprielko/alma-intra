@@ -37,7 +37,7 @@ came from: a button in an e-mail, or an application.
 | --- | --- | --- |
 | Product | the endpoint | the contract has no product field; the receiver of Alma ADOS records the ADOS product |
 | Type | seeded | „Podnet“; the contract's `type` is the kind: `bug` „Chyba“, `idea` „Nápad“, `question` „Neviem, ako na to“ |
-| Organization, pracovisko | `organization.id` | matched to `alma_organization_id`, on an organization or a prevádzka [A-1] |
+| Organization, pracovisko | `organization.id` | Intra's own id of the organization or prevádzka; until ADOS adapts, `alma_organization_id` [A-1] |
 | Contact | `reporter.email` | a live contact of that organization with the e-mail, ignoring case [A-2] |
 
 `reporter.userId` is stored from the start, so that details can later be fetched from Alma ADOS by the
@@ -52,7 +52,7 @@ the reporter's name and e-mail shown.
 
 ## 4. Receiving
 
-Requests 1, 2 and 2b of the contract, on plain REST routes under `/api/alma` rather than tRPC, because
+Requests 1, 2 and 2b of the contract, on plain REST routes under `/api/integrations/ados` rather than tRPC, because
 the signature is verified on the raw bytes before parsing:
 
 - HMAC-SHA256 of `timestamp.body`, a constant-time comparison, ±5 minutes, 401 otherwise.
@@ -97,10 +97,11 @@ For this app:
 
 ## 7. Open questions (each with the recommendation)
 
-- **[A-1] Pracovisko.** The contract's `organization` is the agency and has no pracovisko. Recommended:
-  no change of the contract. An agency in Alma corresponds to one record in Intra: `alma_organization_id`
-  set on a prevádzka gives both its organization and the pracovisko, set on an organization gives the
-  organization only. A pracovisko inside one agency would need a new field, agreed with Alma.
+- **[A-1] Pracovisko. Decided by the user (2026-10-30).** Intra owns organizations and prevádzky and
+  creates them in ADOS, which then sends Intra's id back. The id alone therefore gives the organization
+  and the pracovisko: a prevádzka's id gives both, an organization's id gives the organization. See
+  `docs/integrations/ados-organizations.md`. Until ADOS adapts, the receiver also matches
+  `alma_organization_id`, so no change on the side of ADOS is needed to start.
 - **[A-2] A reporter without a contact.** Create one automatically? Recommended: no, show the name and
   the e-mail and offer „Vytvoriť kontakt“, so that a typing error in Alma never makes a contact.
 - **[A-3] The text on a timeline.** Recommended: no, only the kind and the origin, with a link to the
@@ -118,12 +119,13 @@ For this app:
 ## 8. After it is deployed
 
 Generate `ALMA_OUTBOUND_SECRET` and set it on both sides; set Alma's `FEEDBACK_INTRANET_URL` to
-`https://<intra>/api/alma`. Fill „ID v Alma ADOS“ on the matching organizations or prevádzky. Test
+`https://<intra>/api/integrations/ados`. Until ADOS adapts, fill „ID v Alma ADOS“ on the matching organizations or prevádzky. Test
 against staging with a test agency from Maroš.
 
 ---
 
 ## 9. Not in this step
 
-The way back (request 3), fetching user details from Alma ADOS, other applications than Alma ADOS,
-workflows, a filter by source.
+The way back (request 3), fetching user details from Alma ADOS, creating organizations in ADOS (the
+contract is drafted, the sending comes later), other applications than Alma ADOS, workflows, a filter
+by source.
