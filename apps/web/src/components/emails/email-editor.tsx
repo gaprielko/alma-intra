@@ -25,10 +25,13 @@ import {
   ListOrdered,
   Minus,
   MousePointerClick,
+  Palette,
   SquareDashed,
+  Stamp,
 } from 'lucide-react';
-import { type ReactNode, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, type ReactNode, useMemo, useRef, useState } from 'react';
 import {
+  Accent,
   Callout,
   Column,
   Columns,
@@ -36,6 +39,7 @@ import {
   EmailEditorContext,
   type EmailEditorContextValue,
   EmailImage,
+  Logo,
   Variable,
 } from '@/components/emails/email-nodes';
 import { Button } from '@/components/ui/button';
@@ -95,6 +99,8 @@ const bodyExtensions = [
   Column,
   Columns,
   EmailImage,
+  Accent,
+  Logo,
 ];
 
 /** The subject: one line of text and variables. */
@@ -338,6 +344,7 @@ export function EmailBodyEditor({
     selector: ({ editor: e }) => ({
       bold: e?.isActive('bold') ?? false,
       italic: e?.isActive('italic') ?? false,
+      accent: e?.isActive('accent') ?? false,
       link: e?.isActive('link') ?? false,
       bulletList: e?.isActive('bulletList') ?? false,
       orderedList: e?.isActive('orderedList') ?? false,
@@ -352,9 +359,10 @@ export function EmailBodyEditor({
     () => ({
       label: (name) => variableLabel(name, fields),
       accent: look.accent,
+      logoKey: look.logoKey,
       editButton: (pos, attrs) => setButton({ pos, ...attrs }),
     }),
-    [fields, look.accent],
+    [fields, look.accent, look.logoKey],
   );
 
   const chain = () => editor?.chain().focus();
@@ -421,6 +429,13 @@ export function EmailBodyEditor({
           <Italic className="size-4" aria-hidden />
         </ToolButton>
         <ToolButton
+          label={t.editor.accent}
+          active={state?.accent}
+          onClick={() => chain()?.toggleMark('accent').run()}
+        >
+          <Palette className="size-4" aria-hidden />
+        </ToolButton>
+        <ToolButton
           label={t.editor.link}
           active={state?.link}
           onClick={() =>
@@ -458,6 +473,12 @@ export function EmailBodyEditor({
             if (file) void insertImage(file);
           }}
         />
+        <ToolButton
+          label={t.editor.logo}
+          onClick={() => chain()?.insertContent({ type: 'logo' }).run()}
+        >
+          <Stamp className="size-4" aria-hidden />
+        </ToolButton>
         <ToolButton
           label={t.editor.button}
           wide
@@ -544,7 +565,12 @@ export function EmailBodyEditor({
       <div className="flex justify-center bg-[#e9eeee] px-4 pt-7 pb-9">
         <div
           className="w-full max-w-[600px] rounded-[14px] outline-2 outline-offset-[6px] outline-[rgba(15,139,141,0.35)] outline-dashed"
-          style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+          style={
+            {
+              fontFamily: 'Helvetica, Arial, sans-serif',
+              '--email-accent': look.accent,
+            } as CSSProperties
+          }
         >
           <div className="overflow-hidden rounded-xl bg-white shadow-[0_1px_2px_rgba(12,59,60,0.06)]">
             <div
@@ -654,6 +680,7 @@ export function EmailSubjectEditor({
     () => ({
       label: (name) => variableLabel(name, fields),
       accent: '#0f766e',
+      logoKey: null,
       editButton: () => undefined,
     }),
     [fields],

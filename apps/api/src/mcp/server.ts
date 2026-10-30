@@ -129,8 +129,9 @@ const EMAIL_DOC_RULE =
   '(attrs.level 2 or 3), bulletList and orderedList (of listItem, each with a paragraph), ' +
   'hardBreak, horizontalRule, button (attrs.text, attrs.href), callout (a highlighted block of ' +
   'paragraphs), columns (two column nodes) and image (attrs.src, the key of an image already in ' +
-  'Intra; new images are added in the app). Text may have the marks bold, italic and link ' +
-  '(attrs.href, http, https or mailto). Variables: ' +
+  'Intra; new images are added in the app). Within a paragraph, logo (no attrs) is the logo of ' +
+  "the template's look at the height of the text. Text may have the marks bold, italic, accent " +
+  "(the look's colour) and link (attrs.href, http, https or mailto). Variables: " +
   `${SYSTEM_VARIABLES.join(', ')}, and custom.<key> for a field of customFields. ` +
   "The company's header, the sender's signature and the footer are added to every e-mail: do not " +
   'write them into the body. ';

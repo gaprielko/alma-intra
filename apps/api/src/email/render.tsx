@@ -115,6 +115,7 @@ function Marks({
   for (const mark of node.marks ?? []) {
     if (mark.type === 'bold') out = <strong>{out}</strong>;
     if (mark.type === 'italic') out = <em>{out}</em>;
+    if (mark.type === 'accent') out = <span style={{ color: accent }}>{out}</span>;
     if (mark.type === 'link') {
       out = (
         <Link href={str(mark.attrs?.href)} style={{ color: accent, textDecoration: 'underline' }}>
@@ -176,6 +177,24 @@ function NodeView({ node, ctx }: { node: EmailNode; ctx: Ctx }): ReactNode {
       );
     case 'hardBreak':
       return <br />;
+    case 'logo':
+      // The look's logo at the height of the text, its middle in the middle of the line. Without
+      // an alt: the name stands beside it, and a client that blocks images shows nothing extra.
+      return input.look.logoKey ? (
+        <Img
+          src={`${input.baseUrl}/m/${input.look.logoKey}`}
+          alt=""
+          height={18}
+          style={{
+            display: 'inline-block',
+            height: '18px',
+            width: 'auto',
+            borderRadius: '5px',
+            verticalAlign: '-3px',
+            marginRight: '4px',
+          }}
+        />
+      ) : null;
     case 'bulletList':
     case 'orderedList': {
       const List = node.type === 'bulletList' ? 'ul' : 'ol';
