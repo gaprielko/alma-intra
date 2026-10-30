@@ -156,20 +156,27 @@ function ProductsPage() {
                                   ))}
                           </TableCell>
                           <TableCell className="text-[13px] whitespace-nowrap text-muted">
-                            {row.items.filter((i) => i.unitPrice !== null).length === 0
-                              ? sk.common.none
-                              : row.items
+                            {row.items.filter((i) => i.unitPrice !== null).length === 0 ? (
+                              sk.common.none
+                            ) : (
+                              // One grid, so the amounts of all the items stand under each other.
+                              <span className="grid grid-cols-[auto_auto_auto] justify-start gap-x-3">
+                                {row.items
                                   .filter((i) => i.unitPrice !== null)
                                   .map((i) => {
                                     const taxed = withTax(i.unitPrice, i.unitPriceGross);
                                     return (
-                                      <span key={i.itemId} className="block">
-                                        {i.name} {i.included > 0 ? '+' : ''}
-                                        {formatEur(i.unitPrice!)}
-                                        {taxed === null ? '' : ` · ${p.withVat(formatEur(taxed))}`}
+                                      <span key={i.itemId} className="contents">
+                                        <span>{i.name}</span>
+                                        <span>+{formatEur(i.unitPrice!)}</span>
+                                        <span>
+                                          {taxed === null ? '' : p.withVat(formatEur(taxed))}
+                                        </span>
                                       </span>
                                     );
                                   })}
+                              </span>
+                            )}
                           </TableCell>
                           <TableCell className="text-right tabular-nums">{row.customers}</TableCell>
                           <TableCell>
