@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { sk } from '@intra/shared/i18n';
 import {
   type DirectRecipient,
@@ -28,6 +29,7 @@ import { lookFor, valuesFor } from '../email/templates.service.js';
 import { htmlToText } from '../inbound/forwarded.js';
 import { companyAddresses } from '../inbound/import.js';
 import { bySender } from '../inbound/inbound.js';
+import { interestUrl } from './interest-link.js';
 import {
   CampaignError,
   draft,
@@ -434,6 +436,8 @@ export async function sendDirect(db: Db, env: Env, id: string) {
     row.senderUserId,
     {},
   );
+  // One e-mail for everybody on it: the interest it records is that of the first To, if known.
+  const carrierId = randomUUID();
   const rendered = await renderEmail({
     look: await lookFor(db, row.lookProductId),
     baseUrl: env.WEB_URL,
@@ -444,6 +448,9 @@ export async function sendDirect(db: Db, env: Env, id: string) {
     // An answer or a forward has the signature in its text, where it could be changed.
     signature: !reply,
     customerName,
+    ...(first.organizationId
+      ? { interestUrl: (productId: string) => interestUrl(env, carrierId, productId) }
+      : {}),
   });
 
   const attached = await db
@@ -467,6 +474,7 @@ export async function sendDirect(db: Db, env: Env, id: string) {
       .values(
         await Promise.all(
           recipients.map(async (recipient, position) => ({
+            ...(position === 0 ? { id: carrierId } : {}),
             campaignId: id,
             organizationId: recipient.organizationId
               ? await fileUnder(

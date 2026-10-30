@@ -129,4 +129,61 @@ describe('the brand in the header', () => {
     const out = await rendered({ brandName: 'Alma' });
     expect(header(out.html)).not.toContain('#5fd0c9');
   });
+
+  describe('a button that records interest', () => {
+    const PRODUCT = '00000000-0000-4000-8000-0000000000a1';
+    const withButton: EmailNode = {
+      type: 'doc',
+      content: [
+        { type: 'button', attrs: { text: 'Mám záujem', href: '', interestProductId: PRODUCT } },
+      ],
+    };
+    const options = {
+      look,
+      baseUrl: 'https://intra.test',
+      subject: withButton,
+      body: withButton,
+      values: {},
+      labels: {},
+      signature: false,
+    };
+
+    it('carries the link made for the recipient', async () => {
+      const out = await renderEmail({
+        ...options,
+        interestUrl: (id) => `https://intra.test/zaujem#token-${id}`,
+      });
+      expect(out.html).toContain(`https://intra.test/zaujem#token-${PRODUCT}`);
+    });
+
+    it('in a preview or a test opens the page without a token', async () => {
+      const out = await renderEmail(options);
+      expect(out.html).toContain('href="https://intra.test/zaujem"');
+    });
+  });
+
+  describe('a button in the middle', () => {
+    const withButton = (attrs: Record<string, unknown>): EmailNode => ({
+      type: 'doc',
+      content: [{ type: 'button', attrs: { text: 'Viac', href: 'https://a.test', ...attrs } }],
+    });
+    const sectionOf = async (doc: EmailNode) => {
+      const out = await renderEmail({
+        look,
+        baseUrl: 'https://intra.test',
+        subject: doc,
+        body: doc,
+        values: {},
+        labels: {},
+        signature: false,
+      });
+      const at = out.html.indexOf('https://a.test');
+      return out.html.slice(out.html.lastIndexOf('<table', at), at);
+    };
+
+    it('is centred only when it says so', async () => {
+      expect(await sectionOf(withButton({ align: 'center' }))).toContain('text-align:center');
+      expect(await sectionOf(withButton({}))).not.toContain('text-align:center');
+    });
+  });
 });

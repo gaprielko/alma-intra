@@ -12,6 +12,15 @@ import { cn } from '@/lib/utils';
 
 const t = sk.templates;
 
+/** A button's attributes: an address, or the product whose interest it records. */
+export interface ButtonAttrs {
+  text: string;
+  href: string;
+  interestProductId: string | null;
+  /** `center` in the middle of the e-mail; otherwise at the left. */
+  align: string | null;
+}
+
 /** What the node views need from the editor around them: names of variables, the accent. */
 export interface EmailEditorContextValue {
   /** The label of a variable (`custom.nurses` → „Počet sestier“). */
@@ -20,7 +29,7 @@ export interface EmailEditorContextValue {
   /** The look's logo, for the logo within a line. */
   logoKey: string | null;
   /** Opens the button dialog for the button at this position. */
-  editButton: (pos: number, attrs: { text: string; href: string }) => void;
+  editButton: (pos: number, attrs: ButtonAttrs) => void;
 }
 
 export const EmailEditorContext = createContext<EmailEditorContextValue>({
@@ -144,9 +153,17 @@ export const Logo = Node.create({
 /** A call to action: shown as the e-mail will show it; a click edits its text and address. */
 function ButtonView({ node, getPos, selected }: NodeViewProps) {
   const { accent, editButton } = useContext(EmailEditorContext);
-  const attrs = { text: String(node.attrs.text ?? ''), href: String(node.attrs.href ?? '') };
+  const attrs: ButtonAttrs = {
+    text: String(node.attrs.text ?? ''),
+    href: String(node.attrs.href ?? ''),
+    interestProductId: (node.attrs.interestProductId as string | null) ?? null,
+    align: (node.attrs.align as string | null) ?? null,
+  };
   return (
-    <NodeViewWrapper className="my-2 mb-6" data-drag-handle>
+    <NodeViewWrapper
+      className={cn('my-2 mb-6', attrs.align === 'center' && 'text-center')}
+      data-drag-handle
+    >
       <button
         type="button"
         contentEditable={false}
@@ -159,7 +176,7 @@ function ButtonView({ node, getPos, selected }: NodeViewProps) {
           selected && 'outline-2 outline-offset-2 outline-primary',
         )}
         style={{ backgroundColor: accent }}
-        title={attrs.href}
+        title={attrs.interestProductId ? t.editor.buttonInterest : attrs.href}
       >
         {attrs.text || t.editor.buttonDefault}
       </button>
@@ -173,7 +190,12 @@ export const EmailButton = Node.create({
   atom: true,
   draggable: true,
   addAttributes() {
-    return { text: { default: t.editor.buttonDefault }, href: { default: 'https://' } };
+    return {
+      text: { default: t.editor.buttonDefault },
+      href: { default: 'https://' },
+      interestProductId: { default: null },
+      align: { default: null },
+    };
   },
   parseHTML() {
     return [{ tag: 'div[data-button]' }];

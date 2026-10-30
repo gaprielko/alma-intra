@@ -5,7 +5,12 @@ import { Lock, Mail, MoreHorizontal, Plus } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { ActivityDialog } from '@/components/activities/activity-dialog';
 import { ActivitySheet } from '@/components/activities/activity-sheet';
-import { ActivityItem, EmailItem, ReplyItem } from '@/components/activities/timeline-items';
+import {
+  ActivityItem,
+  EmailItem,
+  InterestItem,
+  ReplyItem,
+} from '@/components/activities/timeline-items';
 import { CustomerAvatar, placeName } from '@/components/customers/customer-bits';
 import { PersonDialog } from '@/components/customers/person-dialog';
 import { ErrorState } from '@/components/empty-state';
@@ -431,7 +436,7 @@ function LinkDialog({ person, onClose }: { person: Person; onClose: () => void }
   );
 }
 
-const TIMELINE_FILTERS = ['all', 'activities', 'emails'] as const;
+const TIMELINE_FILTERS = ['all', 'activities', 'interest', 'emails'] as const;
 
 /** Only what concerns the person (D-8), each entry with its organization; filters by kind and organization. */
 function PersonTimeline({ person: c }: { person: Person }) {
@@ -452,7 +457,9 @@ function PersonTimeline({ person: c }: { person: Person }) {
           ? item.email.organization
           : item.type === 'reply'
             ? item.reply.organization
-            : null;
+            : item.type === 'interest'
+              ? item.interest.organization
+              : null;
     return org?.id === organization;
   });
   const chip = (on: boolean) =>
@@ -515,6 +522,8 @@ function PersonTimeline({ person: c }: { person: Person }) {
                   <EmailItem key={item.email.id} item={item.email} />
                 ) : item.type === 'reply' ? (
                   <ReplyItem key={item.reply.id} item={item.reply} />
+                ) : item.type === 'interest' ? (
+                  <InterestItem key={item.interest.id} item={item.interest} />
                 ) : null,
               )}
             </ol>

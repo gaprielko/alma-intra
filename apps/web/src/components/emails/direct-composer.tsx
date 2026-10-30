@@ -2,6 +2,7 @@ import { sk } from '@intra/shared/i18n';
 import {
   type DirectRecipient,
   type EmailNode,
+  hasInterestButton,
   personName,
   userFullName,
 } from '@intra/shared/schemas';
@@ -272,6 +273,11 @@ export function DirectComposer({
           </Select>
         </div>
       </div>
+      {hasInterestButton(body) && (recipients.length > 1 || !firstTo?.organizationId) ? (
+        <p className="border-b border-border-subtle bg-warning-soft/50 px-5 py-2.5 text-[13px]">
+          {t.interestWarning}
+        </p>
+      ) : null}
       <div className="p-5">
         <EmailBodyEditor
           key={`${bodyKey}-${lookProductId ?? ''}-${chosenLook.isSuccess}`}
@@ -279,6 +285,7 @@ export function DirectComposer({
           onChange={setBody}
           fields={[]}
           look={chosenLook.data?.look ?? look}
+          defaultProductId={lookProductId}
           senderName={me ? userFullName(me) : ''}
           signature={!draft.reply}
           unsubscribe={false}

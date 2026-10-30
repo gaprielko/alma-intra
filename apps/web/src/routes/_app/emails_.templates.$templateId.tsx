@@ -438,6 +438,7 @@ function Editor({ template, look }: { template: Template | null; look: EmailLook
               onChange={touch(setBody)}
               fields={fields}
               look={chosenLook.data?.look ?? look}
+              defaultProductId={lookProductId || null}
               senderName={me ? userFullName(me) : sk.templates.variables['sender.name']}
             />
           ) : (

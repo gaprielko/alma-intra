@@ -1,6 +1,6 @@
 import { sk } from '@intra/shared/i18n';
 import { Link } from '@tanstack/react-router';
-import { Mail, Reply } from 'lucide-react';
+import { Activity, Mail, Reply } from 'lucide-react';
 import { formatDay, KindMark } from '@/components/activities/activity-bits';
 import { Badge } from '@/components/ui/badge';
 import { formatRecent } from '@/lib/format';
@@ -83,6 +83,35 @@ export function ReplyItem({ item }: { item: TimelineReply }) {
         {item.preview ? (
           <p className="mt-1 line-clamp-2 text-sm text-muted">{item.preview}</p>
         ) : null}
+      </Link>
+    </li>
+  );
+}
+
+export type TimelineInterest = Extract<
+  RouterOutputs['activity']['timeline'][number],
+  { type: 'interest' }
+>['interest'];
+
+/** Somebody's confirmed interest in a product, read only; opens its entry in Aktivity. */
+export function InterestItem({ item }: { item: TimelineInterest }) {
+  return (
+    <li className="relative">
+      <span
+        aria-hidden
+        className="absolute top-0 -left-[41px] inline-flex size-7 items-center justify-center rounded-full bg-[#e9eef6] text-[#334e7b]"
+      >
+        <Activity className="size-3.5" />
+      </span>
+      <Link
+        to="/activities/$activityId"
+        params={{ activityId: item.id }}
+        className="block rounded-lg hover:bg-hover/60"
+      >
+        <p className="text-sm font-semibold">{a.timeline.interest(item.product)}</p>
+        <p className="text-xs text-muted">
+          {a.timeline.interestBy(item.contact, formatRecent(item.at))}
+        </p>
       </Link>
     </li>
   );

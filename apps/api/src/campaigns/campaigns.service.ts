@@ -30,6 +30,7 @@ import {
 import { missingOf, plainOf, renderEmail } from '../email/render.js';
 import { lookFor, valuesFor } from '../email/templates.service.js';
 import { DOWNLOAD_LINK_DAYS, downloadToken } from './download-link.js';
+import { interestUrl } from './interest-link.js';
 
 export class CampaignError extends Error {
   constructor(
@@ -812,6 +813,8 @@ async function renderFor(
   message: Message,
   unsubscribeUrl: string,
   leaves = new Date(),
+  /** Only the e-mail that really leaves carries working links; a preview or a test does not. */
+  live = false,
 ) {
   const { values, customerName } = await valuesFor(
     db,
@@ -830,6 +833,9 @@ async function renderFor(
     signature: true,
     customerName,
     unsubscribeUrl,
+    ...(live
+      ? { interestUrl: (productId: string) => interestUrl(env, message.id, productId) }
+      : {}),
     ...(campaign.attachmentsAsLinks
       ? { downloads: await downloadsFor(db, env, campaign, message, leaves) }
       : {}),
@@ -925,6 +931,7 @@ export async function queueCampaign(db: Db, env: Env, id: string, at?: Date) {
       message,
       `${env.WEB_URL}/odhlasenie#${token}`,
       at ?? new Date(),
+      true,
     );
     if (out.missing.length > 0) missing += 1;
     rendered.set(message.id, { ...out, token });

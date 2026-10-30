@@ -6,6 +6,7 @@ import {
   FILE_GROUPS,
   HEADER_STYLES,
   INBOUND_STATUSES,
+  LEAD_ACTIVITY_TYPES,
   ORGANIZATION_ROLES,
   SECOND_STEPS,
   USER_STATUSES,
@@ -188,6 +189,15 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
    * A person of Kontakty: created or deleted, which of their fields changed (names), at how many
    * organizations. Never a name, an e-mail, a phone or a note.
    */
+  /** An entry of Aktivity: its type, what it is about, by id; a repeated confirmation. */
+  leadActivity: {
+    type: oneOf(LEAD_ACTIVITY_TYPES),
+    productId: uuid,
+    customerId: uuid,
+    contactId: uuid,
+    repeated: flag,
+    deleted: flag,
+  },
   /** A product: created, duplicated, deleted, which of its fields changed, its price list. */
   product: {
     created: flag,

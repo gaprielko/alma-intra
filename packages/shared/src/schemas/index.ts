@@ -10,3 +10,4 @@ export * from './campaign.js';
 export * from './inbound.js';
 export * from './person.js';
 export * from './product.js';
+export * from './lead-activity.js';

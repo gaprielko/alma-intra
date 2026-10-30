@@ -41,7 +41,7 @@ export const assignInboundSchema = z.object({
  * What a colleague is told about in the app: a reply to their e-mail, or an e-mail of theirs that
  * bounced.
  */
-export const NOTIFICATION_KINDS = ['reply', 'bounce', 'next_step'] as const;
+export const NOTIFICATION_KINDS = ['reply', 'bounce', 'next_step', 'interest'] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
 /** Marks notifications read: the listed ones, or all of them. */

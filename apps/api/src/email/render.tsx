@@ -1,6 +1,6 @@
 import { sk } from '@intra/shared/i18n';
 import type { EmailLook, EmailNode } from '@intra/shared/schemas';
-import { brandParts, OPTIONAL_VARIABLES } from '@intra/shared/schemas';
+import { brandParts, interestProductOf, OPTIONAL_VARIABLES } from '@intra/shared/schemas';
 import {
   Body,
   Button,
@@ -42,6 +42,11 @@ export interface RenderInput {
   /** The customer the recipient belongs to, for the footer's reason line. */
   customerName?: string | undefined;
   unsubscribeUrl?: string | undefined;
+  /**
+   * The recipient's own link of a button that records interest. Without it (a preview, a test, a
+   * recipient not in Kontakty) the button opens the public page, which calls the link invalid.
+   */
+  interestUrl?: ((productId: string) => string) | undefined;
   /** Files sent as download links instead of attachments (D-26), listed under the body. */
   downloads?: { expiresAt: Date; files: { name: string; url: string }[] } | undefined;
 }
@@ -236,11 +241,20 @@ function NodeView({ node, ctx }: { node: EmailNode; ctx: Ctx }): ReactNode {
         />
       );
     }
-    case 'button':
+    case 'button': {
+      const interest = interestProductOf(node);
+      const href = interest
+        ? (input.interestUrl?.(interest) ?? `${input.baseUrl}/zaujem`)
+        : str(node.attrs?.href);
       return (
-        <Section style={{ margin: '8px 0 24px' }}>
+        <Section
+          style={{
+            margin: '8px 0 24px',
+            ...(node.attrs?.align === 'center' ? { textAlign: 'center' } : {}),
+          }}
+        >
           <Button
-            href={str(node.attrs?.href)}
+            href={href}
             style={{
               backgroundColor: accent,
               color: '#ffffff',
@@ -255,6 +269,7 @@ function NodeView({ node, ctx }: { node: EmailNode; ctx: Ctx }): ReactNode {
           </Button>
         </Section>
       );
+    }
     case 'callout':
       return (
         <Section

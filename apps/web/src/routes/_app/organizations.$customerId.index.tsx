@@ -12,7 +12,12 @@ import { ChevronDown, ChevronUp, Mail, MoreHorizontal, Pencil, Plus } from 'luci
 import { type ReactNode, useState } from 'react';
 import { ActivityDialog } from '@/components/activities/activity-dialog';
 import { ActivitySheet } from '@/components/activities/activity-sheet';
-import { ActivityItem, EmailItem, ReplyItem } from '@/components/activities/timeline-items';
+import {
+  ActivityItem,
+  EmailItem,
+  InterestItem,
+  ReplyItem,
+} from '@/components/activities/timeline-items';
 import { Avatar } from '@/components/avatar';
 import { AttachDialog } from '@/components/customers/attach-dialog';
 import { EstablishmentDialog } from '@/components/customers/establishment-dialog';
@@ -700,7 +705,9 @@ const keyOf = (item: TimelineItem) =>
       ? item.email.id
       : item.type === 'reply'
         ? item.reply.id
-        : item.change.id;
+        : item.type === 'interest'
+          ? item.interest.id
+          : item.change.id;
 
 function TimelineCard({ customer }: { customer: Customer }) {
   const toast = useToast();
@@ -747,7 +754,9 @@ function TimelineCard({ customer }: { customer: Customer }) {
         ? item.email.organization
         : item.type === 'reply'
           ? item.reply.organization
-          : item.change.organization;
+          : item.type === 'interest'
+            ? item.interest.organization
+            : item.change.organization;
   const establishmentName = (item: TimelineItem) => {
     const holder = holderOf(item);
     return holder && holder.id !== customer.id ? holder.name : null;
@@ -921,6 +930,8 @@ function TimelineCard({ customer }: { customer: Customer }) {
         <EmailItem key={item.email.id} item={item.email} />
       ) : item.type === 'reply' ? (
         <ReplyItem key={item.reply.id} item={item.reply} />
+      ) : item.type === 'interest' ? (
+        <InterestItem key={item.interest.id} item={item.interest} />
       ) : (
         <li key={item.change.id} className="relative">
           <span
