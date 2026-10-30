@@ -2,7 +2,7 @@ import { sk } from '@intra/shared/i18n';
 import {
   type DirectRecipient,
   type EmailNode,
-  hasInterestButton,
+  hasActivityButton,
   personName,
   senderNameOf,
   userFullName,
@@ -274,7 +274,7 @@ export function DirectComposer({
           </Select>
         </div>
       </div>
-      {hasInterestButton(body) && (recipients.length > 1 || !firstTo?.organizationId) ? (
+      {hasActivityButton(body) && (recipients.length > 1 || !firstTo?.organizationId) ? (
         <p className="border-b border-border-subtle bg-warning-soft/50 px-5 py-2.5 text-[13px]">
           {t.interestWarning}
         </p>

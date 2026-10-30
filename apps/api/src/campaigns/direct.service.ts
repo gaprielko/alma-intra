@@ -29,7 +29,7 @@ import { lookFor, valuesFor } from '../email/templates.service.js';
 import { htmlToText } from '../inbound/forwarded.js';
 import { companyAddresses } from '../inbound/import.js';
 import { bySender } from '../inbound/inbound.js';
-import { interestUrl } from './interest-link.js';
+import { activityUrl, type RecordedActivity } from './interest-link.js';
 import {
   CampaignError,
   draft,
@@ -457,7 +457,7 @@ export async function sendDirect(db: Db, env: Env, id: string) {
     signature: !reply,
     customerName,
     ...(first.organizationId
-      ? { interestUrl: (productId: string) => interestUrl(env, carrierId, productId) }
+      ? { activityUrl: (activity: RecordedActivity) => activityUrl(env, carrierId, activity) }
       : {}),
   });
 

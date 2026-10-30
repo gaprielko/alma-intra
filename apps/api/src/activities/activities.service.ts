@@ -24,6 +24,8 @@ import {
   fullNameOf,
   inboundMessages,
   leadActivities,
+  activityTypes,
+  appFeedback,
   messageAttachments,
   organizations,
   products,
@@ -569,13 +571,22 @@ export async function timelineOf(
             .select({
               id: leadActivities.id,
               at: leadActivities.createdAt,
+              typeName: activityTypes.name,
+              source: leadActivities.source,
               product: products.name,
               contact: contactFullName,
+              // Of a podnet: its kind and who wrote it, never its text.
+              feedbackKind: appFeedback.kind,
+              reporterName: appFeedback.reporterName,
+              workplace: sql<string | null>`(select o.name from organizations o
+                where o.id = ${leadActivities.organizationId} and o.parent_id is not null)`,
               organization: organizationJson(leadActivities.organizationId),
             })
             .from(leadActivities)
-            .innerJoin(products, eq(products.id, leadActivities.productId))
+            .innerJoin(activityTypes, eq(activityTypes.id, leadActivities.typeId))
+            .leftJoin(products, eq(products.id, leadActivities.productId))
             .leftJoin(contacts, eq(contacts.id, leadActivities.contactId))
+            .leftJoin(appFeedback, eq(appFeedback.id, leadActivities.appFeedbackId))
             .where(
               and(
                 customerIds

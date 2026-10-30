@@ -17,6 +17,10 @@ const t = sk.templates;
 export interface ButtonAttrs {
   text: string;
   href: string;
+  /** What the button records instead of opening an address (docs/activity-types.md). */
+  activityTypeId: string | null;
+  productId: string | null;
+  /** A document saved before the types: interest in this product. */
   interestProductId: string | null;
   /** `center` in the middle of the e-mail; otherwise at the left. */
   align: string | null;
@@ -178,6 +182,8 @@ function ButtonView({ node, getPos, selected }: NodeViewProps) {
   const attrs: ButtonAttrs = {
     text: String(node.attrs.text ?? ''),
     href: String(node.attrs.href ?? ''),
+    activityTypeId: (node.attrs.activityTypeId as string | null) ?? null,
+    productId: (node.attrs.productId as string | null) ?? null,
     interestProductId: (node.attrs.interestProductId as string | null) ?? null,
     align: (node.attrs.align as string | null) ?? null,
   };
@@ -198,7 +204,9 @@ function ButtonView({ node, getPos, selected }: NodeViewProps) {
           selected && 'outline-2 outline-offset-2 outline-primary',
         )}
         style={{ backgroundColor: accent }}
-        title={attrs.interestProductId ? t.editor.buttonInterest : attrs.href}
+        title={
+          attrs.activityTypeId || attrs.interestProductId ? t.editor.buttonInterest : attrs.href
+        }
       >
         {attrs.text || t.editor.buttonDefault}
       </button>
@@ -215,6 +223,8 @@ export const EmailButton = Node.create({
     return {
       text: { default: t.editor.buttonDefault },
       href: { default: 'https://' },
+      activityTypeId: { default: null },
+      productId: { default: null },
       interestProductId: { default: null },
       align: { default: null },
     };

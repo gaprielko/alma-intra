@@ -36,9 +36,17 @@ export function CardHeader({ title, action }: { title: ReactNode; action?: React
 }
 
 /** Label above value, as used throughout the patient card. */
-export function Field({ label, children }: { label: string; children: ReactNode }) {
+export function Field({
+  label,
+  className,
+  children,
+}: {
+  label: string;
+  className?: string;
+  children: ReactNode;
+}) {
   return (
-    <div>
+    <div className={className}>
       <dt className="text-xs font-medium text-muted">{label}</dt>
       <dd className="mt-0.5 text-sm">{children}</dd>
     </div>

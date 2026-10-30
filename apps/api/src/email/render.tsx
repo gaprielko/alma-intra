@@ -1,6 +1,6 @@
 import { sk } from '@intra/shared/i18n';
 import type { EmailLook, EmailNode } from '@intra/shared/schemas';
-import { brandParts, interestProductOf, OPTIONAL_VARIABLES } from '@intra/shared/schemas';
+import { brandParts, OPTIONAL_VARIABLES, recordedActivityOf } from '@intra/shared/schemas';
 import {
   Body,
   Button,
@@ -46,7 +46,7 @@ export interface RenderInput {
    * The recipient's own link of a button that records interest. Without it (a preview, a test, a
    * recipient not in Kontakty) the button opens the public page, which calls the link invalid.
    */
-  interestUrl?: ((productId: string) => string) | undefined;
+  activityUrl?: ((activity: { typeId: string; productId: string | null }) => string) | undefined;
   /** Files sent as download links instead of attachments (D-26), listed under the body. */
   downloads?: { expiresAt: Date; files: { name: string; url: string }[] } | undefined;
 }
@@ -278,9 +278,9 @@ function NodeView({ node, ctx }: { node: EmailNode; ctx: Ctx }): ReactNode {
       );
     }
     case 'button': {
-      const interest = interestProductOf(node);
-      const href = interest
-        ? (input.interestUrl?.(interest) ?? `${input.baseUrl}/zaujem`)
+      const recorded = recordedActivityOf(node);
+      const href = recorded
+        ? (input.activityUrl?.(recorded) ?? `${input.baseUrl}/zaujem`)
         : str(node.attrs?.href);
       return (
         <Section

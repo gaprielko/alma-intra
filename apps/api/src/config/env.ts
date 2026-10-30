@@ -33,6 +33,11 @@ const envSchema = z.object({
    * complaints. Unset, the webhook answers 503 and messages stay „Odoslaný“.
    */
   RESEND_WEBHOOK_SECRET: optionalString(z.string().min(10)),
+  /**
+   * Verifies what Alma ADOS sends about its podnety (docs/activities-from-apps.md); the same value as
+   * its FEEDBACK_OUTBOUND_SECRET. Unset, those routes answer 503 and Alma keeps trying for a day.
+   */
+  ALMA_OUTBOUND_SECRET: optionalString(z.string().min(32)),
   CAMPAIGN_FROM_ADDRESS: z.string().email().default('info@mail.alma-care.eu'),
   /**
    * The domain Resend receives mail for (spec 6.6): each e-mail to a customer gets the Reply-To

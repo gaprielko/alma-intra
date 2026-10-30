@@ -1,3 +1,4 @@
+import { ADOS_PRODUCT_ID } from '@intra/shared/schemas';
 import { sql } from 'drizzle-orm';
 import type { Tx } from './db.module.js';
 import { COMPANY_ROOT_FOLDER_ID } from '@intra/shared/schemas';
@@ -11,9 +12,6 @@ import {
   folders,
   tags,
 } from './schema/index.js';
-
-/** The product ADOS: installed as a type by `0003_customer_type_ados`, a product since `0013`. */
-export const ADOS_PRODUCT_ID = '00000000-0000-4000-8000-0000000000a1';
 
 const id = (prefix: string, n: number) =>
   `00000000-0000-4000-8000-${prefix}${String(n).padStart(12 - prefix.length, '0')}`;

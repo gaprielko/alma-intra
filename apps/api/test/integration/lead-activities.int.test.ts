@@ -54,19 +54,19 @@ describe('Aktivity: serious interest from an e-mail button', () => {
     await api.close();
   });
 
-  const body = () => ({
+  const body = (attrs?: Record<string, unknown>) => ({
     type: 'doc',
     content: [
       ...doc('Dobrý deň.').content,
       {
         type: 'button',
-        attrs: { text: 'Mám vážny záujem', href: '', interestProductId: productId },
+        attrs: attrs ?? { text: 'Mám vážny záujem', href: '', interestProductId: productId },
       },
     ],
   });
 
   /** Sends the button to Eva Tóthová and gives back the token of her link. */
-  async function send() {
+  async function send(attrs?: Record<string, unknown>) {
     const made = await jana.call<{ id: string }>('campaign.create', { customerIds: [] });
     await jana.call('campaign.setRecipients', {
       id: made.data.id,
@@ -74,7 +74,7 @@ describe('Aktivity: serious interest from an e-mail button', () => {
     });
     await api.db.execute(
       sql`update campaigns set subject = ${JSON.stringify(doc('Záujem'))}::jsonb,
-        body = ${JSON.stringify(body())}::jsonb where id = ${made.data.id}`,
+        body = ${JSON.stringify(body(attrs))}::jsonb where id = ${made.data.id}`,
     );
     expect((await jana.call('campaign.send', { id: made.data.id })).code).toBeUndefined();
     return { id: made.data.id, token: await tokenAfterDrain(made.data.id) };
@@ -175,11 +175,37 @@ describe('Aktivity: serious interest from an e-mail button', () => {
     expect(next!.id).not.toBe(entry!.id);
   });
 
+  it('records a type of its own, without a product, in its own words', async () => {
+    const type = await jana.call<{ id: string }>('activityType.create', {
+      name: 'Žiadosť o hovor',
+      confirmLabel: 'Áno, zavolajte mi',
+      asksProduct: false,
+      active: true,
+    });
+    const { token } = await send({ text: 'Zavolajte mi', href: '', activityTypeId: type.data.id });
+    const info = await stranger.call<{ confirmLabel: string; product: string | null }>(
+      'interest.info',
+      { token },
+    );
+    expect(info.data).toMatchObject({ confirmLabel: 'Áno, zavolajte mi', product: null });
+    expect((await stranger.call('interest.confirm', { token })).code).toBeUndefined();
+    const again = await stranger.call<{ repeated: boolean }>('interest.confirm', { token });
+    expect(again.data.repeated).toBe(true);
+    const list = await jana.call<{ items: (Entry & { confirmedCount: number })[]; total: number }>(
+      'leadActivity.list',
+      { typeId: type.data.id },
+    );
+    expect(list.data.total).toBe(1);
+    expect(list.data.items[0]).toMatchObject({ productId: null, confirmedCount: 2 });
+    const held = await jana.call('activityType.delete', { id: type.data.id });
+    expect(held.message).toBe('IN_USE');
+  });
+
   it('refuses a made-up token, and the link of an e-mail that has not left', async () => {
     expect((await stranger.call('interest.confirm', { token: 'x'.repeat(40) })).code).toBe(
       'NOT_FOUND',
     );
-    const { interestToken } = await import('../../src/campaigns/interest-link.js');
+    const { oldInterestToken } = await import('../../src/campaigns/interest-link.js');
     const made = await jana.call<{ id: string }>('campaign.create', { customerIds: [] });
     await jana.call('campaign.setRecipients', {
       id: made.data.id,
@@ -188,7 +214,7 @@ describe('Aktivity: serious interest from an e-mail button', () => {
     const rows = await api.db.execute<{ id: string }>(
       sql`select id from campaign_messages where campaign_id = ${made.data.id}`,
     );
-    const token = interestToken(loadEnv(), rows.rows[0]!.id, productId);
+    const token = oldInterestToken(loadEnv(), rows.rows[0]!.id, productId);
     expect((await stranger.call('interest.info', { token })).code).toBe('NOT_FOUND');
   });
 

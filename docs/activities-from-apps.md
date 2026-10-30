@@ -1,8 +1,9 @@
-# Aktivity: activities that come from an application (draft)
+# Aktivity: activities that come from an application
 
-Status: **draft, waiting for the user's approval** (2026-10-30). Screens: page „Aktivity“ on the
-canvas „Alma Intra – screens“. Nothing is implemented yet. Builds on `docs/activities.md` and
-`docs/activity-types.md`.
+Status: **agreed and implemented, step one** (2026-10-30). The user decided on two steps: this one
+receives podnety and shows them in Aktivity, and the way back to Alma (request 3) comes later. All
+recommendations in section 7 were accepted. Screens: page „Aktivity“ on the canvas „Alma Intra –
+screens“. Builds on `docs/activities.md` and `docs/activity-types.md`.
 
 The contract with Alma ADOS is `docs/integrations/pilot-feedback-intranet.md` (v1.3) in the
 `alma-ados` repository. It is the source of truth and a change to it is agreed with Alma first.
@@ -38,7 +39,7 @@ came from: a button in an e-mail, or an application.
 | Product | the endpoint | the contract has no product field; the receiver of Alma ADOS records the ADOS product |
 | Type | seeded | „Podnet“; the contract's `type` is the kind: `bug` „Chyba“, `idea` „Nápad“, `question` „Neviem, ako na to“ |
 | Organization, pracovisko | `organization.id` | Intra's own id of the organization or prevádzka; until ADOS adapts, `alma_organization_id` [A-1] |
-| Contact | `reporter.email` | a live contact of that organization with the e-mail, ignoring case [A-2] |
+| Contact | `reporter.email` | the live contact with the e-mail, ignoring case; an e-mail belongs to one person (D-7) [A-2] |
 
 `reporter.userId` is stored from the start, so that details can later be fetched from Alma ADOS by the
 application and user id. Fetching them is not in this step: the e-mail is the identifier for now.
@@ -75,8 +76,9 @@ name, e-mail and role, Alma's organization id and name, app, device, place, trai
 
 - `source`: `email` or `app`.
 - `app_feedback_id`, a reference to the new table.
-- `establishment_id`: the matched prevádzka, or NULL.
-- `organization_id` becomes nullable, for „Nepriradené“.
+- `organization_id` becomes nullable, for „Nepriradené“. It holds the matched record, a prevádzka too,
+  as everywhere in the app: a prevádzka is a row of `organizations` with its `parent_id`, so its
+  timeline and its organization's already work.
 
 The unique index and its count of repeats apply to `source = 'email'` only: every podnet is an entry
 of its own and never merges with another one.
@@ -106,11 +108,10 @@ For this app:
   the e-mail and offer „Vytvoriť kontakt“, so that a typing error in Alma never makes a contact.
 - **[A-3] The text on a timeline.** Recommended: no, only the kind and the origin, with a link to the
   detail. See section 6.
-- **[A-4] The way back.** The contract also expects Intra to send status changes and messages
-  (request 3), which is what the tester sees. Without it the item stays „Prijatý“ in Alma forever.
-  Recommended: two steps. First receiving and Aktivity, as here; replies and confirmations are stored
-  already. Then a separate step with the status, the messages and an outbox, because that is a work
-  queue of its own and belongs with the workflows.
+- **[A-4] The way back. Decided by the user (2026-10-30): a later step.** The contract also expects
+  Intra to send status changes and messages (request 3), which is what the tester sees. Until then
+  the item stays „Prijatý“ in Alma, so testers should be told. Replies and confirmations are stored
+  already. The later step adds the status, the messages and an outbox.
 - **[A-5] Deleting a podnet.** Recommended: it hides the entry as for other activities, but keeps
   `app_feedback`, because Alma can still send replies to it.
 

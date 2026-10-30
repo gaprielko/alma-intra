@@ -6,7 +6,7 @@ import {
   FILE_GROUPS,
   HEADER_STYLES,
   INBOUND_STATUSES,
-  LEAD_ACTIVITY_TYPES,
+  LEAD_ACTIVITY_SOURCES,
   ORGANIZATION_ROLES,
   SECOND_STEPS,
   USER_STATUSES,
@@ -191,12 +191,20 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
    */
   /** An entry of Aktivity: its type, what it is about, by id; a repeated confirmation. */
   leadActivity: {
-    type: oneOf(LEAD_ACTIVITY_TYPES),
+    typeId: uuid,
+    source: oneOf(LEAD_ACTIVITY_SOURCES),
     productId: uuid,
     customerId: uuid,
     contactId: uuid,
     repeated: flag,
     deleted: flag,
+    assigned: flag,
+  },
+  /** A type of Aktivity: which of its fields changed, whether it was created or deleted. */
+  activityType: {
+    created: flag,
+    deleted: flag,
+    fields: subsetOf(['name', 'confirmLabel', 'asksProduct', 'active']),
   },
   /** A product: created, duplicated, deleted, which of its fields changed, its price list. */
   product: {

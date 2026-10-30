@@ -30,7 +30,7 @@ import {
 import { missingOf, plainOf, renderEmail } from '../email/render.js';
 import { fromAddress, lookFor, valuesFor } from '../email/templates.service.js';
 import { DOWNLOAD_LINK_DAYS, downloadToken } from './download-link.js';
-import { interestUrl } from './interest-link.js';
+import { activityUrl, type RecordedActivity } from './interest-link.js';
 
 export class CampaignError extends Error {
   constructor(
@@ -834,7 +834,7 @@ async function renderFor(
     customerName,
     unsubscribeUrl,
     ...(live
-      ? { interestUrl: (productId: string) => interestUrl(env, message.id, productId) }
+      ? { activityUrl: (activity: RecordedActivity) => activityUrl(env, message.id, activity) }
       : {}),
     ...(campaign.attachmentsAsLinks
       ? { downloads: await downloadsFor(db, env, campaign, message, leaves) }
