@@ -84,6 +84,10 @@ export async function getInbound(db: Db, id: string) {
       inbound: inboundMessages,
       customerName,
       contactName,
+      /** The person's position at the organization the e-mail is filed under. */
+      contactPosition: sql<string | null>`(select l.position from contact_links l
+        where l.contact_id = ${inboundMessages.contactId}
+          and l.organization_id = ${inboundMessages.organizationId})`,
       original: sql<{
         campaignId: string;
         subject: string | null;

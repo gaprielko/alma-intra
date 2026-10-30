@@ -2083,6 +2083,8 @@ export const sk = {
     safeNote: 'Obrázky z internetu sa nenačítavajú.',
     download: (name: string) => `Stiahnuť ${name}`,
     savedToFolder: 'Prílohy sú uložené v priečinku kontaktu.',
+    toLine: (to: string) => `komu ${to}`,
+    attachmentsButton: (n: number) => `Prílohy · ${n}`,
     notSavedYet: 'Prílohy sa uložia do priečinka kontaktu po priradení.',
     skipped: {
       type: 'neuložená, tento typ súboru sa neukladá',
