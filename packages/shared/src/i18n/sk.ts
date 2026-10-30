@@ -813,6 +813,7 @@ export const sk = {
       status: 'Stav',
       owner: 'Zodpovedá',
       tags: 'Štítky',
+      statusAndTags: 'Stav a štítky',
       lastContact: 'Posledný kontakt',
       select: 'Vybrať',
       selectAll: 'Vybrať všetkých na stránke',

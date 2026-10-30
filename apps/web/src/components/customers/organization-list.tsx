@@ -248,8 +248,8 @@ export function OrganizationList({
     { head: t.columns.primaryContact, className: 'hidden lg:table-cell' },
     ...(customers ? [{ head: t.columns.owner, className: 'hidden xl:table-cell' }] : []),
     {
-      head: t.columns.tags,
-      className: customers ? 'hidden 2xl:table-cell' : 'hidden md:table-cell',
+      head: customers ? t.columns.statusAndTags : t.columns.tags,
+      className: customers ? 'hidden lg:table-cell' : 'hidden md:table-cell',
     },
     {
       head: sortHeader('lastContact', t.columns.lastContact),
@@ -530,11 +530,7 @@ function OrganizationRow({
             <RowLink href={href} className="block truncate font-semibold">
               {row.name}
             </RowLink>
-            <div className="mt-0.5 flex min-w-0 items-center gap-2">
-              {/* No status, nothing shown (D-6). */}
-              {customers && row.status ? <CustomerStatusBadge status={row.status} /> : null}
-              <p className="truncate text-xs text-muted">{meta}</p>
-            </div>
+            <p className="mt-0.5 truncate text-xs text-muted">{meta}</p>
           </div>
         </div>
       </TableCell>
@@ -566,7 +562,13 @@ function OrganizationRow({
           {row.owner?.name ?? sk.common.none}
         </TableCell>
       ) : null}
-      <TableCell className={customers ? 'hidden 2xl:table-cell' : 'hidden md:table-cell'}>
+      <TableCell className={customers ? 'hidden lg:table-cell' : 'hidden md:table-cell'}>
+        {/* The status on its own line (none, nothing shown: D-6), the tags under it. */}
+        {customers && row.status ? (
+          <div className="mb-1">
+            <CustomerStatusBadge status={row.status} />
+          </div>
+        ) : null}
         <div className="flex flex-wrap gap-1">
           {row.tags.map((tag) => (
             <TagChip key={tag.id}>{tag.name}</TagChip>
