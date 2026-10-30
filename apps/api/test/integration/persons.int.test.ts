@@ -37,6 +37,40 @@ describe('Kontakty: persons on their own', () => {
     await api.close();
   });
 
+  it('brings a removed person back when the e-mail is added again (D-48)', async () => {
+    const email = 'vratena.osoba@example.org';
+    const first = await jana.call<{ id: string }>('person.create', {
+      person: { firstName: 'Vratená', lastName: 'Stará', email, note: 'Volať dopoludnia.' },
+      receivesBulk: false,
+    });
+    expect((await jana.call('person.delete', { id: first.data.id })).code).toBeUndefined();
+
+    const again = await jana.call<{ id: string }>('person.create', {
+      person: { firstName: 'Vratená', lastName: 'Nová', email },
+      links: [{ customerId: other, isPrimary: false }],
+    });
+    expect(again.data.id).toBe(first.data.id);
+    const back = await jana.call<{
+      lastName: string;
+      note: string | null;
+      unsubscribedAt: string | null;
+      organizations: { id: string }[];
+    }>('person.get', { id: first.data.id });
+    expect(back.data.lastName).toBe('Nová');
+    expect(back.data.note).toBe('Volať dopoludnia.');
+    expect(back.data.unsubscribedAt).not.toBeNull();
+    expect(back.data.organizations.map((o) => o.id)).toEqual([other]);
+
+    // Taken off the last organization, the person is removed and comes back at another one too.
+    await jana.call('customer.contactDelete', { id: first.data.id, customerId: other });
+    const atOrganization = await jana.call<{ id: string }>('customer.contactCreate', {
+      customerId: HARMONIA,
+      contact: { firstName: 'Vratená', lastName: 'Nová', email },
+    });
+    expect(atOrganization.code).toBeUndefined();
+    expect(atOrganization.data.id).toBe(first.data.id);
+  });
+
   it('keeps a person without any organization (D-2) and finds them by e-mail', async () => {
     const made = await jana.call<{ id: string }>('person.create', {
       person: { firstName: 'Andrea', lastName: 'Konzultantka', email: 'andrea.k@example.org' },
