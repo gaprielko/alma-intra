@@ -117,7 +117,7 @@ function ProductsPage() {
                             <Link
                               to="/products/$productId"
                               params={{ productId: row.id }}
-                              className="inline-flex rounded-md bg-info-soft px-2 py-0.5 text-[13px] font-semibold text-info hover:underline"
+                              className="inline-flex rounded-md bg-info-soft px-2 py-0.5 text-[13px] font-semibold text-info"
                             >
                               {row.name}
                             </Link>

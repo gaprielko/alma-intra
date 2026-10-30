@@ -112,7 +112,7 @@ export function HoldingsCard({
             <Link
               to="/products/$productId"
               params={{ productId: h.productId }}
-              className="font-semibold hover:underline"
+              className="font-semibold"
             >
               {h.product.name}
             </Link>

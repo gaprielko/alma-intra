@@ -50,7 +50,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { StatusBanner } from '@/components/ui/status-banner';
-import { TableCell, TableRow } from '@/components/ui/table';
+import { CELL_LINK, TableCell, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
 import { canPreview, formatSize } from '@/lib/files';
@@ -1243,11 +1243,7 @@ function TrashSection() {
             </div>
           </TableCell>
           <TableCell className="text-muted">
-            <Link
-              to="/files"
-              search={{ folder: file.folderId }}
-              className="text-primary-text hover:underline"
-            >
+            <Link to="/files" search={{ folder: file.folderId }} className={CELL_LINK}>
               {file.folderName}
             </Link>
           </TableCell>

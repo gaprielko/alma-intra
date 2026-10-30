@@ -14,7 +14,7 @@ import { TablePagination, TableShell } from '@/components/table-shell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { RowLink, TableCell, TableRow } from '@/components/ui/table';
+import { CELL_LINK, RowLink, TableCell, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
 import { formatDate } from '@/lib/format';
@@ -355,7 +355,7 @@ function PersonRow({
                   <Link
                     to="/organizations/$customerId"
                     params={{ customerId: org.id }}
-                    className="font-semibold text-primary-text hover:underline"
+                    className={CELL_LINK}
                   >
                     {placeName(org)}
                   </Link>

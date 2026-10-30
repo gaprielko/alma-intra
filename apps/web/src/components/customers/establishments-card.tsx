@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+  CELL_LINK,
   Table,
   TableBody,
   TableCell,
@@ -110,7 +111,7 @@ export function EstablishmentsCard({
                   <Link
                     to="/organizations/$customerId"
                     params={{ customerId: row.id }}
-                    className="inline-flex items-center gap-1.5 font-semibold hover:underline"
+                    className="inline-flex items-center gap-1.5 font-semibold"
                   >
                     <Store className="size-4 shrink-0 text-warning" aria-hidden />
                     {row.name}
@@ -127,7 +128,7 @@ export function EstablishmentsCard({
                       <Link
                         to="/contacts/$personId"
                         params={{ personId: row.primaryContact.id }}
-                        className="hover:underline"
+                        className={CELL_LINK}
                       >
                         {row.primaryContact.name}
                       </Link>

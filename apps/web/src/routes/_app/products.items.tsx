@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import {
+  CELL_LINK,
   Table,
   TableBody,
   TableCell,
@@ -118,7 +119,7 @@ function ItemsPage() {
                                 key={use.productId}
                                 to="/products/$productId"
                                 params={{ productId: use.productId }}
-                                className="rounded-md bg-info-soft px-2 py-0.5 text-xs font-semibold text-info hover:underline"
+                                className={CELL_LINK}
                               >
                                 {use.product}
                               </Link>

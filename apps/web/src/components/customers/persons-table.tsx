@@ -227,7 +227,7 @@ export function PersonsTable({
                               <Link
                                 to="/contacts/$personId"
                                 params={{ personId: person.id }}
-                                className="font-semibold hover:underline"
+                                className="font-semibold"
                               >
                                 {name}
                               </Link>

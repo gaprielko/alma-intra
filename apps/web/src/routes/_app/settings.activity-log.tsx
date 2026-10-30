@@ -45,7 +45,7 @@ function SubjectLink({ row }: { row: Row }) {
       <Link
         to="/organizations/$customerId"
         params={{ customerId: row.entityId }}
-        className="text-primary-text hover:underline"
+        className="font-medium"
       >
         {row.subject}
       </Link>
@@ -56,7 +56,7 @@ function SubjectLink({ row }: { row: Row }) {
       <Link
         to="/emails/sent/$campaignId"
         params={{ campaignId: row.entityId }}
-        className="text-primary-text hover:underline"
+        className="font-medium"
       >
         {row.subject}
       </Link>
@@ -67,7 +67,7 @@ function SubjectLink({ row }: { row: Row }) {
       <Link
         to="/emails/inbox/$inboundId"
         params={{ inboundId: row.entityId }}
-        className="text-primary-text hover:underline"
+        className="font-medium"
       >
         {row.subject}
       </Link>
