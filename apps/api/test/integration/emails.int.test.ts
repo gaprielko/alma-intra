@@ -301,4 +301,34 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     );
     expect(await subjects({ search: 'nikto', withAttachments: true })).toEqual([]);
   });
+
+  it('groups a conversation by its subject: one row, the rest in the thread', async () => {
+    const receive = (subject: string, minutes: number) =>
+      receiveInbound(api.db, loadEnv(), {
+        providerEmailId: `test-thread-${subject}-${Date.now()}`,
+        from: 'Zuzana Nová <zuzana@example.net>',
+        to: ['info@mail.alma-care.eu'],
+        cc: [],
+        receivedFor: [],
+        subject,
+        html: null,
+        text: subject,
+        headerMessageId: null,
+        inReplyTo: null,
+        references: null,
+        attachments: [],
+        receivedAt: new Date(Date.now() - minutes * 60_000),
+      });
+    const first = await receive('Termín školenia', 10);
+    const second = await receive('RE: Re: Termín školenia', 1);
+    type Row = { id: string; inThread: number };
+    const rows = (
+      await jana.call<{ items: Row[] }>('inbound.list', { view: 'all', search: 'školenia' })
+    ).data.items;
+    expect(rows).toEqual([expect.objectContaining({ id: second.id, inThread: 2 })]);
+    const thread = await jana.call<{ id: string; kind: string }[]>('inbound.thread', {
+      id: second.id,
+    });
+    expect(thread.data).toEqual([expect.objectContaining({ id: first.id, kind: 'received' })]);
+  });
 });

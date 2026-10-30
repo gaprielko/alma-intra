@@ -1,5 +1,5 @@
 import { type InboundListInput, inboundListSchema, PAGE_SIZE } from '@intra/shared/schemas';
-import { and, desc, eq, isNull, ne, type SQL, sql } from 'drizzle-orm';
+import { type AnyColumn, and, desc, eq, isNull, ne, type SQL, sql } from 'drizzle-orm';
 import type { Db } from '../db/db.module.js';
 import { fileUnder } from '../customers/customers.service.js';
 import {
@@ -37,8 +37,22 @@ const searchable = sql`unaccent(concat_ws(' ', ${inboundMessages.fromEmail},
   (select string_agg(a ->> 'filename', ' ') from jsonb_array_elements(${inboundMessages.attachments}) a)))`;
 
 /**
- * „Prijaté“: one page of received e-mail, the unassigned first (or only), newest first, and how
- * many wait to be assigned; narrowed by the filters, then searched within them.
+ * A conversation, as Gmail groups one: the subject without „Re:“, „Fwd:“ and the like, at the
+ * organization the e-mail is filed under (an unfiled one: with its sender).
+ */
+const subjectKey = (subject: SQL | AnyColumn) =>
+  sql`lower(btrim(regexp_replace(coalesce(${subject}, ''), '^\\s*((re|fw|fwd|odp|aw|sv|wg)\\s*(\\[\\d+\\])?\\s*:\\s*)+', '', 'i')))`;
+const threadKey = sql`coalesce(${inboundMessages.organizationId}::text, lower(${inboundMessages.fromEmail}))
+  || '|' || ${subjectKey(inboundMessages.subject)}`;
+/** Our e-mails in the same conversation: sent to that organization under the same subject. */
+const ourInThread = sql<number>`(select count(*)::int from campaign_messages m
+  where m.organization_id = ${inboundMessages.organizationId} and m.sent_at is not null
+    and ${subjectKey(sql`m.subject`)} = ${subjectKey(inboundMessages.subject)})`;
+
+/**
+ * „Prijaté“: one page of conversations, each shown by its newest received e-mail with how many
+ * e-mails it holds (ours included), the unassigned first (or only), newest first, and how many
+ * wait to be assigned; narrowed by the filters, then searched within them.
  */
 export async function listInbound(db: Db, raw: InboundListInput) {
   const input = inboundListSchema.parse(raw);
@@ -60,8 +74,21 @@ export async function listInbound(db: Db, raw: InboundListInput) {
     conditions.push(sql`${searchable} ilike unaccent(${likePattern(input.search)})`);
   }
   const where = and(...conditions);
+  // The newest received e-mail of each conversation stands for it.
+  const newest = db.$with('newest').as(
+    db
+      .select({
+        id: sql<string>`${inboundMessages.id}`.as('newest_id'),
+        rank: sql<number>`row_number() over (partition by ${threadKey}
+          order by ${inboundMessages.receivedAt} desc)`.as('newest_rank'),
+        received: sql<number>`count(*) over (partition by ${threadKey})`.as('received_in_thread'),
+      })
+      .from(inboundMessages)
+      .where(where),
+  );
   const [items, [counts]] = await Promise.all([
     db
+      .with(newest)
       .select({
         id: inboundMessages.id,
         status: inboundMessages.status,
@@ -74,10 +101,13 @@ export async function listInbound(db: Db, raw: InboundListInput) {
         customerName,
         contactName,
         attachmentCount: sql<number>`jsonb_array_length(${inboundMessages.attachments})`,
+        /** How many e-mails the conversation holds: theirs and ours. */
+        inThread: sql<number>`${newest.received} + ${ourInThread}`.mapWith(Number),
+        ours: ourInThread.mapWith(Number),
         total: sql<number>`count(*) over ()`.mapWith(Number),
       })
       .from(inboundMessages)
-      .where(where)
+      .innerJoin(newest, and(eq(newest.id, inboundMessages.id), eq(newest.rank, 1)))
       .orderBy(sql`${inboundMessages.status} = 'unassigned' desc`, desc(inboundMessages.receivedAt))
       .limit(PAGE_SIZE)
       .offset((input.page - 1) * PAGE_SIZE),
@@ -97,6 +127,77 @@ export async function listInbound(db: Db, raw: InboundListInput) {
     pageSize: PAGE_SIZE,
     unassigned: counts?.unassigned ?? 0,
   };
+}
+
+/**
+ * The rest of an e-mail's conversation (as „Prijaté“ groups it), newest first: the other received
+ * e-mails and ours, each with what is needed to show it collapsed and opened.
+ */
+export async function inboundThread(db: Db, id: string) {
+  const [self] = await db
+    .select({ organizationId: inboundMessages.organizationId, key: threadKey })
+    .from(inboundMessages)
+    .where(and(eq(inboundMessages.id, id), ne(inboundMessages.status, 'discarded')));
+  if (!self) throw new InboundError('NOT_FOUND');
+  const [received, sent] = await Promise.all([
+    db
+      .select({
+        id: inboundMessages.id,
+        fromEmail: inboundMessages.fromEmail,
+        fromName: inboundMessages.fromName,
+        contactName,
+        toEmails: inboundMessages.toEmails,
+        at: inboundMessages.receivedAt,
+        text: inboundMessages.text,
+        attachments: inboundMessages.attachments,
+      })
+      .from(inboundMessages)
+      .where(
+        and(
+          ne(inboundMessages.id, id),
+          ne(inboundMessages.status, 'discarded'),
+          sql`${threadKey} = ${self.key}`,
+        ),
+      ),
+    self.organizationId
+      ? db.execute<{
+          id: string;
+          sender: string | null;
+          to_name: string | null;
+          to_email: string | null;
+          at: string;
+          text: string | null;
+        }>(sql`select m.id, u.name as sender, m.to_name, m.to_email, m.sent_at as at, m.text
+          from campaign_messages m
+          join campaigns c on c.id = m.campaign_id
+          left join users u on u.id = c.sender_user_id
+          where m.organization_id = ${self.organizationId} and m.sent_at is not null
+            and ${subjectKey(sql`m.subject`)} = split_part(${self.key}, '|', 2)`)
+      : Promise.resolve({ rows: [] }),
+  ]);
+  const items = [
+    ...received.map((r) => ({
+      kind: 'received' as const,
+      id: r.id,
+      who: r.contactName ?? r.fromName ?? r.fromEmail,
+      email: r.fromEmail,
+      to: r.toEmails.join(', '),
+      at: new Date(r.at).toISOString(),
+      text: r.text ?? '',
+      attachments: r.attachments.length,
+    })),
+    ...sent.rows.map((m) => ({
+      kind: 'sent' as const,
+      id: m.id,
+      who: m.sender ?? '',
+      email: null,
+      to: m.to_name ?? m.to_email ?? '',
+      at: new Date(m.at).toISOString(),
+      text: m.text ?? '',
+      attachments: 0,
+    })),
+  ];
+  return items.sort((a, b) => b.at.localeCompare(a.at));
 }
 
 /** One received e-mail whole, with whom it is filed under and the e-mail it answers. */

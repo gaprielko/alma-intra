@@ -37,6 +37,10 @@ export const inboundRouter = router({
   list: authorizedProcedure('email.read')
     .input(inboundListSchema)
     .query(({ ctx, input }) => inbound.listInbound(ctx.db, input)),
+  /** The rest of an e-mail's conversation, newest first. */
+  thread: authorizedProcedure('email.read')
+    .input(inboundIdSchema)
+    .query(({ ctx, input }) => run(() => inbound.inboundThread(ctx.db, input.id))),
 
   get: authorizedProcedure('email.read')
     .input(inboundIdSchema)
