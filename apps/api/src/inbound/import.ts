@@ -1,5 +1,7 @@
 import { and, eq, inArray, ne, sql } from 'drizzle-orm';
+import { loadEnv } from '../config/env.js';
 import type { Db, Tx } from '../db/db.module.js';
+import { getLook } from '../email/templates.service.js';
 import {
   campaignMessages,
   campaigns,
@@ -75,12 +77,21 @@ export async function recordSentImport(
   return campaign!.id;
 }
 
+/** The addresses Alma itself writes from: the sender of its e-mails and the company mailbox. */
+async function companyAddresses(db: Db) {
+  const look = await getLook(db);
+  return [loadEnv().CAMPAIGN_FROM_ADDRESS, look.replyToAddress, look.footerEmail]
+    .filter(Boolean)
+    .map((address) => address.toLowerCase());
+}
+
 /**
  * The colleague who wrote the original, by their login or a private address listed in „Môj účet“.
- * Written from the address it was forwarded from, it is the forwarder's own, whoever asks: the
- * user adding it, when that address is listed nowhere. Null: someone else wrote it.
+ * Written from the company's own address, or from the address it was forwarded from, it is the
+ * user's who adds it, when no colleague has that address. Null: someone else wrote it.
  */
 async function authorOf(db: Db, email: string, forwarder: string, userId: string) {
+  const company = await companyAddresses(db);
   const [user] = await db
     .select({ id: users.id, email: users.email, addresses: users.importAddresses })
     .from(users)
@@ -90,9 +101,14 @@ async function authorOf(db: Db, email: string, forwarder: string, userId: string
     )
     .limit(1);
   if (user) {
-    return { id: user.id, addresses: [user.email.toLowerCase(), ...user.addresses, forwarder] };
+    return {
+      id: user.id,
+      addresses: [user.email.toLowerCase(), ...user.addresses, forwarder, ...company],
+    };
   }
-  return email === forwarder ? { id: userId, addresses: [forwarder] } : null;
+  return email === forwarder || company.includes(email)
+    ? { id: userId, addresses: [forwarder, ...company] }
+    : null;
 }
 
 /** What a forward holds and where it belongs; refused when it holds nothing to add. */

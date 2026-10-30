@@ -55,7 +55,9 @@ export const inboundRouter = router({
   assign: authorizedProcedure('email.read')
     .input(assignInboundSchema)
     .mutation(async ({ ctx, input }) => {
-      const { before } = await run(() => inbound.assignInbound(ctx.db, ctx.session.userId, input));
+      const { before, sent } = await run(() =>
+        inbound.assignInbound(ctx.db, ctx.session.userId, input),
+      );
       // Its attachments go into the customer's folder now; the filing stands even if they fail.
       await saveInboundAttachments(ctx.db, ctx.storage, inboundSource(loadEnv()), input.id).catch(
         (error: unknown) =>
@@ -74,7 +76,8 @@ export const inboundRouter = router({
           status: { before: before.status, after: 'assigned' },
         },
       });
-      return { ok: true };
+      // The user's own imported e-mail has left „Prijaté“ for „Odoslané“.
+      return { ok: true, sent };
     }),
 
   /** „Pridaj do konverzácie“: what the forward holds, shown before anything is stored. */

@@ -443,12 +443,46 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     expect((await add(unknown)).data.outcome).toBe('waiting');
     const [waiting] = await list('Komu neviem');
     expect(waiting).toMatchObject({ status: 'unassigned', fromEmail: OWN });
-    await jana.call('inbound.assign', { id: waiting!.id, customerId: HARMONIA, contactId: null });
+    const filed = await jana.call<{ sent: boolean }>('inbound.assign', {
+      id: waiting!.id,
+      customerId: HARMONIA,
+      contactId: null,
+    });
+    expect(filed.data.sent).toBe(true);
     expect(await list('Komu neviem')).toEqual([]);
     const sent = await api.db.execute<{ to_email: string; status: string }>(
       sql`select to_email, status from campaign_messages where subject = 'Komu neviem'`,
     );
     expect(sent.rows).toEqual([{ to_email: 'nikto@example.net', status: 'sent' }]);
+
+    // In „Odoslané“ it still exists: the same original is not added twice.
+    const ownAgain = await forward('own-again', `Ja <${OWN}>`, toEva);
+    expect((await add(ownAgain)).message).toBe('ALREADY_IMPORTED');
+    await jana.call('inbound.discard', { id: ownAgain });
+
+    // Discarded, an added e-mail no longer counts: the same original can be added anew.
+    const wrong = `Date: Thu, Mar 12, 2026 at 9:00 AM\nSubject: Zahodený import\nTo: <${OWN}>\n\nText.\n`;
+    const first = await forward('wrong', 'Nikto <nikto@example.net>', wrong);
+    expect((await add(first)).data.outcome).toBe('received');
+    await jana.call('inbound.discard', { id: first });
+    const second = await forward('wrong-again', 'Nikto <nikto@example.net>', wrong);
+    expect((await add(second)).data.outcome).toBe('received');
+
+    // From the company's address, forwarded from a private one: Alma's e-mail, into „Odoslané“.
+    const company = await forward(
+      'company',
+      'Alma <INFO@alma-care.eu>',
+      `Date: Fri, Mar 13, 2026 at 9:00 AM\nSubject: Firemná ponuka\nTo: <eva.tothova@adosharmonia.sk>\n\nPosielame ponuku.\n`,
+    );
+    const previewed = await jana.call<{ direction: string }>('inbound.importPreview', {
+      id: company,
+    });
+    expect(previewed.data.direction).toBe('sent');
+    expect((await add(company)).data.outcome).toBe('sent');
+    const fromCompany = await api.db.execute<{ to_email: string }>(
+      sql`select to_email from campaign_messages where subject = 'Firemná ponuka'`,
+    );
+    expect(fromCompany.rows).toEqual([{ to_email: 'eva.tothova@adosharmonia.sk' }]);
   });
 
   it('Nový e-mail: one send to To, Cc and Bcc, known recipients on the timeline', async () => {
