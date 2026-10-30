@@ -32,8 +32,11 @@ function EmailsLayout() {
   const navigate = useNavigate();
   const canSend = useCan('email.send');
   const look = useQuery(trpc.template.look.queryOptions());
-  const unassigned = useQuery(trpc.inbound.list.queryOptions({ view: 'unassigned' })).data
-    ?.unassigned;
+  // Kept fresh with the list itself (every 30 s).
+  const unassigned = useQuery({
+    ...trpc.inbound.list.queryOptions({ view: 'unassigned' }),
+    refetchInterval: 30_000,
+  }).data?.unassigned;
   const create = useMutation(
     trpc.campaign.create.mutationOptions({
       onSuccess: (created) =>

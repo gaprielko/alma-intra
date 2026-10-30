@@ -3,7 +3,7 @@ import { INBOUND_VIEWS } from '@intra/shared/schemas';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Paperclip, RefreshCw } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { z } from 'zod';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { TablePagination, TableShell } from '@/components/table-shell';
@@ -19,6 +19,9 @@ import { cn } from '@/lib/utils';
 
 const t = sk.inbound;
 
+/** How often an open „Prijaté“ asks for new e-mail on its own. */
+const REFRESH_MS = 30_000;
+
 export const Route = createFileRoute('/_app/emails/inbox')({
   validateSearch: z.object({ view: z.enum(INBOUND_VIEWS).optional() }),
   component: InboxPage,
@@ -32,6 +35,7 @@ function InboxPage() {
   const list = useQuery({
     ...trpc.inbound.list.queryOptions({ view, page }),
     placeholderData: keepPreviousData,
+    refetchInterval: REFRESH_MS,
   });
   const rows = list.data?.items ?? [];
   const toast = useToast();
@@ -52,6 +56,24 @@ function InboxPage() {
         ),
     }),
   );
+  // Every 30 s, while the page is in view, take in what the webhook may have missed, quietly:
+  // only new e-mails are told, a failure waits for the next round or „Načítať nové“.
+  const autoSync = useMutation(
+    trpc.inbound.sync.mutationOptions({
+      onSuccess: async ({ added }) => {
+        if (added === 0) return;
+        toast('success', t.synced(added));
+        await queryClient.invalidateQueries(trpc.inbound.pathFilter());
+      },
+    }),
+  );
+  const { mutate: syncQuietly } = autoSync;
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') syncQuietly();
+    }, REFRESH_MS);
+    return () => window.clearInterval(timer);
+  }, [syncQuietly]);
   const chip = (key: (typeof INBOUND_VIEWS)[number], label: string) => (
     <button
       key={key}
