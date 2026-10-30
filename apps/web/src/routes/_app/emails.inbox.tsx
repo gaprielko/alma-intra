@@ -2,26 +2,40 @@ import { sk } from '@intra/shared/i18n';
 import { INBOUND_VIEWS } from '@intra/shared/schemas';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { ChevronDown, Paperclip, RefreshCw, Search, X } from 'lucide-react';
+import {
+  ChevronDown,
+  Mail,
+  MailOpen,
+  Paperclip,
+  RefreshCw,
+  Reply,
+  Search,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
 import { useDebounced } from '@/components/customers/organization-list';
 import { PersonDialog } from '@/components/customers/person-dialog';
 import { type ContactPick, ContactSearch } from '@/components/emails/contact-search';
-import { NewEmailButton } from '@/components/emails/new-email-button';
+import { BulkEmailButton } from '@/components/emails/bulk-email-button';
+import { ReplyDialog } from '@/components/emails/reply-dialog';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { TablePagination, TableShell } from '@/components/table-shell';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { RowLink, TableCell, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
 import { formatRecent } from '@/lib/format';
 import { loadFailed } from '@/lib/query-view';
-import { trpc } from '@/lib/trpc';
+import { type RouterOutputs, trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 
 const t = sk.inbound;
+
+type InboundRow = RouterOutputs['inbound']['list']['items'][number];
 
 /** How often an open „Prijaté“ asks for new e-mail on its own. */
 const REFRESH_MS = 30_000;
@@ -197,7 +211,7 @@ function InboxPage() {
           {chip('unassigned', t.views.unassigned(list.data?.unassigned ?? 0))}
         </div>
         <span className="ml-auto" />
-        <NewEmailButton size="sm" />
+        <BulkEmailButton size="sm" />
         <Button
           type="button"
           variant="secondary"
@@ -223,8 +237,16 @@ function InboxPage() {
         />
       ) : (
         <TableShell
-          columns={[t.columns.from, t.columns.subject, t.columns.contact, t.columns.received]}
-          columnClassNames={[undefined, undefined, 'hidden lg:table-cell', undefined]}
+          columns={[
+            t.columns.from,
+            t.columns.subject,
+            t.columns.contact,
+            t.columns.received,
+            <span key="a" className="sr-only">
+              {sk.common.actions}
+            </span>,
+          ]}
+          columnClassNames={[undefined, undefined, 'hidden lg:table-cell', undefined, undefined]}
           loading={list.isPending}
           refreshing={list.isPlaceholderData}
           footer={
@@ -232,10 +254,13 @@ function InboxPage() {
           }
         >
           {rows.map((row) => (
-            <TableRow key={row.id} href={`/emails/inbox/${row.id}`}>
+            <TableRow key={row.id} href={`/emails/inbox/${row.id}`} className="group">
               <TableCell className="max-w-56">
                 {/* Filed under a person: their name from Kontakty, the address under it. */}
-                <RowLink href={`/emails/inbox/${row.id}`} className="block truncate font-semibold">
+                <RowLink
+                  href={`/emails/inbox/${row.id}`}
+                  className={cn('block truncate', row.unread ? 'font-bold' : 'font-normal')}
+                >
                   {row.contactName || row.fromName || row.fromEmail}
                   {/* A conversation: „, ja“ when ours are in it, and how many e-mails it holds. */}
                   {row.ours > 0 ? (
@@ -252,7 +277,12 @@ function InboxPage() {
                 ) : null}
               </TableCell>
               <TableCell className="max-w-[28rem]">
-                <p className="truncate text-sm font-medium">{row.subject || t.noSubject}</p>
+                <p className={cn('truncate text-sm', row.unread ? 'font-bold' : 'font-normal')}>
+                  {row.subject || t.noSubject}
+                </p>
+                {row.importDirection === 'sent' ? (
+                  <p className="truncate text-xs font-medium text-warning">{t.importedSent}</p>
+                ) : null}
                 <p className="flex items-center gap-1.5 truncate text-xs text-muted">
                   {row.attachmentCount > 0 ? (
                     <span className="inline-flex shrink-0 items-center gap-0.5">
@@ -277,11 +307,103 @@ function InboxPage() {
               <TableCell className="whitespace-nowrap text-muted">
                 {formatRecent(row.receivedAt)}
               </TableCell>
+              <TableCell className="w-[8.5rem] pr-3">
+                <RowActions row={row} />
+              </TableCell>
             </TableRow>
           ))}
         </TableShell>
       )}
     </main>
+  );
+}
+
+/**
+ * What can be done with a conversation right from its row, shown under the pointer (always on a
+ * touch screen): back to unread or read, an answer (once it is filed: an answer goes to a customer),
+ * and the bin at the very right.
+ */
+function RowActions({ row }: { row: InboundRow }) {
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const [replying, setReplying] = useState(false);
+  const [discarding, setDiscarding] = useState(false);
+  const onError = (error: unknown) => toast('error', errorMessage(error, t.errors));
+  const refresh = () => queryClient.invalidateQueries(trpc.inbound.pathFilter());
+  const markRead = useMutation(
+    trpc.inbound.markRead.mutationOptions({ onSuccess: refresh, onError }),
+  );
+  const discard = useMutation(
+    trpc.inbound.discardThread.mutationOptions({
+      onSuccess: async () => {
+        setDiscarding(false);
+        toast('success', t.discardConfirm.done);
+        await Promise.all([
+          refresh(),
+          queryClient.invalidateQueries(trpc.activity.timeline.pathFilter()),
+        ]);
+      },
+      onError,
+    }),
+  );
+  const a = t.rowActions;
+  const readLabel = row.unread ? a.markRead : a.markUnread;
+  return (
+    <>
+      <div className="flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100">
+        <Button
+          size="icon"
+          variant="ghost"
+          aria-label={readLabel}
+          title={readLabel}
+          disabled={markRead.isPending}
+          onClick={() => markRead.mutate({ id: row.id, read: row.unread })}
+        >
+          {row.unread ? (
+            <MailOpen className="size-4" aria-hidden />
+          ) : (
+            <Mail className="size-4" aria-hidden />
+          )}
+        </Button>
+        {row.status === 'assigned' ? (
+          <Button
+            size="icon"
+            variant="ghost"
+            aria-label={a.reply}
+            title={a.reply}
+            onClick={() => setReplying(true)}
+          >
+            <Reply className="size-4" aria-hidden />
+          </Button>
+        ) : null}
+        <Button
+          size="icon"
+          variant="ghost"
+          aria-label={a.discard}
+          title={a.discard}
+          onClick={() => setDiscarding(true)}
+        >
+          <Trash2 className="size-4" aria-hidden />
+        </Button>
+      </div>
+      {replying ? (
+        <ReplyDialog
+          inboundId={row.id}
+          to={row.contactName ?? row.fromName ?? row.fromEmail}
+          onClose={() => setReplying(false)}
+        />
+      ) : null}
+      <ConfirmDialog
+        open={discarding}
+        onOpenChange={setDiscarding}
+        title={row.inThread > 1 ? t.discardConfirm.threadTitle : t.discardConfirm.title}
+        description={row.inThread > 1 ? t.discardConfirm.threadText : t.discardConfirm.text}
+        confirmLabel={t.discardConfirm.confirm}
+        destructive
+        pending={discard.isPending}
+        onConfirm={() => discard.mutate({ id: row.id })}
+      />
+    </>
   );
 }
 

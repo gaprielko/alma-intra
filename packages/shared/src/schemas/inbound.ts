@@ -9,6 +9,8 @@ export const INBOUND_STATUSES = ['assigned', 'unassigned', 'discarded'] as const
 export type InboundStatus = (typeof INBOUND_STATUSES)[number];
 
 export const inboundIdSchema = z.object({ id: idSchema });
+/** A conversation read or unread, by any of its e-mails. */
+export const inboundReadSchema = z.object({ id: idSchema, read: z.boolean() });
 
 /** „Prijaté“: the unassigned first, or everything received; discarded mail is never listed. */
 export const INBOUND_VIEWS = ['unassigned', 'all'] as const;

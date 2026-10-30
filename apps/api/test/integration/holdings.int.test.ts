@@ -83,8 +83,7 @@ describe('a product at an organization or a prevádzka', () => {
     validFrom: '2026-11-01',
     validTo: null,
     pricing: 'list',
-    discountPercent: null,
-    discountMonths: null,
+    discountSteps: [],
     fixedPrice: null,
     fixedPriceGross: null,
     counts: [{ itemId: admin, count: 2 }],
@@ -116,7 +115,12 @@ describe('a product at an organization or a prevádzka', () => {
   it('a discount lowers the price; the organization shows its prevádzka’s products too', async () => {
     await jana.call(
       'customer.holdingSave',
-      holding(est, { pricing: 'discount', discountPercent: 10, counts: [], workloads: [] }),
+      holding(est, {
+        pricing: 'discount',
+        discountSteps: [{ percent: 10, months: null }],
+        counts: [],
+        workloads: [],
+      }),
     );
     const held = await jana.call<Holding[]>('customer.holdings', { id: org });
     const atEst = held.data.find((h) => h.holder.isEstablishment)!;
@@ -127,6 +131,44 @@ describe('a product at an organization or a prevádzka', () => {
     );
     // 4 at the organization, 4 (the package) at the prevádzka.
     expect(detail.data.nurses).toBe(8);
+  });
+
+  it('a discount in steps: the current one applies, the list price after them', async () => {
+    const monthsAgo = (months: number) => {
+      const date = new Date();
+      date.setDate(1);
+      date.setMonth(date.getMonth() - months);
+      return date.toISOString().slice(0, 10);
+    };
+    const priced = async (validFrom: string) => {
+      await jana.call(
+        'customer.holdingSave',
+        holding(est, {
+          validFrom,
+          pricing: 'discount',
+          discountSteps: [
+            { percent: 100, months: 3 },
+            { percent: 50, months: 9 },
+          ],
+          counts: [],
+          workloads: [],
+        }),
+      );
+      const held = await jana.call<Holding[]>('customer.holdings', { id: est });
+      return held.data[0]!.price;
+    };
+    expect(await priced(monthsAgo(1))).toMatchObject({ monthly: 0, discounting: true });
+    expect(await priced(monthsAgo(4))).toMatchObject({ monthly: 24.5, discounting: true });
+    expect(await priced(monthsAgo(13))).toMatchObject({ monthly: 49, discounting: false });
+    await jana.call(
+      'customer.holdingSave',
+      holding(est, {
+        pricing: 'discount',
+        discountSteps: [{ percent: 10, months: null }],
+        counts: [],
+        workloads: [],
+      }),
+    );
   });
 
   it('keeps the counts when the form ticks the products again', async () => {
@@ -163,15 +205,46 @@ describe('a product at an organization or a prevádzka', () => {
     expect(ofEst.data.pricesWithVat).toBe(false);
   });
 
+  it('a product held only by an organization in the trash can be removed', async () => {
+    const copy = await jana.call<{ id: string }>('product.duplicate', { id: product });
+    const gone = await jana.call<{ id: string }>('customer.create', {
+      customer: {
+        kind: 'organization',
+        name: 'Holding do koša, s.r.o.',
+        role: 'customer',
+        tags: [],
+        productIds: [],
+      },
+    });
+    await jana.call(
+      'customer.holdingSave',
+      holding(gone.data.id, { productId: copy.data.id, counts: [], workloads: [] }),
+    );
+    const refused = await jana.call('product.delete', { id: copy.data.id });
+    expect(refused.message).toBe('IN_USE');
+    await jana.call('customer.delete', { id: gone.data.id });
+    expect((await jana.call('product.delete', { id: copy.data.id })).code).toBeUndefined();
+  });
+
   it('ends a product: it stays, no longer active', async () => {
     await jana.call('customer.holdingEnd', { organizationId: est, productId: product });
     const held = await jana.call<Holding[]>('customer.holdings', { id: est });
     expect(held.data[0]!.active).toBe(true);
-    const product_ = await jana.call<{ holders: { id: string; monthly: number | null }[] }>(
-      'product.get',
+    const holders = await jana.call<{ items: { id: string; monthly: number | null }[] }>(
+      'product.holders',
       { id: product },
     );
-    expect(product_.data.holders.find((h) => h.id === org)!.monthly).toBe(59);
+    expect(holders.data.items.find((h) => h.id === org)!.monthly).toBe(59);
+    const found = await jana.call<{ items: { id: string }[]; total: number }>('product.holders', {
+      id: product,
+      search: 'poprad',
+    });
+    expect(found.data).toMatchObject({ total: 1, items: [{ id: est }] });
+    const none = await jana.call<{ total: number }>('product.holders', {
+      id: product,
+      search: 'nikto',
+    });
+    expect(none.data.total).toBe(0);
   });
 
   it('removes a product entered by mistake, with its counts', async () => {

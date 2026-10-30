@@ -1,12 +1,13 @@
 import { sk } from '@intra/shared/i18n';
 import {
+  HOLDERS_PAGE_SIZE,
   type ItemBilling,
   priceOf,
   type ProductPeriod,
   withoutVat,
   withVat,
 } from '@intra/shared/schemas';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { ChevronDown, ChevronUp, MoreHorizontal, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -32,6 +33,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { TablePagination } from '@/components/table-shell';
 import { Input, Textarea } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SegmentedChoice } from '@/components/ui/segmented';
@@ -303,7 +305,7 @@ function ProductEditor({ product, rate }: { product: Product | undefined; rate: 
                 />
               </div>
               <div className="space-y-1.5 sm:col-span-3">
-                <span className="text-sm font-medium">{d.state}</span>
+                <span className="block text-sm font-medium">{d.state}</span>
                 <SegmentedChoice
                   label={d.state}
                   value={draft.active ? 'on' : 'off'}
@@ -351,7 +353,7 @@ function ProductEditor({ product, rate }: { product: Product | undefined; rate: 
                 />
               </div>
               <div className="space-y-1.5 sm:col-span-2">
-                <span className="text-sm font-medium">{d.period}</span>
+                <span className="block text-sm font-medium">{d.period}</span>
                 <SegmentedChoice
                   label={d.period}
                   value={draft.period}
@@ -667,6 +669,13 @@ function Calculator({
 
 /** Majú ho: the organizations and prevádzky that hold the product. */
 function HoldersCard({ product }: { product: Product }) {
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const holders = useQuery({
+    ...trpc.product.holders.queryOptions({ id: product.id, search, page }),
+    placeholderData: keepPreviousData,
+  });
+  const items = holders.data?.items ?? [];
   return (
     <Card>
       <CardHeader
@@ -677,45 +686,73 @@ function HoldersCard({ product }: { product: Product }) {
           </>
         }
       />
-      {product.holders.length === 0 ? (
+      {product.customers === 0 ? (
         <p className="px-5 py-5 text-sm text-muted">{d.holdersEmpty}</p>
       ) : (
-        <ul className="px-5 pt-2 pb-4">
-          {product.holders.map((holder) => (
-            <li
-              key={holder.id}
-              className="flex items-center justify-between gap-3 border-t border-border-subtle py-2.5 text-sm first:border-t-0"
-            >
-              <span className="min-w-0">
-                <Link
-                  to="/organizations/$customerId"
-                  params={{ customerId: holder.id }}
-                  className="font-semibold hover:underline"
+        <>
+          <div className="relative mx-5 mt-3 sm:max-w-sm">
+            <Search
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted"
+              aria-hidden
+            />
+            <Input
+              aria-label={d.holdersSearch}
+              placeholder={d.holdersSearch}
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
+              className="h-9 pl-9"
+            />
+          </div>
+          {items.length === 0 && !holders.isPending ? (
+            <p className="px-5 py-5 text-sm text-muted">{d.holdersNothing}</p>
+          ) : (
+            <ul className={cn('px-5 pt-2 pb-2', holders.isPlaceholderData && 'opacity-60')}>
+              {items.map((holder) => (
+                <li
+                  key={holder.id}
+                  className="flex items-center justify-between gap-3 border-t border-border-subtle py-2.5 text-sm first:border-t-0"
                 >
-                  {holder.name}
-                </Link>
-                <span className="block text-xs text-muted">
-                  {[
-                    holder.parentName ? d.establishmentOf(holder.parentName) : d.organization,
-                    'scope' in holder ? holder.scope : null,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </span>
-              </span>
-              {'monthlyGross' in holder && holder.monthlyGross !== null ? (
-                <span className="shrink-0 text-right tabular-nums">
-                  <span className="block font-semibold">
-                    {d.perMonth(formatEur(holder.monthlyGross))}
+                  <span className="min-w-0">
+                    <Link
+                      to="/organizations/$customerId"
+                      params={{ customerId: holder.id }}
+                      className="font-semibold hover:underline"
+                    >
+                      {holder.name}
+                    </Link>
+                    <span className="block text-xs text-muted">
+                      {[
+                        holder.parentName ? d.establishmentOf(holder.parentName) : d.organization,
+                        holder.scope,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
                   </span>
-                  <span className="block text-xs text-muted">
-                    {d.perYear(formatEur(holder.yearlyGross ?? 0))}
-                  </span>
-                </span>
-              ) : null}
-            </li>
-          ))}
-        </ul>
+                  {holder.monthlyGross !== null ? (
+                    <span className="shrink-0 text-right tabular-nums">
+                      <span className="block font-semibold">
+                        {d.perMonth(formatEur(holder.monthlyGross))}
+                      </span>
+                      <span className="block text-xs text-muted">
+                        {d.perYear(formatEur(holder.yearlyGross ?? 0))}
+                      </span>
+                    </span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
+          <TablePagination
+            page={page}
+            pageSize={HOLDERS_PAGE_SIZE}
+            total={holders.data?.total ?? 0}
+            onPageChange={setPage}
+          />
+        </>
       )}
     </Card>
   );

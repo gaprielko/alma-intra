@@ -180,7 +180,7 @@ export function tokenIn(addresses: readonly string[], domain: string | undefined
  * Who a mail is from, by the address: the live person with it at their one organization, else one
  * live organization's own address. A person at several organizations stays for a colleague to file.
  */
-async function bySender(db: Db, email: string) {
+export async function bySender(db: Db, email: string) {
   const people = await db
     .select({ contactId: contacts.id, customerId: contactLinks.organizationId })
     .from(contacts)

@@ -389,6 +389,7 @@ export async function me(db: Db, userId: string) {
       phone: users.phone,
       position: users.position,
       emailSignature: users.emailSignature,
+      importAddresses: users.importAddresses,
       role: users.role,
     })
     .from(users)

@@ -253,6 +253,34 @@
       "when": 1793315945716,
       "tag": "0035_prices_with_vat",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1793352716313,
+      "tag": "0036_lowly_makkari",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1793352721483,
+      "tag": "0037_sloppy_grandmaster",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1793354875427,
+      "tag": "0038_steady_toad_men",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1793356336961,
+      "tag": "0039_oval_frightful_four",
+      "breakpoints": true
     }
   ]
 }

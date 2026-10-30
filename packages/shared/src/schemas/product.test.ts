@@ -1,5 +1,27 @@
 import { describe, expect, it } from 'vitest';
-import { countFromWorkloads, priceOf, withoutVat, withVat } from './product.js';
+import { countFromWorkloads, discountAt, priceOf, withoutVat, withVat } from './product.js';
+
+describe('a discount in steps', () => {
+  const steps = [
+    { percent: 100, months: 3 },
+    { percent: 50, months: 9 },
+  ];
+
+  it('takes each step in turn, then none', () => {
+    expect([0, 2, 3, 11, 12].map((month) => discountAt(steps, month))).toEqual([
+      100,
+      100,
+      50,
+      50,
+      null,
+    ]);
+  });
+
+  it('a step without months lasts for good', () => {
+    expect(discountAt([{ percent: 10, months: null }], 500)).toBe(10);
+    expect(discountAt([], 0)).toBeNull();
+  });
+});
 
 describe('product prices', () => {
   const list = {

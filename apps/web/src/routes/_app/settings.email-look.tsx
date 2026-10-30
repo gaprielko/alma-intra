@@ -9,6 +9,7 @@ import { CardSkeleton } from '@/components/skeletons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/toast';
 import { ImageNotAllowed, uploadEmailImage } from '@/lib/email-images';
 import { errorMessage } from '@/lib/errors';
@@ -304,6 +305,19 @@ function LookForm({
           {look.replyMode === 'intra' && !inboundReady ? (
             <p className="text-[13px] text-warning">{t.replyIntraNotReady}</p>
           ) : null}
+        </Section>
+
+        <Section title={t.importTitle}>
+          <span className="flex items-center gap-2 text-sm font-medium">
+            <Switch
+              checked={look.importEnabled}
+              label={t.importSwitch}
+              disabled={!canManage}
+              onChange={() => set('importEnabled', !look.importEnabled)}
+            />
+            {t.importSwitch}
+          </span>
+          <p className="text-[13px] text-muted">{t.importHint}</p>
         </Section>
 
         <Section title={t.footer}>

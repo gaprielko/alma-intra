@@ -8,8 +8,8 @@ import { errorMessage } from '@/lib/errors';
 import { useCan } from '@/lib/session';
 import { trpc } from '@/lib/trpc';
 
-/** „Nový e-mail“: starts an empty draft and opens it; nothing for whom may not send. */
-export function NewEmailButton({ size }: { size?: 'sm' | undefined }) {
+/** „Hromadný e-mail“: starts an empty draft in the wizard; nothing for whom may not send. */
+export function BulkEmailButton({ size }: { size?: 'sm' | undefined }) {
   const toast = useToast();
   const navigate = useNavigate();
   const canSend = useCan('email.send');
@@ -28,7 +28,7 @@ export function NewEmailButton({ size }: { size?: 'sm' | undefined }) {
       onClick={() => create.mutate({ customerIds: [] })}
     >
       <Plus className={size === 'sm' ? 'size-3.5' : 'size-4'} aria-hidden />
-      {sk.campaigns.newEmail}
+      {sk.campaigns.bulkEmail}
     </Button>
   );
 }

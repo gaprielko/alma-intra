@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { drainCampaigns } from '../../src/campaigns/delivery.js';
 import { loadEnv } from '../../src/config/env.js';
 import { type InboundSource, receiveInbound } from '../../src/inbound/inbound.js';
-import { syncInbound } from '../../src/inbound/intake.js';
+import { syncInbound, takeInReceived } from '../../src/inbound/intake.js';
 import { memoryTransport, outbox } from '../../src/mail/transport.js';
 import { storageKey } from '../../src/storage/storage.js';
 import { browser, JANA, startApi } from './client.js';
@@ -309,6 +309,123 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     expect(await subjects({ search: 'nikto', withAttachments: true })).toEqual([]);
   });
 
+  it('imports forwarded e-mails only when on, from a private address, once each', async () => {
+    const OWN = 'sukromna@example.org';
+    const forward = (id: string, from: string, block: string, sender = OWN) => {
+      const email = {
+        providerEmailId: `import-${id}-${Date.now()}`,
+        from: sender,
+        to: ['info@alma-care.eu'],
+        cc: [],
+        receivedFor: [],
+        subject: 'Fwd: stará pošta',
+        html: null,
+        text: `Alma Intra: add mail\n\n---------- Forwarded message ---------\nFrom: ${from}\n${block}`,
+        headerMessageId: null,
+        inReplyTo: null,
+        references: null,
+        attachments: [],
+        receivedAt: new Date(),
+      };
+      const source: InboundSource = {
+        get: async () => email,
+        attachmentLinks: async () => [],
+        forward: async () => {
+          throw new Error('an import forwards nothing');
+        },
+        recent: async () => [],
+      };
+      return takeInReceived(api.db, null, source, email.providerEmailId, new Logger('test'));
+    };
+    const fromEva = `Date: Tue, Mar 10, 2026 at 9:00 AM\nSubject: Import ponuka\nTo: <${OWN}>\n\nĎakujem za ponuku.\n\nOn Mon, Mar 9, 2026 at 8:00 AM <${OWN}> wrote:\n> Staré.\n`;
+    const toEva = `Date: Mon, Mar 9, 2026 at 8:00 AM\nSubject: Import ponuka\nTo: Eva <eva.tothova@adosharmonia.sk>\n\nPosielam ponuku.\n`;
+    const list = async (search: string) =>
+      (
+        await jana.call<{
+          items: {
+            id: string;
+            subject: string;
+            status: string;
+            fromEmail: string;
+            preview: string;
+          }[];
+        }>('inbound.list', { view: 'all', search })
+      ).data.items;
+
+    // Off: an ordinary e-mail, with the forward's own subject.
+    await forward('off', 'Eva <eva.tothova@adosharmonia.sk>', fromEva);
+    expect((await list('Import ponuka')).map((row) => row.subject)).toEqual(['Fwd: stará pošta']);
+    const stored = await jana.call<{ id: string }>('inbound.get', {
+      id: (await list('Import ponuka'))[0]!.id,
+    });
+    await jana.call('inbound.discard', { id: stored.data.id });
+
+    const { look } = (await jana.call<{ look: Record<string, unknown> }>('template.look')).data;
+    expect(
+      (await jana.call('template.updateLook', { ...look, importEnabled: true })).code,
+    ).toBeUndefined();
+    await jana.call('account.setImportAddresses', { addresses: [OWN.toUpperCase()] });
+
+    // From an address nobody listed: ordinary too.
+    await forward('stranger', 'Eva <eva.tothova@adosharmonia.sk>', fromEva, 'cudzi@example.org');
+    expect((await list('Import ponuka'))[0]!.subject).toBe('Fwd: stará pošta');
+    await jana.call('inbound.discard', { id: (await list('Import ponuka'))[0]!.id });
+
+    // Received: the original's sender, subject and date, the quote left out.
+    await forward('received', 'Eva <eva.tothova@adosharmonia.sk>', fromEva);
+    const [received] = await list('Import ponuka');
+    expect(received).toMatchObject({
+      subject: 'Import ponuka',
+      fromEmail: 'eva.tothova@adosharmonia.sk',
+      status: 'assigned',
+    });
+    const opened = await jana.call<{ receivedAt: string; text: string; readAt: string | null }>(
+      'inbound.get',
+      { id: received!.id },
+    );
+    expect(opened.data.receivedAt).toBe('2026-03-10T08:00:00.000Z');
+    expect(opened.data.text).toBe('Ďakujem za ponuku.');
+    expect(opened.data.readAt).not.toBeNull();
+
+    // Forwarded again: once.
+    await forward('again', 'Eva <eva.tothova@adosharmonia.sk>', fromEva);
+    expect(await list('Import ponuka')).toHaveLength(1);
+
+    // Own: in „Odoslané“ with the original date, in the same conversation, and nothing goes out.
+    const queuedBefore = outbox.length;
+    await forward('own', `Ja <${OWN}>`, toEva);
+    await drainCampaigns(api.db, memoryTransport({ quiet: true }), null, loadEnv());
+    expect(outbox.length).toBe(queuedBefore);
+    const thread = await jana.call<{ kind: string; at: string; to: string }[]>('inbound.thread', {
+      id: received!.id,
+    });
+    expect(thread.data).toEqual([
+      expect.objectContaining({
+        kind: 'sent',
+        at: '2026-03-09T07:00:00.000Z',
+        to: 'Eva',
+      }),
+    ]);
+    expect(await list('Import ponuka')).toHaveLength(1);
+
+    // Own, to nobody known: waits among the unassigned; filed, it is sent mail.
+    await forward(
+      'unknown',
+      `Ja <${OWN}>`,
+      `Date: Wed, Mar 11, 2026 at 10:00 AM\nSubject: Komu neviem\nTo: nikto@example.net\n\nText.\n`,
+    );
+    const [waiting] = await list('Komu neviem');
+    expect(waiting).toMatchObject({ status: 'unassigned', fromEmail: OWN });
+    await jana.call('inbound.assign', { id: waiting!.id, customerId: HARMONIA, contactId: null });
+    expect(await list('Komu neviem')).toEqual([]);
+    const sent = await api.db.execute<{ to_email: string; status: string }>(
+      sql`select to_email, status from campaign_messages where subject = 'Komu neviem'`,
+    );
+    expect(sent.rows).toEqual([{ to_email: 'nikto@example.net', status: 'sent' }]);
+
+    await jana.call('template.updateLook', { ...look, importEnabled: false });
+  });
+
   it('groups a conversation by its subject: one row, the rest in the thread', async () => {
     const receive = (subject: string, minutes: number) =>
       receiveInbound(api.db, loadEnv(), {
@@ -345,5 +462,29 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     expect(others.data).toEqual([expect.objectContaining({ id: other.id, inThread: 1 })]);
     const back = await jana.call<{ id: string }[]>('inbound.others', { id: other.id });
     expect(back.data).toEqual([expect.objectContaining({ id: second.id, inThread: 2 })]);
+
+    // New is unread; opening one reads the whole conversation; the envelope takes it back.
+    const unread = async () =>
+      (
+        await jana.call<{ items: { id: string; unread: boolean }[] }>('inbound.list', {
+          view: 'all',
+          search: 'školenia',
+        })
+      ).data.items[0]!.unread;
+    expect(await unread()).toBe(true);
+    await jana.call('inbound.markRead', { id: first.id, read: true });
+    expect(await unread()).toBe(false);
+    await jana.call('inbound.markRead', { id: second.id, read: false });
+    expect(await unread()).toBe(true);
+
+    // The bin in a row takes the whole conversation, and only that one.
+    await jana.call('inbound.discardThread', { id: second.id });
+    const left = await jana.call<{ items: { id: string }[] }>('inbound.list', {
+      view: 'all',
+      search: 'školenia',
+    });
+    expect(left.data.items).toEqual([]);
+    expect((await jana.call('inbound.get', { id: first.id })).code).toBe('NOT_FOUND');
+    expect((await jana.call('inbound.get', { id: other.id })).code).toBeUndefined();
   });
 });

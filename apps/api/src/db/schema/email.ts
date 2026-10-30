@@ -98,6 +98,8 @@ export const emailLook = pgTable(
     footerIco: text('footer_ico').notNull().default(''),
     footerWeb: text('footer_web').notNull().default(''),
     footerEmail: text('footer_email').notNull().default(''),
+    /** Forwards with the agreed line become the original e-mails (docs/email-import.md). */
+    importEnabled: boolean('import_enabled').notNull().default(false),
     replyMode: text('reply_mode', { enum: ['intra', 'company', 'sender'] })
       .notNull()
       .default('company'),

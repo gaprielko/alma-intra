@@ -219,6 +219,7 @@ export const emailLookSchema = z.object({
   footerWeb: z.string().trim().max(120, 'too_long'),
   footerEmail: z.union([z.literal(''), z.string().trim().email('invalid_email').max(120)]),
   replyMode: z.enum(REPLY_MODES),
+  importEnabled: z.boolean(),
   replyToAddress: z.string().trim().email('invalid_email').max(120),
 });
 export type EmailLook = z.infer<typeof emailLookSchema>;

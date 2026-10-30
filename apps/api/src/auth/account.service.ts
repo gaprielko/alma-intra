@@ -234,6 +234,13 @@ export async function findUsableInvitation(db: Db, presented: string) {
  * One's own details and signature. Answers which fields changed, for the audit event: names,
  * never values.
  */
+export async function setImportAddresses(db: Db | Tx, userId: string, addresses: string[]) {
+  await db
+    .update(users)
+    .set({ importAddresses: [...new Set(addresses)] })
+    .where(eq(users.id, userId));
+}
+
 export async function updateProfile(
   db: Db | Tx,
   userId: string,

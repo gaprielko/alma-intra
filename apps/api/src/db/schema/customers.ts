@@ -1,5 +1,6 @@
 import {
   CUSTOMER_KINDS,
+  type DiscountStep,
   ITEM_BILLINGS,
   PRODUCT_PERIODS,
   PRODUCT_PRICINGS,
@@ -15,6 +16,7 @@ import {
   boolean,
   check,
   index,
+  jsonb,
   date,
   foreignKey,
   integer,
@@ -236,9 +238,8 @@ export const organizationProducts = pgTable(
     /** NULL: ongoing; ending sets it, nothing is deleted (R-10). */
     validTo: date('valid_to'),
     pricing: productPricing('pricing').notNull().default('list'),
-    discountPercent: numeric('discount_percent', { precision: 5, scale: 2, mode: 'number' }),
-    /** The discount's months from `valid_from`; NULL: permanent. */
-    discountMonths: integer('discount_months'),
+    /** The stretches of the discount, one after another from `valid_from` (R-19). */
+    discountSteps: jsonb('discount_steps').$type<DiscountStep[]>().notNull().default([]),
     fixedPrice: money('fixed_price'),
     fixedPriceGross: money('fixed_price_gross'),
     note: text('note'),

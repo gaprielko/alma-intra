@@ -178,8 +178,8 @@ organization_products       (today's link, extended) [R-10]
   product_id
   valid_from, valid_to      valid_to NULL = ongoing; ending is setting valid_to, never deleting
   pricing                   'list' (the product's price list) | 'discount' | 'fixed'
-  discount_percent          with 'discount'
-  discount_months           with 'discount': how many months from valid_from; NULL = permanent
+  discount_steps            with 'discount': [{ percent, months }], one after another from
+                            valid_from, then the list price; months NULL = permanent [R-19]
   fixed_price, fixed_price_gross   with 'fixed': the monthly (or yearly) price, without and with VAT
   note
 organization_product_counts how many of each item it has
@@ -201,7 +201,8 @@ organization_product_workloads   for an item counted by workloads: the people an
   above.
 - **Price** [R-7, R-11]: by default it follows the product's current price list, so a price change
   reaches every customer on it (and shows in their history of changes); a **discount** in % keeps
-  following it, either **permanent** or for a number of months (then the list price applies); a **fixed price** is agreed with the customer and stays until changed.
+  following it, either **permanent** or in **steps**, each for a number of months (100 % for 3
+  months, then 50 % for 9; then the list price applies) [R-19]; a **fixed price** is agreed with the customer and stays until changed.
 - A product is held at most once at a time per organization or prevádzka.
 - **Prideliť produkt** (dialog): for whom (the organization or one of its prevádzky), the product
   (a searchable list, by name and description, with the starting price; products no longer offered
@@ -263,6 +264,7 @@ organization_product_workloads   for an item counted by workloads: the people an
 | R-16 | A price is entered with VAT, the price without VAT is worked out (and the other way); without VAT is shown first. | agreed |
 | R-17 | „Ceny produktov“ (with / without VAT) is set on the organization and holds for its prevádzky; a private person's prices are always with VAT. | agreed |
 | R-18 | The organization's form lists and assigns its products through the same dialog; a new organization gets them after it is saved. | agreed |
+| R-19 | A time-limited discount can have several steps, each its percent for so many months, one after another; then the list price. A permanent discount has one percent. | agreed |
 
 ## 12. Stages (after approval)
 

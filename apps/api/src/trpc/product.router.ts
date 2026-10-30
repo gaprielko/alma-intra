@@ -1,4 +1,5 @@
 import {
+  productHoldersSchema,
   productIdSchema,
   productItemSchema,
   productSchema,
@@ -35,11 +36,15 @@ export const productRouter = router({
 
   get: authorizedProcedure('product.read')
     .input(productIdSchema)
+    .query(({ ctx, input }) => run(() => productsService.getProduct(ctx.db, input.id))),
+
+  /** Who holds it, a page at a time: each with counts and price, as its detail shows them. */
+  holders: authorizedProcedure('product.read')
+    .input(productHoldersSchema)
     .query(async ({ ctx, input }) => {
-      const product = await run(() => productsService.getProduct(ctx.db, input.id));
-      // Each holder's counts and price, as its detail shows them (the first 30).
-      const holders = await Promise.all(
-        product.holders.slice(0, 30).map(async (holder) => {
+      const page = await productsService.listHolders(ctx.db, input);
+      const items = await Promise.all(
+        page.items.map(async (holder) => {
           const held = (await holdingsOf(ctx.db, holder.id)).find(
             (h) => h.organizationId === holder.id && h.productId === input.id,
           );
@@ -58,7 +63,7 @@ export const productRouter = router({
           };
         }),
       );
-      return { ...product, holders };
+      return { items, total: page.total };
     }),
 
   create: authorizedProcedure('product.write')

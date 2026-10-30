@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { Building2, ChevronDown, Paperclip, Reply, Trash2, UserRound } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
+import { ReplyDialog } from '@/components/emails/reply-dialog';
 import { ErrorState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
 import { CardSkeleton } from '@/components/skeletons';
@@ -24,7 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input, Textarea } from '@/components/ui/input';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
 import { formatDateTime, formatRecent } from '@/lib/format';
@@ -59,6 +60,16 @@ function InboundPage() {
   const [discarding, setDiscarding] = useState(false);
   const [replying, setReplying] = useState(false);
   const inbound = useQuery(trpc.inbound.get.queryOptions({ id: inboundId }));
+  // Opening a conversation reads it; the list shows that, this page has what it needs.
+  const { mutate: markRead } = useMutation(
+    trpc.inbound.markRead.mutationOptions({
+      onSuccess: () => queryClient.invalidateQueries(trpc.inbound.list.pathFilter()),
+    }),
+  );
+  const unopened = inbound.data?.readAt === null;
+  useEffect(() => {
+    if (unopened) markRead({ id: inboundId, read: true });
+  }, [inboundId, unopened, markRead]);
   const thread = useQuery(trpc.inbound.thread.queryOptions({ id: inboundId }));
   const rest = thread.data ?? [];
   const discard = useMutation(
@@ -510,64 +521,6 @@ function AssignDialog({
 }
 
 /** „Odpovedať“: the answer's own text; the received e-mail is quoted below it when it leaves. */
-function ReplyDialog({
-  inboundId,
-  to,
-  onClose,
-}: {
-  inboundId: string;
-  to: string;
-  onClose: () => void;
-}) {
-  const toast = useToast();
-  const queryClient = useQueryClient();
-  const [text, setText] = useState('');
-  const send = useMutation(
-    trpc.inbound.reply.mutationOptions({
-      onSuccess: async () => {
-        await queryClient.invalidateQueries(trpc.activity.timeline.pathFilter());
-        await queryClient.invalidateQueries(trpc.campaign.pathFilter());
-        toast('success', t.replyDialog.sent);
-        onClose();
-      },
-      onError: (error) => toast('error', errorMessage(error, t.errors)),
-    }),
-  );
-  const d = t.replyDialog;
-  return (
-    <Dialog open onOpenChange={(open) => (open ? null : onClose())}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{d.title(to)}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-2">
-          <Textarea
-            aria-label={d.text}
-            placeholder={d.text}
-            rows={8}
-            maxLength={10_000}
-            autoFocus
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-          />
-          <p className="text-xs text-muted">{d.quoted}</p>
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
-            {sk.common.cancel}
-          </Button>
-          <Button
-            disabled={!text.trim() || send.isPending}
-            onClick={() => send.mutate({ id: inboundId, text })}
-          >
-            {d.submit}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 type ThreadItem = RouterOutputs['inbound']['thread'][number];
 
 /**

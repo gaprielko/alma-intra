@@ -1,6 +1,15 @@
 import { INBOUND_STATUSES } from '@intra/shared/schemas';
 import { sql } from 'drizzle-orm';
-import { index, jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import {
+  index,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { campaignMessages } from './campaigns.js';
 import { contacts, organizations } from './customers.js';
 import { users } from './users.js';
@@ -26,6 +35,13 @@ export const inboundMessages = pgTable(
     /** The colleague it is for: the sender of our e-mail. */
     userId: uuid('user_id').references(() => users.id),
     status: inboundStatus('status').notNull(),
+    /** NULL: nobody has opened it yet; the team shares one inbox, so one state for all. */
+    readAt: timestamp('read_at', { withTimezone: true }),
+    /** Imported from a private mailbox (docs/email-import.md): the same original only once. */
+    importKey: text('import_key'),
+    /** „sent“: the user's own e-mail, on this row only until it is in „Odoslané“. */
+    importDirection: text('import_direction', { enum: ['received', 'sent'] }),
+    importUserId: uuid('import_user_id').references(() => users.id),
     fromEmail: text('from_email').notNull(),
     fromName: text('from_name'),
     toEmails: jsonb('to_emails').$type<string[]>().notNull().default([]),
@@ -62,6 +78,9 @@ export const inboundMessages = pgTable(
   (t) => [
     index('inbound_messages_organization_idx').on(t.organizationId, t.receivedAt),
     index('inbound_messages_message_idx').on(t.messageId),
+    uniqueIndex('inbound_messages_import_key_unique')
+      .on(t.importKey)
+      .where(sql`${t.importKey} is not null`),
     index('inbound_messages_unassigned_idx')
       .on(t.receivedAt)
       .where(sql`${t.status} = 'unassigned'`),

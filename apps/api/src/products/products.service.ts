@@ -1,4 +1,7 @@
 import {
+  HOLDERS_PAGE_SIZE,
+  type ProductHoldersInput,
+  productHoldersSchema,
   type ProductInput,
   type ProductItemInput,
   withoutVat,
@@ -167,22 +170,40 @@ export async function getProduct(db: Db | Tx, id: string) {
     .where(eq(products.id, id));
   if (!row) throw new ProductError('NOT_FOUND');
   const lists = await priceListsOf(db, [id]);
+  return { ...row, items: lists.get(id) ?? [] };
+}
+
+/** One page of who holds a product, by name; found by theirs or their organization's name. */
+export async function listHolders(db: Db | Tx, raw: ProductHoldersInput) {
+  const input = productHoldersSchema.parse(raw);
   const parent = sql<
     string | null
   >`(select p.name from organizations p where p.id = ${organizations.parentId})`;
-  const holders = await db
+  const conditions = [
+    eq(organizationProducts.productId, input.id),
+    isNull(organizations.deletedAt),
+  ];
+  if (input.search) {
+    const pattern = `%${input.search.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+    conditions.push(
+      sql`unaccent(concat_ws(' ', ${organizations.name}, ${parent})) ilike unaccent(${pattern})`,
+    );
+  }
+  const rows = await db
     .select({
       id: organizations.id,
       name: organizations.name,
       parentId: organizations.parentId,
       parentName: parent,
+      total: sql<number>`count(*) over ()`.mapWith(Number),
     })
     .from(organizationProducts)
     .innerJoin(organizations, eq(organizations.id, organizationProducts.organizationId))
-    .where(and(eq(organizationProducts.productId, id), isNull(organizations.deletedAt)))
+    .where(and(...conditions))
     .orderBy(collated(organizations.name))
-    .limit(100);
-  return { ...row, items: lists.get(id) ?? [], holders };
+    .limit(HOLDERS_PAGE_SIZE)
+    .offset((input.page - 1) * HOLDERS_PAGE_SIZE);
+  return { items: rows, total: rows[0]?.total ?? 0 };
 }
 
 /** The product's own columns, both prices of the base filled. */
@@ -315,12 +336,15 @@ export async function duplicateProduct(db: Db, id: string) {
 /** Only a product nobody holds can go; otherwise it is „Už sa neponúka“. */
 export async function deleteProduct(db: Db, id: string) {
   return db.transaction(async (tx) => {
+    // As the list counts its customers: an organization in the trash holds nothing any more.
     const [held] = await tx
       .select({ id: organizationProducts.organizationId })
       .from(organizationProducts)
-      .where(eq(organizationProducts.productId, id))
+      .innerJoin(organizations, eq(organizations.id, organizationProducts.organizationId))
+      .where(and(eq(organizationProducts.productId, id), isNull(organizations.deletedAt)))
       .limit(1);
     if (held) throw new ProductError('IN_USE');
+    await tx.delete(organizationProducts).where(eq(organizationProducts.productId, id));
     const [row] = await tx
       .delete(products)
       .where(eq(products.id, id))

@@ -6,6 +6,7 @@ import {
   changePasswordSchema,
   createAccessTokenSchema,
   endSessionSchema,
+  importAddressesSchema,
   updateProfileSchema,
 } from '@intra/shared/schemas';
 import { TRPCError } from '@trpc/server';
@@ -55,6 +56,15 @@ async function confirmPassword(ctx: SessionContext, password: string) {
  * name, a password, a code or a secret.
  */
 export const accountRouter = router({
+  setImportAddresses: protectedProcedure
+    .input(importAddressesSchema)
+    .mutation(async ({ ctx, input }) => {
+      await account.setImportAddresses(ctx.db, ctx.session.userId, input.addresses);
+      auditSelf(ctx);
+      ctx.audit.set({ diff: { fields: ['importAddresses'] } });
+      return { ok: true as const };
+    }),
+
   updateProfile: protectedProcedure.input(updateProfileSchema).mutation(async ({ ctx, input }) => {
     const fields = await account.updateProfile(ctx.db, ctx.session.userId, input);
     auditSelf(ctx);

@@ -1,8 +1,8 @@
 import { sk } from '@intra/shared/i18n';
 import { withVat } from '@intra/shared/schemas';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { ErrorState } from '@/components/empty-state';
 import { formatEur, ProductsHeader } from '@/components/products/products-header';
@@ -10,8 +10,8 @@ import { CardSkeleton } from '@/components/skeletons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
-import { SegmentedChoice } from '@/components/ui/segmented';
 import {
   Table,
   TableBody,
@@ -20,6 +20,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useToast } from '@/components/ui/toast';
+import { errorMessage } from '@/lib/errors';
 import { loadFailed } from '@/lib/query-view';
 import { useCan } from '@/lib/session';
 import { trpc } from '@/lib/trpc';
@@ -33,11 +35,23 @@ function ProductsPage() {
   const list = useQuery(trpc.product.list.queryOptions());
   const vat = useQuery(trpc.product.vatRate.queryOptions());
   const canWrite = useCan('product.write');
-  const [gross, setGross] = useState<'gross' | 'net'>('gross');
   const [search, setSearch] = useState('');
+  const [removing, setRemoving] = useState<{ id: string; name: string } | null>(null);
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const remove = useMutation(
+    trpc.product.delete.mutationOptions({
+      onSuccess: async () => {
+        toast('success', p.detail.deleteConfirm.done);
+        setRemoving(null);
+        await queryClient.invalidateQueries(trpc.product.pathFilter());
+      },
+      onError: (error) => toast('error', errorMessage(error, p.errors)),
+    }),
+  );
   const rate = vat.data?.vatRate ?? 23;
-  const show = (net: number | null, withTax: number | null) =>
-    gross === 'gross' ? (withTax ?? (net === null ? null : withVat(net, rate))) : net;
+  const withTax = (net: number | null, gross: number | null) =>
+    gross ?? (net === null ? null : withVat(net, rate));
   const term = search.trim().toLocaleLowerCase('sk');
   const rows = (list.data ?? []).filter(
     (row) => !term || `${row.name} ${row.description ?? ''}`.toLocaleLowerCase('sk').includes(term),
@@ -76,16 +90,6 @@ function ProductsPage() {
                   className="h-9 pl-9"
                 />
               </div>
-              <SegmentedChoice
-                className="ml-auto"
-                label={p.columns.baseGross}
-                value={gross}
-                onChange={setGross}
-                options={[
-                  { key: 'gross', label: p.gross },
-                  { key: 'net', label: p.net },
-                ]}
-              />
             </div>
             {rows.length === 0 ? (
               <p className="px-5 py-6 text-sm text-muted">{p.empty}</p>
@@ -95,22 +99,18 @@ function ProductsPage() {
                   <TableHeader>
                     <tr>
                       <TableHead className="w-[26%]">{p.columns.product}</TableHead>
-                      <TableHead>
-                        {gross === 'gross' ? p.columns.baseGross : p.columns.baseNet}
-                      </TableHead>
+                      <TableHead>{p.columns.base}</TableHead>
                       <TableHead>{p.columns.included}</TableHead>
-                      <TableHead>
-                        {gross === 'gross' ? p.columns.extrasGross : p.columns.extrasNet}
-                      </TableHead>
+                      <TableHead>{p.columns.extras}</TableHead>
                       <TableHead className="text-right">{p.columns.customers}</TableHead>
                       <TableHead>{p.columns.state}</TableHead>
+                      {canWrite ? <TableHead className="w-12" /> : null}
                     </tr>
                   </TableHeader>
                   <TableBody>
                     {rows.map((row) => {
-                      const base = show(row.basePrice, row.basePriceGross);
-                      const other =
-                        gross === 'gross' ? row.basePrice : (row.basePriceGross ?? null);
+                      const base = row.basePrice;
+                      const baseWithTax = withTax(row.basePrice, row.basePriceGross);
                       return (
                         <TableRow key={row.id} href={`/products/${row.id}`}>
                           <TableCell>
@@ -136,9 +136,9 @@ function ProductsPage() {
                                 <span className="text-xs text-muted">
                                   {p.perPeriod[row.period]}
                                 </span>
-                                {other === null ? null : (
+                                {baseWithTax === null ? null : (
                                   <span className="block text-xs text-muted">
-                                    {gross === 'gross' ? p.net : p.gross} {formatEur(other)}
+                                    {p.withVat(formatEur(baseWithTax))}
                                   </span>
                                 )}
                               </>
@@ -156,19 +156,27 @@ function ProductsPage() {
                                   ))}
                           </TableCell>
                           <TableCell className="text-[13px] whitespace-nowrap text-muted">
-                            {row.items.filter((i) => i.unitPrice !== null).length === 0
-                              ? sk.common.none
-                              : row.items
+                            {row.items.filter((i) => i.unitPrice !== null).length === 0 ? (
+                              sk.common.none
+                            ) : (
+                              // One grid, so the amounts of all the items stand under each other.
+                              <span className="grid grid-cols-[auto_auto_auto] justify-start gap-x-3">
+                                {row.items
                                   .filter((i) => i.unitPrice !== null)
                                   .map((i) => {
-                                    const price = show(i.unitPrice, i.unitPriceGross)!;
+                                    const taxed = withTax(i.unitPrice, i.unitPriceGross);
                                     return (
-                                      <span key={i.itemId} className="block">
-                                        {i.name} {i.included > 0 ? '+' : ''}
-                                        {formatEur(price)}
+                                      <span key={i.itemId} className="contents">
+                                        <span>{i.name}</span>
+                                        <span>+{formatEur(i.unitPrice!)}</span>
+                                        <span>
+                                          {taxed === null ? '' : p.withVat(formatEur(taxed))}
+                                        </span>
                                       </span>
                                     );
                                   })}
+                              </span>
+                            )}
                           </TableCell>
                           <TableCell className="text-right tabular-nums">{row.customers}</TableCell>
                           <TableCell>
@@ -176,6 +184,20 @@ function ProductsPage() {
                               {row.active ? p.offered : p.withdrawn}
                             </Badge>
                           </TableCell>
+                          {canWrite ? (
+                            <TableCell>
+                              {row.customers === 0 ? (
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  aria-label={p.detail.deleteConfirm.title(row.name)}
+                                  onClick={() => setRemoving({ id: row.id, name: row.name })}
+                                >
+                                  <Trash2 className="size-4" aria-hidden />
+                                </Button>
+                              ) : null}
+                            </TableCell>
+                          ) : null}
                         </TableRow>
                       );
                     })}
@@ -189,6 +211,18 @@ function ProductsPage() {
           </Card>
         )}
       </main>
+      {removing ? (
+        <ConfirmDialog
+          open
+          onOpenChange={(open) => !open && setRemoving(null)}
+          title={p.detail.deleteConfirm.title(removing.name)}
+          description={p.detail.deleteConfirm.text}
+          confirmLabel={p.detail.deleteConfirm.confirm}
+          destructive
+          pending={remove.isPending}
+          onConfirm={() => remove.mutate({ id: removing.id })}
+        />
+      ) : null}
     </div>
   );
 }
