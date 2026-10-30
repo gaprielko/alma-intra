@@ -60,9 +60,10 @@ and means the seeded type, so e-mails already sent keep working.
   button, because „Áno, mám vážny záujem“ does not fit another type. The rest of the page is common:
   „Ďakujeme“ and the masked address.
 - **[T-3] Repeated confirmation.** Recommended: as today, for every type: one entry, the count grows.
-- **[T-4] Removing a type.** Recommended: a type is never deleted, only switched off. It is then not
-  offered for new buttons, but buttons already sent keep recording and its entries stay. Switching
-  off the seeded type is allowed too.
+- **[T-4] Removing a type.** Asked by the user: a row shows edit and delete at its right on hover, as
+  elsewhere in the app, and delete only when the type is used nowhere. Recommended: used means an
+  entry, or a button in a template or an e-mail. A used type can only be switched off: it is then not
+  offered for new buttons, but buttons already sent keep recording and its entries stay.
 - **[T-5] Notification.** Recommended: the bell tells the sender about every type, with the type's
   name, on the first confirmation only.
 - **[T-6] Where the code list lives.** Recommended: the tab in Aktivity, as asked, not
