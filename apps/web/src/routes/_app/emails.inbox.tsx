@@ -25,7 +25,7 @@ import { TablePagination, TableShell } from '@/components/table-shell';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { RowLink, TableCell, TableRow } from '@/components/ui/table';
+import { RowActions, RowLink, TableCell, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
 import { formatRecent } from '@/lib/format';
@@ -255,7 +255,7 @@ function InboxPage() {
           }
         >
           {rows.map((row) => (
-            <TableRow key={row.id} href={`/emails/inbox/${row.id}`} className="group">
+            <TableRow key={row.id} href={`/emails/inbox/${row.id}`}>
               <TableCell className="max-w-56">
                 {/* Filed under a person: their name from Kontakty, the address under it. */}
                 <RowLink
@@ -309,7 +309,7 @@ function InboxPage() {
                 {formatRecent(row.receivedAt)}
               </TableCell>
               <TableCell className="w-[8.5rem] pr-3">
-                <RowActions row={row} />
+                <InboxActions row={row} />
               </TableCell>
             </TableRow>
           ))}
@@ -324,7 +324,7 @@ function InboxPage() {
  * touch screen): back to unread or read, an answer (once it is filed: an answer goes to a customer),
  * and the bin at the very right.
  */
-function RowActions({ row }: { row: InboundRow }) {
+function InboxActions({ row }: { row: InboundRow }) {
   const toast = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -351,7 +351,7 @@ function RowActions({ row }: { row: InboundRow }) {
   const readLabel = row.unread ? a.markRead : a.markUnread;
   return (
     <>
-      <div className="flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100">
+      <RowActions>
         <Button
           size="icon"
           variant="ghost"
@@ -392,7 +392,7 @@ function RowActions({ row }: { row: InboundRow }) {
         >
           <Trash2 className="size-4" aria-hidden />
         </Button>
-      </div>
+      </RowActions>
       <ConfirmDialog
         open={discarding}
         onOpenChange={setDiscarding}

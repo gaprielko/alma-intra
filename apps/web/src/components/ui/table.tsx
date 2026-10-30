@@ -131,7 +131,7 @@ export function TableRow({
   return (
     <tr
       className={cn(
-        'border-t border-border-subtle transition-colors duration-150',
+        'group/row border-t border-border-subtle transition-colors duration-150',
         clickable && 'cursor-pointer hover:bg-primary-soft/60',
         className,
       )}
@@ -162,6 +162,22 @@ export function TableRow({
             }
           : undefined
       }
+      {...props}
+    />
+  );
+}
+
+/**
+ * A row's action icons: shown only while the pointer is on the row (`TableRow`, or a plain `tr`
+ * with `group/row`). Keyboard focus, an open menu and a screen without a pointer keep them visible.
+ */
+export function RowActions({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn(
+        'flex justify-end gap-1 opacity-0 transition-opacity group-hover/row:opacity-100 has-focus-visible:opacity-100 has-data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100',
+        className,
+      )}
       {...props}
     />
   );

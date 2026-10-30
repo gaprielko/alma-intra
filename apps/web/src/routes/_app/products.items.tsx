@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import {
+  RowActions,
   CELL_LINK,
   Table,
   TableBody,
@@ -129,26 +130,28 @@ function ItemsPage() {
                         <TableCell className="text-muted">{item.description}</TableCell>
                         <TableCell>
                           {canWrite ? (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button size="icon" aria-label={sk.products.menu(item.name)}>
-                                  <MoreHorizontal className="size-4" aria-hidden />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onSelect={() => setEditing(item)}>
-                                  {t.edit}
-                                </DropdownMenuItem>
-                                {item.usedIn.length === 0 ? (
-                                  <DropdownMenuItem
-                                    destructive
-                                    onSelect={() => remove.mutate({ id: item.id })}
-                                  >
-                                    {t.delete}
+                            <RowActions>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button size="icon" aria-label={sk.products.menu(item.name)}>
+                                    <MoreHorizontal className="size-4" aria-hidden />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onSelect={() => setEditing(item)}>
+                                    {t.edit}
                                   </DropdownMenuItem>
-                                ) : null}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                                  {item.usedIn.length === 0 ? (
+                                    <DropdownMenuItem
+                                      destructive
+                                      onSelect={() => remove.mutate({ id: item.id })}
+                                    >
+                                      {t.delete}
+                                    </DropdownMenuItem>
+                                  ) : null}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </RowActions>
                           ) : null}
                         </TableCell>
                       </TableRow>

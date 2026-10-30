@@ -38,7 +38,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { SegmentedChoice } from '@/components/ui/segmented';
-import { TableCell, TableRow } from '@/components/ui/table';
+import { RowActions, TableCell, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
 import { applyServerFieldErrors, refusedField } from '@/lib/form-errors';
@@ -229,48 +229,50 @@ function UserRowView({
       </TableCell>
       <TableCell className="text-right">
         {isMe ? null : (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="icon" aria-label={t.actions.menu(user.name)}>
-                <MoreHorizontal className="size-4" aria-hidden />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => onAction('edit')}>
-                {t.actions.edit}
-              </DropdownMenuItem>
-              {user.status === 'invited' ? (
-                <>
-                  <DropdownMenuItem
-                    disabled={resend.isPending}
-                    onSelect={() => resend.mutate({ userId: user.id })}
-                  >
-                    {t.actions.resend}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem destructive onSelect={() => onAction('withdraw')}>
-                    {t.actions.withdraw}
-                  </DropdownMenuItem>
-                </>
-              ) : null}
-              {user.status === 'active' ? (
-                <>
-                  <DropdownMenuItem onSelect={() => onAction('resetSecondFactor')}>
-                    {t.actions.resetSecondFactor}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem destructive onSelect={() => onAction('deactivate')}>
-                    {t.actions.deactivate}
-                  </DropdownMenuItem>
-                </>
-              ) : null}
-              {user.status === 'deactivated' ? (
-                <DropdownMenuItem onSelect={() => onAction('reactivate')}>
-                  {t.actions.reactivate}
+          <RowActions>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon" aria-label={t.actions.menu(user.name)}>
+                  <MoreHorizontal className="size-4" aria-hidden />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => onAction('edit')}>
+                  {t.actions.edit}
                 </DropdownMenuItem>
-              ) : null}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                {user.status === 'invited' ? (
+                  <>
+                    <DropdownMenuItem
+                      disabled={resend.isPending}
+                      onSelect={() => resend.mutate({ userId: user.id })}
+                    >
+                      {t.actions.resend}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem destructive onSelect={() => onAction('withdraw')}>
+                      {t.actions.withdraw}
+                    </DropdownMenuItem>
+                  </>
+                ) : null}
+                {user.status === 'active' ? (
+                  <>
+                    <DropdownMenuItem onSelect={() => onAction('resetSecondFactor')}>
+                      {t.actions.resetSecondFactor}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem destructive onSelect={() => onAction('deactivate')}>
+                      {t.actions.deactivate}
+                    </DropdownMenuItem>
+                  </>
+                ) : null}
+                {user.status === 'deactivated' ? (
+                  <DropdownMenuItem onSelect={() => onAction('reactivate')}>
+                    {t.actions.reactivate}
+                  </DropdownMenuItem>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </RowActions>
         )}
       </TableCell>
     </TableRow>

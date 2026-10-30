@@ -7,7 +7,7 @@ import { TablePagination, TableShell } from '@/components/table-shell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { RowLink, TableCell, TableRow } from '@/components/ui/table';
+import { RowActions, RowLink, TableCell, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
 import { formatDateTime, formatRecent } from '@/lib/format';
@@ -108,18 +108,19 @@ export function CampaignList({ status }: { status: 'sent' | 'draft' }) {
                 <TableCell className="text-muted">{formatRecent(row.updatedAt)}</TableCell>
                 <TableCell className="text-right whitespace-nowrap">
                   <span className="text-sm font-semibold text-primary-text">{t.continue}</span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="ml-2"
-                    aria-label={t.deleteDraft(row.subjectText || t.noSubject)}
-                    onClick={() =>
-                      setDeleting({ id: row.id, subject: row.subjectText || t.noSubject })
-                    }
-                  >
-                    <Trash2 className="size-4" aria-hidden />
-                  </Button>
+                  <RowActions className="ml-2 inline-flex">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={t.deleteDraft(row.subjectText || t.noSubject)}
+                      onClick={() =>
+                        setDeleting({ id: row.id, subject: row.subjectText || t.noSubject })
+                      }
+                    >
+                      <Trash2 className="size-4" aria-hidden />
+                    </Button>
+                  </RowActions>
                 </TableCell>
               </>
             )}

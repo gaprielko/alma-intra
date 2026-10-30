@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import {
+  RowActions,
   Table,
   TableBody,
   TableCell,
@@ -276,34 +277,36 @@ export function PersonsTable({
                         ) : null}
                       </TableCell>
                       <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button size="icon" aria-label={tc.menu(name)}>
-                              <MoreHorizontal className="size-4" aria-hidden />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onSelect={() => setEditing({ person, at })}>
-                              {tc.edit}
-                            </DropdownMenuItem>
-                            {person.atOrganization && !person.isPrimary ? (
-                              <DropdownMenuItem
-                                onSelect={() =>
-                                  primary.mutate({ id: person.id, customerId: organizationId })
-                                }
-                              >
-                                {tc.makePrimary}
+                        <RowActions>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="icon" aria-label={tc.menu(name)}>
+                                <MoreHorizontal className="size-4" aria-hidden />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onSelect={() => setEditing({ person, at })}>
+                                {tc.edit}
                               </DropdownMenuItem>
-                            ) : null}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              destructive
-                              onSelect={() => setRemoving({ person, at })}
-                            >
-                              {tc.dialog.delete}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                              {person.atOrganization && !person.isPrimary ? (
+                                <DropdownMenuItem
+                                  onSelect={() =>
+                                    primary.mutate({ id: person.id, customerId: organizationId })
+                                  }
+                                >
+                                  {tc.makePrimary}
+                                </DropdownMenuItem>
+                              ) : null}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                destructive
+                                onSelect={() => setRemoving({ person, at })}
+                              >
+                                {tc.dialog.delete}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </RowActions>
                       </TableCell>
                     </TableRow>
                   );
