@@ -109,6 +109,18 @@ const draftOf = (product: Product): Draft => ({
   })),
 });
 
+/**
+ * A row's name and unit belong to the item, not to the draft: a rename in „Položky“ shows here even
+ * when the draft was made from a cached product before the refetch brought the new name.
+ */
+const withCurrentItems = (draft: Draft, product: Product | undefined): Draft => ({
+  ...draft,
+  rows: draft.rows.map((row) => {
+    const item = product?.items.find((candidate) => candidate.itemId === row.itemId);
+    return item ? { ...row, name: item.name, unit: item.unit } : row;
+  }),
+});
+
 const intOf = (text: string, fallback: number) => {
   const n = Number.parseInt(text, 10);
   return Number.isFinite(n) && n >= 0 ? n : fallback;
@@ -160,7 +172,8 @@ function ProductEditor({ product, rate }: { product: Product | undefined; rate: 
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const canWrite = useCan('product.write');
-  const [draft, setDraft] = useState<Draft>(() => (product ? draftOf(product) : emptyDraft));
+  const [edited, setDraft] = useState<Draft>(() => (product ? draftOf(product) : emptyDraft));
+  const draft = withCurrentItems(edited, product);
   const [adding, setAdding] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
@@ -295,7 +308,7 @@ function ProductEditor({ product, rate }: { product: Product | undefined; rate: 
         <div className="min-w-0 space-y-5">
           <Card>
             <CardHeader title={d.basics} />
-            <div className="grid gap-4 p-5 sm:grid-cols-6">
+            <div className="grid gap-3 px-5 pt-3.5 pb-5 sm:grid-cols-6">
               <div className="space-y-1.5 sm:col-span-3">
                 <Label htmlFor="product-name">{d.name}</Label>
                 <Input
@@ -304,8 +317,8 @@ function ProductEditor({ product, rate }: { product: Product | undefined; rate: 
                   onChange={(event) => set('name', event.target.value)}
                 />
               </div>
-              <div className="space-y-1.5 sm:col-span-3">
-                <span className="block text-sm font-medium">{d.state}</span>
+              <div className="space-y-0.5 sm:col-span-3">
+                <span className="block text-xs leading-4 font-medium text-muted">{d.state}</span>
                 <SegmentedChoice
                   label={d.state}
                   value={draft.active ? 'on' : 'off'}
@@ -352,8 +365,8 @@ function ProductEditor({ product, rate }: { product: Product | undefined; rate: 
                   }}
                 />
               </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <span className="block text-sm font-medium">{d.period}</span>
+              <div className="space-y-0.5 sm:col-span-2">
+                <span className="block text-xs leading-4 font-medium text-muted">{d.period}</span>
                 <SegmentedChoice
                   label={d.period}
                   value={draft.period}
