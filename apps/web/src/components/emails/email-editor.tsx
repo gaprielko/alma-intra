@@ -31,6 +31,7 @@ import {
   Palette,
   SquareDashed,
   Stamp,
+  Tag,
 } from 'lucide-react';
 import { type CSSProperties, type ReactNode, useMemo, useRef, useState } from 'react';
 import {
@@ -232,6 +233,29 @@ function ToolButton({
       {children}
     </button>
   );
+}
+
+/**
+ * „Vložiť názov produktu“: the look's logo and its brand in bold, the words after the first in its
+ * colour, joined so the name never breaks. The space after it lets the text go on without the marks.
+ */
+function productNameNodes(look: EmailLook): JSONContent[] {
+  const { first, rest } = brandParts(look);
+  const bold = { type: 'bold' };
+  return [
+    { type: 'logo' },
+    { type: 'text', text: rest ? `${first} ` : first, marks: [bold] },
+    ...(rest
+      ? [
+          {
+            type: 'text',
+            text: rest.replaceAll(' ', ' '),
+            marks: [bold, { type: 'accent' }],
+          },
+        ]
+      : []),
+    { type: 'text', text: ' ' },
+  ];
 }
 
 /** A tool with a choice of where its picture comes from. */
@@ -684,7 +708,17 @@ export function EmailBodyEditor({
         <ToolButton label={t.editor.divider} onClick={() => chain()?.setHorizontalRule().run()}>
           <Minus className="size-4" aria-hidden />
         </ToolButton>
-        <VariableMenu editor={editor} fields={fields} />
+        <div className="ml-auto flex items-center gap-0.5">
+          <ToolButton
+            label={t.editor.productName}
+            wide
+            onClick={() => chain()?.insertContent(productNameNodes(look)).run()}
+          >
+            <Tag className="size-4" aria-hidden />
+            {t.editor.productName}
+          </ToolButton>
+          <VariableMenu editor={editor} fields={fields} compact />
+        </div>
       </div>
       {linking !== null ? (
         <div className="flex items-center gap-2 border-b border-border-subtle bg-surface px-3 pb-2">

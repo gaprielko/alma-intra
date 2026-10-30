@@ -2440,6 +2440,7 @@ export const sk = {
       columns: 'Dva stĺpce',
       divider: 'Oddeľovač',
       variable: 'Vložiť premennú',
+      productName: 'Vložiť názov produktu',
       linkPrompt: 'Adresa odkazu (https://…)',
       linkApply: 'Vložiť odkaz',
       buttonDialog: 'Tlačidlo',
