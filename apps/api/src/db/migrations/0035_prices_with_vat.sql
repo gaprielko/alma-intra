@@ -1,0 +1,1 @@
+ALTER TABLE "organizations" ADD COLUMN "prices_with_vat" boolean DEFAULT true NOT NULL;

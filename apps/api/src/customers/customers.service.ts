@@ -337,6 +337,9 @@ export async function getCustomer(db: Db | Tx, id: string) {
     contacts: customer.kind === 'individual' ? [] : people,
     /** A prevádzka's organization: what it shares (IČO, role, status, owner, tags). */
     parent,
+    /** How prices are shown: the organization's setting, a private person's always with VAT. */
+    pricesWithVat:
+      customer.kind === 'individual' ? true : (parent?.pricesWithVat ?? customer.pricesWithVat),
     establishmentCount: established?.count ?? 0,
     /** „Sestry“ in the header, from the products held now (R-12); NULL without the item. */
     nurses,
@@ -352,6 +355,7 @@ async function parentSummary(db: Db | Tx, parentId: string) {
       ico: organizations.ico,
       role: organizations.role,
       status: organizations.status,
+      pricesWithVat: organizations.pricesWithVat,
       owner: sql<{ id: string; name: string } | null>`case when ${users.id} is null then null
         else json_build_object('id', ${users.id}, 'name', ${users.name}) end`,
       tags: tagsJson,
@@ -523,10 +527,18 @@ function columnsOf(input: CustomerInput) {
       dic: input.dic ?? null,
       icDph: input.icDph ?? null,
       web: input.web ?? null,
+      pricesWithVat: input.pricesWithVat,
     };
   }
-  // A private person's e-mail and phone are their person's.
-  return { ...common, kind: input.kind, name: personName(input), email: null, phone: null };
+  // A private person's e-mail and phone are their person's; their prices are always with VAT.
+  return {
+    ...common,
+    kind: input.kind,
+    name: personName(input),
+    email: null,
+    phone: null,
+    pricesWithVat: true,
+  };
 }
 
 /** The person of a private-person record, from the form. */
@@ -608,7 +620,7 @@ export async function createCustomer(db: Db, userId: string, input: CreateCustom
       const productChange = await setProducts(
         tx,
         created!.id,
-        input.customer.role === 'customer' ? input.customer.productIds : [],
+        input.customer.role === 'customer' ? (input.customer.productIds ?? []) : [],
       );
       await createCustomerFolder(tx, created!.id);
       if (input.firstContact && input.customer.kind === 'organization') {
@@ -682,11 +694,14 @@ export async function updateCustomer(db: Db, id: string, input: CustomerInput) {
       }
       const tagChange = await setTags(tx, id, input.tags);
       if (tagChange.added.length + tagChange.removed.length > 0) fields.push('tags');
-      const productChange = await setProducts(
-        tx,
-        id,
-        input.role === 'customer' ? input.productIds : [],
-      );
+      // The form leaves the products alone (they are assigned in their own dialog); a partner
+      // holds none.
+      const productChange =
+        input.role !== 'customer'
+          ? await setProducts(tx, id, [])
+          : input.productIds
+            ? await setProducts(tx, id, input.productIds)
+            : { added: [], removed: [] };
       if (productChange.added.length + productChange.removed.length > 0) fields.push('products');
       return {
         fields: fields.sort(),

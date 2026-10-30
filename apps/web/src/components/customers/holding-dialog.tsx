@@ -223,6 +223,8 @@ export function HoldingDialog({
           className="space-y-5"
           onSubmit={(event) => {
             event.preventDefault();
+            // Opened from the organization's form: its submit must not reach that form too.
+            event.stopPropagation();
             submit();
           }}
         >
@@ -603,7 +605,7 @@ function WorkloadsDialog({
     setRows((all) => all.map((r, i) => (i === index ? row : r)));
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent size="md">
+      <DialogContent size="md" nested>
         <DialogHeader>
           <DialogTitle>{w.title(item.name)}</DialogTitle>
           <DialogDescription>{w.hint(step, productName)}</DialogDescription>

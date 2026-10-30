@@ -81,6 +81,7 @@ const CUSTOMER_FIELDS = [
   'ico',
   'dic',
   'icDph',
+  'pricesWithVat',
   'web',
   'email',
   'phone',

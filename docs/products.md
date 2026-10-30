@@ -116,7 +116,10 @@ Odstrániť (only while no customer has it).
 
 Board `ProdDetail`, at `/products/<id>`. One page that is edited in place (no separate form):
 
-- **Základné údaje**: name, description, base price, period (Mesačne / Ročne), state.
+- **Základné údaje**: name, description, base price, period (Mesačne / Ročne), state. The price is
+  shown without VAT first and with VAT next to it; the one with VAT is the one entered (the other
+  is worked out and shown on a grey field), and typing the price without VAT works out the other
+  way [R-16]. The same holds for each item's price in the Cenník.
 - **Cenník** (the price list), a table, rows dragged to order:
 
   | Položka | Platba | V cene | Cena za ďalšiu | Max. | |
@@ -208,11 +211,20 @@ organization_product_workloads   for an item counted by workloads: the people an
 
 ### 9.1 On the organization's and the prevádzka's detail
 
-- The **Produkty** card (under the Prevádzky table, establishments.md 4.4) is a table: product,
-  where (the organization or which prevádzka), the counts in short („2 admin · 10 sestier“), from,
-  the monthly and the yearly price; the organization's own rows first, then „Produkty prevádzok“;
-  a total row. A switch **S DPH / Bez DPH**, with VAT by default as on Produkty. Each row's „…“:
-  Upraviť, Ukončiť.
+- The **Produkty** card (under the Prevádzky table, establishments.md 4.4) is a table: product
+  (with whose prevádzka it is), the counts one item per line („2 × Admin prístup“, „10 × Sestra“),
+  **Platnosť** (from, and until under it when set), the monthly and the yearly price; the
+  organization's own rows first, then „Produkty prevádzok“; a total row. Each row's „…“: Upraviť,
+  Ukončiť.
+- Prices show with or without VAT as the organization's **„Ceny produktov“** says: a setting in
+  the organization's form (Základné údaje), with VAT by default, valid for the organization and
+  all its prevádzky; the card shows it as a label, not a switch. A private person's prices are
+  always with VAT [R-17].
+- **In the organization's form** (Upraviť organizáciu, Upraviť fyzickú osobu), Zaradenie lists
+  the customer's own products in the same table with „Prideliť produkt“; adding, editing and
+  ending use the same dialog as the detail and are saved at once. A new organization has no
+  products in its form: they are assigned after it is saved [R-18]. The old product chips and
+  „Nový produkt“ in the form are gone; products are made in the catalog.
 - The prevádzka's detail shows the same card with its own rows only.
 - The header's product chips are the products held by the organization or any of its prevádzky.
 - **„Sestry: 18“** in the header is computed: the sum of the counts of the item „Sestra“ over the
@@ -248,6 +260,9 @@ organization_product_workloads   for an item counted by workloads: the people an
 | R-15 | A sum of workloads that is not whole is rounded up to the next whole count. | agreed |
 | R-12 | „Sestry“ in the header is the sum of the „Sestra“ counts over the organization and its prevádzky. | agreed |
 | R-8 | Adding an item offers the numbers from the product it was last used in. | agreed |
+| R-16 | A price is entered with VAT, the price without VAT is worked out (and the other way); without VAT is shown first. | agreed |
+| R-17 | „Ceny produktov“ (with / without VAT) is set on the organization and holds for its prevádzky; a private person's prices are always with VAT. | agreed |
+| R-18 | The organization's form lists and assigns its products through the same dialog; a new organization gets them after it is saved. | agreed |
 
 ## 12. Stages (after approval)
 

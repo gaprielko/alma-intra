@@ -93,8 +93,11 @@ export const personFields = {
 const classificationFields = {
   /** A customer or a partner (D-1); a partner's kind of cooperation is a tag (D-4). */
   role: z.enum(ORGANIZATION_ROLES),
-  /** ADOS, DOS, Stacionár, …: a customer's only (the server drops them for a partner). */
-  productIds: z.array(idSchema).max(20).default([]),
+  /**
+   * The products a customer holds, only when the caller sets them (Claude, imports): the form
+   * assigns them one by one with their scope and price. A partner holds none.
+   */
+  productIds: z.array(idSchema).max(20).optional(),
   /** A customer's only, and empty until set (D-6). */
   status: z.enum(CUSTOMER_STATUSES).optional().nullable(),
   street: optionalText(160),
@@ -127,6 +130,8 @@ export const organizationCustomerSchema = z.object({
   web: optionalText(200),
   email: optionalEmail,
   phone: optionalPhone,
+  /** „Ceny produktov“: prices shown with VAT or without, for the organization and its prevádzky. */
+  pricesWithVat: z.boolean().default(true),
   ...classificationFields,
 });
 

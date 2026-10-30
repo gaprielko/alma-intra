@@ -246,6 +246,13 @@
       "when": 1793308219567,
       "tag": "0034_email_reply_mode",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1793315945716,
+      "tag": "0035_prices_with_vat",
+      "breakpoints": true
     }
   ]
 }
