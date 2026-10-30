@@ -177,12 +177,14 @@ function NodeView({ node, ctx }: { node: EmailNode; ctx: Ctx }): ReactNode {
       );
     case 'hardBreak':
       return <br />;
-    case 'logo':
-      // The look's logo at the height of the text, its middle in the middle of the line. Without
-      // an alt: the name stands beside it, and a client that blocks images shows nothing extra.
-      return input.look.logoKey ? (
+    case 'logo': {
+      // A logo of its own, or the look's, at the height of the text, its middle in the middle of
+      // the line. Without an alt: the name stands beside it, and a client that blocks images shows
+      // nothing extra.
+      const logoKey = str(node.attrs?.src) || input.look.logoKey;
+      return logoKey ? (
         <Img
-          src={`${input.baseUrl}/m/${input.look.logoKey}`}
+          src={`${input.baseUrl}/m/${logoKey}`}
           alt=""
           height={18}
           style={{
@@ -195,6 +197,7 @@ function NodeView({ node, ctx }: { node: EmailNode; ctx: Ctx }): ReactNode {
           }}
         />
       ) : null;
+    }
     case 'bulletList':
     case 'orderedList': {
       const List = node.type === 'bulletList' ? 'ul' : 'ol';

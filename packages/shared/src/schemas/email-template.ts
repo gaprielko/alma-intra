@@ -131,6 +131,14 @@ export function emailDocProblem(doc: EmailNode, keys: ReadonlySet<string>): stri
     ) {
       return 'invalid_image';
     }
+    // A logo within a line: its own picture, or without one the look's.
+    if (
+      node.type === 'logo' &&
+      node.attrs?.src != null &&
+      !(typeof node.attrs.src === 'string' && IMAGE_KEY.test(node.attrs.src))
+    ) {
+      return 'invalid_image';
+    }
     if (node.type === 'variable' && !isVariableName(node.attrs?.name, keys)) {
       return 'unknown_variable';
     }
@@ -275,3 +283,5 @@ export const requestImageSchema = z.object({
   height: z.number().int().min(1).max(4000),
 });
 export const confirmImageSchema = z.object({ id: idSchema });
+/** A picture from the Files module, copied among the images of e-mails (D-49). */
+export const imageFromFileSchema = z.object({ fileId: idSchema });

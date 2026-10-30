@@ -43,6 +43,7 @@ import {
   Logo,
   Variable,
 } from '@/components/emails/email-nodes';
+import { FilePicker } from '@/components/files/file-picker';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -64,6 +65,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectItem } from '@/components/ui/select';
 import { useToast } from '@/components/ui/toast';
 import { ImageNotAllowed, uploadEmailImage } from '@/lib/email-images';
+import { trpcClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 
 const t = sk.templates;
@@ -227,6 +229,40 @@ function ToolButton({
   );
 }
 
+/** A tool with a choice of where its picture comes from. */
+function ToolMenu({
+  label,
+  icon,
+  items,
+}: {
+  label: string;
+  icon: ReactNode;
+  items: { label: string; onSelect: () => void }[];
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label={label}
+          title={label}
+          onMouseDown={(event) => event.preventDefault()}
+          className="inline-flex size-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-hover hover:text-foreground"
+        >
+          {icon}
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        {items.map((item) => (
+          <DropdownMenuItem key={item.label} onSelect={item.onSelect}>
+            {item.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 const Sep = () => <span aria-hidden className="mx-1 h-5 w-px bg-border" />;
 
 /** The text box under the toolbar where a link's address or a button's is typed. */
@@ -327,6 +363,7 @@ export function EmailBodyEditor({
   const [linking, setLinking] = useState<string | null>(null);
   const [button, setButton] = useState<{ pos: number; text: string; href: string } | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [picking, setPicking] = useState<'image' | 'logo' | null>(null);
   const editor = useEditor({
     extensions: bodyExtensions,
     content: value as JSONContent,
@@ -385,6 +422,23 @@ export function EmailBodyEditor({
         'error',
         error instanceof ImageNotAllowed ? t.editor.imageNotAllowed : t.editor.imageFailed,
       );
+    } finally {
+      setUploading(false);
+    }
+  };
+  const insertFromFiles = async (fileId: string, as: 'image' | 'logo') => {
+    setUploading(true);
+    try {
+      const { key, width } = await trpcClient.template.imageFromFile.mutate({ fileId });
+      chain()
+        ?.insertContent(
+          as === 'logo'
+            ? { type: 'logo', attrs: { src: key } }
+            : { type: 'image', attrs: { src: key, width: Math.min(width, 536) } },
+        )
+        .run();
+    } catch {
+      toast('error', t.editor.fromFilesFailed);
     } finally {
       setUploading(false);
     }
@@ -461,9 +515,14 @@ export function EmailBodyEditor({
           <ListOrdered className="size-4" aria-hidden />
         </ToolButton>
         <Sep />
-        <ToolButton label={t.editor.image} onClick={() => imageInput.current?.click()}>
-          <ImageIcon className="size-4" aria-hidden />
-        </ToolButton>
+        <ToolMenu
+          label={t.editor.image}
+          icon={<ImageIcon className="size-4" aria-hidden />}
+          items={[
+            { label: t.editor.fromComputer, onSelect: () => imageInput.current?.click() },
+            { label: t.editor.fromFiles, onSelect: () => setPicking('image') },
+          ]}
+        />
         <input
           ref={imageInput}
           type="file"
@@ -475,12 +534,17 @@ export function EmailBodyEditor({
             if (file) void insertImage(file);
           }}
         />
-        <ToolButton
+        <ToolMenu
           label={t.editor.logo}
-          onClick={() => chain()?.insertContent({ type: 'logo' }).run()}
-        >
-          <Stamp className="size-4" aria-hidden />
-        </ToolButton>
+          icon={<Stamp className="size-4" aria-hidden />}
+          items={[
+            {
+              label: t.editor.logoOfLook,
+              onSelect: () => chain()?.insertContent({ type: 'logo' }).run(),
+            },
+            { label: t.editor.fromFiles, onSelect: () => setPicking('logo') },
+          ]}
+        />
         <ToolButton
           label={t.editor.button}
           wide
@@ -629,6 +693,19 @@ export function EmailBodyEditor({
           </div>
         </div>
       </div>
+
+      {picking ? (
+        <FilePicker
+          lead={t.editor.fromFilesLead}
+          notes={[t.editor.fromFilesNote]}
+          already={new Set()}
+          imagePick={t.editor.fromFilesPick}
+          onClose={() => setPicking(null)}
+          onPick={([file]) => {
+            if (file) void insertFromFiles(file.fileId, picking);
+          }}
+        />
+      ) : null}
 
       {button ? (
         <ButtonDialog

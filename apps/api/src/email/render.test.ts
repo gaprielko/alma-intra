@@ -71,6 +71,46 @@ describe('the logo and the accent within a line', () => {
   });
 });
 
+describe('a logo of its own within a line', () => {
+  it('wins over the logo of the look and is refused when it is not an image key', async () => {
+    const own: EmailNode = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'logo', attrs: { src: 'zzzzzzzzzzzzzzzzzzzz.png' } },
+            { type: 'text', text: 'ADOS' },
+          ],
+        },
+      ],
+    };
+    expect(emailDocProblem(own, new Set())).toBeNull();
+    const out = await renderEmail({
+      look,
+      baseUrl: 'https://intra.example.test',
+      subject: own,
+      body: own,
+      values: {},
+      labels: {},
+      signature: false,
+    });
+    expect(paragraph(out.html)).toContain('/m/zzzzzzzzzzzzzzzzzzzz.png');
+    expect(paragraph(out.html)).not.toContain('/m/abcdefghijklmnop.png');
+    expect(
+      emailDocProblem(
+        {
+          type: 'doc',
+          content: [
+            { type: 'paragraph', content: [{ type: 'logo', attrs: { src: 'https://x.test/a' } }] },
+          ],
+        },
+        new Set(),
+      ),
+    ).toBe('invalid_image');
+  });
+});
+
 describe('the brand in the header', () => {
   const header = (html: string) => html.slice(0, html.indexOf('<p '));
 

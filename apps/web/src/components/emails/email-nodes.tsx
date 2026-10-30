@@ -97,9 +97,13 @@ export const Accent = Mark.create({
   },
 });
 
-/** The look's logo at the height of the text; without one, a chip, as the e-mail shows nothing. */
-function LogoView({ selected }: NodeViewProps) {
-  const { logoKey } = useContext(EmailEditorContext);
+/**
+ * A logo at the height of the text: its own picture, or the look's; without either, a chip, as the
+ * e-mail shows nothing.
+ */
+function LogoView({ node, selected }: NodeViewProps) {
+  const { logoKey: lookLogo } = useContext(EmailEditorContext);
+  const logoKey = (node.attrs.src as string | null) ?? lookLogo;
   return (
     <NodeViewWrapper as="span" data-logo="" className={cn(selected && 'outline-2 outline-primary')}>
       {logoKey ? (
@@ -123,6 +127,9 @@ export const Logo = Node.create({
   inline: true,
   atom: true,
   selectable: true,
+  addAttributes() {
+    return { src: { default: null } };
+  },
   parseHTML() {
     return [{ tag: 'span[data-logo]' }];
   },

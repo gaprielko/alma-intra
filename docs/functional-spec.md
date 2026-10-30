@@ -466,7 +466,9 @@ service).
     and unsubscribes stay in the app;
   - `templates.search`, `templates.get`, `templates.preview`, `templates.create`,
     `templates.update`: e-mail templates (**[D-45]**), so that Claude can prepare one for a user to
-    check and send in the app. New images, duplicating and sending stay in the app;
+    check and send in the app. Duplicating and sending stay in the app;
+  - `templates.image_from_file`, `product_look.set_logo`: a picture from Files for a template, or
+    as the logo of a product's look (**[D-49]**);
   - later, optionally: `activities.create` (e.g. notes from a meeting), `emails.create_draft` (a
     draft for a user to review and send in the app; Claude never sends).
 - **Safety**: tool results are data; documents may contain text that tries to instruct Claude, so
@@ -644,6 +646,7 @@ both attach files.
 | D-45  | Claude may read, preview, create and change e-mail templates through MCP, on the user's request, with `template.write`; no deleting, no sending, new images stay in the app (30 Oct 2026) |
 | D-46  | Text in an e-mail can take the look's accent colour and the look's logo within a line, so a product's name can be written as its logo; both follow the look, there is no free choice of colour or picture (30 Oct 2026) |
 | D-48  | In the header of an e-mail the words of the brand's name after the first stand out, so „Alma ADOS“ reads as the product's logo: a light colour on a dark header, the accent on a light one (30 Oct 2026) |
+| D-49  | A picture for an e-mail (an image, a logo within a line, a look's logo) can be taken from Files, in the app and through MCP. A PNG or JPG of 2 MB at most is copied among the images of e-mails, as an e-mail needs an address open to anybody that does not change with a new version of the file; EXIF of a JPG is dropped (30 Oct 2026) |
 
 ### Still to verify (not decisions)
 

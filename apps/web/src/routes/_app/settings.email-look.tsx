@@ -5,6 +5,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Check, Upload } from 'lucide-react';
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { ErrorState } from '@/components/empty-state';
+import { FilePicker } from '@/components/files/file-picker';
 import { CardSkeleton } from '@/components/skeletons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +16,7 @@ import { ImageNotAllowed, uploadEmailImage } from '@/lib/email-images';
 import { errorMessage } from '@/lib/errors';
 import { loadFailed } from '@/lib/query-view';
 import { useCan } from '@/lib/session';
-import { trpc } from '@/lib/trpc';
+import { trpc, trpcClient } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 
 const t = sk.emailLook;
@@ -138,6 +139,7 @@ function LookForm({
   const [look, setLook] = useState<EmailLook>(initial);
   const [enabled, setEnabled] = useState(product?.enabled ?? true);
   const [uploading, setUploading] = useState(false);
+  const [pickingLogo, setPickingLogo] = useState(false);
   const shown = useDebounced(look, 400);
   const preview = useQuery({
     ...trpc.template.lookPreview.queryOptions(shown),
@@ -184,6 +186,18 @@ function LookForm({
     }
   };
 
+  const logoFromFile = async (fileId: string) => {
+    setUploading(true);
+    try {
+      const { key } = await trpcClient.template.imageFromFile.mutate({ fileId });
+      set('logoKey', key);
+    } catch {
+      toast('error', sk.templates.editor.fromFilesFailed);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const text = (
     key: 'brandName' | 'headerText' | 'footerCompany' | 'footerIco' | 'footerWeb' | 'footerEmail',
     label: string,
@@ -203,6 +217,18 @@ function LookForm({
 
   return (
     <>
+      {pickingLogo ? (
+        <FilePicker
+          lead={sk.templates.editor.fromFilesLead}
+          notes={[sk.templates.editor.fromFilesNote]}
+          already={new Set()}
+          imagePick={sk.templates.editor.fromFilesPick}
+          onClose={() => setPickingLogo(false)}
+          onPick={([file]) => {
+            if (file) void logoFromFile(file.fileId);
+          }}
+        />
+      ) : null}
       <form
         className="space-y-6 rounded-2xl border border-border-subtle bg-white p-5 shadow-rest"
         onSubmit={(event) => {
@@ -273,6 +299,15 @@ function LookForm({
                     >
                       <Upload className="size-3.5" aria-hidden />
                       {look.logoKey ? t.logoChange : t.logoAdd}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      disabled={uploading}
+                      onClick={() => setPickingLogo(true)}
+                    >
+                      {t.logoFromFiles}
                     </Button>
                     {look.logoKey ? (
                       <Button

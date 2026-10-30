@@ -166,6 +166,77 @@ describe('Claude through MCP', () => {
       expect(inactive.templates.map((t) => t.id)).toContain(templateId);
     });
 
+    describe('pictures from Files', () => {
+      /** The header of a PNG of 300 × 200 px: all the service reads. */
+      const png = Buffer.alloc(33);
+      png.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+      png.writeUInt32BE(300, 16);
+      png.writeUInt32BE(200, 20);
+      const fileOf = async (name: string, content: Record<string, string>) => {
+        const made = await tool('files_create', {
+          name,
+          folderId: '00000000-0000-4000-8000-0000000000f0',
+          ...content,
+        });
+        return (JSON.parse(made.text) as { fileId: string }).fileId;
+      };
+
+      it('copies a picture for a logo in a template, open at /m/<key>', async () => {
+        const fileId = await fileOf('Alma ADOS - Logo test.png', {
+          base64: png.toString('base64'),
+        });
+        const made = await tool('templates_image_from_file', { fileId });
+        expect(made.error).toBe(false);
+        const image = JSON.parse(made.text) as { key: string; width: number; height: number };
+        expect(image).toMatchObject({ width: 300, height: 200 });
+        expect(await bucket.storage.read(`email-images/${image.key}`)).toEqual(new Uint8Array(png));
+
+        const template = await tool('templates_create', {
+          name: 'S logom zo Súborov',
+          subject: doc(text('Predmet')),
+          body: doc({ type: 'logo', attrs: { src: image.key } }, text('Alma')),
+        });
+        expect(template.error).toBe(false);
+        const open = await fetch(`${api.baseUrl}/m/${image.key}`, { redirect: 'manual' });
+        expect(open.status).toBe(302);
+      });
+
+      it('refuses a logo that is no image of e-mails', async () => {
+        const bad = await tool('templates_create', {
+          name: 'Zlé logo',
+          subject: doc(text('Predmet')),
+          body: doc({ type: 'logo', attrs: { src: 'https://example.com/x.png' } }),
+        });
+        expect(bad.error).toBe(true);
+        expect(bad.text).toContain('invalid_image');
+      });
+
+      it('refuses what an e-mail cannot show', async () => {
+        const fileId = await fileOf('Poznamky obrazky.txt', { text: 'nie obrazok' });
+        const refused = await tool('templates_image_from_file', { fileId });
+        expect(refused.error).toBe(true);
+        expect(refused.text).toContain('PNG');
+      });
+
+      it("sets the logo of a product's look and keeps the rest of it", async () => {
+        const fileId = await fileOf('Alma ADOS - Logo vzhlad.png', {
+          base64: png.toString('base64'),
+        });
+        const adosId = '00000000-0000-4000-8000-0000000000a1';
+        type Looks = { productId: string; look: { logoKey: string | null; brandName: string } }[];
+        const before = (await jana.call<Looks>('template.productLooks', undefined)).data.find(
+          (p) => p.productId === adosId,
+        )!;
+        const set = await tool('product_look_set_logo', { productId: adosId, fileId });
+        expect(set.error).toBe(false);
+        const { key } = JSON.parse(set.text) as { key: string };
+        const after = (await jana.call<Looks>('template.productLooks', undefined)).data.find(
+          (p) => p.productId === adosId,
+        )!;
+        expect(after.look).toMatchObject({ logoKey: key, brandName: before.look.brandName });
+      });
+    });
+
     it('refuses in words what the editor would not take', async () => {
       const unknown = await tool('templates_create', {
         name: 'Zlá MCP',

@@ -68,7 +68,13 @@ export const activityRouter = router({
     .input(pickableFilesSchema)
     .query(({ ctx, input }) =>
       run(() =>
-        activitiesService.pickableFiles(ctx.db, input.scope, input.customerId, input.search),
+        activitiesService.pickableFiles(
+          ctx.db,
+          input.scope,
+          input.customerId,
+          input.search,
+          input.imagesOnly,
+        ),
       ),
     ),
 
