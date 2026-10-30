@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
-import { SegmentedChoice } from '@/components/ui/segmented';
 import {
   Table,
   TableBody,
@@ -36,7 +35,6 @@ function ProductsPage() {
   const list = useQuery(trpc.product.list.queryOptions());
   const vat = useQuery(trpc.product.vatRate.queryOptions());
   const canWrite = useCan('product.write');
-  const [gross, setGross] = useState<'gross' | 'net'>('gross');
   const [search, setSearch] = useState('');
   const [removing, setRemoving] = useState<{ id: string; name: string } | null>(null);
   const toast = useToast();
@@ -52,8 +50,8 @@ function ProductsPage() {
     }),
   );
   const rate = vat.data?.vatRate ?? 23;
-  const show = (net: number | null, withTax: number | null) =>
-    gross === 'gross' ? (withTax ?? (net === null ? null : withVat(net, rate))) : net;
+  const withTax = (net: number | null, gross: number | null) =>
+    gross ?? (net === null ? null : withVat(net, rate));
   const term = search.trim().toLocaleLowerCase('sk');
   const rows = (list.data ?? []).filter(
     (row) => !term || `${row.name} ${row.description ?? ''}`.toLocaleLowerCase('sk').includes(term),
@@ -92,16 +90,6 @@ function ProductsPage() {
                   className="h-9 pl-9"
                 />
               </div>
-              <SegmentedChoice
-                className="ml-auto"
-                label={p.columns.baseGross}
-                value={gross}
-                onChange={setGross}
-                options={[
-                  { key: 'gross', label: p.gross },
-                  { key: 'net', label: p.net },
-                ]}
-              />
             </div>
             {rows.length === 0 ? (
               <p className="px-5 py-6 text-sm text-muted">{p.empty}</p>
@@ -111,13 +99,9 @@ function ProductsPage() {
                   <TableHeader>
                     <tr>
                       <TableHead className="w-[26%]">{p.columns.product}</TableHead>
-                      <TableHead>
-                        {gross === 'gross' ? p.columns.baseGross : p.columns.baseNet}
-                      </TableHead>
+                      <TableHead>{p.columns.base}</TableHead>
                       <TableHead>{p.columns.included}</TableHead>
-                      <TableHead>
-                        {gross === 'gross' ? p.columns.extrasGross : p.columns.extrasNet}
-                      </TableHead>
+                      <TableHead>{p.columns.extras}</TableHead>
                       <TableHead className="text-right">{p.columns.customers}</TableHead>
                       <TableHead>{p.columns.state}</TableHead>
                       {canWrite ? <TableHead className="w-12" /> : null}
@@ -125,9 +109,8 @@ function ProductsPage() {
                   </TableHeader>
                   <TableBody>
                     {rows.map((row) => {
-                      const base = show(row.basePrice, row.basePriceGross);
-                      const other =
-                        gross === 'gross' ? row.basePrice : (row.basePriceGross ?? null);
+                      const base = row.basePrice;
+                      const baseWithTax = withTax(row.basePrice, row.basePriceGross);
                       return (
                         <TableRow key={row.id} href={`/products/${row.id}`}>
                           <TableCell>
@@ -153,9 +136,9 @@ function ProductsPage() {
                                 <span className="text-xs text-muted">
                                   {p.perPeriod[row.period]}
                                 </span>
-                                {other === null ? null : (
+                                {baseWithTax === null ? null : (
                                   <span className="block text-xs text-muted">
-                                    {gross === 'gross' ? p.net : p.gross} {formatEur(other)}
+                                    {p.withVat(formatEur(baseWithTax))}
                                   </span>
                                 )}
                               </>
@@ -178,11 +161,12 @@ function ProductsPage() {
                               : row.items
                                   .filter((i) => i.unitPrice !== null)
                                   .map((i) => {
-                                    const price = show(i.unitPrice, i.unitPriceGross)!;
+                                    const taxed = withTax(i.unitPrice, i.unitPriceGross);
                                     return (
                                       <span key={i.itemId} className="block">
                                         {i.name} {i.included > 0 ? '+' : ''}
-                                        {formatEur(price)}
+                                        {formatEur(i.unitPrice!)}
+                                        {taxed === null ? '' : ` · ${p.withVat(formatEur(taxed))}`}
                                       </span>
                                     );
                                   })}
