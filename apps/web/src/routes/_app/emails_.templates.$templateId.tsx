@@ -124,6 +124,11 @@ function Editor({ template, look }: { template: Template | null; look: EmailLook
   const ids = useId();
   const [name, setName] = useState(template?.name ?? '');
   const [categoryId, setCategoryId] = useState(template?.categoryId ?? '');
+  const [lookProductId, setLookProductId] = useState(template?.lookProductId ?? '');
+  const productLooks = useQuery(trpc.template.productLooks.queryOptions());
+  const chosenLook = useQuery(
+    trpc.template.effectiveLook.queryOptions({ productId: lookProductId || null }),
+  );
   const [subject, setSubject] = useState<EmailNode>(template?.subject ?? EMPTY_SUBJECT);
   const [body, setBody] = useState<EmailNode>(template?.body ?? EMPTY_BODY);
   const [fields, setFields] = useState<CustomField[]>(template?.customFields ?? []);
@@ -147,6 +152,7 @@ function Editor({ template, look }: { template: Template | null; look: EmailLook
   const input = {
     name: name.trim(),
     categoryId: categoryId || null,
+    lookProductId: lookProductId || null,
     language: 'sk' as const,
     subject,
     body,
@@ -279,6 +285,19 @@ function Editor({ template, look }: { template: Template | null; look: EmailLook
                   <SelectItem value="sk">{t.fields.languages.sk}</SelectItem>
                 </Select>
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`${ids}-look`}>{sk.emailLook.field}</Label>
+              <Select id={`${ids}-look`} value={lookProductId} onChange={touch(setLookProductId)}>
+                <SelectItem value="">{sk.emailLook.fieldGlobal}</SelectItem>
+                {(productLooks.data ?? [])
+                  .filter((p) => p.look.enabled || p.productId === lookProductId)
+                  .map((p) => (
+                    <SelectItem key={p.productId} value={p.productId}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+              </Select>
             </div>
             <EmailSubjectEditor
               value={subject}
@@ -418,11 +437,16 @@ function Editor({ template, look }: { template: Template | null; look: EmailLook
               value={body}
               onChange={touch(setBody)}
               fields={fields}
-              look={look}
+              look={chosenLook.data?.look ?? look}
               senderName={me ? userFullName(me) : sk.templates.variables['sender.name']}
             />
           ) : (
-            <Preview subject={subject} body={body} fields={fields} />
+            <Preview
+              subject={subject}
+              body={body}
+              fields={fields}
+              lookProductId={lookProductId || null}
+            />
           )}
         </section>
       </div>
@@ -562,10 +586,12 @@ function useDebounced<T>(value: T, ms: number) {
  * the custom fields typed here. Missing values are marked in red and counted.
  */
 function Preview({
+  lookProductId,
   subject,
   body,
   fields,
 }: {
+  lookProductId: string | null;
   subject: EmailNode;
   body: EmailNode;
   fields: CustomField[];
@@ -582,6 +608,7 @@ function Preview({
       subject,
       body,
       customFields: fields,
+      lookProductId,
       ...(chosen ? { contactId: chosen } : {}),
       values: typed,
     }),
@@ -654,6 +681,7 @@ function Preview({
                   subject,
                   body,
                   customFields: fields,
+                  lookProductId,
                   ...(chosen ? { contactId: chosen } : {}),
                   values,
                 })

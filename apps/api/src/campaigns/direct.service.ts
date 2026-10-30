@@ -18,7 +18,7 @@ import {
   messageAttachments,
 } from '../db/schema/index.js';
 import { plainOf, renderEmail } from '../email/render.js';
-import { getLook, valuesFor } from '../email/templates.service.js';
+import { lookFor, valuesFor } from '../email/templates.service.js';
 import {
   CampaignError,
   draft,
@@ -69,6 +69,7 @@ export async function getDirect(db: Db, id: string) {
     body: row.body ?? { type: 'doc', content: [paragraph()] },
     recipients: row.directRecipients,
     templateId: row.templateId,
+    lookProductId: row.lookProductId,
     attachments,
   };
 }
@@ -86,6 +87,7 @@ export async function saveDirect(db: Db, input: SaveDirectInput) {
         body: input.body,
         directRecipients: input.recipients,
         templateId: input.templateId,
+        lookProductId: input.lookProductId,
         updatedAt: new Date(),
       })
       .where(eq(campaigns.id, input.id));
@@ -122,6 +124,7 @@ export async function directFromTemplate(
       subject: emailTemplates.subject,
       body: emailTemplates.body,
       customFields: emailTemplates.customFields,
+      lookProductId: emailTemplates.lookProductId,
     })
     .from(emailTemplates)
     .where(eq(emailTemplates.id, input.templateId));
@@ -136,6 +139,7 @@ export async function directFromTemplate(
   return {
     subject: plainOf(template.subject, values, labels),
     body: filled(template.body, values, labels),
+    lookProductId: template.lookProductId,
   };
 }
 
@@ -161,7 +165,7 @@ export async function sendDirect(db: Db, env: Env, id: string) {
     {},
   );
   const rendered = await renderEmail({
-    look: await getLook(db),
+    look: await lookFor(db, row.lookProductId),
     baseUrl: env.WEB_URL,
     subject: row.subject,
     body,

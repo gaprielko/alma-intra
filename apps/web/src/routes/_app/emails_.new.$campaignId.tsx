@@ -86,6 +86,11 @@ function Composer({
   const [body, setBody] = useState<EmailNode>(draft.body);
   const [bodyKey, setBodyKey] = useState(0);
   const [templateId, setTemplateId] = useState<string | null>(draft.templateId);
+  const [lookProductId, setLookProductId] = useState<string | null>(draft.lookProductId);
+  const productLooks = useQuery(trpc.template.productLooks.queryOptions());
+  const chosenLook = useQuery(
+    trpc.template.effectiveLook.queryOptions({ productId: lookProductId }),
+  );
   const [attachments, setAttachments] = useState(draft.attachments);
   const [copies, setCopies] = useState(draft.recipients.some((r) => r.role !== 'to'));
   const [picking, setPicking] = useState(false);
@@ -102,6 +107,7 @@ function Composer({
     subject,
     body,
     templateId,
+    lookProductId,
     attachmentFileIds: attachments.map((a) => a.id),
   };
   // Saved as it is written, so it is in „Koncepty“ whatever happens to this page.
@@ -146,6 +152,7 @@ function Composer({
       onSuccess: (filled) => {
         setSubject(filled.subject);
         setBody(filled.body);
+        setLookProductId(filled.lookProductId);
         setBodyKey((key) => key + 1);
       },
       onError,
@@ -179,7 +186,9 @@ function Composer({
     <div className="min-w-0">
       <PageHeader
         title={t.title}
-        subtitle={me ? t.from(userFullName(me), look.brandName) : undefined}
+        subtitle={
+          me ? t.from(userFullName(me), (chosenLook.data?.look ?? look).brandName) : undefined
+        }
         back={{ to: '/emails/inbox', label: sk.inbound.back }}
       >
         <Button variant="ghost" onClick={() => setDiscarding(true)}>
@@ -279,13 +288,35 @@ function Composer({
               </Select>
             </div>
           </div>
+          <div className="flex items-center gap-3 border-b border-border-subtle px-5 py-2">
+            <span className="w-24 shrink-0 text-[13px] font-medium text-muted">
+              {sk.emailLook.field}
+            </span>
+            <div className="w-full max-w-sm">
+              <Select
+                id="direct-look"
+                value={lookProductId ?? ''}
+                onChange={(value) => setLookProductId(value || null)}
+                aria-label={sk.emailLook.field}
+              >
+                <SelectItem value="">{sk.emailLook.fieldGlobal}</SelectItem>
+                {(productLooks.data ?? [])
+                  .filter((p) => p.look.enabled || p.productId === lookProductId)
+                  .map((p) => (
+                    <SelectItem key={p.productId} value={p.productId}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+              </Select>
+            </div>
+          </div>
           <div className="p-5">
             <EmailBodyEditor
-              key={bodyKey}
+              key={`${bodyKey}-${lookProductId ?? ''}-${chosenLook.isSuccess}`}
               value={body}
               onChange={setBody}
               fields={[]}
-              look={look}
+              look={chosenLook.data?.look ?? look}
               senderName={me ? userFullName(me) : ''}
             />
           </div>

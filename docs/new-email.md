@@ -11,8 +11,9 @@ per recipient. „Nový e-mail“ is one e-mail as in any mailbox.
 - **An address not in Kontakty** is added, with the offer „Uložiť do kontaktov“ or „Teraz nie“. Saving
   opens the person dialog. Sending does not depend on it.
 - **Šablóna** fills the subject and the text. Variables are replaced at once for the first recipient
-  in Komu; one without a value stays in brackets to be written over. The look is the global one until
-  per-product looks exist.
+  in Komu; one without a value stays in brackets to be written over.
+- **Vzhľad e-mailu**: the global one or a product's with its own look (D-39). A template brings its own;
+  it can be changed here.
 - **One e-mail**: everybody in Komu and Kópia sees each other, Skrytá kópia is not seen. There is one
   text for all; a different text per person is what „Hromadný e-mail“ is for.
 - **Attachments** as in the wizard: from Files or from the computer.

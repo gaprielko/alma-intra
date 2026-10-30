@@ -28,7 +28,7 @@ import {
   users,
 } from '../db/schema/index.js';
 import { missingOf, plainOf, renderEmail } from '../email/render.js';
-import { getLook, valuesFor } from '../email/templates.service.js';
+import { lookFor, valuesFor } from '../email/templates.service.js';
 import { DOWNLOAD_LINK_DAYS, downloadToken } from './download-link.js';
 
 export class CampaignError extends Error {
@@ -283,6 +283,7 @@ export async function reuseCampaign(db: Db, userId: string, id: string) {
       .values({
         senderUserId: userId,
         templateId: source.templateId,
+        lookProductId: source.lookProductId,
         subject: source.subject,
         body: source.body,
         customFields: source.customFields,
@@ -416,6 +417,7 @@ export async function chooseTemplate(db: Db, id: string, templateId: string | nu
     await draft(tx, id, true);
     let content = {
       templateId: null as string | null,
+      lookProductId: null as string | null,
       subject: EMPTY_SUBJECT,
       body: EMPTY_BODY,
       customFields: [] as CustomField[],
@@ -429,6 +431,7 @@ export async function chooseTemplate(db: Db, id: string, templateId: string | nu
       if (!template) throw new CampaignError('TEMPLATE_NOT_FOUND');
       content = {
         templateId,
+        lookProductId: template.lookProductId,
         subject: template.subject,
         body: template.body,
         customFields: template.customFields,
@@ -641,6 +644,7 @@ export async function getCampaign(db: Db, id: string) {
     id: c.id,
     status: c.status,
     kind: c.kind,
+    lookProductId: c.lookProductId,
     templateId: c.templateId,
     templateName: row.templateName,
     subject: c.subject ?? EMPTY_SUBJECT,
@@ -817,7 +821,7 @@ async function renderFor(
   );
   const body = message.bodyOverride ?? campaign.body;
   const rendered = await renderEmail({
-    look: await getLook(db),
+    look: await lookFor(db, campaign.lookProductId),
     baseUrl: env.WEB_URL,
     subject: campaign.subject,
     body,
@@ -846,7 +850,7 @@ export async function previewMessage(db: Db, env: Env, messageId: string) {
   if (!row) throw new CampaignError('NOT_FOUND');
   const campaign = await getCampaign(db, row.campaignId);
   const message = campaign.messages.find((m) => m.id === messageId)!;
-  const look = await getLook(db);
+  const look = await lookFor(db, campaign.lookProductId);
   const from = `${campaign.sender.name} | ${look.brandName} <${env.CAMPAIGN_FROM_ADDRESS}>`;
   if (campaign.status !== 'draft' && row.html) {
     return { subject: row.subject ?? '', html: row.html, missing: [], from, to: message.email };
@@ -1066,7 +1070,7 @@ export async function testMessage(db: Db, env: Env, id: string) {
   const first = campaign.messages.find((m) => !m.skipReason);
   if (!first) throw new CampaignError('NO_RECIPIENTS');
   const out = await renderFor(db, env, campaign, first, `${env.WEB_URL}/odhlasenie`);
-  const look = await getLook(db);
+  const look = await lookFor(db, campaign.lookProductId);
   return {
     to: campaign.sender.email,
     from: `${campaign.sender.name} | ${look.brandName} <${env.CAMPAIGN_FROM_ADDRESS}>`,

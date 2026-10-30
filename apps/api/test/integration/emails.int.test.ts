@@ -437,6 +437,7 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
         subject,
         body,
         templateId: null,
+        lookProductId: null,
         attachmentFileIds: [],
       });
     // Without anyone in Komu it does not leave.
@@ -531,6 +532,76 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     expect(filled.data.subject).toContain('ADOS Harmónia');
     expect(JSON.stringify(filled.data.body)).toContain('ADOS Harmónia');
     expect(JSON.stringify(filled.data.body)).not.toContain('"variable"');
+  });
+
+  it('a product look: over the global one when on, by the template and the new e-mail', async () => {
+    type Looks = { productId: string; name: string; look: Record<string, unknown> }[];
+    const looks = (await jana.call<Looks>('template.productLooks')).data;
+    const ados = looks.find((p) => p.name === 'ADOS')!;
+    const save = (enabled: boolean) =>
+      jana.call('template.saveProductLook', {
+        productId: ados.productId,
+        look: { ...ados.look, enabled, brandName: 'Alma Skuska', footerWeb: 'skuska.example.net' },
+      });
+    const brandOf = async (productId: string | null) =>
+      (await jana.call<{ look: { brandName: string } }>('template.effectiveLook', { productId }))
+        .data.look.brandName;
+
+    expect((await save(true)).code).toBeUndefined();
+    expect(await brandOf(ados.productId)).toBe('Alma Skuska');
+    expect(await brandOf(null)).not.toBe('Alma Skuska');
+
+    // A template wears it, and hands it to the wizard's draft.
+    const text = doc('Text');
+    const template = await jana.call<{ id: string }>('template.create', {
+      name: `S vzhľadom ${Date.now()}`,
+      categoryId: null,
+      lookProductId: ados.productId,
+      subject: doc('Predmet'),
+      body: text,
+    });
+    const shown = await jana.call<{ html: string }>('template.preview', {
+      subject: doc('Predmet'),
+      body: text,
+      lookProductId: ados.productId,
+    });
+    expect(shown.data.html).toContain('Alma Skuska');
+    const id = await draft();
+    await jana.call('campaign.chooseTemplate', { id, templateId: template.data.id });
+    expect(
+      (await jana.call<{ lookProductId: string | null }>('campaign.get', { id })).data
+        .lookProductId,
+    ).toBe(ados.productId);
+
+    // A direct e-mail goes out in it, under its brand.
+    const direct = await jana.call<{ id: string }>('campaign.createDirect');
+    await jana.call('campaign.saveDirect', {
+      id: direct.data.id,
+      recipients: [
+        {
+          role: 'to',
+          email: 'vzhlad@example.net',
+          name: null,
+          contactId: null,
+          organizationId: null,
+        },
+      ],
+      subject: 'So vzhľadom',
+      body: text,
+      templateId: null,
+      lookProductId: ados.productId,
+      attachmentFileIds: [],
+    });
+    await jana.call('campaign.sendDirect', { id: direct.data.id });
+    await drainCampaigns(api.db, memoryTransport({ quiet: true }), null, loadEnv());
+    const mail = outbox.at(-1)!;
+    expect(mail.to).toBe('vzhlad@example.net');
+    expect(mail.from).toContain('| Alma Skuska <');
+    expect(mail.html).toContain('skuska.example.net');
+
+    // Switched off, the product wears the global look again.
+    await save(false);
+    expect(await brandOf(ados.productId)).not.toBe('Alma Skuska');
   });
 
   it('groups a conversation by its subject: one row, the rest in the thread', async () => {

@@ -588,7 +588,9 @@ function ContentStep({
   const toast = useToast();
   const refresh = useRefresh(campaign.id);
   const me = useSession((s) => s.user);
-  const look = useQuery(trpc.template.look.queryOptions());
+  const look = useQuery(
+    trpc.template.effectiveLook.queryOptions({ productId: campaign.lookProductId }),
+  );
   const [subject, setSubject] = useState<EmailNode>(campaign.subject);
   const [body, setBody] = useState<EmailNode>(campaign.body);
   const [common, setCommon] = useState<Record<string, string>>(campaign.commonValues);
@@ -880,7 +882,9 @@ function PreviewStep({
   const refresh = useRefresh(campaign.id);
   const queryClient = useQueryClient();
   const me = useSession((s) => s.user);
-  const look = useQuery(trpc.template.look.queryOptions());
+  const look = useQuery(
+    trpc.template.effectiveLook.queryOptions({ productId: campaign.lookProductId }),
+  );
   const sendable = campaign.messages.filter((m) => !m.skipReason);
   const [index, setIndex] = useState(0);
   const [editing, setEditing] = useState<EmailNode | null>(null);

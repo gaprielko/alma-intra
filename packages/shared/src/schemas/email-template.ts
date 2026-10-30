@@ -161,6 +161,8 @@ export const templateInputSchema = z
     subject: emailDocSchema,
     body: emailDocSchema,
     customFields: z.array(customFieldSchema).max(20).default([]),
+    /** Whose look its e-mails wear: a product's, or NULL for the global one. */
+    lookProductId: idSchema.nullable().default(null),
     /** Files of the Files module offered as attachments when sending; their current version. */
     attachmentFileIds: z.array(idSchema).max(10).default([]),
     active: z.boolean().default(true),
@@ -194,6 +196,7 @@ export const templatePreviewSchema = z.object({
   body: emailDocSchema,
   customFields: z.array(customFieldSchema).max(20).default([]),
   contactId: idSchema.optional(),
+  lookProductId: idSchema.nullable().default(null),
   /** Values typed for the custom fields, by key; empty ones stay missing. */
   values: z.record(z.string().max(500)).default({}),
 });
@@ -223,6 +226,25 @@ export const emailLookSchema = z.object({
   replyToAddress: z.string().trim().email('invalid_email').max(120),
 });
 export type EmailLook = z.infer<typeof emailLookSchema>;
+
+/**
+ * A product's own look (D-39): what it sets over the global one. The company's name, its IČO, the
+ * sending address and where replies go stay common.
+ */
+export const productLookSchema = emailLookSchema
+  .pick({
+    logoKey: true,
+    headerStyle: true,
+    brandName: true,
+    headerText: true,
+    accent: true,
+    footerWeb: true,
+    footerEmail: true,
+  })
+  .extend({ enabled: z.boolean() });
+export type ProductLook = z.infer<typeof productLookSchema>;
+export const saveProductLookSchema = z.object({ productId: idSchema, look: productLookSchema });
+export const effectiveLookSchema = z.object({ productId: idSchema.nullable() });
 
 /** An image for e-mails, resized in the browser; its bytes go straight to the bucket. */
 export const EMAIL_IMAGE_TYPES = {

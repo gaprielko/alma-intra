@@ -15,7 +15,7 @@ import {
   messageAttachments,
   users,
 } from '../db/schema/index.js';
-import { getLook } from '../email/templates.service.js';
+import { getLook, lookFor } from '../email/templates.service.js';
 import { replyAddress, replyToken } from '../inbound/inbound.js';
 import { describeError } from '../logging/describe-error.js';
 import { notify } from '../notifications/notifications.service.js';
@@ -83,7 +83,6 @@ export async function drainCampaigns(
 ) {
   const ids = await claim(db);
   if (ids.length === 0) return 0;
-  const look = await getLook(db);
   for (const id of ids) {
     if (signal?.aborted) break;
     const [m] = await db
@@ -91,6 +90,7 @@ export async function drainCampaigns(
         id: campaignMessages.id,
         campaignId: campaignMessages.campaignId,
         kind: campaigns.kind,
+        lookProductId: campaigns.lookProductId,
         to: campaignMessages.toEmail,
         subject: campaignMessages.subject,
         html: campaignMessages.html,
@@ -108,6 +108,7 @@ export async function drainCampaigns(
       .innerJoin(users, eq(users.id, campaigns.senderUserId))
       .where(and(eq(campaignMessages.id, id), eq(campaignMessages.status, 'queued')));
     if (!m?.to || !m.html || !m.subject) continue;
+    const look = await lookFor(db, m.lookProductId);
     try {
       const attached = await db
         .select({ key: fileVersions.storageKey, mime: fileVersions.mime, name: files.name })

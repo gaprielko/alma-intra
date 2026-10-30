@@ -5,6 +5,7 @@ import {
   type EmailNode,
   personName,
   type TemplateValues,
+  type ProductLook,
 } from '@intra/shared/schemas';
 import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
@@ -13,6 +14,8 @@ import {
   contactLinks,
   contacts,
   emailLook,
+  productEmailLooks,
+  products,
   emailTemplateAttachments,
   emailTemplates,
   files,
@@ -113,6 +116,7 @@ export async function getTemplate(db: Db, id: string) {
       id: emailTemplates.id,
       name: emailTemplates.name,
       categoryId: emailTemplates.categoryId,
+      lookProductId: emailTemplates.lookProductId,
       language: emailTemplates.language,
       subject: emailTemplates.subject,
       body: emailTemplates.body,
@@ -175,6 +179,7 @@ async function writeAttachments(tx: Tx, templateId: string, fileIds: string[]) {
 const columnsOf = (input: TemplateValues) => ({
   name: input.name,
   categoryId: input.categoryId,
+  lookProductId: input.lookProductId,
   language: input.language,
   subject: input.subject,
   body: input.body,
@@ -222,6 +227,7 @@ export async function duplicateTemplate(db: Db, userId: string, id: string) {
   return createTemplate(db, userId, {
     name: sk.templates.copyName(source.name).slice(0, 120),
     categoryId: source.categoryId,
+    lookProductId: source.lookProductId,
     language: 'sk',
     subject: source.subject,
     body: source.body,
@@ -247,6 +253,70 @@ export async function getLook(db: Db | Tx): Promise<EmailLook> {
     importEnabled: row?.importEnabled ?? false,
     replyToAddress: row?.replyToAddress ?? 'info@alma-care.eu',
   };
+}
+
+/** The look an e-mail wears: the global one, with its product's over it when that is on. */
+export async function lookFor(db: Db | Tx, productId: string | null): Promise<EmailLook> {
+  const look = await getLook(db);
+  if (!productId) return look;
+  const [own] = await db
+    .select()
+    .from(productEmailLooks)
+    .where(eq(productEmailLooks.productId, productId));
+  if (!own?.enabled) return look;
+  return {
+    ...look,
+    logoKey: own.logoKey,
+    headerStyle: own.headerStyle,
+    brandName: own.brandName,
+    headerText: own.headerText,
+    accent: own.accent as EmailLook['accent'],
+    footerWeb: own.footerWeb,
+    footerEmail: own.footerEmail,
+  };
+}
+
+/** Every product with its look: one not set up yet starts from the global one, off. */
+export async function productLooks(db: Db) {
+  const [look, rows] = await Promise.all([
+    getLook(db),
+    db
+      .select({ id: products.id, name: products.name, own: productEmailLooks })
+      .from(products)
+      .leftJoin(productEmailLooks, eq(productEmailLooks.productId, products.id))
+      .orderBy(asc(products.position), asc(products.name)),
+  ]);
+  return rows.map(({ id, name, own }) => ({
+    productId: id,
+    name,
+    look: {
+      enabled: own?.enabled ?? false,
+      logoKey: own ? own.logoKey : look.logoKey,
+      headerStyle: own?.headerStyle ?? look.headerStyle,
+      brandName: own?.brandName ?? look.brandName,
+      headerText: own?.headerText ?? look.headerText,
+      accent: (own?.accent ?? look.accent) as EmailLook['accent'],
+      footerWeb: own?.footerWeb ?? look.footerWeb,
+      footerEmail: own?.footerEmail ?? look.footerEmail,
+    },
+  }));
+}
+
+export async function saveProductLook(
+  db: Db,
+  userId: string,
+  input: { productId: string; look: ProductLook },
+) {
+  const values = { ...input.look, updatedByUserId: userId, updatedAt: new Date() };
+  const [product] = await db
+    .select({ id: products.id })
+    .from(products)
+    .where(eq(products.id, input.productId));
+  if (!product) throw new TemplateError('NOT_FOUND');
+  await db
+    .insert(productEmailLooks)
+    .values({ productId: input.productId, ...values })
+    .onConflictDoUpdate({ target: productEmailLooks.productId, set: values });
 }
 
 export async function updateLook(db: Db, userId: string, look: EmailLook) {
@@ -401,11 +471,12 @@ export async function previewTemplate(
     body: EmailNode;
     customFields: CustomField[];
     contactId?: string | undefined;
+    lookProductId?: string | null | undefined;
     values: Readonly<Record<string, string>>;
   },
 ) {
   const [look, filled] = await Promise.all([
-    getLook(db),
+    lookFor(db, input.lookProductId ?? null),
     valuesFor(db, { contactId: input.contactId }, senderUserId, input.values),
   ]);
   const rendered = await renderEmail({
@@ -442,7 +513,7 @@ export async function testTemplate(
       .select({ email: users.email, name: fullNameOf(users) })
       .from(users)
       .where(eq(users.id, userId)),
-    getLook(db),
+    lookFor(db, input.lookProductId ?? null),
     previewTemplate(db, env.WEB_URL, userId, input),
   ]);
   return {

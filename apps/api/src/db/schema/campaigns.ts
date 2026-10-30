@@ -19,7 +19,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { contacts, organizations } from './customers.js';
+import { contacts, organizations, products } from './customers.js';
 import { emailTemplates } from './email.js';
 import { files, fileVersions } from './files.js';
 import { users } from './users.js';
@@ -43,6 +43,8 @@ export const campaigns = pgTable(
       .default('bulk'),
     /** Who a direct e-mail goes to, while it is a draft; sending makes the message rows. */
     directRecipients: jsonb('direct_recipients').$type<DirectRecipient[]>().notNull().default([]),
+    /** Whose look it wears; NULL: the global one (D-39). */
+    lookProductId: uuid('look_product_id').references(() => products.id, { onDelete: 'set null' }),
     templateId: uuid('template_id').references(() => emailTemplates.id),
     subject: jsonb('subject').$type<EmailNode>(),
     body: jsonb('body').$type<EmailNode>(),

@@ -1,6 +1,8 @@
 import {
   confirmImageSchema,
+  effectiveLookSchema,
   emailLookSchema,
+  saveProductLookSchema,
   requestImageSchema,
   templateIdSchema,
   templateInputSchema,
@@ -130,6 +132,27 @@ export const templateRouter = router({
     senderAddress: ctx.env.CAMPAIGN_FROM_ADDRESS,
     inboundReady: Boolean(ctx.env.INBOUND_REPLY_DOMAIN && ctx.env.RESEND_API_KEY),
   })),
+
+  /** The look an e-mail with this product wears, for the editor's frame. */
+  effectiveLook: authorizedProcedure('template.read')
+    .input(effectiveLookSchema)
+    .query(async ({ ctx, input }) => ({ look: await templates.lookFor(ctx.db, input.productId) })),
+
+  productLooks: authorizedProcedure('template.read').query(({ ctx }) =>
+    templates.productLooks(ctx.db),
+  ),
+
+  saveProductLook: authorizedProcedure('email_look.manage')
+    .input(saveProductLookSchema)
+    .mutation(async ({ ctx, input }) => {
+      await run(() => templates.saveProductLook(ctx.db, ctx.session.userId, input));
+      ctx.audit.set({
+        entityType: 'email_look',
+        entityId: input.productId,
+        diff: { enabled: input.look.enabled },
+      });
+      return { ok: true as const };
+    }),
 
   lookPreview: authorizedProcedure('template.read')
     .input(emailLookSchema)

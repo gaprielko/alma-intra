@@ -288,6 +288,13 @@
       "when": 1793359361096,
       "tag": "0040_shocking_johnny_blaze",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1793360947355,
+      "tag": "0041_zippy_puff_adder",
+      "breakpoints": true
     }
   ]
 }
