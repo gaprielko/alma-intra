@@ -37,6 +37,7 @@ import {
 } from '../db/schema/index.js';
 import { createCustomerFolder } from '../files/files.service.js';
 import { nursesOf } from './holdings.service.js';
+import { followedChanges, followedOf } from './user-contact-sync.js';
 
 /** The object without one key, for a row that must not leave the server whole. */
 function omit<T extends object, K extends keyof T>(value: T, key: K): Omit<T, K> {
@@ -53,6 +54,10 @@ export class CustomerError extends Error {
       | 'ICO_TAKEN'
       | 'KIND_CHANGED'
       | 'CONTACT_EMAIL_TAKEN'
+      /** The details of a contact made from a user change in Používatelia only (D-47). */
+      | 'FOLLOWS_USER'
+      /** A deactivated user does not become a contact. */
+      | 'USER_NOT_AVAILABLE'
       | 'NOT_ORGANIZATION'
       /** A prevádzka cannot have prevádzky, nor can a private person (one level, a company). */
       | 'NOT_PARENT'
@@ -687,7 +692,11 @@ export async function updateCustomer(db: Db, id: string, input: CustomerInput) {
       if (input.kind === 'individual') {
         const [self] = await personsOf(tx, id);
         if (self) {
-          const person = selfColumns(input);
+          const typed = selfColumns(input);
+          if (self.userId && followedChanges(self, typed).length > 0) {
+            throw new CustomerError('FOLLOWS_USER');
+          }
+          const person = self.userId ? { ...typed, ...followedOf(self) } : typed;
           fields.push(...changedFields(self, person).filter((f) => !fields.includes(f)));
           const unsubscribe = input.receivesBulk
             ? { unsubscribedAt: null, unsubscribeSource: null }
@@ -1021,7 +1030,11 @@ export async function updateContact(
   return mapUnique(() =>
     db.transaction(async (tx) => {
       const { contact: current, link } = await liveContact(tx, id, customerId);
-      const values = contactColumns(input);
+      const typed = contactColumns(input);
+      if (current.userId && followedChanges(current, typed).length > 0) {
+        throw new CustomerError('FOLLOWS_USER');
+      }
+      const values = current.userId ? { ...typed, ...followedOf(current) } : typed;
       const fields = changedFields(current, values);
       const position = input.position ?? null;
       if (position !== link.position) fields.push('position');

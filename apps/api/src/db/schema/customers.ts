@@ -315,11 +315,17 @@ export const contacts = pgTable(
     unsubscribedAt: timestamp('unsubscribed_at', { withTimezone: true }),
     unsubscribeSource: unsubscribeSource('unsubscribe_source'),
     note: text('note'),
+    /** Made from this user: the titles, name, e-mail and phone follow theirs (D-47). */
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
   },
   (t) => [
+    // A user is one live contact.
+    uniqueIndex('contacts_user_unique')
+      .on(t.userId)
+      .where(sql`${t.deletedAt} is null and ${t.userId} is not null`),
     // One person is entered once (D-7): an e-mail belongs to one live person.
     uniqueIndex('contacts_email_unique')
       .on(sql`lower(${t.email})`)

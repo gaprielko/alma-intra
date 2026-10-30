@@ -1,4 +1,5 @@
 import {
+  addUserContactSchema,
   createPersonSchema,
   linkPersonSchema,
   personByEmailSchema,
@@ -7,6 +8,7 @@ import {
   personTimelineSchema,
   unlinkPersonSchema,
   updatePersonSchema,
+  userCandidatesSchema,
 } from '@intra/shared/schemas';
 import { TRPCError } from '@trpc/server';
 import { timelineOf } from '../activities/activities.service.js';
@@ -80,6 +82,31 @@ export const personRouter = router({
         persons.updatePerson(ctx.db, input.id, input.person, input.receivesBulk),
       );
       ctx.audit.set({ entityType: 'person', entityId: input.id, diff: { fields: change.fields } });
+      return { ok: true as const };
+    }),
+
+  /** „Používateľ aplikácie“: who can be added and what adding them would do (D-47). */
+  userCandidates: authorizedProcedure('customer.read')
+    .input(userCandidatesSchema)
+    .query(({ ctx, input }) => persons.userCandidates(ctx.db, input.customerId)),
+
+  addUser: authorizedProcedure('customer.write')
+    .input(addUserContactSchema)
+    .mutation(async ({ ctx, input }) => {
+      const added = await run(() => persons.addUserContact(ctx.db, input));
+      auditOrganization(ctx, input.customerId, {
+        contact: 'linked',
+        contactId: added.id,
+        ...(input.isPrimary ? { primary: true } : {}),
+      });
+      return { id: added.id };
+    }),
+
+  disconnectUser: authorizedProcedure('customer.write')
+    .input(personIdSchema)
+    .mutation(async ({ ctx, input }) => {
+      await run(() => persons.disconnectUser(ctx.db, input.id));
+      ctx.audit.set({ entityType: 'person', entityId: input.id, diff: { userDisconnected: true } });
       return { ok: true as const };
     }),
 

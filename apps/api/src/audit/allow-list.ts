@@ -217,6 +217,7 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     vatRate: number,
   },
   person: {
+    userDisconnected: flag,
     created: flag,
     deleted: flag,
     count: number,

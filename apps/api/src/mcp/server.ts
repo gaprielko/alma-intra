@@ -108,6 +108,8 @@ const CUSTOMER_REFUSALS: Partial<Record<CustomerError['code'], string>> = {
   ICO_TAKEN: 'An organization with this IČO is already there: find it with customers_search.',
   CONTACT_EMAIL_TAKEN:
     'A person with this e-mail is already in Kontakty: find them with contacts_search.',
+  FOLLOWS_USER:
+    'This person was made from a user of the app: their titles, name, e-mail and phone change in the user only.',
   NOT_ORGANIZATION: 'A private person has no contact persons.',
   NOT_PARENT: 'A prevádzka is added to an organization, not to a prevádzka or a private person.',
   IS_ESTABLISHMENT: 'This is a prevádzka: use establishments_update.',
@@ -705,7 +707,8 @@ export function buildMcpServer(ctx: McpContext) {
       description:
         CHANGES_RULE +
         'customerId is the organization or prevádzka the person is edited at: the position is ' +
-        'theirs there. Whether they receive marketing e-mails is changed in the app. Only when ' +
+        'theirs there. Whether they receive marketing e-mails is changed in the app. The titles, ' +
+        'name, e-mail and phone of a person made from a user cannot be changed here. Only when ' +
         'the user asked for it.',
       inputSchema: {
         contactId: z.string().uuid(),

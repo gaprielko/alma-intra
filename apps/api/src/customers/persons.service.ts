@@ -1,9 +1,15 @@
 import { personListSchema, personName } from '@intra/shared/schemas';
-import type { PersonInput, PersonListInput } from '@intra/shared/schemas';
-import { and, asc, eq, isNull, type SQL, sql } from 'drizzle-orm';
+import type { AddUserContactInput, PersonInput, PersonListInput } from '@intra/shared/schemas';
+import { and, asc, eq, inArray, isNull, ne, or, type SQL, sql } from 'drizzle-orm';
 import type { Db, Tx } from '../db/db.module.js';
-import { contactLinks, contacts, organizations } from '../db/schema/index.js';
+import { contactLinks, contacts, fullNameOf, organizations, users } from '../db/schema/index.js';
 import { CustomerError } from './customers.service.js';
+import {
+  detailsOfUser,
+  followedChanges,
+  followedOf,
+  renameOwnRecord,
+} from './user-contact-sync.js';
 
 /**
  * Kontakty: natural persons on their own (docs/contacts-redesign.md, stage O3). A person works at
@@ -322,7 +328,11 @@ export async function updatePerson(db: Db, id: string, input: PersonInput, recei
         .where(and(eq(contacts.id, id), alive))
         .for('update');
       if (!current) throw new CustomerError('NOT_FOUND');
-      const values = personColumns(input);
+      const typed = personColumns(input);
+      if (current.userId && followedChanges(current, typed).length > 0) {
+        throw new CustomerError('FOLLOWS_USER');
+      }
+      const values = current.userId ? { ...typed, ...followedOf(current) } : typed;
       const fields: string[] = (Object.keys(values) as (keyof typeof values)[]).filter(
         (key) => (current[key] ?? null) !== (values[key] ?? null),
       );
@@ -336,10 +346,7 @@ export async function updatePerson(db: Db, id: string, input: PersonInput, recei
         .update(contacts)
         .set({ ...values, ...unsubscribe, updatedAt: new Date() })
         .where(eq(contacts.id, id));
-      // A private person's record carries their name.
-      await tx.execute(sql`update organizations o set name = ${personName(values)}, updated_at = now()
-        from contact_links l where l.organization_id = o.id and l.contact_id = ${id}
-        and o.kind = 'individual'`);
+      await renameOwnRecord(tx, id, values);
       return { fields: fields.sort() };
     }),
   );
@@ -363,6 +370,162 @@ export async function linkPerson(
     await livePerson(tx, id);
     await link(tx, id, item);
   });
+}
+
+/**
+ * The users „Používateľ aplikácie“ offers for an organization, and what adding each would do: put
+ * their contact here, or connect the contact that already has their e-mail (D-47).
+ */
+export async function userCandidates(db: Db | Tx, customerId: string) {
+  const rows = await db
+    .select({
+      id: users.id,
+      fullName: fullNameOf(users),
+      name: users.name,
+      titleBefore: users.titleBefore,
+      titleAfter: users.titleAfter,
+      email: users.email,
+      phone: users.phone,
+      position: users.position,
+      status: users.status,
+    })
+    .from(users)
+    .where(and(isNull(users.deletedAt), ne(users.status, 'deactivated')))
+    .orderBy(sql`${users.name} collate "sk-x-icu"`, asc(users.id));
+  if (rows.length === 0) return [];
+  const people = await db
+    .select()
+    .from(contacts)
+    .where(
+      and(
+        alive,
+        or(
+          inArray(
+            contacts.userId,
+            rows.map((row) => row.id),
+          ),
+          inArray(
+            sql`lower(${contacts.email})`,
+            rows.map((row) => row.email.toLowerCase()),
+          ),
+        ),
+      ),
+    );
+  const links = people.length
+    ? await db
+        .select({ contactId: contactLinks.contactId, organizationId: contactLinks.organizationId })
+        .from(contactLinks)
+        .innerJoin(organizations, eq(organizations.id, contactLinks.organizationId))
+        .where(
+          and(
+            inArray(
+              contactLinks.contactId,
+              people.map((person) => person.id),
+            ),
+            isNull(organizations.deletedAt),
+          ),
+        )
+    : [];
+  const linksOf = (contactId: string) => links.filter((l) => l.contactId === contactId);
+  return rows.map((row) => {
+    const own = people.find((person) => person.userId === row.id);
+    const sameEmail = own
+      ? undefined
+      : people.find((person) => person.email?.toLowerCase() === row.email.toLowerCase());
+    const details = detailsOfUser(row);
+    const contact = own ?? sameEmail;
+    return {
+      id: row.id,
+      fullName: row.fullName,
+      email: row.email,
+      position: row.position,
+      status: row.status,
+      /** The contact they already are, wherever it works. */
+      contactId: own?.id ?? null,
+      /** They already are a contact of this organization, there is nothing to add. */
+      alreadyHere: contact
+        ? linksOf(contact.id).some((l) => l.organizationId === customerId)
+        : false,
+      /** Their e-mail belongs to a contact not yet connected: what connecting it would change. */
+      clash: sameEmail
+        ? {
+            name: personName(sameEmail),
+            organizations: linksOf(sameEmail.id).length,
+            changes: followedChanges(sameEmail, details).map((field) => ({
+              field,
+              from: sameEmail[field],
+              to: details[field],
+            })),
+          }
+        : null,
+    };
+  });
+}
+
+/**
+ * Makes the user a contact of the organization. A user who already is a contact is not made
+ * twice. A contact with their e-mail is connected only when the dialog has shown what changes.
+ */
+export async function addUserContact(db: Db, input: AddUserContactInput) {
+  return mapEmailClash(() =>
+    db.transaction(async (tx) => {
+      const [user] = await tx
+        .select({
+          status: users.status,
+          name: users.name,
+          titleBefore: users.titleBefore,
+          titleAfter: users.titleAfter,
+          email: users.email,
+          phone: users.phone,
+        })
+        .from(users)
+        .where(and(eq(users.id, input.userId), isNull(users.deletedAt)))
+        .for('update');
+      if (!user) throw new CustomerError('NOT_FOUND');
+      if (user.status === 'deactivated') throw new CustomerError('USER_NOT_AVAILABLE');
+      const details = detailsOfUser(user);
+      const [own] = await tx
+        .select({ id: contacts.id })
+        .from(contacts)
+        .where(and(eq(contacts.userId, input.userId), alive))
+        .for('update');
+      let id = own?.id;
+      if (!id) {
+        const [sameEmail] = await tx
+          .select({ id: contacts.id })
+          .from(contacts)
+          .where(and(sql`lower(${contacts.email}) = ${user.email.toLowerCase()}`, alive))
+          .for('update');
+        if (sameEmail && !input.connect) throw new CustomerError('CONTACT_EMAIL_TAKEN');
+        if (sameEmail) {
+          id = sameEmail.id;
+          await tx
+            .update(contacts)
+            .set({ ...details, userId: input.userId, updatedAt: new Date() })
+            .where(eq(contacts.id, id));
+          await renameOwnRecord(tx, id, details);
+        } else {
+          const [created] = await tx
+            .insert(contacts)
+            .values({ ...details, userId: input.userId })
+            .returning({ id: contacts.id });
+          id = created!.id;
+        }
+      }
+      await link(tx, id, input);
+      return { id };
+    }),
+  );
+}
+
+/** Makes it an ordinary contact that keeps its details. */
+export async function disconnectUser(db: Db, id: string) {
+  const [row] = await db
+    .update(contacts)
+    .set({ userId: null, updatedAt: new Date() })
+    .where(and(eq(contacts.id, id), alive))
+    .returning({ id: contacts.id });
+  if (!row) throw new CustomerError('NOT_FOUND');
 }
 
 /** Takes the person off one organization; they stay in Kontakty (D-2). */
