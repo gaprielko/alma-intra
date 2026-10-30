@@ -278,6 +278,20 @@ describe('A contact made from a user (D-47)', () => {
     expect(locked.message).toBe('FOLLOWS_USER');
   });
 
+  it('brings the removed contact of a user back, with their details (D-48)', async () => {
+    const userId = await invite('hana.spat@alma-care.test', 'Hana Späť', '+421 900 000 308');
+    const { data } = await jana.call<{ id: string }>('person.addUser', {
+      userId,
+      customerId: HARMONIA,
+    });
+    expect((await jana.call('person.delete', { id: data.id })).code).toBeUndefined();
+    await jana.call('user.update', { userId, name: 'Hana Znovu', phone: '' });
+
+    const again = await jana.call<{ id: string }>('person.addUser', { userId, customerId: other });
+    expect(again.data.id).toBe(data.id);
+    expect(await person(data.id)).toMatchObject({ userId, lastName: 'Znovu', phone: null });
+  });
+
   it('leaves an ordinary contact with its details after disconnecting', async () => {
     const userId = await invite('emil.volny@alma-care.test', 'Emil Voľný');
     const { data } = await jana.call<{ id: string }>('person.addUser', {

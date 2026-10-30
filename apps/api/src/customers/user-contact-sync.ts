@@ -1,5 +1,5 @@
 import { personName } from '@intra/shared/schemas';
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm';
 import type { Db, Tx } from '../db/db.module.js';
 import { contactLinks, contacts, users } from '../db/schema/index.js';
 
@@ -59,6 +59,47 @@ export function detailsOfUser(user: {
     email: user.email,
     phone: user.phone,
   };
+}
+
+/**
+ * A new contact, or the removed one with the same e-mail back, so that its activities, e-mails and
+ * replies come with it (D-48). What was given wins and what was not stays, a contact that
+ * unsubscribed stays unsubscribed, and one made from a user takes the user's details.
+ */
+export async function insertOrRestoreContact(tx: Tx, values: typeof contacts.$inferInsert) {
+  const [removed] = values.email
+    ? await tx
+        .select({ id: contacts.id, userId: contacts.userId })
+        .from(contacts)
+        .where(
+          and(
+            sql`lower(${contacts.email}) = ${values.email.toLowerCase()}`,
+            isNotNull(contacts.deletedAt),
+          ),
+        )
+        .orderBy(desc(contacts.deletedAt))
+        .limit(1)
+        .for('update')
+    : [];
+  if (!removed) {
+    const [created] = await tx.insert(contacts).values(values).returning({ id: contacts.id });
+    return { id: created!.id };
+  }
+  const given = Object.fromEntries(
+    Object.entries(values).filter(([, value]) => value !== null && value !== undefined),
+  );
+  const userId = values.userId ?? removed.userId;
+  const [user] = userId ? await tx.select().from(users).where(eq(users.id, userId)) : [];
+  await tx
+    .update(contacts)
+    .set({
+      ...given,
+      ...(user ? detailsOfUser(user) : {}),
+      deletedAt: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(contacts.id, removed.id));
+  return { id: removed.id };
 }
 
 /**

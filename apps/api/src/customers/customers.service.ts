@@ -37,7 +37,7 @@ import {
 } from '../db/schema/index.js';
 import { createCustomerFolder } from '../files/files.service.js';
 import { nursesOf } from './holdings.service.js';
-import { followedChanges, followedOf } from './user-contact-sync.js';
+import { followedChanges, followedOf, insertOrRestoreContact } from './user-contact-sync.js';
 
 /** The object without one key, for a row that must not leave the server whole. */
 function omit<T extends object, K extends keyof T>(value: T, key: K): Omit<T, K> {
@@ -621,13 +621,13 @@ export async function createCustomer(db: Db, userId: string, input: CreateCustom
         const unsubscribed = input.customer.receivesBulk
           ? {}
           : { unsubscribedAt: new Date(), unsubscribeSource: 'manual' as const };
-        const [person] = await tx
-          .insert(contacts)
-          .values({ ...selfColumns(input.customer), ...unsubscribed })
-          .returning({ id: contacts.id });
+        const person = await insertOrRestoreContact(tx, {
+          ...selfColumns(input.customer),
+          ...unsubscribed,
+        });
         await tx
           .insert(contactLinks)
-          .values({ contactId: person!.id, organizationId: created!.id, isPrimary: true });
+          .values({ contactId: person.id, organizationId: created!.id, isPrimary: true });
       }
       const { added } = await setTags(tx, created!.id, input.customer.tags);
       const productChange = await setProducts(
@@ -637,12 +637,9 @@ export async function createCustomer(db: Db, userId: string, input: CreateCustom
       );
       await createCustomerFolder(tx, created!.id);
       if (input.firstContact && input.customer.kind === 'organization') {
-        const [person] = await tx
-          .insert(contacts)
-          .values(contactColumns(input.firstContact))
-          .returning({ id: contacts.id });
+        const person = await insertOrRestoreContact(tx, contactColumns(input.firstContact));
         await tx.insert(contactLinks).values({
-          contactId: person!.id,
+          contactId: person.id,
           organizationId: created!.id,
           position: input.firstContact.position ?? null,
           isPrimary: true,
@@ -986,18 +983,15 @@ export async function createContact(db: Db, customerId: string, input: ContactIn
         .select({ id: contactLinks.contactId })
         .from(contactLinks)
         .where(and(eq(contactLinks.organizationId, customerId), eq(contactLinks.isPrimary, true)));
-      const [created] = await tx
-        .insert(contacts)
-        .values(contactColumns(input))
-        .returning({ id: contacts.id });
+      const created = await insertOrRestoreContact(tx, contactColumns(input));
       await tx.insert(contactLinks).values({
-        contactId: created!.id,
+        contactId: created.id,
         organizationId: customerId,
         position: input.position ?? null,
         isPrimary: !primary,
       });
       await touch(tx, customerId);
-      return { id: created!.id, customerId };
+      return { id: created.id, customerId };
     }),
   );
 }
@@ -1293,17 +1287,14 @@ export async function createEstablishment(db: Db, userId: string, input: CreateE
         });
         contactId = person.id;
       } else if (input.primary?.kind === 'new') {
-        const [person] = await tx
-          .insert(contacts)
-          .values(contactColumns(input.primary.contact))
-          .returning({ id: contacts.id });
+        const person = await insertOrRestoreContact(tx, contactColumns(input.primary.contact));
         await tx.insert(contactLinks).values({
-          contactId: person!.id,
+          contactId: person.id,
           organizationId: created!.id,
           position: input.primary.contact.position ?? null,
           isPrimary: true,
         });
-        contactId = person!.id;
+        contactId = person.id;
       }
       await touch(tx, parent.id);
       return { id: created!.id, parentId: parent.id, contactId };

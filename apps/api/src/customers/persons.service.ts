@@ -8,6 +8,7 @@ import {
   detailsOfUser,
   followedChanges,
   followedOf,
+  insertOrRestoreContact,
   renameOwnRecord,
 } from './user-contact-sync.js';
 
@@ -303,17 +304,17 @@ export async function createPerson(
       const unsubscribed = input.receivesBulk
         ? {}
         : { unsubscribedAt: new Date(), unsubscribeSource: 'manual' as const };
-      const [created] = await tx
-        .insert(contacts)
-        .values({ ...personColumns(input.person), ...unsubscribed })
-        .returning({ id: contacts.id });
+      const created = await insertOrRestoreContact(tx, {
+        ...personColumns(input.person),
+        ...unsubscribed,
+      });
       const seen = new Set<string>();
       for (const item of input.links) {
         if (seen.has(item.customerId)) continue;
         seen.add(item.customerId);
-        await link(tx, created!.id, item);
+        await link(tx, created.id, item);
       }
-      return { id: created!.id, customerIds: [...seen] };
+      return { id: created.id, customerIds: [...seen] };
     }),
   );
 }
@@ -505,11 +506,7 @@ export async function addUserContact(db: Db, input: AddUserContactInput) {
             .where(eq(contacts.id, id));
           await renameOwnRecord(tx, id, details);
         } else {
-          const [created] = await tx
-            .insert(contacts)
-            .values({ ...details, userId: input.userId })
-            .returning({ id: contacts.id });
-          id = created!.id;
+          id = (await insertOrRestoreContact(tx, { ...details, userId: input.userId })).id;
         }
       }
       await link(tx, id, input);
