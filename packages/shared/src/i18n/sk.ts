@@ -2072,6 +2072,34 @@ export const sk = {
       submit: 'Priradiť',
     },
     assigned: 'E-mail je priradený.',
+    thread: {
+      me: ', ja',
+      count: (n: number) => plural(n, 'e-mail', 'e-maily', 'e-mailov'),
+      older: (n: number) => `Staršie v konverzácii · ${n}`,
+      expandAll: 'Rozbaliť všetky',
+      collapseAll: 'Zbaliť všetky',
+      sent: 'Odoslané z Intry',
+    },
+    contactSearch: {
+      label: 'Hľadať organizáciu, prevádzku alebo kontakt',
+      organizations: 'Organizácie',
+      establishments: 'Prevádzky',
+      persons: 'Kontakty',
+      nothing: 'Nič sa nenašlo.',
+      establishmentOf: (organization: string) => `prevádzka ${organization}`,
+    },
+    filters: {
+      search: 'Hľadať v e-mailoch: odosielateľ, kontakt, predmet, text, prílohy',
+      contact: 'Kontakt',
+      withAttachments: 'S prílohou',
+      clear: (name: string) => `Zrušiť filter ${name}`,
+      emptyFiltered: 'Takýto e-mail sa nenašiel.',
+    },
+    quickAssign: {
+      open: (from: string) => `Priradiť e-mail od ${from}`,
+      newContact: (email: string) => `Nový kontakt s adresou ${email}`,
+      noOrganization: 'Kontakt nepatrí k žiadnej organizácii. Priraďte e-mail organizácii.',
+    },
     discardConfirm: {
       title: 'Zahodiť e-mail?',
       text: 'Zmizne z prijatých e-mailov aj z časovej osi kontaktu.',
@@ -2083,6 +2111,8 @@ export const sk = {
     safeNote: 'Obrázky z internetu sa nenačítavajú.',
     download: (name: string) => `Stiahnuť ${name}`,
     savedToFolder: 'Prílohy sú uložené v priečinku kontaktu.',
+    toLine: (to: string) => `komu ${to}`,
+    attachmentsButton: (n: number) => `Prílohy · ${n}`,
     notSavedYet: 'Prílohy sa uložia do priečinka kontaktu po priradení.',
     skipped: {
       type: 'neuložená, tento typ súboru sa neukladá',
@@ -2469,6 +2499,7 @@ export const sk = {
       noSubject: 'Bez predmetu',
       sending: 'Odosiela sa',
       scheduled: (when: string) => `Naplánované na ${when}`,
+      deleteDraft: (subject: string) => `Zrušiť koncept ${subject}`,
       continue: 'Pokračovať',
     },
     detail: {

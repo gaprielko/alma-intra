@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { z } from 'zod';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { CardSkeleton } from '@/components/skeletons';
+import { TablePagination } from '@/components/table-shell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/format';
@@ -42,12 +43,19 @@ function useDebounced<T>(value: T, ms: number) {
   return debounced;
 }
 
+/** Four cards a row on a wide screen, three rows a page. */
+const GRID = 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
+const PER_PAGE = 12;
+
 function TemplatesPage() {
   const params = Route.useSearch();
   const navigate = Route.useNavigate();
   const canWrite = useCan('template.write');
   const [typed, setTyped] = useState(params.q ?? '');
   const search = useDebounced(typed.trim(), 300);
+  const [page, setPage] = useState(1);
+  // A new filter or search starts on the first page.
+  useEffect(() => setPage(1), [params.category, search]);
   const list = useQuery({
     ...trpc.template.list.queryOptions({
       ...(params.category ? { categoryId: params.category } : {}),
@@ -83,13 +91,24 @@ function TemplatesPage() {
       <main className="max-w-[1440px] space-y-4 px-7 pt-5 pb-10">
         <div className="flex flex-wrap items-center gap-3">
           {canWrite ? (
-            <Button asChild variant="secondary" className="order-last">
+            <Button asChild variant="secondary" className="order-last ml-auto">
               <Link to="/emails/templates/$templateId" params={{ templateId: 'new' }}>
                 <Plus className="size-4" aria-hidden />
                 {t.new}
               </Link>
             </Button>
           ) : null}
+          <label className="flex h-9 w-full max-w-72 items-center gap-2 rounded-[10px] border border-border bg-white px-3 focus-within:border-primary">
+            <Search className="size-[15px] shrink-0 text-tertiary" aria-hidden />
+            <span className="sr-only">{t.searchLabel}</span>
+            <input
+              type="search"
+              value={typed}
+              onChange={(event) => setTyped(event.target.value)}
+              placeholder={t.searchLabel}
+              className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-tertiary"
+            />
+          </label>
           <div role="tablist" aria-label={t.filters.label} className="flex flex-wrap gap-1.5">
             {chips.map((chip) => (
               <button
@@ -109,21 +128,11 @@ function TemplatesPage() {
               </button>
             ))}
           </div>
-          <label className="ml-auto flex h-9 w-full max-w-72 items-center gap-2 rounded-[10px] border border-border bg-white px-3 focus-within:border-primary">
-            <Search className="size-[15px] shrink-0 text-tertiary" aria-hidden />
-            <span className="sr-only">{t.searchLabel}</span>
-            <input
-              type="search"
-              value={typed}
-              onChange={(event) => setTyped(event.target.value)}
-              placeholder={t.searchLabel}
-              className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-tertiary"
-            />
-          </label>
         </div>
 
         {list.isPending ? (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className={GRID}>
+            <CardSkeleton lines={3} />
             <CardSkeleton lines={3} />
             <CardSkeleton lines={3} />
             <CardSkeleton lines={3} />
@@ -136,52 +145,57 @@ function TemplatesPage() {
             text={params.category || search ? undefined : t.emptyText}
           />
         ) : (
-          <ul
-            className={cn(
-              'grid gap-4 md:grid-cols-2 xl:grid-cols-3',
-              list.isPlaceholderData && 'opacity-60',
-            )}
-          >
-            {list.data.items.map((item) => (
-              <li key={item.id}>
-                <Link
-                  to="/emails/templates/$templateId"
-                  params={{ templateId: item.id }}
-                  className={cn(
-                    'flex h-full flex-col overflow-hidden rounded-2xl border border-border-subtle bg-white shadow-rest transition-[box-shadow,transform] duration-150 hover:-translate-y-0.5 hover:shadow-raised',
-                    !item.active && 'opacity-70',
-                  )}
-                >
-                  <div
-                    aria-hidden
+          <>
+            <ul className={cn(GRID, list.isPlaceholderData && 'opacity-60')}>
+              {list.data.items.slice((page - 1) * PER_PAGE, page * PER_PAGE).map((item) => (
+                <li key={item.id}>
+                  <Link
+                    to="/emails/templates/$templateId"
+                    params={{ templateId: item.id }}
                     className={cn(
-                      'flex h-16 items-center gap-2 px-5',
-                      item.active ? 'bg-[linear-gradient(135deg,#104b4c,#0c3b3c)]' : 'bg-[#c5d3d1]',
+                      'flex h-full flex-col overflow-hidden rounded-2xl border border-border-subtle bg-white shadow-rest transition-[box-shadow,transform] duration-150 hover:-translate-y-0.5 hover:shadow-raised',
+                      !item.active && 'opacity-70',
                     )}
                   >
-                    <Mail className="size-4 text-white/80" />
-                    <span className="h-1.5 w-24 rounded-full bg-white/30" />
-                  </div>
-                  <div className="flex flex-1 flex-col gap-1.5 p-5">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <Badge className={classOf(item.categoryId)}>
-                        {item.categoryName ?? t.noCategory}
-                      </Badge>
-                      {item.active ? null : <Badge tone="neutral">{t.inactive}</Badge>}
+                    <div
+                      aria-hidden
+                      className={cn(
+                        'flex h-10 items-center gap-2 px-4',
+                        item.active
+                          ? 'bg-[linear-gradient(135deg,#104b4c,#0c3b3c)]'
+                          : 'bg-[#c5d3d1]',
+                      )}
+                    >
+                      <Mail className="size-3.5 text-white/80" />
+                      <span className="h-1.5 w-16 rounded-full bg-white/30" />
                     </div>
-                    <p className="text-[15px] font-semibold">{item.name}</p>
-                    <p className="line-clamp-2 text-[13px] text-muted">{item.subject}</p>
-                    <p className="mt-auto pt-2 text-xs text-tertiary">
-                      {item.updatedBy
-                        ? t.meta(item.updatedBy, formatDate(item.updatedAt))
-                        : t.metaPlain(formatDate(item.updatedAt))}
-                      <span className="block">{t.sentCount(item.sentCount)}</span>
-                    </p>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
+                    <div className="flex flex-1 flex-col gap-1 p-4">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Badge className={classOf(item.categoryId)}>
+                          {item.categoryName ?? t.noCategory}
+                        </Badge>
+                        {item.active ? null : <Badge tone="neutral">{t.inactive}</Badge>}
+                      </div>
+                      <p className="text-sm font-semibold">{item.name}</p>
+                      <p className="line-clamp-2 text-[13px] text-muted">{item.subject}</p>
+                      <p className="mt-auto pt-2 text-xs text-tertiary">
+                        {item.updatedBy
+                          ? t.meta(item.updatedBy, formatDate(item.updatedAt))
+                          : t.metaPlain(formatDate(item.updatedAt))}
+                        <span className="block">{t.sentCount(item.sentCount)}</span>
+                      </p>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <TablePagination
+              page={page}
+              pageSize={PER_PAGE}
+              total={list.data.items.length}
+              onPageChange={setPage}
+            />
+          </>
         )}
       </main>
     </div>

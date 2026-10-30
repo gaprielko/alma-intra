@@ -210,6 +210,7 @@ function UnassignedCard({ count }: { count: number }) {
   return (
     <Link
       to="/emails/inbox"
+      search={{ view: 'unassigned' }}
       className="flex items-center gap-3 rounded-2xl border border-[#f3d9b0] bg-warning-soft px-5 py-4 text-sm font-semibold text-warning hover:brightness-[0.98]"
     >
       <Inbox className="size-4 shrink-0" aria-hidden />
