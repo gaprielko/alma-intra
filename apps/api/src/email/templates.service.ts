@@ -5,6 +5,8 @@ import {
   type EmailLook,
   type EmailNode,
   personName,
+  senderNameOf,
+  suggestSalutation,
   type TemplateValues,
   type ProductLook,
 } from '@intra/shared/schemas';
@@ -256,6 +258,12 @@ export async function getLook(db: Db | Tx): Promise<EmailLook> {
   };
 }
 
+/** The From of an e-mail; a name with a comma or the like must travel in quotes. */
+export function fromAddress(look: EmailLook, address: string) {
+  const name = senderNameOf(look);
+  return `${/[",;:<>@()[\]\\]/.test(name) ? JSON.stringify(name) : name} <${address}>`;
+}
+
 /** The look an e-mail wears: the global one, with its product's over it when that is on. */
 export async function lookFor(db: Db | Tx, productId: string | null): Promise<EmailLook> {
   const look = await getLook(db);
@@ -393,6 +401,7 @@ export async function valuesFor(
         lastName: contacts.lastName,
         titleAfter: contacts.titleAfter,
         salutation: contacts.salutation,
+        gender: contacts.gender,
         position: contactLinks.position,
         // At a prevádzka: `customer.*` is its organization, `establishment.*` the prevádzka.
         customerName: sql<string | null>`coalesce(${head.name}, ${organizations.name})`,
@@ -427,7 +436,15 @@ export async function valuesFor(
       )
       .limit(1);
     if (row) {
-      values.salutation = row.salutation ?? undefined;
+      // A person without an opening line of their own still gets a fitting one (D-50).
+      values.salutation =
+        row.salutation?.trim() ||
+        suggestSalutation({
+          gender: row.gender ?? undefined,
+          lastName: row.lastName,
+          position: row.position ?? undefined,
+        }) ||
+        sk.templates.variables.defaultSalutation;
       values['contact.firstName'] = row.firstName;
       values['contact.lastName'] = row.lastName;
       values['contact.fullName'] = personName(row);
@@ -510,16 +527,13 @@ export async function testTemplate(
   input: Parameters<typeof previewTemplate>[3],
 ) {
   const [[user], look, out] = await Promise.all([
-    db
-      .select({ email: users.email, name: fullNameOf(users) })
-      .from(users)
-      .where(eq(users.id, userId)),
+    db.select({ email: users.email }).from(users).where(eq(users.id, userId)),
     lookFor(db, input.lookProductId ?? null),
     previewTemplate(db, env.WEB_URL, userId, input),
   ]);
   return {
     to: user!.email,
-    from: `${user!.name} | ${look.brandName} <${env.CAMPAIGN_FROM_ADDRESS}>`,
+    from: fromAddress(look, env.CAMPAIGN_FROM_ADDRESS),
     subject: `${sk.campaigns.review.testPrefix} ${out.subject}`,
     html: out.html,
     text: out.text,

@@ -252,6 +252,16 @@ export const emailLookSchema = z.object({
 export type EmailLook = z.infer<typeof emailLookSchema>;
 
 /**
+ * Who an e-mail is from in the recipient's inbox (D-50): „Alma ADOS | Alma Care Solutions“, the
+ * brand and the company's name from Settings › Vzhľad e-mailov.
+ */
+export function senderNameOf(look: Pick<EmailLook, 'brandName' | 'footerCompany'>) {
+  const brand = look.brandName.trim();
+  const company = look.footerCompany.trim();
+  return company && company !== brand ? `${brand} | ${company}` : brand;
+}
+
+/**
  * The brand's name in the header of an e-mail: the words after the first stand out (D-48), on a
  * dark header in a light colour, as the accents are too dark to read there, on a light one in the
  * accent.

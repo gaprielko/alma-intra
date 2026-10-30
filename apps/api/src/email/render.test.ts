@@ -1,6 +1,7 @@
 import type { EmailLook, EmailNode } from '@intra/shared/schemas';
 import { emailDocProblem } from '@intra/shared/schemas';
 import { renderEmail } from './render.js';
+import { fromAddress } from './templates.service.js';
 
 const look: EmailLook = {
   logoKey: 'abcdefghijklmnop.png',
@@ -108,6 +109,24 @@ describe('a logo of its own within a line', () => {
         new Set(),
       ),
     ).toBe('invalid_image');
+  });
+});
+
+describe('who an e-mail is from', () => {
+  const from = (footerCompany: string, brandName = 'Alma ADOS') =>
+    fromAddress({ ...look, brandName, footerCompany }, 'info@mail.test');
+
+  it('is the brand and the company', () => {
+    expect(from('Alma Care Solutions')).toBe('Alma ADOS | Alma Care Solutions <info@mail.test>');
+  });
+
+  it('is the brand alone without a company, or when both are the same', () => {
+    expect(from('')).toBe('Alma ADOS <info@mail.test>');
+    expect(from('Alma', 'Alma')).toBe('Alma <info@mail.test>');
+  });
+
+  it('goes in quotes when a comma would split the address', () => {
+    expect(from('Alma, s.r.o.')).toBe('"Alma ADOS | Alma, s.r.o." <info@mail.test>');
   });
 });
 

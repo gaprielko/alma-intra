@@ -1,5 +1,11 @@
 import { sk } from '@intra/shared/i18n';
-import { ACCENT_COLORS, type EmailLook, HEADER_STYLES, REPLY_MODES } from '@intra/shared/schemas';
+import {
+  ACCENT_COLORS,
+  type EmailLook,
+  HEADER_STYLES,
+  REPLY_MODES,
+  senderNameOf,
+} from '@intra/shared/schemas';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { Check, Upload } from 'lucide-react';
@@ -401,9 +407,9 @@ function LookForm({
               </div>
               <div className="space-y-2">
                 <Label htmlFor={`${ids}-sender`}>{t.senderName}</Label>
-                <Input id={`${ids}-sender`} value={t.senderNameValue(look.brandName)} readOnly />
+                <Input id={`${ids}-sender`} value={senderNameOf(look)} readOnly />
               </div>
-              <p className="text-[13px] text-muted">{t.senderHint(look.brandName)}</p>
+              <p className="text-[13px] text-muted">{t.senderHint}</p>
             </Section>
 
             {product ? (

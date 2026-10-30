@@ -11,11 +11,10 @@ import {
   emailEvents,
   files,
   fileVersions,
-  fullNameOf,
   messageAttachments,
   users,
 } from '../db/schema/index.js';
-import { getLook, lookFor } from '../email/templates.service.js';
+import { fromAddress, getLook, lookFor } from '../email/templates.service.js';
 import { replyAddress, replyToken } from '../inbound/inbound.js';
 import { describeError } from '../logging/describe-error.js';
 import { notify } from '../notifications/notifications.service.js';
@@ -96,7 +95,6 @@ export async function drainCampaigns(
         html: campaignMessages.html,
         text: campaignMessages.text,
         attempts: campaignMessages.attempts,
-        senderName: fullNameOf(users),
         senderEmail: users.email,
         // An answer from the app: the e-mail it answers, to thread it in the customer's client.
         answers: sql<{ messageId: string | null; references: string | null } | null>`(
@@ -141,7 +139,7 @@ export async function drainCampaigns(
           subject: m.subject,
           html: m.html,
           text: m.text ?? '',
-          from: `${m.senderName} | ${look.brandName} <${env.CAMPAIGN_FROM_ADDRESS}>`,
+          from: fromAddress(look, env.CAMPAIGN_FROM_ADDRESS),
           replyTo,
           headers: m.answers
             ? {

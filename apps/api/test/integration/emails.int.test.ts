@@ -73,9 +73,10 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     await jana.call('campaign.send', { id });
     const before = outbox.length;
     await drainCampaigns(api.db, memoryTransport({ quiet: true }), null, loadEnv());
-    expect(outbox.slice(before).find((m) => m.subject === 'Test')!.from).toMatch(
-      /^Mgr\. Jana Horváthová, PhD\. \|/,
-    );
+    const mail = outbox.slice(before).find((m) => m.subject === 'Test')!;
+    // In the signature; From is the brand's and the company's (D-50).
+    expect(mail.html).toContain('Mgr. Jana Horváthová, PhD.');
+    expect(mail.from).not.toContain('Horváthová');
     // The owner picker, like the rest of the app, shows the name alone.
     const options = await jana.call<{ users: { name: string }[] }>('customer.options');
     expect(options.data.users.map((u) => u.name)).toContain('Jana Horváthová');
@@ -733,6 +734,48 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     expect(JSON.stringify(filled.data.body)).not.toContain('"variable"');
   });
 
+  it('opens with a fitting line when a person has none of their own (D-50)', async () => {
+    const line = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'variable', attrs: { name: 'salutation' } },
+            { type: 'text', text: ',' },
+          ],
+        },
+      ],
+    };
+    const template = await jana.call<{ id: string }>('template.create', {
+      name: `Oslovenie ${Date.now()}`,
+      categoryId: null,
+      subject: line,
+      body: line,
+    });
+    const person = async (contact: Record<string, unknown>) =>
+      (
+        await jana.call<{ id: string }>('customer.contactCreate', {
+          customerId: HARMONIA,
+          contact: { firstName: 'Ján', ...contact },
+        })
+      ).data.id;
+    const opening = async (contactId: string | null) =>
+      (
+        await jana.call<{ subject: string }>('campaign.directFromTemplate', {
+          templateId: template.data.id,
+          contactId,
+          organizationId: contactId ? HARMONIA : null,
+        })
+      ).data.subject;
+
+    expect(await opening(await person({ lastName: 'Bezoslovenia', gender: 'male' }))).toBe(
+      'Vážený pán Bezoslovenia,',
+    );
+    expect(await opening(await person({ lastName: 'Bezrodu' }))).toBe('Dobrý deň,');
+    expect(await opening(null)).toBe('Dobrý deň,');
+  });
+
   it('a product look: over the global one when on, by the template and the new e-mail', async () => {
     type Looks = { productId: string; name: string; look: Record<string, unknown> }[];
     const looks = (await jana.call<Looks>('template.productLooks')).data;
@@ -795,7 +838,8 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     await drainCampaigns(api.db, memoryTransport({ quiet: true }), null, loadEnv());
     const mail = outbox.at(-1)!;
     expect(mail.to).toBe('vzhlad@example.net');
-    expect(mail.from).toContain('| Alma Skuska <');
+    expect(mail.from).toContain('Alma Skuska');
+    expect(mail.from).not.toContain('Jana');
     expect(mail.html).toContain('skuska.example.net');
 
     // Switched off, the product wears the global look again.

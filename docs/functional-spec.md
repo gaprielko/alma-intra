@@ -255,8 +255,9 @@ part in, the e-mails sent to them and their replies, from all their organization
 
 - Outgoing mail is sent through Resend from a **subdomain** (`mail.alma-care.eu`), so its
   reputation is separate from the main domain and from Alma ADOS's system mail.
-- **From**: the user's name with the shared address **`info@mail.alma-care.eu`** **[D-17a]**, e.g.
-  `Ján Novák | Alma <info@mail.alma-care.eu>`.
+- **From**: the brand and the company's name with the shared address
+  **`info@mail.alma-care.eu`** **[D-17a, D-50]**, e.g.
+  `Alma ADOS | Alma Care Solutions <info@mail.alma-care.eu>`. The user's name is in the signature.
 - **Reply-To** **[D-36]**: chosen in Settings › Vzhľad e-mailov („Odpovede zákazníkov“):
   - „Na firemnú adresu“ (the default): the company address, `info@alma-care.eu` unless changed;
   - „Do Alma Intra“: a per-message reply address on the inbound subdomain (section 6.6), so replies
@@ -648,6 +649,7 @@ both attach files.
 | D-46  | Text in an e-mail can take the look's accent colour and the look's logo within a line, so a product's name can be written as its logo; both follow the look, there is no free choice of colour or picture (30 Oct 2026) |
 | D-48  | In the header of an e-mail the words of the brand's name after the first stand out, so „Alma ADOS“ reads as the product's logo: a light colour on a dark header, the accent on a light one (30 Oct 2026) |
 | D-49  | A picture for an e-mail (an image, a logo within a line, a look's logo) can be taken from Files, in the app and through MCP. A PNG or JPG of 2 MB at most is copied among the images of e-mails, as an e-mail needs an address open to anybody that does not change with a new version of the file; EXIF of a JPG is dropped (30 Oct 2026) |
+| D-50  | From shows „značka | názov organizácie“ instead of the user's name (replaces this part of D-17a). A person without an opening line gets one from their gender and position or surname, else „Dobrý deň“ (30 Oct 2026) |
 
 ### Still to verify (not decisions)
 

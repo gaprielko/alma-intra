@@ -4,6 +4,7 @@ import {
   type EmailNode,
   hasInterestButton,
   personName,
+  senderNameOf,
   userFullName,
 } from '@intra/shared/schemas';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -395,7 +396,7 @@ export function DirectComposer({
         {sk.campaigns.discard}
       </Button>
     ),
-    from: me ? t.from(userFullName(me), (chosenLook.data?.look ?? look).brandName) : undefined,
+    from: t.from(senderNameOf(chosenLook.data?.look ?? look)),
   });
 }
 

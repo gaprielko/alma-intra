@@ -28,7 +28,7 @@ import {
   users,
 } from '../db/schema/index.js';
 import { missingOf, plainOf, renderEmail } from '../email/render.js';
-import { lookFor, valuesFor } from '../email/templates.service.js';
+import { fromAddress, lookFor, valuesFor } from '../email/templates.service.js';
 import { DOWNLOAD_LINK_DAYS, downloadToken } from './download-link.js';
 import { interestUrl } from './interest-link.js';
 
@@ -857,7 +857,7 @@ export async function previewMessage(db: Db, env: Env, messageId: string) {
   const campaign = await getCampaign(db, row.campaignId);
   const message = campaign.messages.find((m) => m.id === messageId)!;
   const look = await lookFor(db, campaign.lookProductId);
-  const from = `${campaign.sender.name} | ${look.brandName} <${env.CAMPAIGN_FROM_ADDRESS}>`;
+  const from = fromAddress(look, env.CAMPAIGN_FROM_ADDRESS);
   if (campaign.status !== 'draft' && row.html) {
     return { subject: row.subject ?? '', html: row.html, missing: [], from, to: message.email };
   }
@@ -1080,7 +1080,7 @@ export async function testMessage(db: Db, env: Env, id: string) {
   const look = await lookFor(db, campaign.lookProductId);
   return {
     to: campaign.sender.email,
-    from: `${campaign.sender.name} | ${look.brandName} <${env.CAMPAIGN_FROM_ADDRESS}>`,
+    from: fromAddress(look, env.CAMPAIGN_FROM_ADDRESS),
     subject: `${sk.campaigns.review.testPrefix} ${out.subject}`,
     html: out.html,
     text: out.text,

@@ -391,13 +391,21 @@ export async function directFromTemplate(
     .from(emailTemplates)
     .where(eq(emailTemplates.id, input.templateId));
   if (!template) throw new CampaignError('TEMPLATE_NOT_FOUND');
-  const { values } = await valuesFor(
+  const { values: known } = await valuesFor(
     db,
     { contactId: input.contactId ?? undefined, customerId: input.organizationId ?? undefined },
     userId,
     {},
   );
-  const labels = Object.fromEntries(template.customFields.map((f) => [`custom.${f.key}`, f.label]));
+  const labels = {
+    ...(sk.templates.variables as unknown as Record<string, string>),
+    ...Object.fromEntries(template.customFields.map((f) => [`custom.${f.key}`, f.label])),
+  };
+  // No recipient yet: the text stays good for whoever it goes to.
+  const values = {
+    ...known,
+    salutation: known.salutation ?? sk.templates.variables.defaultSalutation,
+  };
   return {
     subject: plainOf(template.subject, values, labels),
     body: filled(template.body, values, labels),
