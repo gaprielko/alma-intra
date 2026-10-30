@@ -38,7 +38,9 @@ attachments of the forward are kept.
 ## Where it goes
 
 The original counts as a colleague's own when its sender is a login or a private address („Môj účet“)
-of an active user, or the very address it was forwarded from (then it belongs to the user adding it).
+of an active user. Written from the company's own address (the sending address, „Firemná adresa pre
+odpovede“ or the footer's contact e-mail) or from the very address it was forwarded from, it belongs
+to the user adding it.
 
 - **A colleague's own**: stored as a sent campaign of one with the original date, with a message for
   each recipient (To, Cc) known in Kontakty. Nothing is queued, so nothing is ever sent. Its
@@ -55,7 +57,8 @@ A forward filed by hand before it was added keeps that organization when the add
 
 The same original (sender, minute of the date, subject, text) is stored once, however often it is
 forwarded (`inbound_messages.import_key`). Adding a repeat refuses with a message; the user discards
-that forward.
+that forward. Discarding an added e-mail gives up its key, so one added wrongly can be added anew.
+One that went to „Odoslané“ keeps its key, as it still exists there.
 
 ## Known limits
 

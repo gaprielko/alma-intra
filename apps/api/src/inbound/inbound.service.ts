@@ -348,7 +348,7 @@ export async function assignInbound(
         .set({ status: 'discarded', organizationId, assignedByUserId: userId })
         .where(eq(inboundMessages.id, input.id));
     });
-    return { before };
+    return { before, sent: true };
   }
   // Another customer than the one the token named: the link to our e-mail no longer holds.
   const [kept] = await db
@@ -381,14 +381,17 @@ export async function assignInbound(
       subject: before.subject.slice(0, 200),
     });
   }
-  return { before };
+  return { before, sent: false };
 }
 
-/** Puts an e-mail aside: it leaves „Prijaté“ and the timeline, and stays in the database. */
+/**
+ * Puts an e-mail aside: it leaves „Prijaté“ and the timeline, and stays in the database. An added
+ * one gives up its key, so the same original can be added again.
+ */
 export async function discardInbound(db: Db, id: string) {
   const rows = await db
     .update(inboundMessages)
-    .set({ status: 'discarded' })
+    .set({ status: 'discarded', importKey: null })
     .where(and(eq(inboundMessages.id, id), ne(inboundMessages.status, 'discarded')))
     .returning({ customerId: inboundMessages.organizationId });
   if (rows.length === 0) throw new InboundError('NOT_FOUND');
@@ -419,7 +422,7 @@ export async function discardInboundThread(db: Db, id: string) {
   const key = await threadKeyOf(db, id);
   const rows = await db
     .update(inboundMessages)
-    .set({ status: 'discarded' })
+    .set({ status: 'discarded', importKey: null })
     .where(and(ne(inboundMessages.status, 'discarded'), sql`${threadKey} = ${key}`))
     .returning({ id: inboundMessages.id });
   return { count: rows.length };

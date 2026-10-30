@@ -85,9 +85,9 @@ function InboundPage() {
   const discard = useMutation(
     trpc.inbound.discard.mutationOptions({
       onSuccess: async () => {
-        await queryClient.invalidateQueries(trpc.inbound.pathFilter());
         toast('success', t.discardConfirm.done);
         await navigate({ to: '/emails/inbox' });
+        await queryClient.invalidateQueries(trpc.inbound.pathFilter());
       },
       onError: (error) => toast('error', errorMessage(error, t.errors)),
     }),
@@ -336,12 +336,12 @@ function ImportDialog({ inboundId, onClose }: { inboundId: string; onClose: () =
   const add = useMutation(
     trpc.inbound.importForward.mutationOptions({
       onSuccess: async ({ outcome }) => {
-        await queryClient.invalidateQueries(trpc.inbound.pathFilter());
-        await queryClient.invalidateQueries(trpc.activity.timeline.pathFilter());
         toast('success', d.done[outcome]);
-        // Its own e-mail has left „Prijaté“ for „Odoslané“.
+        // Away first: refreshed here, the e-mail that left for „Odoslané“ would read as not found.
         if (outcome === 'sent') await navigate({ to: '/emails/inbox' });
         else onClose();
+        await queryClient.invalidateQueries(trpc.inbound.pathFilter());
+        await queryClient.invalidateQueries(trpc.activity.timeline.pathFilter());
       },
       onError: (error) => toast('error', errorMessage(error, t.errors)),
     }),
@@ -430,6 +430,7 @@ function AssignDialog({
   onClose: () => void;
 }) {
   const toast = useToast();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [picked, setPicked] = useState(current);
@@ -464,11 +465,13 @@ function AssignDialog({
   }, [customer.data, fromEmail, person]);
   const assign = useMutation(
     trpc.inbound.assign.mutationOptions({
-      onSuccess: async () => {
+      onSuccess: async ({ sent }) => {
+        toast('success', sent ? t.importForward.done.sent : t.assigned);
+        // Away first: refreshed here, the e-mail that left for „Odoslané“ would read as not found.
+        if (sent) await navigate({ to: '/emails/inbox' });
+        else onClose();
         await queryClient.invalidateQueries(trpc.inbound.pathFilter());
         await queryClient.invalidateQueries(trpc.activity.timeline.pathFilter());
-        toast('success', t.assigned);
-        onClose();
       },
       onError: (error) => toast('error', errorMessage(error, t.errors)),
     }),
