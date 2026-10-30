@@ -109,6 +109,18 @@ const draftOf = (product: Product): Draft => ({
   })),
 });
 
+/**
+ * A row's name and unit belong to the item, not to the draft: a rename in „Položky“ shows here even
+ * when the draft was made from a cached product before the refetch brought the new name.
+ */
+const withCurrentItems = (draft: Draft, product: Product | undefined): Draft => ({
+  ...draft,
+  rows: draft.rows.map((row) => {
+    const item = product?.items.find((candidate) => candidate.itemId === row.itemId);
+    return item ? { ...row, name: item.name, unit: item.unit } : row;
+  }),
+});
+
 const intOf = (text: string, fallback: number) => {
   const n = Number.parseInt(text, 10);
   return Number.isFinite(n) && n >= 0 ? n : fallback;
@@ -160,7 +172,8 @@ function ProductEditor({ product, rate }: { product: Product | undefined; rate: 
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const canWrite = useCan('product.write');
-  const [draft, setDraft] = useState<Draft>(() => (product ? draftOf(product) : emptyDraft));
+  const [edited, setDraft] = useState<Draft>(() => (product ? draftOf(product) : emptyDraft));
+  const draft = withCurrentItems(edited, product);
   const [adding, setAdding] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
