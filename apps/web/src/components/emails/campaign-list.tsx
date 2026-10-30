@@ -65,7 +65,10 @@ export function CampaignList({ status }: { status: 'sent' | 'draft' }) {
         }
       >
         {rows.map((row) => (
-          <TableRow key={row.id}>
+          <TableRow
+            key={row.id}
+            href={status === 'sent' ? `/emails/sent/${row.id}` : `/emails/compose/${row.id}`}
+          >
             <TableCell>
               <RowLink
                 href={sent ? `/emails/sent/${row.id}` : `/emails/compose/${row.id}`}

@@ -252,6 +252,13 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
       receivedAt: new Date(),
     });
     expect(filed.matched).toBe('sender');
+    // Opened: the e-mail filed under a person, with the person's position and the conversation.
+    const opened = await jana.call<{ contactName: string | null }>('inbound.get', {
+      id: filed.id,
+    });
+    expect(opened.code).toBeUndefined();
+    expect(opened.data.contactName).toContain('Tóthová');
+    expect((await jana.call('inbound.thread', { id: filed.id })).code).toBeUndefined();
     const timeline = await jana.call<{ type: string }[]>('activity.timeline', {
       customerId: HARMONIA,
       filter: 'emails',

@@ -181,7 +181,10 @@ function CampaignPage() {
           ]}
         >
           {c.messages.map((m) => (
-            <TableRow key={m.id}>
+            <TableRow
+              key={m.id}
+              onClick={m.status !== 'skipped' ? () => setShown(m.id) : undefined}
+            >
               <TableCell>
                 <p className="font-semibold">{m.name}</p>
                 <p className="text-xs text-muted">{m.customerName}</p>

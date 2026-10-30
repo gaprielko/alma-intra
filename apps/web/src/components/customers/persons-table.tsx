@@ -214,7 +214,7 @@ export function PersonsTable({
                   const name = personName(person);
                   const at = placeOf(person);
                   return (
-                    <TableRow key={person.id}>
+                    <TableRow key={person.id} href={`/contacts/${person.id}`}>
                       <TableCell>
                         <div className="flex items-center gap-2.5">
                           <CustomerAvatar
