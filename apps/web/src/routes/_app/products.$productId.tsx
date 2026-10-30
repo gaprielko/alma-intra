@@ -303,7 +303,7 @@ function ProductEditor({ product, rate }: { product: Product | undefined; rate: 
                 />
               </div>
               <div className="space-y-1.5 sm:col-span-3">
-                <span className="text-sm font-medium">{d.state}</span>
+                <span className="block text-sm font-medium">{d.state}</span>
                 <SegmentedChoice
                   label={d.state}
                   value={draft.active ? 'on' : 'off'}
@@ -351,7 +351,7 @@ function ProductEditor({ product, rate }: { product: Product | undefined; rate: 
                 />
               </div>
               <div className="space-y-1.5 sm:col-span-2">
-                <span className="text-sm font-medium">{d.period}</span>
+                <span className="block text-sm font-medium">{d.period}</span>
                 <SegmentedChoice
                   label={d.period}
                   value={draft.period}
