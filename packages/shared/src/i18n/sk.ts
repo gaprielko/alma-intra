@@ -1021,6 +1021,8 @@ export const sk = {
         holdingAdded: 'Pridelený produkt',
         holdingChanged: 'Upravený produkt',
         holdingEnded: 'Ukončený produkt',
+        personLinked: 'Priradená kontaktná osoba',
+        personUnlinked: 'Odobratá kontaktná osoba',
         none: 'nezadané',
         by: (name: string, when: string) => `${name} · ${when}`,
         fieldNames: {
@@ -1783,6 +1785,8 @@ export const sk = {
       quickNote: 'Nová poznámka',
       quickNoteSave: 'Uložiť poznámku',
       quickNoteSaved: 'Poznámka je uložená.',
+      groupExpand: (count: number) => `Rozbaliť · ${count}`,
+      groupCollapse: 'Zbaliť',
       with: (names: string) => `s ${names}`,
       duration: (text: string) => text,
       by: (name: string, when: string) => `${name} · ${when}`,

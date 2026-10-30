@@ -8,7 +8,7 @@ import {
 } from '@intra/shared/schemas';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { Mail, MoreHorizontal, Pencil, Plus } from 'lucide-react';
+import { ChevronDown, ChevronUp, Mail, MoreHorizontal, Pencil, Plus } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { ActivityDialog } from '@/components/activities/activity-dialog';
 import { ActivitySheet } from '@/components/activities/activity-sheet';
@@ -628,6 +628,10 @@ function describe(event: HistoryEvent): ReactNode {
       return withContact(h.contactPrimary);
     case 'customer.contactDelete':
       return withContact(h.contactDeleted);
+    case 'person.link':
+      return withContact(h.personLinked);
+    case 'person.unlink':
+      return withContact(h.personUnlinked);
     case 'customer.update': {
       const parts: ReactNode[] = [];
       if (statusChange) parts.push(<span key="s">{statusChange}</span>);
@@ -858,45 +862,19 @@ function TimelineCard({ customer }: { customer: Customer }) {
             <ol
               className={cn('relative space-y-5 pl-6', timeline.isPlaceholderData && 'opacity-60')}
             >
-              {timeline.data.map((item) => {
-                const entry =
-                  item.type === 'activity' ? (
-                    <ActivityItem
-                      key={item.activity.id}
-                      item={item.activity}
-                      onOpen={() => setOpenId(item.activity.id)}
+              {groupRuns(timeline.data).map((run) => {
+                if (run.length > 1) {
+                  return (
+                    <ChangeRun
+                      key={`run-${keyOf(run[0]!)}`}
+                      run={run}
+                      customerName={customer.name}
+                      establishmentName={establishmentName}
+                      renderItem={renderItem}
                     />
-                  ) : item.type === 'email' ? (
-                    <EmailItem key={item.email.id} item={item.email} />
-                  ) : item.type === 'reply' ? (
-                    <ReplyItem key={item.reply.id} item={item.reply} />
-                  ) : (
-                    <li key={item.change.id} className="relative">
-                      <span
-                        aria-hidden
-                        className="absolute top-1.5 -left-[29px] size-2 rounded-full bg-border ring-4 ring-white"
-                      />
-                      <div className="text-sm">{describe(item.change)}</div>
-                      <p className="text-xs text-muted">
-                        {t.history.by(
-                          item.change.userName ?? sk.common.none,
-                          formatRecent(item.change.at),
-                        )}
-                      </p>
-                    </li>
                   );
-                const at = establishmentName(item);
-                return at ? (
-                  <li
-                    key={`est-${keyOf(item)}`}
-                    className="relative ml-3 border-l-2 border-warning-soft pl-3"
-                  >
-                    <EstablishmentChip name={at} className="mb-1.5" />
-                    <ol className="relative">{entry}</ol>
-                  </li>
-                ) : (
-                  entry
-                );
+                }
+                return renderItem(run[0]!);
               })}
             </ol>
           )}
@@ -911,6 +889,120 @@ function TimelineCard({ customer }: { customer: Customer }) {
         />
       ) : null}
     </Card>
+  );
+
+  function renderItem(item: TimelineItem) {
+    const entry =
+      item.type === 'activity' ? (
+        <ActivityItem
+          key={item.activity.id}
+          item={item.activity}
+          onOpen={() => setOpenId(item.activity.id)}
+        />
+      ) : item.type === 'email' ? (
+        <EmailItem key={item.email.id} item={item.email} />
+      ) : item.type === 'reply' ? (
+        <ReplyItem key={item.reply.id} item={item.reply} />
+      ) : (
+        <li key={item.change.id} className="relative">
+          <span
+            aria-hidden
+            className="absolute top-1.5 -left-[29px] size-2 rounded-full bg-border ring-4 ring-white"
+          />
+          <div className="text-sm">{describe(item.change)}</div>
+          <p className="text-xs text-muted">
+            {t.history.by(item.change.userName ?? sk.common.none, formatRecent(item.change.at))}
+          </p>
+        </li>
+      );
+    const at = establishmentName(item);
+    return at ? (
+      <li key={`est-${keyOf(item)}`} className="relative ml-3 border-l-2 border-warning-soft pl-3">
+        <EstablishmentChip name={at} className="mb-1.5" />
+        <ol className="relative">{entry}</ol>
+      </li>
+    ) : (
+      entry
+    );
+  }
+}
+
+type ChangeItem = Extract<TimelineItem, { type: 'change' }>;
+
+/** What makes two changes the same: the action, its sentence and who made it. */
+function sameChange(item: TimelineItem): string | null {
+  if (item.type !== 'change') return null;
+  const text = describe(item.change);
+  if (typeof text !== 'string') return null;
+  return `${item.change.action}|${text}|${item.change.userName ?? ''}`;
+}
+
+/** The timeline in runs: one item each, or the same change made several times in a row. */
+function groupRuns(items: TimelineItem[]): TimelineItem[][] {
+  const runs: TimelineItem[][] = [];
+  let last: string | null = null;
+  for (const item of items) {
+    const same = sameChange(item);
+    const run = runs.at(-1);
+    if (run && same !== null && same === last) run.push(item);
+    else runs.push([item]);
+    last = same;
+  }
+  return runs;
+}
+
+/**
+ * The same change made several times in a row (a product given to four prevádzky): said once,
+ * with the prevádzky it touched under it; „Rozbaliť“ shows each of them as usual.
+ */
+function ChangeRun({
+  run,
+  customerName,
+  establishmentName,
+  renderItem,
+}: {
+  run: TimelineItem[];
+  customerName: string;
+  establishmentName: (item: TimelineItem) => string | null;
+  renderItem: (item: TimelineItem) => ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const first = (run[0] as ChangeItem).change;
+  const names = [...new Set(run.map(establishmentName).filter((n): n is string => n !== null))];
+  const own = run.some((item) => establishmentName(item) === null);
+  return (
+    <li className="relative">
+      <span
+        aria-hidden
+        className="absolute top-1.5 -left-[29px] size-2 rounded-full bg-border ring-4 ring-white"
+      />
+      <div className="text-sm">{describe(first)}</div>
+      {names.length > 0 ? (
+        <div className="mt-1 flex flex-wrap gap-1.5">
+          {own ? <TagChip>{customerName}</TagChip> : null}
+          {names.map((name) => (
+            <EstablishmentChip key={name} name={name} />
+          ))}
+        </div>
+      ) : null}
+      <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted">
+        {t.history.by(first.userName ?? sk.common.none, formatRecent(first.at))}
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          aria-expanded={open}
+          className="inline-flex items-center gap-0.5 rounded-md px-1 font-semibold text-primary-text hover:bg-primary-soft"
+        >
+          {open ? a.timeline.groupCollapse : a.timeline.groupExpand(run.length)}
+          {open ? (
+            <ChevronUp className="size-3.5" aria-hidden />
+          ) : (
+            <ChevronDown className="size-3.5" aria-hidden />
+          )}
+        </button>
+      </p>
+      {open ? <ol className="relative mt-3 space-y-4">{run.map(renderItem)}</ol> : null}
+    </li>
   );
 }
 
