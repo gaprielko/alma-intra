@@ -143,20 +143,20 @@ export async function drainCampaigns(
           text: m.text ?? '',
           from: `${m.senderName} | ${look.brandName} <${env.CAMPAIGN_FROM_ADDRESS}>`,
           replyTo,
-          headers: direct
-            ? {}
-            : m.answers
-              ? {
-                  // Correspondence (D-14): threaded, without an unsubscribe link.
-                  ...(m.answers.messageId
-                    ? {
-                        'In-Reply-To': m.answers.messageId,
-                        References: [m.answers.references, m.answers.messageId]
-                          .filter(Boolean)
-                          .join(' '),
-                      }
-                    : {}),
-                }
+          headers: m.answers
+            ? {
+                // Correspondence (D-14): threaded, without an unsubscribe link.
+                ...(m.answers.messageId
+                  ? {
+                      'In-Reply-To': m.answers.messageId,
+                      References: [m.answers.references, m.answers.messageId]
+                        .filter(Boolean)
+                        .join(' '),
+                    }
+                  : {}),
+              }
+            : direct
+              ? {}
               : {
                   'List-Unsubscribe': `<${oneClick}>`,
                   'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',

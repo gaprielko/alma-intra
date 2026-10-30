@@ -3,7 +3,6 @@ import {
   inboundIdSchema,
   inboundReadSchema,
   inboundListSchema,
-  replyInboundSchema,
 } from '@intra/shared/schemas';
 import { TRPCError } from '@trpc/server';
 import { Logger } from '@nestjs/common';
@@ -101,17 +100,6 @@ export const inboundRouter = router({
       );
       ctx.audit.set({ entityType: 'inbound', entityId: input.id, diff: { imported: outcome } });
       return { outcome };
-    }),
-
-  /** „Odpovedať“: the answer is queued like any e-mail to a customer and leaves within seconds. */
-  reply: authorizedProcedure('email.send')
-    .input(replyInboundSchema)
-    .mutation(async ({ ctx, input }) => {
-      const { campaignId } = await run(() =>
-        inbound.replyToInbound(ctx.db, ctx.session.userId, input),
-      );
-      ctx.audit.set({ entityType: 'inbound', entityId: input.id, diff: { campaignId } });
-      return { campaignId };
     }),
 
   /** „Načítať nové“: e-mails the provider received that Intra does not have yet. */

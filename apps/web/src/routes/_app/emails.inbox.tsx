@@ -20,7 +20,6 @@ import { PersonDialog } from '@/components/customers/person-dialog';
 import { type ContactPick, ContactSearch } from '@/components/emails/contact-search';
 import { BulkEmailButton } from '@/components/emails/bulk-email-button';
 import { NewEmailButton } from '@/components/emails/new-email-button';
-import { ReplyDialog } from '@/components/emails/reply-dialog';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { TablePagination, TableShell } from '@/components/table-shell';
 import { Button } from '@/components/ui/button';
@@ -328,7 +327,7 @@ function InboxPage() {
 function RowActions({ row }: { row: InboundRow }) {
   const toast = useToast();
   const queryClient = useQueryClient();
-  const [replying, setReplying] = useState(false);
+  const navigate = useNavigate();
   const [discarding, setDiscarding] = useState(false);
   const onError = (error: unknown) => toast('error', errorMessage(error, t.errors));
   const refresh = () => queryClient.invalidateQueries(trpc.inbound.pathFilter());
@@ -373,7 +372,13 @@ function RowActions({ row }: { row: InboundRow }) {
             variant="ghost"
             aria-label={a.reply}
             title={a.reply}
-            onClick={() => setReplying(true)}
+            onClick={() =>
+              void navigate({
+                to: '/emails/inbox/$inboundId',
+                params: { inboundId: row.id },
+                search: { compose: 'reply' },
+              })
+            }
           >
             <Reply className="size-4" aria-hidden />
           </Button>
@@ -388,13 +393,6 @@ function RowActions({ row }: { row: InboundRow }) {
           <Trash2 className="size-4" aria-hidden />
         </Button>
       </div>
-      {replying ? (
-        <ReplyDialog
-          inboundId={row.id}
-          to={row.contactName ?? row.fromName ?? row.fromEmail}
-          onClose={() => setReplying(false)}
-        />
-      ) : null}
       <ConfirmDialog
         open={discarding}
         onOpenChange={setDiscarding}

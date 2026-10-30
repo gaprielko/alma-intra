@@ -3,6 +3,8 @@ import {
   campaignContentSchema,
   campaignIdSchema,
   directFromTemplateSchema,
+  replyDraftSchema,
+  replyDraftsSchema,
   saveDirectSchema,
   campaignListSchema,
   chooseTemplateSchema,
@@ -88,6 +90,23 @@ export const campaignRouter = router({
     ctx.audit.set({ entityType: 'campaign', entityId: created.id, diff: { direct: true } });
     return created;
   }),
+  /** „Odpovedať“, „Odpovedať všetkým“, „Preposlať“: the draft written from a received e-mail. */
+  replyDraft: authorizedProcedure('email.send')
+    .input(replyDraftSchema)
+    .mutation(async ({ ctx, input }) => {
+      const created = await run(() =>
+        direct.replyDraft(ctx.db, ctx.env, ctx.session.userId, input),
+      );
+      ctx.audit.set({
+        entityType: 'campaign',
+        entityId: created.id,
+        diff: { direct: true, inboundId: input.inboundId, mode: input.mode },
+      });
+      return created;
+    }),
+  replyDrafts: authorizedProcedure('email.read')
+    .input(replyDraftsSchema)
+    .query(({ ctx, input }) => direct.replyDrafts(ctx.db, ctx.session.userId, input.inboundId)),
   getDirect: authorizedProcedure('email.read')
     .input(campaignIdSchema)
     .query(({ ctx, input }) => run(() => direct.getDirect(ctx.db, input.id))),

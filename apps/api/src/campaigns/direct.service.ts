@@ -1,10 +1,12 @@
+import { sk } from '@intra/shared/i18n';
 import {
   type DirectRecipient,
   type EmailNode,
   MAX_MESSAGE_BYTES,
+  type AnswerMode,
   type SaveDirectInput,
 } from '@intra/shared/schemas';
-import { asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNotNull, isNull, ne } from 'drizzle-orm';
 import type { Env } from '../config/env.js';
 import type { Db } from '../db/db.module.js';
 import { fileUnder } from '../customers/customers.service.js';
@@ -15,10 +17,17 @@ import {
   emailTemplates,
   fileVersions,
   files,
+  inboundMessages,
   messageAttachments,
+  organizationProducts,
+  productEmailLooks,
+  users,
 } from '../db/schema/index.js';
 import { plainOf, renderEmail } from '../email/render.js';
 import { lookFor, valuesFor } from '../email/templates.service.js';
+import { htmlToText } from '../inbound/forwarded.js';
+import { companyAddresses } from '../inbound/import.js';
+import { bySender } from '../inbound/inbound.js';
 import {
   CampaignError,
   draft,
@@ -53,6 +62,256 @@ export async function createDirect(db: Db, userId: string) {
   return { id: row!.id };
 }
 
+const r = sk.inbound.replyDraft;
+
+const lineNodes = (text: string): EmailNode[] =>
+  text
+    .split('\n')
+    .flatMap((line, i) => [
+      ...(i > 0 ? [{ type: 'hardBreak' } as EmailNode] : []),
+      ...(line ? [{ type: 'text', text: line } as EmailNode] : []),
+    ]);
+
+/** A date as the app writes it, in Bratislava time: `30.10.2026 9:12`. */
+const whenOf = (date: Date) =>
+  new Intl.DateTimeFormat('sk-SK', {
+    timeZone: 'Europe/Bratislava',
+    day: 'numeric',
+    month: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+    .format(date)
+    .replace(/\.\s+/g, '.')
+    .replace(/,/g, '');
+
+/** What a received e-mail says, for quoting: its own head line and its plain text. */
+function quoteOf(
+  received: Pick<
+    typeof inboundMessages.$inferSelect,
+    'fromEmail' | 'fromName' | 'receivedAt' | 'text' | 'html'
+  >,
+  mode: AnswerMode,
+) {
+  const who = received.fromName
+    ? `${received.fromName} <${received.fromEmail}>`
+    : received.fromEmail;
+  const at = whenOf(received.receivedAt);
+  const text = (received.text?.trim() ? received.text : htmlToText(received.html ?? ''))
+    .trim()
+    .slice(0, 50_000);
+  return { head: mode === 'forward' ? r.quoteForward(who, at) : r.quoteReply(who, at), text };
+}
+
+/** The quote under an answer or a forward, in the blocks an e-mail body may have. */
+const quoteNodes = (quote: { head: string; text: string }): EmailNode[] => [
+  { type: 'horizontalRule' },
+  {
+    type: 'paragraph',
+    content: [{ type: 'text', text: quote.head, marks: [{ type: 'bold' }] }],
+  },
+  ...quote.text
+    .split(/\n{2,}/)
+    .filter(Boolean)
+    .map((block): EmailNode => ({ type: 'paragraph', content: lineNodes(block) })),
+];
+
+/**
+ * The sender's signature as text of the body, so that it can be changed in this one e-mail. It has
+ * the same three lines as the signature under other e-mails.
+ */
+async function signatureNodes(db: Db, userId: string, productId: string | null) {
+  const [{ values }, look] = await Promise.all([
+    valuesFor(db, {}, userId, {}),
+    lookFor(db, productId),
+  ]);
+  const about = [values['sender.position'], look.brandName, values['sender.phone']]
+    .filter(Boolean)
+    .join(' · ');
+  return [
+    paragraph(sk.templates.signature.greeting),
+    {
+      type: 'paragraph',
+      content: [{ type: 'text', text: values['sender.name'] ?? '', marks: [{ type: 'bold' }] }],
+    } satisfies EmailNode,
+    paragraph(about),
+  ];
+}
+
+/** The product of an organization that has just one and a look of its own: else the global look. */
+async function lookProductOf(db: Db, organizationId: string | null) {
+  if (!organizationId) return null;
+  const held = await db
+    .select({ productId: organizationProducts.productId, own: productEmailLooks.enabled })
+    .from(organizationProducts)
+    .leftJoin(productEmailLooks, eq(productEmailLooks.productId, organizationProducts.productId))
+    .where(eq(organizationProducts.organizationId, organizationId))
+    .limit(2);
+  return held.length === 1 && held[0]!.own ? held[0]!.productId : null;
+}
+
+/** Who „Odpovedať všetkým“ also writes to: the e-mail's others, without Alma's own addresses. */
+async function othersOf(
+  db: Db,
+  env: Pick<Env, 'INBOUND_REPLY_DOMAIN'>,
+  received: Pick<typeof inboundMessages.$inferSelect, 'fromEmail' | 'toEmails' | 'ccEmails'>,
+  userId: string,
+) {
+  const [me] = await db
+    .select({ email: users.email, addresses: users.importAddresses })
+    .from(users)
+    .where(eq(users.id, userId));
+  const ours = new Set([
+    ...(await companyAddresses(db)),
+    received.fromEmail,
+    ...(me ? [me.email.toLowerCase(), ...me.addresses] : []),
+  ]);
+  const domain = env.INBOUND_REPLY_DOMAIN?.toLowerCase();
+  const people: DirectRecipient[] = [];
+  const add = async (email: string, role: DirectRecipient['role']) => {
+    if (ours.has(email) || (domain && email.endsWith(`@${domain}`))) return;
+    ours.add(email);
+    const known = await bySender(db, email);
+    people.push({
+      role,
+      email,
+      name: null,
+      contactId: known?.contactId ?? null,
+      organizationId: known?.customerId ?? null,
+    });
+  };
+  for (const email of received.toEmails) await add(email, 'to');
+  for (const email of received.ccEmails) await add(email, 'cc');
+  return people;
+}
+
+const subjectOf = (subject: string, mode: AnswerMode) => {
+  if (mode === 'forward') return /^(fwd?|fw):/i.test(subject) ? subject : `Fwd: ${subject}`;
+  return /^re:/i.test(subject) ? subject : `Re: ${subject}`;
+};
+
+/**
+ * „Odpovedať“, „Odpovedať všetkým“ or „Preposlať“ (docs/conversation-reply.md): the user's draft of
+ * that kind for a received e-mail, made when there is none. An answer needs the e-mail filed, as it
+ * goes to a customer; a forward goes wherever the user says, with the attachments Files has of it.
+ */
+export async function replyDraft(
+  db: Db,
+  env: Pick<Env, 'INBOUND_REPLY_DOMAIN'>,
+  userId: string,
+  input: { inboundId: string; mode: AnswerMode },
+) {
+  const [received] = await db
+    .select()
+    .from(inboundMessages)
+    .where(and(eq(inboundMessages.id, input.inboundId), ne(inboundMessages.status, 'discarded')));
+  if (!received) throw new CampaignError('NOT_FOUND');
+  const answer = input.mode !== 'forward';
+  if (answer && (received.status !== 'assigned' || !received.organizationId)) {
+    throw new CampaignError('NOT_FOUND');
+  }
+  const [existing] = await db
+    .select({ id: campaigns.id })
+    .from(campaigns)
+    .where(
+      and(
+        eq(campaigns.replyToInboundId, input.inboundId),
+        eq(campaigns.replyMode, input.mode),
+        eq(campaigns.senderUserId, userId),
+        eq(campaigns.status, 'draft'),
+      ),
+    );
+  if (existing) return { id: existing.id };
+
+  const recipients: DirectRecipient[] = answer
+    ? [
+        {
+          role: 'to',
+          email: received.fromEmail,
+          name: received.fromName,
+          contactId: received.contactId,
+          organizationId: received.organizationId,
+        },
+        ...(input.mode === 'replyAll' ? await othersOf(db, env, received, userId) : []),
+      ]
+    : [];
+  const lookProductId = await lookProductOf(db, received.organizationId);
+  const subject = subjectOf(received.subject, input.mode);
+  const saved = received.attachments.flatMap((a) => (a.fileId ? [a.fileId] : []));
+  const live =
+    input.mode === 'forward' && saved.length > 0
+      ? await db
+          .select({ id: files.id })
+          .from(files)
+          .where(
+            and(
+              inArray(files.id, saved),
+              isNull(files.deletedAt),
+              isNotNull(files.currentVersionId),
+            ),
+          )
+      : [];
+  const signature = await signatureNodes(db, userId, lookProductId);
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .insert(campaigns)
+      .values({
+        kind: 'direct',
+        senderUserId: userId,
+        replyToInboundId: input.inboundId,
+        replyMode: input.mode,
+        subject: subjectDoc(subject),
+        subjectText: subject,
+        body: { type: 'doc', content: [paragraph(), ...signature] },
+        directRecipients: recipients,
+        lookProductId,
+      })
+      .returning({ id: campaigns.id });
+    await writeCommonAttachments(
+      tx,
+      row!.id,
+      live.map((f) => f.id),
+    );
+    return { id: row!.id };
+  });
+}
+
+/** The user's drafts written from a received e-mail, oldest first. */
+export async function replyDrafts(db: Db, userId: string, inboundId: string) {
+  return db
+    .select({ id: campaigns.id, mode: campaigns.replyMode })
+    .from(campaigns)
+    .where(
+      and(
+        eq(campaigns.replyToInboundId, inboundId),
+        eq(campaigns.senderUserId, userId),
+        eq(campaigns.status, 'draft'),
+      ),
+    )
+    .orderBy(asc(campaigns.createdAt));
+}
+
+/** The e-mail a draft is written from: what is quoted, and what could not be forwarded with it. */
+async function replyOf(
+  db: Db,
+  row: { replyToInboundId: string | null; replyMode: AnswerMode | null },
+) {
+  if (!row.replyToInboundId || !row.replyMode) return null;
+  const [received] = await db
+    .select()
+    .from(inboundMessages)
+    .where(eq(inboundMessages.id, row.replyToInboundId));
+  if (!received) return null;
+  return {
+    inboundId: received.id,
+    mode: row.replyMode,
+    quote: quoteOf(received, row.replyMode),
+    /** Attachments Files does not have: nothing to send of those. */
+    leftOut: row.replyMode === 'forward' ? received.attachments.filter((a) => !a.fileId).length : 0,
+  };
+}
+
 export async function getDirect(db: Db, id: string) {
   const row = await draft(db, id);
   if (row.kind !== 'direct') throw new CampaignError('NOT_FOUND');
@@ -71,6 +330,7 @@ export async function getDirect(db: Db, id: string) {
     templateId: row.templateId,
     lookProductId: row.lookProductId,
     attachments,
+    reply: await replyOf(db, row),
   };
 }
 
@@ -153,10 +413,20 @@ export async function sendDirect(db: Db, env: Env, id: string) {
     (a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role],
   );
   if (!recipients.some((r) => r.role === 'to')) throw new CampaignError('NO_RECIPIENTS');
-  const body = row.body;
-  if (!body || !row.subject || !JSON.stringify(body).includes('"text"')) {
+  const written = row.body;
+  if (!written || !row.subject || !JSON.stringify(written).includes('"text"')) {
     throw new CampaignError('NO_CONTENT');
   }
+  const reply = await replyOf(db, row);
+  // An answer with nothing but the signature says nothing; a forward may say nothing of its own.
+  if (reply && reply.mode !== 'forward') {
+    const signature = await signatureNodes(db, row.senderUserId, row.lookProductId);
+    const only = plainOf({ type: 'doc', content: [paragraph(), ...signature] }, {}, {});
+    if (plainOf(written, {}, {}).trim() === only.trim()) throw new CampaignError('NO_CONTENT');
+  }
+  const body: EmailNode = reply
+    ? { ...written, content: [...(written.content ?? []), ...quoteNodes(reply.quote)] }
+    : written;
   const first = recipients[0]!;
   const { values, customerName } = await valuesFor(
     db,
@@ -171,7 +441,8 @@ export async function sendDirect(db: Db, env: Env, id: string) {
     body,
     values,
     labels: {},
-    signature: true,
+    // An answer or a forward has the signature in its text, where it could be changed.
+    signature: !reply,
     customerName,
   });
 
@@ -215,6 +486,9 @@ export async function sendDirect(db: Db, env: Env, id: string) {
             text: rendered.text,
             totalBytes,
             queuedAt: now,
+            // The one that is sent carries the threading of an answer.
+            inReplyToInboundId:
+              position === 0 && reply && reply.mode !== 'forward' ? reply.inboundId : null,
             // Only the first is ever picked up; the rest wait for its outcome.
             nextAttemptAt: position === 0 ? now : null,
           })),
