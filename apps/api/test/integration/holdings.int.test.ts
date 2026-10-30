@@ -230,11 +230,21 @@ describe('a product at an organization or a prevádzka', () => {
     await jana.call('customer.holdingEnd', { organizationId: est, productId: product });
     const held = await jana.call<Holding[]>('customer.holdings', { id: est });
     expect(held.data[0]!.active).toBe(true);
-    const product_ = await jana.call<{ holders: { id: string; monthly: number | null }[] }>(
-      'product.get',
+    const holders = await jana.call<{ items: { id: string; monthly: number | null }[] }>(
+      'product.holders',
       { id: product },
     );
-    expect(product_.data.holders.find((h) => h.id === org)!.monthly).toBe(59);
+    expect(holders.data.items.find((h) => h.id === org)!.monthly).toBe(59);
+    const found = await jana.call<{ items: { id: string }[]; total: number }>('product.holders', {
+      id: product,
+      search: 'poprad',
+    });
+    expect(found.data).toMatchObject({ total: 1, items: [{ id: est }] });
+    const none = await jana.call<{ total: number }>('product.holders', {
+      id: product,
+      search: 'nikto',
+    });
+    expect(none.data.total).toBe(0);
   });
 
   it('removes a product entered by mistake, with its counts', async () => {

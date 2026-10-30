@@ -1154,6 +1154,8 @@ export const sk = {
       withoutVat: 'bez DPH',
       holders: 'Majú ho',
       holdersEmpty: 'Tento produkt zatiaľ nikto nemá.',
+      holdersSearch: 'Hľadať organizáciu alebo prevádzku',
+      holdersNothing: 'Nič sa nenašlo.',
       organization: 'organizácia',
       establishmentOf: (name: string) => `prevádzka ${name}`,
       perMonth: (price: string) => `${price} / mes. s DPH`,

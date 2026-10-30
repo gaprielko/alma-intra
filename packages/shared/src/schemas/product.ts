@@ -50,6 +50,15 @@ export const productSchema = z.object({
 export type ProductInput = z.infer<typeof productSchema>;
 
 export const productIdSchema = z.object({ id: idSchema });
+
+/** „Majú ho“ on a product's detail: found by name, five at a time. */
+export const HOLDERS_PAGE_SIZE = 5;
+export const productHoldersSchema = z.object({
+  id: idSchema,
+  search: z.string().trim().max(200).optional(),
+  page: z.number().int().min(1).default(1),
+});
+export type ProductHoldersInput = z.input<typeof productHoldersSchema>;
 export const updateProductSchema = z.object({ id: idSchema, product: productSchema });
 
 /** An item of the shared catalog (R-2). */
