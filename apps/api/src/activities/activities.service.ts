@@ -699,6 +699,8 @@ export async function pickableFiles(
   scope: 'customer' | 'company',
   customerId: string | undefined,
   search: string | undefined,
+  /** Only what can go into an e-mail as a picture. */
+  imagesOnly = false,
 ) {
   if (customerId) await liveCustomer(db, customerId);
   else if (scope === 'customer') throw new ActivityError('CUSTOMER_NOT_FOUND');
@@ -706,6 +708,7 @@ export async function pickableFiles(
     isNull(files.deletedAt),
     scope === 'customer' ? eq(folders.organizationId, customerId!) : isNull(folders.organizationId),
   ];
+  if (imagesOnly) where.push(inArray(fileVersions.mime, ['image/png', 'image/jpeg']));
   if (search) {
     where.push(sql`${files.name} ilike ${`%${search.replace(/[\\%_]/g, (c) => `\\${c}`)}%`}`);
   }

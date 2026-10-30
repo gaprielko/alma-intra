@@ -132,4 +132,6 @@ export const pickableFilesSchema = z.object({
   scope: z.enum(['customer', 'company']),
   customerId: idSchema.optional(),
   search: z.string().trim().max(100).optional(),
+  /** Only pictures an e-mail can show (D-49). */
+  imagesOnly: z.boolean().optional(),
 });

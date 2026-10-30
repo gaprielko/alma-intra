@@ -2,6 +2,7 @@ import {
   confirmImageSchema,
   effectiveLookSchema,
   emailLookSchema,
+  imageFromFileSchema,
   saveProductLookSchema,
   requestImageSchema,
   templateIdSchema,
@@ -175,6 +176,17 @@ export const templateRouter = router({
         images.requestImage(ctx.db, ctx.storage, ctx.session.userId, input),
       );
       ctx.audit.set({ entityType: 'email_image', entityId: result.id, diff: { size: input.size } });
+      return result;
+    }),
+
+  /** A picture from Files, for a template's body or a look's logo. */
+  imageFromFile: authorizedProcedure('template.write')
+    .input(imageFromFileSchema)
+    .mutation(async ({ ctx, input }) => {
+      const result = await run(() =>
+        images.imageFromFile(ctx.db, ctx.storage, ctx.session.userId, input.fileId),
+      );
+      ctx.audit.set({ entityType: 'email_image', diff: { fileId: input.fileId } });
       return result;
     }),
 

@@ -49,6 +49,7 @@ export function FilePicker({
   lead,
   notes,
   already,
+  imagePick,
   onClose,
   onPick,
 }: {
@@ -59,6 +60,8 @@ export function FilePicker({
   notes?: string[] | undefined;
   /** Files attached already: not offered again. */
   already: ReadonlySet<string>;
+  /** One picture for an e-mail instead of files to attach; the button's word. */
+  imagePick?: string | undefined;
   onClose: () => void;
   onPick: (files: PickedFile[]) => void;
 }) {
@@ -73,6 +76,7 @@ export function FilePicker({
       scope,
       ...(customerId ? { customerId } : {}),
       ...(search ? { search } : {}),
+      ...(imagePick ? { imagesOnly: true } : {}),
     }),
     placeholderData: keepPreviousData,
   });
@@ -86,8 +90,8 @@ export function FilePicker({
 
   const toggle = (file: PickedFile) =>
     setPicked((current) => {
-      const next = new Map(current);
-      if (next.has(file.fileId)) next.delete(file.fileId);
+      const next = new Map(imagePick ? [] : current);
+      if (current.has(file.fileId)) next.delete(file.fileId);
       else next.set(file.fileId, file);
       return next;
     });
@@ -100,7 +104,7 @@ export function FilePicker({
       // Into the customer's folder, whichever tab is open.
       const arrived = await uploadFiles(chosen, rootId);
       setPicked((current) => {
-        const next = new Map(current);
+        const next = new Map(imagePick ? [] : current);
         for (const file of arrived) next.set(file.fileId, { ...file, version: 1 });
         return next;
       });
@@ -113,7 +117,7 @@ export function FilePicker({
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent size="md">
         <DialogHeader>
-          <DialogTitle>{t.title}</DialogTitle>
+          <DialogTitle>{imagePick ? sk.templates.editor.fromFilesTitle : t.title}</DialogTitle>
           <DialogDescription>{lead}</DialogDescription>
         </DialogHeader>
 
@@ -153,9 +157,9 @@ export function FilePicker({
           <input
             ref={input}
             type="file"
-            multiple
+            multiple={!imagePick}
             hidden
-            accept={FILE_ACCEPT}
+            accept={imagePick ? 'image/png,image/jpeg' : FILE_ACCEPT}
             onChange={(event) => {
               const chosen = [...(event.target.files ?? [])];
               event.target.value = '';
@@ -232,7 +236,7 @@ export function FilePicker({
               onClose();
             }}
           >
-            {t.attach}
+            {imagePick ?? t.attach}
           </Button>
         </DialogFooter>
       </DialogContent>

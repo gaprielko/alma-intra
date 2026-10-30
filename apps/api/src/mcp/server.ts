@@ -37,12 +37,14 @@ import {
 import { getPerson, listPersons } from '../customers/persons.service.js';
 import type { Db } from '../db/db.module.js';
 import { fileVersions, users } from '../db/schema/index.js';
+import { ImageError, imageFromFile } from '../email/images.service.js';
 import {
   createTemplate,
   getTemplate,
   listTemplates,
   previewTemplate,
   productLooks,
+  saveProductLook,
   TemplateError,
   updateTemplate,
 } from '../email/templates.service.js';
@@ -116,6 +118,13 @@ const CUSTOMER_REFUSALS: Partial<Record<CustomerError['code'], string>> = {
   NOT_ESTABLISHMENT: 'This is not a prevádzka: use customers_update.',
 };
 
+/** The refusals of the tools that take a picture from Files, in words Claude can act on. */
+const IMAGE_REFUSALS: Partial<Record<ImageError['code'], string>> = {
+  NOT_FOUND: 'Not found (or in the trash): find the file with files_search.',
+  NOT_IMAGE: 'An e-mail takes a PNG or a JPG of 2 MB at most.',
+  STORAGE_NOT_CONFIGURED: 'Files are not set up on this server.',
+};
+
 /** The refusals of the template tools, in words Claude can act on. */
 const TEMPLATE_REFUSALS: Record<TemplateError['code'], string> = {
   NOT_FOUND: 'Not found: find the template with templates_search.',
@@ -130,9 +139,10 @@ const EMAIL_DOC_RULE =
   '{"type":"variable","attrs":{"name":"customer.name"}}]}]}. A body holds paragraph, heading ' +
   '(attrs.level 2 or 3), bulletList and orderedList (of listItem, each with a paragraph), ' +
   'hardBreak, horizontalRule, button (attrs.text, attrs.href), callout (a highlighted block of ' +
-  'paragraphs), columns (two column nodes) and image (attrs.src, the key of an image already in ' +
-  'Intra; new images are added in the app). Within a paragraph, logo (no attrs) is the logo of ' +
-  "the template's look at the height of the text. Text may have the marks bold, italic, accent " +
+  'paragraphs), columns (two column nodes) and image (attrs.src, the key from ' +
+  'templates_image_from_file; attrs.width in px, 536 at most). Within a paragraph, logo is a ' +
+  'logo at the height of the text: attrs.src a key from templates_image_from_file, or no attrs ' +
+  "for the logo of the template's look. Text may have the marks bold, italic, accent " +
   "(the look's colour) and link (attrs.href, http, https or mailto). Variables: " +
   `${SYSTEM_VARIABLES.join(', ')}, and custom.<key> for a field of customFields. ` +
   "The company's header, the sender's signature and the footer are added to every e-mail: do not " +
@@ -245,6 +255,9 @@ export function buildMcpServer(ctx: McpContext) {
           return refusal(CUSTOMER_REFUSALS[error.code] ?? `Refused: ${error.code}.`);
         }
         if (error instanceof TemplateError) return refusal(TEMPLATE_REFUSALS[error.code]);
+        if (error instanceof ImageError) {
+          return refusal(IMAGE_REFUSALS[error.code] ?? `Refused: ${error.code}.`);
+        }
         if (error instanceof z.ZodError) {
           const fields = error.issues
             .map((issue) => `${issue.path.join('.')} (${issue.message})`)
@@ -1009,6 +1022,63 @@ export function buildMcpServer(ctx: McpContext) {
           result: { templateId, changed: change.fields },
           entityId: templateId,
           diff: { fields: change.fields, active: change.active },
+        };
+      },
+    ),
+  );
+
+  server.registerTool(
+    'templates_image_from_file',
+    {
+      title: 'Take a picture from Files for an e-mail',
+      description:
+        'Copies a PNG or JPG (2 MB at most) from Files among the images of e-mails, which are open ' +
+        'to anybody who has the key, as every recipient must be. Returns the key for an image or ' +
+        'a logo in a template. A new version of the file does not change the copy. Only when the ' +
+        'user asked for it.',
+      inputSchema: { fileId: z.string().uuid() },
+      annotations: WRITES,
+    },
+    guardedWrite(
+      'template.write',
+      'email_image',
+      'This user may not change e-mail templates.',
+    )('templates_image_from_file', async ({ fileId }: { fileId: string }) => {
+      const image = await imageFromFile(ctx.db, ctx.storage, ctx.userId, fileId);
+      return { result: image, entityId: fileId, diff: { fileId } };
+    }),
+  );
+
+  server.registerTool(
+    'product_look_set_logo',
+    {
+      title: "Set the logo of a product's e-mail look",
+      description:
+        "A PNG or JPG (2 MB at most) from Files becomes the logo of the product's look: in the " +
+        'header of every e-mail with that look. productId comes from templates_search. It shows ' +
+        'only when the product has a look of its own, which enabled in the result tells; that is ' +
+        'switched on in the app. Only when the user asked for it.',
+      inputSchema: { productId: z.string().uuid(), fileId: z.string().uuid() },
+      annotations: UPDATES,
+    },
+    guardedWrite(
+      'email_look.manage',
+      'email_look',
+      'This user may not change the look of e-mails.',
+    )(
+      'product_look_set_logo',
+      async ({ productId, fileId }: { productId: string; fileId: string }) => {
+        const product = (await productLooks(ctx.db)).find((p) => p.productId === productId);
+        if (!product) throw new TemplateError('NOT_FOUND');
+        const { key } = await imageFromFile(ctx.db, ctx.storage, ctx.userId, fileId);
+        await saveProductLook(ctx.db, ctx.userId, {
+          productId,
+          look: { ...product.look, logoKey: key },
+        });
+        return {
+          result: { productId, key, enabled: product.look.enabled },
+          entityId: productId,
+          diff: { fileId },
         };
       },
     ),
