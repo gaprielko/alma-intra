@@ -50,6 +50,7 @@ function AppShell() {
               label={nav.overview}
               collapsed={collapsed}
             />
+            <SidebarLink to="/emails" icon={EmailsMark} label={nav.emails} collapsed={collapsed} />
             <SidebarLink
               to="/organizations"
               icon={CustomersMark}
@@ -62,7 +63,6 @@ function AppShell() {
               label={nav.products}
               collapsed={collapsed}
             />
-            <SidebarLink to="/emails" icon={EmailsMark} label={nav.emails} collapsed={collapsed} />
             <SidebarLink to="/files" icon={FilesMark} label={nav.files} collapsed={collapsed} />
           </nav>
         )}
