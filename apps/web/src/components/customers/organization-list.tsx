@@ -38,7 +38,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectItem } from '@/components/ui/select';
-import { RowLink, TableCell, TableRow } from '@/components/ui/table';
+import { CELL_LINK, RowLink, TableCell, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/toast';
 import { datedFilename, downloadText } from '@/lib/download';
 import { errorMessage } from '@/lib/errors';
@@ -277,7 +277,7 @@ export function OrganizationList({
         </Button>
       </OrganizationsHeader>
 
-      <div className="max-w-[1400px] px-7 pt-5 pb-10">
+      <div className="px-7 pt-5 pb-10">
         <TableShell
           header={
             <div>
@@ -547,8 +547,14 @@ function OrganizationRow({
         {/* A private person is their own contact: nothing to repeat here. */}
         {row.kind === 'individual' ? null : row.primaryContact ? (
           <>
-            <p className="truncate">{row.primaryContact.name}</p>
-            <p className="truncate text-xs text-muted">{row.primaryContact.email}</p>
+            <Link
+              to="/contacts/$personId"
+              params={{ personId: row.primaryContact.id }}
+              className={CELL_LINK}
+            >
+              <span className="truncate">{row.primaryContact.name}</span>
+            </Link>
+            <p className="mt-0.5 truncate text-xs text-muted">{row.primaryContact.email}</p>
           </>
         ) : (
           <>

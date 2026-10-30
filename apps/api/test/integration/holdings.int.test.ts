@@ -173,4 +173,15 @@ describe('a product at an organization or a prevádzka', () => {
     );
     expect(product_.data.holders.find((h) => h.id === org)!.monthly).toBe(59);
   });
+
+  it('removes a product entered by mistake, with its counts', async () => {
+    await jana.call('customer.holdingDelete', { organizationId: est, productId: product });
+    const held = await jana.call<Holding[]>('customer.holdings', { id: est });
+    expect(held.data.some((h) => h.productId === product && h.organizationId === est)).toBe(false);
+    const again = await jana.call('customer.holdingDelete', {
+      organizationId: est,
+      productId: product,
+    });
+    expect(again.code).toBe('NOT_FOUND');
+  });
 });

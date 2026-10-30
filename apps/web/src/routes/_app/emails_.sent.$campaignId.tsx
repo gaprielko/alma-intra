@@ -162,7 +162,7 @@ function CampaignPage() {
           </Button>
         ) : null}
       </PageHeader>
-      <main className="max-w-[1440px] space-y-5 px-7 pt-5 pb-10">
+      <main className="space-y-5 px-7 pt-5 pb-10">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Stat label={d.stats.sent} value={sent.length} hint={d.stats.sentHint(skipped)} />
           <Stat label={d.stats.delivered} value={delivered} hint={d.stats.deliveredHint} />

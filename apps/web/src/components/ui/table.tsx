@@ -132,7 +132,7 @@ export function TableRow({
     <tr
       className={cn(
         'border-t border-border-subtle transition-colors duration-150',
-        clickable && 'cursor-pointer hover:bg-hover',
+        clickable && 'cursor-pointer hover:bg-primary-soft/60',
         className,
       )}
       onClick={
@@ -171,6 +171,14 @@ export function TableRow({
  * The real link of a clickable row, around the row's name in its first cell: Tab reaches it,
  * Enter opens the detail, right click offers a new tab. A plain click stays in the app.
  */
+/**
+ * A link in a row that goes somewhere else than the row itself (the contact of a prevádzka, the
+ * folder of a file): a small framed button, darker under the pointer, never underlined. A click on
+ * it wins over the row's.
+ */
+export const CELL_LINK =
+  'inline-flex max-w-full items-center rounded-lg border border-primary/25 bg-primary-soft px-2 py-0.5 text-[13px] font-semibold text-primary-text no-underline transition-colors hover:bg-[#d6ebe9]';
+
 export function RowLink({
   href,
   className,
@@ -181,7 +189,7 @@ export function RowLink({
   return (
     <a
       href={href}
-      className={cn('rounded-sm text-inherit no-underline hover:underline', className)}
+      className={cn('rounded-sm text-inherit no-underline', className)}
       onClick={(event) => {
         onClick?.(event);
         if (event.defaultPrevented) return;

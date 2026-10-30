@@ -337,5 +337,13 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
       id: second.id,
     });
     expect(thread.data).toEqual([expect.objectContaining({ id: first.id, kind: 'received' })]);
+    // Another subject from the same sender is another conversation, offered beside it.
+    const other = await receive('Faktúra za október', 5);
+    const others = await jana.call<{ id: string; inThread: number }[]>('inbound.others', {
+      id: second.id,
+    });
+    expect(others.data).toEqual([expect.objectContaining({ id: other.id, inThread: 1 })]);
+    const back = await jana.call<{ id: string }[]>('inbound.others', { id: other.id });
+    expect(back.data).toEqual([expect.objectContaining({ id: second.id, inThread: 2 })]);
   });
 });

@@ -289,7 +289,7 @@ function ProductEditor({ product, rate }: { product: Product | undefined; rate: 
         ) : null}
       </PageHeader>
 
-      <main className="grid max-w-[1400px] items-start gap-5 px-7 pt-5 pb-10 xl:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
+      <main className="grid items-start gap-5 px-7 pt-5 pb-10 xl:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
         <div className="min-w-0 space-y-5">
           <Card>
             <CardHeader title={d.basics} />

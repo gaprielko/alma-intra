@@ -130,7 +130,7 @@ function LookForm({
   );
 
   return (
-    <div className="grid max-w-[1440px] items-start gap-5 px-7 pt-5 pb-10 xl:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
+    <div className="grid items-start gap-5 px-7 pt-5 pb-10 xl:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
       <form
         className="space-y-6 rounded-2xl border border-border-subtle bg-white p-5 shadow-rest"
         onSubmit={(event) => {

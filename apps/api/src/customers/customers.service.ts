@@ -187,9 +187,10 @@ const productsJson = sql<{ id: string; name: string }[]>`coalesce((
 
 /** The primary contact: the person at an organization, or a private person themself. */
 const primaryContactJson = sql<{
+  id: string;
   name: string;
   email: string | null;
-} | null>`(select json_build_object(
+} | null>`(select json_build_object('id', p.id,
     'name', concat_ws(' ', p.title_before, p.first_name, p.last_name), 'email', p.email)
   from contact_links l join contacts p on p.id = l.contact_id
   where l.organization_id = ${CUSTOMER_ID} and l.is_primary and p.deleted_at is null)`;

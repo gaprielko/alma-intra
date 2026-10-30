@@ -55,7 +55,7 @@ function ProductsPage() {
           </Button>
         ) : null}
       </ProductsHeader>
-      <main className="max-w-[1400px] px-7 pt-5 pb-10">
+      <main className="px-7 pt-5 pb-10">
         {list.isPending ? (
           <CardSkeleton lines={4} />
         ) : loadFailed(list) ? (
@@ -117,7 +117,7 @@ function ProductsPage() {
                             <Link
                               to="/products/$productId"
                               params={{ productId: row.id }}
-                              className="inline-flex rounded-md bg-info-soft px-2 py-0.5 text-[13px] font-semibold text-info hover:underline"
+                              className="inline-flex rounded-md bg-info-soft px-2 py-0.5 text-[13px] font-semibold text-info"
                             >
                               {row.name}
                             </Link>

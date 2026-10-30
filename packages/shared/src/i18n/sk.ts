@@ -18,6 +18,7 @@ export const sk = {
     cancel: 'Zrušiť',
     close: 'Zavrieť',
     back: 'Späť',
+    backTo: (screen: string) => `Späť na ${screen}`,
     continue: 'Pokračovať',
     search: 'Hľadať',
     loading: 'Načítavam…',
@@ -1021,6 +1022,9 @@ export const sk = {
         holdingAdded: 'Pridelený produkt',
         holdingChanged: 'Upravený produkt',
         holdingEnded: 'Ukončený produkt',
+        holdingRemoved: 'Odstránený produkt',
+        personLinked: 'Priradená kontaktná osoba',
+        personUnlinked: 'Odobratá kontaktná osoba',
         none: 'nezadané',
         by: (name: string, when: string) => `${name} · ${when}`,
         fieldNames: {
@@ -1043,6 +1047,7 @@ export const sk = {
           tags: 'štítky',
           note: 'poznámka',
           almaOrganizationId: 'ID v Alma ADOS',
+          pricesWithVat: 'ceny produktov',
           salutation: 'oslovenie',
           gender: 'oslovenie',
           titleBefore: 'titul',
@@ -1236,6 +1241,10 @@ export const sk = {
     edit: 'Upraviť',
     end: 'Ukončiť',
     endDone: 'Produkt je ukončený.',
+    remove: 'Odstrániť',
+    removeText:
+      'Produkt zmizne z tabuľky aj z cien, akoby nikdy nebol pridelený. Ak ho organizácia len prestala používať, zvoľte radšej Ukončiť.',
+    removeDone: 'Produkt je odstránený.',
     empty: 'Zatiaľ žiadny produkt. Pridelíte ho tlačidlom vyššie.',
     menu: (name: string) => `Akcie pre ${name}`,
     dialog: {
@@ -1783,6 +1792,8 @@ export const sk = {
       quickNote: 'Nová poznámka',
       quickNoteSave: 'Uložiť poznámku',
       quickNoteSaved: 'Poznámka je uložená.',
+      groupExpand: (count: number) => `Rozbaliť · ${count}`,
+      groupCollapse: 'Zbaliť',
       with: (names: string) => `s ${names}`,
       duration: (text: string) => text,
       by: (name: string, when: string) => `${name} · ${when}`,
@@ -2080,6 +2091,10 @@ export const sk = {
       expandAll: 'Rozbaliť všetky',
       collapseAll: 'Zbaliť všetky',
       sent: 'Odoslané z Intry',
+    },
+    others: {
+      title: 'Iné konverzácie',
+      hint: (who: string) => `S osobou ${who}, iné predmety`,
     },
     contactSearch: {
       label: 'Hľadať organizáciu, prevádzku alebo kontakt',

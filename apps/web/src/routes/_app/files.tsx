@@ -50,7 +50,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { StatusBanner } from '@/components/ui/status-banner';
-import { TableCell, TableRow } from '@/components/ui/table';
+import { CELL_LINK, TableCell, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
 import { canPreview, formatSize } from '@/lib/files';
@@ -148,7 +148,7 @@ function FilesPage() {
         ) : null}
       </PageHeader>
 
-      <div className="flex max-w-[1440px] flex-col items-stretch gap-5 px-7 pt-5 pb-10 md:flex-row md:items-start">
+      <div className="flex flex-col items-stretch gap-5 px-7 pt-5 pb-10 md:flex-row md:items-start">
         <FolderTree
           folderId={folderId}
           trash={params.view === 'trash'}
@@ -1243,11 +1243,7 @@ function TrashSection() {
             </div>
           </TableCell>
           <TableCell className="text-muted">
-            <Link
-              to="/files"
-              search={{ folder: file.folderId }}
-              className="text-primary-text hover:underline"
-            >
+            <Link to="/files" search={{ folder: file.folderId }} className={CELL_LINK}>
               {file.folderName}
             </Link>
           </TableCell>

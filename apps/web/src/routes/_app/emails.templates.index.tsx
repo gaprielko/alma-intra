@@ -88,7 +88,7 @@ function TemplatesPage() {
 
   return (
     <div className="min-w-0">
-      <main className="max-w-[1440px] space-y-4 px-7 pt-5 pb-10">
+      <main className="space-y-4 px-7 pt-5 pb-10">
         <div className="flex flex-wrap items-center gap-3">
           {canWrite ? (
             <Button asChild variant="secondary" className="order-last ml-auto">

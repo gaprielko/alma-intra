@@ -45,7 +45,7 @@ function SubjectLink({ row }: { row: Row }) {
       <Link
         to="/organizations/$customerId"
         params={{ customerId: row.entityId }}
-        className="text-primary-text hover:underline"
+        className="font-medium"
       >
         {row.subject}
       </Link>
@@ -56,7 +56,7 @@ function SubjectLink({ row }: { row: Row }) {
       <Link
         to="/emails/sent/$campaignId"
         params={{ campaignId: row.entityId }}
-        className="text-primary-text hover:underline"
+        className="font-medium"
       >
         {row.subject}
       </Link>
@@ -67,7 +67,7 @@ function SubjectLink({ row }: { row: Row }) {
       <Link
         to="/emails/inbox/$inboundId"
         params={{ inboundId: row.entityId }}
-        className="text-primary-text hover:underline"
+        className="font-medium"
       >
         {row.subject}
       </Link>
@@ -103,7 +103,7 @@ function ActivityLogPage() {
     };
   const rows = list.data?.items ?? [];
   return (
-    <main className="max-w-[1440px] space-y-4 px-7 pt-5 pb-10">
+    <main className="space-y-4 px-7 pt-5 pb-10">
       <p className="text-sm text-muted">{t.lead}</p>
       <div className="flex flex-wrap items-end gap-3">
         <div className="w-56">
