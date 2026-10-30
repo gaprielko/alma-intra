@@ -4,6 +4,7 @@ import { sql } from 'drizzle-orm';
 import {
   type AnyPgColumn,
   check,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -43,6 +44,8 @@ export const users = pgTable(
     position: text('position'),
     /** Plain text, appended to the e-mails she sends to organizations. */
     emailSignature: text('email_signature'),
+    /** Their private addresses, lower-cased: forwards from these can import (email-import.md). */
+    importAddresses: jsonb('import_addresses').$type<string[]>().notNull().default([]),
     status: userStatus('status').notNull().default('invited'),
     /** One role for now (`admin`): everybody may do everything, see `can()`. */
     role: userRole('role').notNull().default('admin'),

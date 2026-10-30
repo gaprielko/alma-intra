@@ -280,6 +280,9 @@ function InboxPage() {
                 <p className={cn('truncate text-sm', row.unread ? 'font-bold' : 'font-normal')}>
                   {row.subject || t.noSubject}
                 </p>
+                {row.importDirection === 'sent' ? (
+                  <p className="truncate text-xs font-medium text-warning">{t.importedSent}</p>
+                ) : null}
                 <p className="flex items-center gap-1.5 truncate text-xs text-muted">
                   {row.attachmentCount > 0 ? (
                     <span className="inline-flex shrink-0 items-center gap-0.5">

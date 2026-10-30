@@ -319,6 +319,7 @@ export const sk = {
       'auth.logout': 'Odhlásenie',
       'account.updateProfile': 'Úprava vlastného profilu',
       'account.changePassword': 'Zmena hesla',
+      'account.setImportAddresses': 'Zmena adries na import e-mailov',
       'account.createAccessToken': 'Nový token pre Claude',
       'account.revokeAccessToken': 'Zrušený token pre Claude',
       'user.invite': 'Pozvánka používateľa',
@@ -510,6 +511,14 @@ export const sk = {
   },
   account: {
     title: 'Môj účet',
+    importAddresses: {
+      title: 'Adresy na import e-mailov',
+      lead: 'Súkromné adresy, z ktorých preposielate staré e-maily do Intry. Podľa nich sa spozná, ktoré e-maily ste písali vy.',
+      label: 'Adresy, každá na novom riadku',
+      save: 'Uložiť adresy',
+      saved: 'Adresy sú uložené.',
+      invalid: (address: string) => `${address} nie je platná e-mailová adresa.`,
+    },
     profile: {
       title: 'Profil',
       lead: 'Meno a kontakt sa zobrazujú kolegom a v odoslaných e-mailoch.',
@@ -2134,6 +2143,7 @@ export const sk = {
       threadTitle: 'Zahodiť konverzáciu?',
       threadText: 'Všetky jej prijaté e-maily zmiznú z prijatých aj z časovej osi kontaktu.',
     },
+    importedSent: 'Váš e-mail z importu, čaká na zaradenie',
     rowActions: {
       markRead: 'Označiť ako prečítané',
       markUnread: 'Označiť ako neprečítané',
@@ -2348,6 +2358,10 @@ export const sk = {
       intra: 'Odpoveď sa zobrazí pri kontakte a odosielateľ dostane jej kópiu.',
       sender: 'Odpoveď príde do schránky kolegu, ktorý e-mail poslal.',
     },
+    importTitle: 'Import starých e-mailov',
+    importSwitch: 'Spracovať preposlané e-maily',
+    importHint:
+      'Keď je zapnuté, e-mail preposlaný z vašej adresy zapísanej v Môj účet so správou „Alma Intra: add mail“ sa uloží ako pôvodný e-mail, prijatý alebo odoslaný, s pôvodným dátumom. Nikomu sa nič neodošle. Keď je vypnuté, preposlané e-maily prídu ako bežné.',
     replyIntraNotReady:
       'Príjem odpovedí ešte nie je nastavený. Kým nebude, odpovede prídu odosielateľovi.',
     replyToAddress: 'Firemná adresa pre odpovede',

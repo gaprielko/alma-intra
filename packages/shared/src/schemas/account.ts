@@ -76,3 +76,8 @@ export function userFullName(u: {
   const core = [u.titleBefore, u.name].filter(Boolean).join(' ');
   return u.titleAfter ? `${core}, ${u.titleAfter}` : core;
 }
+
+/** The private addresses a user may import old e-mail from (docs/email-import.md). */
+export const importAddressesSchema = z.object({
+  addresses: z.array(z.string().trim().toLowerCase().email()).max(10),
+});

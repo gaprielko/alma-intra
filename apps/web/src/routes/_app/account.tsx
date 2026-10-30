@@ -60,6 +60,7 @@ function AccountPage() {
         <div className="min-w-0 space-y-5">
           <ProfileCard />
           <SignatureCard />
+          <ImportAddressesCard />
         </div>
         <div className="min-w-0 space-y-5">
           <SecurityCard />
@@ -255,6 +256,53 @@ function ProfileForm({
           </div>
         </form>
       </Form>
+    </SectionCard>
+  );
+}
+
+/** The private addresses old e-mail is forwarded from (docs/email-import.md). */
+function ImportAddressesCard() {
+  const me = useMe();
+  const toast = useToast();
+  const saved = useProfileSaved();
+  const a = t.importAddresses;
+  const [draft, setDraft] = useState<string | null>(null);
+  const text = draft ?? (me.data?.importAddresses ?? []).join('\n');
+  const save = useMutation(
+    trpc.account.setImportAddresses.mutationOptions({
+      onSuccess: async () => {
+        toast('success', a.saved);
+        setDraft(null);
+        await saved();
+      },
+      onError: (error) => toast('error', errorMessage(error, {})),
+    }),
+  );
+  const addresses = text
+    .split(/[\s,;]+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const wrong = addresses.find((address) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address));
+  return (
+    <SectionCard title={a.title} lead={a.lead}>
+      <div className="space-y-1.5">
+        <Label htmlFor="import-addresses">{a.label}</Label>
+        <Textarea
+          id="import-addresses"
+          rows={3}
+          value={text}
+          onChange={(event) => setDraft(event.target.value)}
+        />
+        {wrong ? <p className="text-[13px] text-danger">{a.invalid(wrong)}</p> : null}
+      </div>
+      <div className="mt-4 flex justify-end">
+        <Button
+          disabled={draft === null || wrong !== undefined || save.isPending}
+          onClick={() => save.mutate({ addresses })}
+        >
+          {a.save}
+        </Button>
+      </div>
     </SectionCard>
   );
 }

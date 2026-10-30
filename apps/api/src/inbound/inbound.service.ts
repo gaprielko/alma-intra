@@ -10,6 +10,7 @@ import {
   inboundMessages,
 } from '../db/schema/index.js';
 import { notify } from '../notifications/notifications.service.js';
+import { paragraphs, recordSentImport } from './import.js';
 
 /** A refusal the web words for itself (`sk.inbound.errors`). */
 export class InboundError extends Error {
@@ -112,6 +113,7 @@ export async function listInbound(db: Db, raw: InboundListInput) {
         /** How many e-mails the conversation holds: theirs and ours. */
         inThread: sql<number>`${newest.received} + ${ourInThread}`.mapWith(Number),
         ours: ourInThread.mapWith(Number),
+        importDirection: inboundMessages.importDirection,
         /** Any received e-mail of the conversation not opened yet. */
         unread: sql<boolean>`${newest.unread}`,
         total: sql<number>`count(*) over ()`.mapWith(Number),
@@ -313,10 +315,45 @@ export async function assignInbound(
       customerId: inboundMessages.organizationId,
       status: inboundMessages.status,
       subject: inboundMessages.subject,
+      importDirection: inboundMessages.importDirection,
+      importUserId: inboundMessages.importUserId,
+      toEmails: inboundMessages.toEmails,
+      text: inboundMessages.text,
+      receivedAt: inboundMessages.receivedAt,
     })
     .from(inboundMessages)
     .where(and(eq(inboundMessages.id, input.id), ne(inboundMessages.status, 'discarded')));
   if (!before) throw new InboundError('NOT_FOUND');
+  // The user's own imported e-mail, waiting for a recipient: filed, it belongs in „Odoslané“.
+  if (before.importDirection === 'sent' && before.importUserId) {
+    const organizationId = await fileUnder(
+      db,
+      input.customerId,
+      input.contactId ? [input.contactId] : [],
+    );
+    await db.transaction(async (tx) => {
+      await recordSentImport(tx, {
+        userId: before.importUserId!,
+        subject: before.subject,
+        text: before.text ?? '',
+        date: before.receivedAt,
+        recipients: [
+          {
+            organizationId,
+            contactId: input.contactId,
+            email: before.toEmails[0] ?? '',
+            name: null,
+          },
+        ],
+      });
+      // Discarded here: the row keeps the key and the attachments, the e-mail is in „Odoslané“.
+      await tx
+        .update(inboundMessages)
+        .set({ status: 'discarded', organizationId, assignedByUserId: userId })
+        .where(eq(inboundMessages.id, input.id));
+    });
+    return { before };
+  }
   // Another customer than the one the token named: the link to our e-mail no longer holds.
   const [kept] = await db
     .select({ customerId: campaignMessages.organizationId })
@@ -393,13 +430,6 @@ export async function discardInboundThread(db: Db, id: string) {
 }
 
 const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-
-/** Plain text as paragraphs of HTML, line breaks kept. */
-const paragraphs = (text: string) =>
-  text
-    .split(/\n{2,}/)
-    .map((p) => `<p style="margin:0 0 12px">${escapeHtml(p).replace(/\n/g, '<br>')}</p>`)
-    .join('');
 
 /**
  * „Odpovedať“ (spec 6.6): an answer to a received e-mail, queued like any e-mail to a customer (a
