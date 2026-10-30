@@ -2092,6 +2092,10 @@ export const sk = {
       collapseAll: 'Zbaliť všetky',
       sent: 'Odoslané z Intry',
     },
+    others: {
+      title: 'Iné konverzácie',
+      hint: (who: string) => `S osobou ${who}, iné predmety`,
+    },
     contactSearch: {
       label: 'Hľadať organizáciu, prevádzku alebo kontakt',
       organizations: 'Organizácie',

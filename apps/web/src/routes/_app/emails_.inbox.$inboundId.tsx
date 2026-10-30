@@ -9,7 +9,7 @@ import { PageHeader } from '@/components/page-header';
 import { CardSkeleton } from '@/components/skeletons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardHeader } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import {
   DropdownMenu,
@@ -27,7 +27,7 @@ import {
 import { Input, Textarea } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, formatRecent } from '@/lib/format';
 import { loadFailed } from '@/lib/query-view';
 import { downloadFile } from '@/lib/uploads';
 import { type RouterOutputs, trpc } from '@/lib/trpc';
@@ -118,8 +118,8 @@ function InboundPage() {
           {t.discard}
         </Button>
       </PageHeader>
-      <main className="px-7 py-6">
-        <Card className="overflow-hidden">
+      <main className="grid items-start gap-5 px-7 py-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
+        <Card className="min-w-0 overflow-hidden">
           <MessageHeader
             message={m}
             onReply={m.status === 'assigned' ? () => setReplying(true) : undefined}
@@ -145,6 +145,7 @@ function InboundPage() {
           ) : null}
           {rest.length > 0 ? <OlderInThread items={rest} /> : null}
         </Card>
+        <OtherConversations inboundId={m.id} who={m.contactName ?? m.fromName ?? m.fromEmail} />
       </main>
       {assigning ? (
         <AssignDialog
@@ -573,6 +574,55 @@ type ThreadItem = RouterOutputs['inbound']['thread'][number];
  * The rest of the conversation under the newest e-mail, as Gmail shows it: each one a row (who,
  * to whom, its first words, when), opened in place with a click; „Rozbaliť všetky“ opens them all.
  */
+/**
+ * Beside the e-mail: the other conversations with the same person, newest first. One opens in
+ * place of this one; „‹ Späť na …“ in the header returns here.
+ */
+function OtherConversations({ inboundId, who }: { inboundId: string; who: string }) {
+  const others = useQuery(trpc.inbound.others.queryOptions({ id: inboundId }));
+  const items = others.data ?? [];
+  if (items.length === 0) return null;
+  return (
+    <Card className="min-w-0 overflow-hidden">
+      <CardHeader
+        title={
+          <>
+            {t.others.title}
+            <span className="ml-1.5 font-normal text-muted">· {items.length}</span>
+          </>
+        }
+      />
+      <p className="px-5 pt-1 pb-3 text-xs text-muted">{t.others.hint(who)}</p>
+      <ul>
+        {items.map((item) => (
+          <li key={item.id} className="border-t border-border-subtle">
+            <Link
+              to="/emails/inbox/$inboundId"
+              params={{ inboundId: item.id }}
+              className="block px-5 py-3 hover:bg-primary-soft/60"
+            >
+              <span className="flex items-baseline gap-2">
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+                  {item.subject || t.noSubject}
+                </span>
+                {item.inThread > 1 ? (
+                  <span className="shrink-0 text-xs text-muted">{item.inThread}</span>
+                ) : null}
+                <span className="shrink-0 text-xs text-muted">{formatRecent(item.receivedAt)}</span>
+              </span>
+              {item.preview ? (
+                <span className="mt-0.5 line-clamp-2 block text-[13px] text-muted">
+                  {item.preview}
+                </span>
+              ) : null}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
 function OlderInThread({ items }: { items: ThreadItem[] }) {
   const [open, setOpen] = useState<Set<string>>(new Set());
   const all = open.size === items.length;

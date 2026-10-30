@@ -206,6 +206,54 @@ export async function inboundThread(db: Db, id: string) {
   return items.sort((a, b) => b.at.localeCompare(a.at));
 }
 
+/** How many other conversations of a person „Iné konverzácie“ shows. */
+const OTHER_CONVERSATIONS = 20;
+
+/**
+ * The other conversations with the person who wrote an e-mail (by the contact it is filed under,
+ * else by the sender's address): each by its newest received e-mail, newest first.
+ */
+export async function otherConversations(db: Db, id: string) {
+  const [self] = await db
+    .select({
+      contactId: inboundMessages.contactId,
+      fromEmail: inboundMessages.fromEmail,
+      key: threadKey,
+    })
+    .from(inboundMessages)
+    .where(and(eq(inboundMessages.id, id), ne(inboundMessages.status, 'discarded')));
+  if (!self) throw new InboundError('NOT_FOUND');
+  const samePerson = self.contactId
+    ? eq(inboundMessages.contactId, self.contactId)
+    : sql`lower(${inboundMessages.fromEmail}) = lower(${self.fromEmail})`;
+  const newest = db.$with('newest').as(
+    db
+      .select({
+        id: sql<string>`${inboundMessages.id}`.as('newest_id'),
+        rank: sql<number>`row_number() over (partition by ${threadKey}
+          order by ${inboundMessages.receivedAt} desc)`.as('newest_rank'),
+        received: sql<number>`count(*) over (partition by ${threadKey})`.as('received_in_thread'),
+      })
+      .from(inboundMessages)
+      .where(
+        and(ne(inboundMessages.status, 'discarded'), samePerson, sql`${threadKey} <> ${self.key}`),
+      ),
+  );
+  return db
+    .with(newest)
+    .select({
+      id: inboundMessages.id,
+      subject: inboundMessages.subject,
+      preview: PREVIEW,
+      receivedAt: inboundMessages.receivedAt,
+      inThread: sql<number>`${newest.received} + ${ourInThread}`.mapWith(Number),
+    })
+    .from(inboundMessages)
+    .innerJoin(newest, and(eq(newest.id, inboundMessages.id), eq(newest.rank, 1)))
+    .orderBy(desc(inboundMessages.receivedAt))
+    .limit(OTHER_CONVERSATIONS);
+}
+
 /** One received e-mail whole, with whom it is filed under and the e-mail it answers. */
 export async function getInbound(db: Db, id: string) {
   const [row] = await db
