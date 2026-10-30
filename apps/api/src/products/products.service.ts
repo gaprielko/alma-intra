@@ -315,12 +315,15 @@ export async function duplicateProduct(db: Db, id: string) {
 /** Only a product nobody holds can go; otherwise it is „Už sa neponúka“. */
 export async function deleteProduct(db: Db, id: string) {
   return db.transaction(async (tx) => {
+    // As the list counts its customers: an organization in the trash holds nothing any more.
     const [held] = await tx
       .select({ id: organizationProducts.organizationId })
       .from(organizationProducts)
-      .where(eq(organizationProducts.productId, id))
+      .innerJoin(organizations, eq(organizations.id, organizationProducts.organizationId))
+      .where(and(eq(organizationProducts.productId, id), isNull(organizations.deletedAt)))
       .limit(1);
     if (held) throw new ProductError('IN_USE');
+    await tx.delete(organizationProducts).where(eq(organizationProducts.productId, id));
     const [row] = await tx
       .delete(products)
       .where(eq(products.id, id))

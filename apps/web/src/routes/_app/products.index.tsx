@@ -1,8 +1,8 @@
 import { sk } from '@intra/shared/i18n';
 import { withVat } from '@intra/shared/schemas';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { ErrorState } from '@/components/empty-state';
 import { formatEur, ProductsHeader } from '@/components/products/products-header';
@@ -10,6 +10,7 @@ import { CardSkeleton } from '@/components/skeletons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
 import { SegmentedChoice } from '@/components/ui/segmented';
 import {
@@ -20,6 +21,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useToast } from '@/components/ui/toast';
+import { errorMessage } from '@/lib/errors';
 import { loadFailed } from '@/lib/query-view';
 import { useCan } from '@/lib/session';
 import { trpc } from '@/lib/trpc';
@@ -35,6 +38,19 @@ function ProductsPage() {
   const canWrite = useCan('product.write');
   const [gross, setGross] = useState<'gross' | 'net'>('gross');
   const [search, setSearch] = useState('');
+  const [removing, setRemoving] = useState<{ id: string; name: string } | null>(null);
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const remove = useMutation(
+    trpc.product.delete.mutationOptions({
+      onSuccess: async () => {
+        toast('success', p.detail.deleteConfirm.done);
+        setRemoving(null);
+        await queryClient.invalidateQueries(trpc.product.pathFilter());
+      },
+      onError: (error) => toast('error', errorMessage(error, p.errors)),
+    }),
+  );
   const rate = vat.data?.vatRate ?? 23;
   const show = (net: number | null, withTax: number | null) =>
     gross === 'gross' ? (withTax ?? (net === null ? null : withVat(net, rate))) : net;
@@ -104,6 +120,7 @@ function ProductsPage() {
                       </TableHead>
                       <TableHead className="text-right">{p.columns.customers}</TableHead>
                       <TableHead>{p.columns.state}</TableHead>
+                      {canWrite ? <TableHead className="w-12" /> : null}
                     </tr>
                   </TableHeader>
                   <TableBody>
@@ -176,6 +193,20 @@ function ProductsPage() {
                               {row.active ? p.offered : p.withdrawn}
                             </Badge>
                           </TableCell>
+                          {canWrite ? (
+                            <TableCell>
+                              {row.customers === 0 ? (
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  aria-label={p.detail.deleteConfirm.title(row.name)}
+                                  onClick={() => setRemoving({ id: row.id, name: row.name })}
+                                >
+                                  <Trash2 className="size-4" aria-hidden />
+                                </Button>
+                              ) : null}
+                            </TableCell>
+                          ) : null}
                         </TableRow>
                       );
                     })}
@@ -189,6 +220,18 @@ function ProductsPage() {
           </Card>
         )}
       </main>
+      {removing ? (
+        <ConfirmDialog
+          open
+          onOpenChange={(open) => !open && setRemoving(null)}
+          title={p.detail.deleteConfirm.title(removing.name)}
+          description={p.detail.deleteConfirm.text}
+          confirmLabel={p.detail.deleteConfirm.confirm}
+          destructive
+          pending={remove.isPending}
+          onConfirm={() => remove.mutate({ id: removing.id })}
+        />
+      ) : null}
     </div>
   );
 }

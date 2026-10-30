@@ -205,6 +205,27 @@ describe('a product at an organization or a prevádzka', () => {
     expect(ofEst.data.pricesWithVat).toBe(false);
   });
 
+  it('a product held only by an organization in the trash can be removed', async () => {
+    const copy = await jana.call<{ id: string }>('product.duplicate', { id: product });
+    const gone = await jana.call<{ id: string }>('customer.create', {
+      customer: {
+        kind: 'organization',
+        name: 'Holding do koša, s.r.o.',
+        role: 'customer',
+        tags: [],
+        productIds: [],
+      },
+    });
+    await jana.call(
+      'customer.holdingSave',
+      holding(gone.data.id, { productId: copy.data.id, counts: [], workloads: [] }),
+    );
+    const refused = await jana.call('product.delete', { id: copy.data.id });
+    expect(refused.message).toBe('IN_USE');
+    await jana.call('customer.delete', { id: gone.data.id });
+    expect((await jana.call('product.delete', { id: copy.data.id })).code).toBeUndefined();
+  });
+
   it('ends a product: it stays, no longer active', async () => {
     await jana.call('customer.holdingEnd', { organizationId: est, productId: product });
     const held = await jana.call<Holding[]>('customer.holdings', { id: est });
