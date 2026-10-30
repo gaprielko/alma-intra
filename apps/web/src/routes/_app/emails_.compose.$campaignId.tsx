@@ -33,6 +33,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectItem } from '@/components/ui/select';
@@ -1296,12 +1297,12 @@ function ReviewStep({ campaign, onBack }: { campaign: Campaign; onBack: () => vo
             <div className="mt-3 grid grid-cols-2 gap-2">
               <div>
                 <Label htmlFor="schedule-date">{r.date}</Label>
-                <Input
+                <DatePicker
                   id="schedule-date"
-                  type="date"
+                  clearable={false}
                   className="mt-1.5"
                   value={day}
-                  onChange={(event) => setDay(event.target.value)}
+                  onChange={setDay}
                 />
               </div>
               <div>

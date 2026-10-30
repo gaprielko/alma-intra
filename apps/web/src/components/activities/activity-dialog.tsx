@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectItem } from '@/components/ui/select';
@@ -293,13 +294,7 @@ export function ActivityDialog({
               </div>
               <div className="col-span-6 space-y-2 sm:col-span-2">
                 <Label htmlFor={`${ids}-date`}>{d.date}</Label>
-                <Input
-                  id={`${ids}-date`}
-                  type="date"
-                  required
-                  value={date}
-                  onChange={(event) => setDate(event.target.value)}
-                />
+                <DatePicker id={`${ids}-date`} clearable={false} value={date} onChange={setDate} />
               </div>
               <div className="col-span-3 space-y-2 sm:col-span-2">
                 <Label htmlFor={`${ids}-time`}>{d.time}</Label>
@@ -491,12 +486,7 @@ export function ActivityDialog({
                   </div>
                   <div className="col-span-6 space-y-2 sm:col-span-3">
                     <Label htmlFor={`${ids}-due`}>{d.nextStepDue}</Label>
-                    <Input
-                      id={`${ids}-due`}
-                      type="date"
-                      value={nextDue}
-                      onChange={(event) => setNextDue(event.target.value)}
-                    />
+                    <DatePicker id={`${ids}-due`} value={nextDue} onChange={setNextDue} />
                   </div>
                   <div className="col-span-6 space-y-2 sm:col-span-3">
                     <Label htmlFor={`${ids}-who`}>{d.nextStepWho}</Label>

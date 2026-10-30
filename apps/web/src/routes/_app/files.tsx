@@ -41,6 +41,7 @@ import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
 import { TableShell } from '@/components/table-shell';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -995,12 +996,12 @@ function ContentsSection({
           )}
         >
           {t.filters.dateFrom}
-          <input
-            type="date"
+          <DatePicker
+            inline
+            label={t.filters.dateFrom}
             value={params.from ?? ''}
             max={params.to}
-            onChange={(event) => setSearch({ from: event.target.value || undefined })}
-            className="bg-transparent outline-none"
+            onChange={(value) => setSearch({ from: value || undefined })}
           />
         </label>
         <label
@@ -1010,12 +1011,12 @@ function ContentsSection({
           )}
         >
           {t.filters.dateTo}
-          <input
-            type="date"
+          <DatePicker
+            inline
+            label={t.filters.dateTo}
             value={params.to ?? ''}
             min={params.from}
-            onChange={(event) => setSearch({ to: event.target.value || undefined })}
-            className="bg-transparent outline-none"
+            onChange={(value) => setSearch({ to: value || undefined })}
           />
         </label>
       </div>

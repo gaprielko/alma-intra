@@ -37,10 +37,10 @@ export function KindMark({ kind, size = 'md' }: { kind: ActivityKind; size?: 'sm
 
 export const kindLabel = (kind: ActivityKind) => sk.activities.kinds[kind];
 
-/** `2026-10-31` from the date picker, as a Slovak date: `31. 10. 2026`. */
+/** `2026-10-31` from the date picker, as a Slovak date: `31.10.2026`. */
 export function formatDay(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
-  return `${d}. ${m}. ${y}`;
+  return `${d}.${m}.${y}`;
 }
 
 /** Today in the browser's time zone, as the date picker writes it. */

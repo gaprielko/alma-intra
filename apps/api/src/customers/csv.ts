@@ -17,14 +17,14 @@ export function csvField(value: string | null | undefined): string {
   return /[";\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 }
 
-/** „27. 10. 2026“ in Bratislava, whatever the server's own time zone. */
+/** „27.10.2026“ in Bratislava, whatever the server's own time zone. */
 const dayFormat = new Intl.DateTimeFormat('sk-SK', {
   timeZone: 'Europe/Bratislava',
   day: 'numeric',
   month: 'numeric',
   year: 'numeric',
 });
-const day = (date: Date) => dayFormat.format(date);
+const day = (date: Date) => dayFormat.format(date).replace(/\s/g, '');
 
 /** Excel reads a CSV as UTF-8 only when it starts with the byte order mark. */
 const BOM = String.fromCharCode(0xfeff);
