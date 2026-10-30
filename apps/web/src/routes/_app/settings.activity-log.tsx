@@ -103,7 +103,7 @@ function ActivityLogPage() {
     };
   const rows = list.data?.items ?? [];
   return (
-    <main className="max-w-[1440px] space-y-4 px-7 pt-5 pb-10">
+    <main className="space-y-4 px-7 pt-5 pb-10">
       <p className="text-sm text-muted">{t.lead}</p>
       <div className="flex flex-wrap items-end gap-3">
         <div className="w-56">

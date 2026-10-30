@@ -148,7 +148,7 @@ function FilesPage() {
         ) : null}
       </PageHeader>
 
-      <div className="flex max-w-[1440px] flex-col items-stretch gap-5 px-7 pt-5 pb-10 md:flex-row md:items-start">
+      <div className="flex flex-col items-stretch gap-5 px-7 pt-5 pb-10 md:flex-row md:items-start">
         <FolderTree
           folderId={folderId}
           trash={params.view === 'trash'}

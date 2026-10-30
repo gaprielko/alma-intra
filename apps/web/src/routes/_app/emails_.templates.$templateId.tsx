@@ -242,7 +242,7 @@ function Editor({ template, look }: { template: Template | null; look: EmailLook
         ) : null}
       </PageHeader>
 
-      <div className="flex max-w-[1440px] flex-wrap items-start gap-5 px-7 pt-5 pb-10">
+      <div className="flex flex-wrap items-start gap-5 px-7 pt-5 pb-10">
         <aside className="flex w-full max-w-[340px] flex-[1_1_300px] flex-col gap-5 rounded-2xl border border-border-subtle bg-white p-5 shadow-rest">
           {error ? (
             <p role="alert" className="text-[13px] text-danger">

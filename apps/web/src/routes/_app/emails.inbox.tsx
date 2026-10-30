@@ -124,7 +124,7 @@ function InboxPage() {
     </button>
   );
   return (
-    <main className="max-w-[1440px] space-y-4 px-7 pt-5 pb-10">
+    <main className="space-y-4 px-7 pt-5 pb-10">
       <div className="flex flex-wrap items-center gap-2">
         <label className="flex h-9 w-full max-w-md items-center gap-2 rounded-[10px] border border-border bg-white px-3 focus-within:border-primary">
           <Search className="size-[15px] shrink-0 text-tertiary" aria-hidden />

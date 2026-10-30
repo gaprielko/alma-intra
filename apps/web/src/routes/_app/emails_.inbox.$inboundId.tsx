@@ -118,7 +118,7 @@ function InboundPage() {
           {t.discard}
         </Button>
       </PageHeader>
-      <main className="max-w-[1100px] px-7 py-6">
+      <main className="px-7 py-6">
         <Card className="overflow-hidden">
           <MessageHeader
             message={m}
