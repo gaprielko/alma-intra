@@ -88,6 +88,8 @@ export async function listInbound(db: Db, raw: InboundListInput) {
         rank: sql<number>`row_number() over (partition by ${threadKey}
           order by ${inboundMessages.receivedAt} desc)`.as('newest_rank'),
         received: sql<number>`count(*) over (partition by ${threadKey})`.as('received_in_thread'),
+        unread: sql<boolean>`bool_or(${inboundMessages.readAt} is null)
+          over (partition by ${threadKey})`.as('unread_in_thread'),
       })
       .from(inboundMessages)
       .where(where),
@@ -110,6 +112,8 @@ export async function listInbound(db: Db, raw: InboundListInput) {
         /** How many e-mails the conversation holds: theirs and ours. */
         inThread: sql<number>`${newest.received} + ${ourInThread}`.mapWith(Number),
         ours: ourInThread.mapWith(Number),
+        /** Any received e-mail of the conversation not opened yet. */
+        unread: sql<boolean>`${newest.unread}`,
         total: sql<number>`count(*) over ()`.mapWith(Number),
       })
       .from(inboundMessages)
@@ -356,6 +360,36 @@ export async function discardInbound(db: Db, id: string) {
     .returning({ customerId: inboundMessages.organizationId });
   if (rows.length === 0) throw new InboundError('NOT_FOUND');
   return rows[0]!;
+}
+
+/** The key of the conversation an e-mail is in; refused when it is not there. */
+async function threadKeyOf(db: Db, id: string) {
+  const [self] = await db
+    .select({ key: threadKey })
+    .from(inboundMessages)
+    .where(and(eq(inboundMessages.id, id), ne(inboundMessages.status, 'discarded')));
+  if (!self) throw new InboundError('NOT_FOUND');
+  return self.key as string;
+}
+
+/** The whole conversation read (opening it) or unread again (the envelope in its row). */
+export async function markInboundRead(db: Db, id: string, read: boolean) {
+  const key = await threadKeyOf(db, id);
+  await db
+    .update(inboundMessages)
+    .set({ readAt: read ? new Date() : null })
+    .where(and(ne(inboundMessages.status, 'discarded'), sql`${threadKey} = ${key}`));
+}
+
+/** „Zahodiť“ in a row: the row stands for its conversation, so all of it goes. */
+export async function discardInboundThread(db: Db, id: string) {
+  const key = await threadKeyOf(db, id);
+  const rows = await db
+    .update(inboundMessages)
+    .set({ status: 'discarded' })
+    .where(and(ne(inboundMessages.status, 'discarded'), sql`${threadKey} = ${key}`))
+    .returning({ id: inboundMessages.id });
+  return { count: rows.length };
 }
 
 const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);

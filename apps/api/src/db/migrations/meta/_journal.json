@@ -267,6 +267,13 @@
       "when": 1793352721483,
       "tag": "0037_sloppy_grandmaster",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1793354875427,
+      "tag": "0038_steady_toad_men",
+      "breakpoints": true
     }
   ]
 }

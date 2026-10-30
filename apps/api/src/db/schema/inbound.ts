@@ -26,6 +26,8 @@ export const inboundMessages = pgTable(
     /** The colleague it is for: the sender of our e-mail. */
     userId: uuid('user_id').references(() => users.id),
     status: inboundStatus('status').notNull(),
+    /** NULL: nobody has opened it yet; the team shares one inbox, so one state for all. */
+    readAt: timestamp('read_at', { withTimezone: true }),
     fromEmail: text('from_email').notNull(),
     fromName: text('from_name'),
     toEmails: jsonb('to_emails').$type<string[]>().notNull().default([]),

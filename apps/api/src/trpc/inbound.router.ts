@@ -1,6 +1,7 @@
 import {
   assignInboundSchema,
   inboundIdSchema,
+  inboundReadSchema,
   inboundListSchema,
   replyInboundSchema,
 } from '@intra/shared/schemas';
@@ -111,6 +112,26 @@ export const inboundRouter = router({
         entityId: input.id,
         diff: { status: { after: 'discarded' }, ...(customerId ? { customerId } : {}) },
       });
+      return { ok: true };
+    }),
+
+  discardThread: authorizedProcedure('email.read')
+    .input(inboundIdSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { count } = await run(() => inbound.discardInboundThread(ctx.db, input.id));
+      ctx.audit.set({
+        entityType: 'inbound',
+        entityId: input.id,
+        diff: { status: { after: 'discarded' }, count },
+      });
+      return { ok: true };
+    }),
+
+  markRead: authorizedProcedure('email.read')
+    .input(inboundReadSchema)
+    .mutation(async ({ ctx, input }) => {
+      await run(() => inbound.markInboundRead(ctx.db, input.id, input.read));
+      ctx.audit.set({ entityType: 'inbound', entityId: input.id, diff: { read: input.read } });
       return { ok: true };
     }),
 });

@@ -345,5 +345,29 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     expect(others.data).toEqual([expect.objectContaining({ id: other.id, inThread: 1 })]);
     const back = await jana.call<{ id: string }[]>('inbound.others', { id: other.id });
     expect(back.data).toEqual([expect.objectContaining({ id: second.id, inThread: 2 })]);
+
+    // New is unread; opening one reads the whole conversation; the envelope takes it back.
+    const unread = async () =>
+      (
+        await jana.call<{ items: { id: string; unread: boolean }[] }>('inbound.list', {
+          view: 'all',
+          search: 'školenia',
+        })
+      ).data.items[0]!.unread;
+    expect(await unread()).toBe(true);
+    await jana.call('inbound.markRead', { id: first.id, read: true });
+    expect(await unread()).toBe(false);
+    await jana.call('inbound.markRead', { id: second.id, read: false });
+    expect(await unread()).toBe(true);
+
+    // The bin in a row takes the whole conversation, and only that one.
+    await jana.call('inbound.discardThread', { id: second.id });
+    const left = await jana.call<{ items: { id: string }[] }>('inbound.list', {
+      view: 'all',
+      search: 'školenia',
+    });
+    expect(left.data.items).toEqual([]);
+    expect((await jana.call('inbound.get', { id: first.id })).code).toBe('NOT_FOUND');
+    expect((await jana.call('inbound.get', { id: other.id })).code).toBeUndefined();
   });
 });
