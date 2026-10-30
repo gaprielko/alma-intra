@@ -1,7 +1,7 @@
 import { sk } from '@intra/shared/i18n';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, Outlet, redirect, useLocation } from '@tanstack/react-router';
-import { NewEmailButton } from '@/components/emails/new-email-button';
+import { BulkEmailButton } from '@/components/emails/bulk-email-button';
 import { PageHeader } from '@/components/page-header';
 import { trpc } from '@/lib/trpc';
 
@@ -22,7 +22,7 @@ const activeTabClass = 'border-primary text-primary-text';
 const inactive = { className: 'border-transparent text-muted hover:text-foreground' };
 
 /**
- * E-maily: the header with „Nový e-mail“, the tabs, and the chosen list. On Prijaté the button
+ * E-maily: the header with „Hromadný e-mail“, the tabs, and the chosen list. On Prijaté the button
  * sits in the list's own toolbar, next to „Načítať nové“.
  */
 function EmailsLayout() {
@@ -40,7 +40,7 @@ function EmailsLayout() {
         title={t.title}
         subtitle={look.data ? t.subtitle(look.data.senderAddress) : undefined}
       >
-        {inInbox ? null : <NewEmailButton />}
+        {inInbox ? null : <BulkEmailButton />}
       </PageHeader>
       <nav
         aria-label={t.tabs.label}
