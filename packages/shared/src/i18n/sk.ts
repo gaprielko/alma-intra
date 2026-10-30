@@ -2471,6 +2471,7 @@ export const sk = {
       noSubject: 'Bez predmetu',
       sending: 'Odosiela sa',
       scheduled: (when: string) => `Naplánované na ${when}`,
+      deleteDraft: (subject: string) => `Zrušiť koncept ${subject}`,
       continue: 'Pokračovať',
     },
     detail: {
