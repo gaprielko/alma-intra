@@ -308,7 +308,7 @@ function ProductEditor({ product, rate }: { product: Product | undefined; rate: 
         <div className="min-w-0 space-y-5">
           <Card>
             <CardHeader title={d.basics} />
-            <div className="grid gap-4 p-5 sm:grid-cols-6">
+            <div className="grid gap-3 px-5 pt-3.5 pb-5 sm:grid-cols-6">
               <div className="space-y-1.5 sm:col-span-3">
                 <Label htmlFor="product-name">{d.name}</Label>
                 <Input
@@ -317,8 +317,8 @@ function ProductEditor({ product, rate }: { product: Product | undefined; rate: 
                   onChange={(event) => set('name', event.target.value)}
                 />
               </div>
-              <div className="space-y-1.5 sm:col-span-3">
-                <span className="block text-sm font-medium">{d.state}</span>
+              <div className="space-y-0.5 sm:col-span-3">
+                <span className="block text-xs leading-4 font-medium text-muted">{d.state}</span>
                 <SegmentedChoice
                   label={d.state}
                   value={draft.active ? 'on' : 'off'}
@@ -365,8 +365,8 @@ function ProductEditor({ product, rate }: { product: Product | undefined; rate: 
                   }}
                 />
               </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <span className="block text-sm font-medium">{d.period}</span>
+              <div className="space-y-0.5 sm:col-span-2">
+                <span className="block text-xs leading-4 font-medium text-muted">{d.period}</span>
                 <SegmentedChoice
                   label={d.period}
                   value={draft.period}
