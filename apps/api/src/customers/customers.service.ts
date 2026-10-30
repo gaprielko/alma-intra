@@ -250,6 +250,13 @@ export async function listCustomers(db: Db | Tx, raw: CustomerListInput) {
               and ${establishmentMatch(likePattern(input.search))}
               order by e.name limit 1)`
           : sql<string | null>`null`,
+        /** The id of that prevádzka, so it can be picked on its own (e.g. to file an e-mail). */
+        foundEstablishmentId: input.search
+          ? sql<string | null>`(select e.id from organizations e
+              where e.parent_id = ${CUSTOMER_ID} and e.deleted_at is null
+              and ${establishmentMatch(likePattern(input.search))}
+              order by e.name limit 1)`
+          : sql<string | null>`null`,
         total: sql<number>`count(*) over ()`.mapWith(Number),
       })
       .from(organizations)

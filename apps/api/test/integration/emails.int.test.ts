@@ -288,4 +288,17 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     );
     expect(told.rows.map((row) => row.subject)).toEqual(['Otázka na ceny']);
   });
+
+  it('Prijaté: full text within the filters, without regard to diacritics', async () => {
+    type List = { items: { subject: string | null }[] };
+    const subjects = async (input: Record<string, unknown>) =>
+      (await jana.call<List>('inbound.list', { view: 'all', ...input })).data.items.map(
+        (item) => item.subject,
+      );
+    expect(await subjects({ search: 'otazka na CENY' })).toContain('Otázka na ceny');
+    expect(await subjects({ search: 'ados harmonia', customerId: HARMONIA })).toEqual(
+      expect.arrayContaining(['Otázka na ceny', 'Re: Test']),
+    );
+    expect(await subjects({ search: 'nikto', withAttachments: true })).toEqual([]);
+  });
 });

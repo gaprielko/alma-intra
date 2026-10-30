@@ -15,6 +15,16 @@ export const INBOUND_VIEWS = ['unassigned', 'all'] as const;
 export const inboundListSchema = z.object({
   view: z.enum(INBOUND_VIEWS).default('unassigned'),
   page: z.number().int().min(1).max(10_000).default(1),
+  /**
+   * Full text over everything known of an e-mail: the sender, the contact and organization it is
+   * filed under, the subject, the text and the attachments' names; within the filters below.
+   */
+  search: z.string().trim().min(1).max(100).optional(),
+  /** Only an organization's e-mails (with its prevádzky'), or a person's. */
+  customerId: idSchema.optional(),
+  contactId: idSchema.optional(),
+  /** Only e-mails with attachments. */
+  withAttachments: z.boolean().optional(),
 });
 export type InboundListInput = z.input<typeof inboundListSchema>;
 

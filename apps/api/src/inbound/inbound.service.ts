@@ -1,5 +1,5 @@
 import { type InboundListInput, inboundListSchema, PAGE_SIZE } from '@intra/shared/schemas';
-import { and, desc, eq, isNull, ne, sql } from 'drizzle-orm';
+import { and, desc, eq, isNull, ne, type SQL, sql } from 'drizzle-orm';
 import type { Db } from '../db/db.module.js';
 import { fileUnder } from '../customers/customers.service.js';
 import {
@@ -28,16 +28,38 @@ const customerName = sql<string | null>`(select c.name from organizations c
 const contactName = sql<string | null>`(select concat_ws(' ', p.title_before, p.first_name,
   p.last_name, p.title_after) from contacts p where p.id = ${inboundMessages.contactId})`;
 
+const likePattern = (text: string) => `%${text.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+
+/** Everything known of an e-mail, for the full-text search: without regard to diacritics. */
+const searchable = sql`unaccent(concat_ws(' ', ${inboundMessages.fromEmail},
+  ${inboundMessages.fromName}, ${inboundMessages.subject}, ${inboundMessages.text},
+  ${customerName}, ${contactName},
+  (select string_agg(a ->> 'filename', ' ') from jsonb_array_elements(${inboundMessages.attachments}) a)))`;
+
 /**
  * „Prijaté“: one page of received e-mail, the unassigned first (or only), newest first, and how
- * many wait to be assigned.
+ * many wait to be assigned; narrowed by the filters, then searched within them.
  */
 export async function listInbound(db: Db, raw: InboundListInput) {
   const input = inboundListSchema.parse(raw);
-  const where =
+  const conditions: SQL[] = [
     input.view === 'unassigned'
       ? eq(inboundMessages.status, 'unassigned')
-      : ne(inboundMessages.status, 'discarded');
+      : ne(inboundMessages.status, 'discarded'),
+  ];
+  if (input.customerId) {
+    conditions.push(sql`(${inboundMessages.organizationId} = ${input.customerId}
+      or ${inboundMessages.organizationId} in
+        (select e.id from organizations e where e.parent_id = ${input.customerId}))`);
+  }
+  if (input.contactId) conditions.push(eq(inboundMessages.contactId, input.contactId));
+  if (input.withAttachments) {
+    conditions.push(sql`jsonb_array_length(${inboundMessages.attachments}) > 0`);
+  }
+  if (input.search) {
+    conditions.push(sql`${searchable} ilike unaccent(${likePattern(input.search)})`);
+  }
+  const where = and(...conditions);
   const [items, [counts]] = await Promise.all([
     db
       .select({
