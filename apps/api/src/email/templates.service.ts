@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util';
 import { sk } from '@intra/shared/i18n';
 import {
   type CustomField,
@@ -210,7 +211,8 @@ export async function updateTemplate(db: Db, userId: string, id: string, input: 
     const fileIds = await checkRefs(tx, input);
     const values = columnsOf(input);
     const fields = (Object.keys(values) as (keyof typeof values)[])
-      .filter((key) => JSON.stringify(current[key]) !== JSON.stringify(values[key]))
+      // Not by their JSON text: the database keeps a document's keys in an order of its own.
+      .filter((key) => !isDeepStrictEqual(current[key], values[key]))
       .sort();
     await tx
       .update(emailTemplates)
