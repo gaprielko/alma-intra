@@ -1,6 +1,6 @@
 import { sk } from '@intra/shared/i18n';
 import type { EmailLook, EmailNode } from '@intra/shared/schemas';
-import { OPTIONAL_VARIABLES } from '@intra/shared/schemas';
+import { brandParts, OPTIONAL_VARIABLES } from '@intra/shared/schemas';
 import {
   Body,
   Button,
@@ -302,6 +302,7 @@ function NodeView({ node, ctx }: { node: EmailNode; ctx: Ctx }): ReactNode {
 export function EmailDocument({ input }: { input: RenderInput }) {
   const { look } = input;
   const dark = look.headerStyle === 'dark';
+  const brand = brandParts(look);
   const ctx: Ctx = { input, accent: look.accent };
   const sender = {
     name: input.values['sender.name'],
@@ -347,7 +348,10 @@ export function EmailDocument({ input }: { input: RenderInput }) {
                       verticalAlign: 'middle',
                     }}
                   >
-                    {look.brandName}
+                    {brand.first}
+                    {brand.rest ? (
+                      <span style={{ color: brand.restColor }}> {brand.rest}</span>
+                    ) : null}
                   </span>
                 </Column>
                 <Column

@@ -643,6 +643,7 @@ both attach files.
 | D-47  | A contact can be made from a user; their details follow the user and never the other way round (30 Oct 2026) |
 | D-45  | Claude may read, preview, create and change e-mail templates through MCP, on the user's request, with `template.write`; no deleting, no sending, new images stay in the app (30 Oct 2026) |
 | D-46  | Text in an e-mail can take the look's accent colour and the look's logo within a line, so a product's name can be written as its logo; both follow the look, there is no free choice of colour or picture (30 Oct 2026) |
+| D-48  | In the header of an e-mail the words of the brand's name after the first stand out, so „Alma ADOS“ reads as the product's logo: a light colour on a dark header, the accent on a light one (30 Oct 2026) |
 
 ### Still to verify (not decisions)
 

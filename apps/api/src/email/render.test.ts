@@ -70,3 +70,23 @@ describe('the logo and the accent within a line', () => {
     expect(out.text).toContain('Alma ADOS');
   });
 });
+
+describe('the brand in the header', () => {
+  const header = (html: string) => html.slice(0, html.indexOf('<p '));
+
+  it('sets the words after the first in a light colour on a dark header', async () => {
+    const out = await rendered({});
+    expect(header(out.html)).toMatch(/color:#5fd0c9[^>]*> <!-- -->ADOS</);
+    expect(out.text).toContain('Alma ADOS');
+  });
+
+  it('sets them in the accent on a light header', async () => {
+    const out = await rendered({ headerStyle: 'light', accent: '#334e7b' });
+    expect(header(out.html)).toMatch(/color:#334e7b[^>]*> <!-- -->ADOS</);
+  });
+
+  it('leaves a name of one word as it is', async () => {
+    const out = await rendered({ brandName: 'Alma' });
+    expect(header(out.html)).not.toContain('#5fd0c9');
+  });
+});
