@@ -59,6 +59,8 @@ function InboundPage() {
   const [discarding, setDiscarding] = useState(false);
   const [replying, setReplying] = useState(false);
   const inbound = useQuery(trpc.inbound.get.queryOptions({ id: inboundId }));
+  const thread = useQuery(trpc.inbound.thread.queryOptions({ id: inboundId }));
+  const rest = thread.data ?? [];
   const discard = useMutation(
     trpc.inbound.discard.mutationOptions({
       onSuccess: async () => {
@@ -102,6 +104,8 @@ function InboundPage() {
             <Badge tone="warning" dot>
               {t.unassigned}
             </Badge>
+          ) : rest.length > 0 ? (
+            <Badge tone="neutral">{t.thread.count(rest.length + 1)}</Badge>
           ) : undefined
         }
       >
@@ -139,6 +143,7 @@ function InboundPage() {
               {t.safeNote}
             </p>
           ) : null}
+          {rest.length > 0 ? <OlderInThread items={rest} /> : null}
         </Card>
       </main>
       {assigning ? (
@@ -559,5 +564,93 @@ function ReplyDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+type ThreadItem = RouterOutputs['inbound']['thread'][number];
+
+/**
+ * The rest of the conversation under the newest e-mail, as Gmail shows it: each one a row (who,
+ * to whom, its first words, when), opened in place with a click; „Rozbaliť všetky“ opens them all.
+ */
+function OlderInThread({ items }: { items: ThreadItem[] }) {
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  const all = open.size === items.length;
+  const toggle = (id: string) =>
+    setOpen((now) => {
+      const next = new Set(now);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  return (
+    <section aria-label={t.thread.older(items.length)} className="border-t border-border-subtle">
+      <div className="flex items-center px-5 pt-3 pb-1.5">
+        <p className="text-xs font-semibold text-muted">{t.thread.older(items.length)}</p>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="ml-auto"
+          onClick={() => setOpen(all ? new Set() : new Set(items.map((item) => item.id)))}
+        >
+          {all ? t.thread.collapseAll : t.thread.expandAll}
+        </Button>
+      </div>
+      <ul>
+        {items.map((item) => {
+          const expanded = open.has(item.id);
+          return (
+            <li key={item.id} className="border-t border-border-subtle">
+              <button
+                type="button"
+                aria-expanded={expanded}
+                onClick={() => toggle(item.id)}
+                className="flex w-full items-center gap-3 px-5 py-2.5 text-left hover:bg-hover"
+              >
+                <span
+                  aria-hidden
+                  className={cn(
+                    'inline-flex size-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold',
+                    item.kind === 'sent'
+                      ? 'bg-primary-soft text-primary-text'
+                      : 'bg-warning-soft text-warning',
+                  )}
+                >
+                  {initialsOf(item.who)}
+                </span>
+                <span className="w-56 shrink-0 text-sm">
+                  <span className="block truncate font-semibold">
+                    {item.who}
+                    {item.kind === 'sent' ? (
+                      <span className="ml-1.5 rounded-full bg-info-soft px-1.5 text-[11px] font-semibold text-info">
+                        {t.thread.sent}
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="block truncate text-xs text-muted">{t.toLine(item.to)}</span>
+                </span>
+                <span className="min-w-0 flex-1 truncate text-[13px] text-muted">
+                  {expanded ? null : item.text.replace(/\s+/g, ' ').slice(0, 200)}
+                </span>
+                {item.attachments > 0 ? (
+                  <span className="inline-flex shrink-0 items-center gap-0.5 text-xs text-muted">
+                    <Paperclip className="size-3" aria-hidden />
+                    {item.attachments}
+                  </span>
+                ) : null}
+                <span className="shrink-0 text-xs whitespace-nowrap text-muted">
+                  {formatDateTime(item.at)}
+                </span>
+              </button>
+              {expanded ? (
+                <pre className="px-5 pb-4 pl-16 font-sans text-sm whitespace-pre-wrap">
+                  {item.text}
+                </pre>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }

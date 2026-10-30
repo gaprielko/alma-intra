@@ -237,6 +237,15 @@ function InboxPage() {
                 {/* Filed under a person: their name from Kontakty, the address under it. */}
                 <RowLink href={`/emails/inbox/${row.id}`} className="block truncate font-semibold">
                   {row.contactName || row.fromName || row.fromEmail}
+                  {/* A conversation: „, ja“ when ours are in it, and how many e-mails it holds. */}
+                  {row.ours > 0 ? (
+                    <span className="font-normal text-muted">{t.thread.me}</span>
+                  ) : null}
+                  {row.inThread > 1 ? (
+                    <span className="ml-1.5 rounded-full bg-track px-1.5 text-[11px] font-bold text-muted">
+                      {row.inThread}
+                    </span>
+                  ) : null}
                 </RowLink>
                 {row.contactName || row.fromName ? (
                   <p className="truncate text-xs text-muted">{row.fromEmail}</p>

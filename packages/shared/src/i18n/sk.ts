@@ -2072,6 +2072,14 @@ export const sk = {
       submit: 'Priradiť',
     },
     assigned: 'E-mail je priradený.',
+    thread: {
+      me: ', ja',
+      count: (n: number) => plural(n, 'e-mail', 'e-maily', 'e-mailov'),
+      older: (n: number) => `Staršie v konverzácii · ${n}`,
+      expandAll: 'Rozbaliť všetky',
+      collapseAll: 'Zbaliť všetky',
+      sent: 'Odoslané z Intry',
+    },
     contactSearch: {
       label: 'Hľadať organizáciu, prevádzku alebo kontakt',
       organizations: 'Organizácie',
