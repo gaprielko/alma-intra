@@ -71,6 +71,47 @@ describe('Kontakty: persons on their own', () => {
     expect(atOrganization.data.id).toBe(first.data.id);
   });
 
+  it('takes the history of every removed person with the e-mail when it is added (D-48)', async () => {
+    const email = 'dva.razy@example.org';
+    const removedWithActivity = async (person: Record<string, string>, subject: string) => {
+      const made = await jana.call<{ id: string }>('person.create', {
+        person: { firstName: 'Dva', lastName: 'Razy', ...person },
+        links: [{ customerId: other, isPrimary: false }],
+      });
+      const activity = await jana.call('activity.create', {
+        customerId: other,
+        activity: {
+          kind: 'call',
+          occurredAt: new Date().toISOString(),
+          subject,
+          contactIds: [made.data.id],
+        },
+      });
+      expect(activity.code).toBeUndefined();
+      return made.data.id;
+    };
+    const older = await removedWithActivity({ email }, 'Prvý telefonát');
+    expect((await jana.call('person.delete', { id: older })).code).toBeUndefined();
+    // A second removed person with the same e-mail, as the one made before D-48.
+    const newer = await removedWithActivity({ email: 'dva.razy.b@example.org' }, 'Druhý telefonát');
+    const renamed = await jana.call('person.update', {
+      id: newer,
+      person: { firstName: 'Dva', lastName: 'Razy', email },
+      receivesBulk: true,
+    });
+    expect(renamed.code).toBeUndefined();
+    expect((await jana.call('person.delete', { id: newer })).code).toBeUndefined();
+
+    const again = await jana.call<{ id: string }>('person.create', {
+      person: { firstName: 'Dva', lastName: 'Razy', email },
+    });
+    expect(again.data.id).toBe(newer);
+    const timeline = await jana.call<unknown>('person.timeline', { id: newer });
+    const text = JSON.stringify(timeline.data);
+    expect(text).toContain('Prvý telefonát');
+    expect(text).toContain('Druhý telefonát');
+  });
+
   it('keeps a person without any organization (D-2) and finds them by e-mail', async () => {
     const made = await jana.call<{ id: string }>('person.create', {
       person: { firstName: 'Andrea', lastName: 'Konzultantka', email: 'andrea.k@example.org' },

@@ -323,6 +323,13 @@
       "when": 1793374628085,
       "tag": "0045_hot_blackheart",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1793378885416,
+      "tag": "0046_merge_removed_contacts",
+      "breakpoints": true
     }
   ]
 }
