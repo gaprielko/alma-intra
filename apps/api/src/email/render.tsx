@@ -1,6 +1,11 @@
 import { sk } from '@intra/shared/i18n';
 import type { EmailLook, EmailNode } from '@intra/shared/schemas';
-import { brandParts, OPTIONAL_VARIABLES, recordedActivityOf } from '@intra/shared/schemas';
+import {
+  brandParts,
+  OPTIONAL_VARIABLES,
+  recordedActivityOf,
+  senderNameOf,
+} from '@intra/shared/schemas';
 import {
   Body,
   Button,
@@ -130,6 +135,29 @@ function Marks({
     }
   }
   return <>{out}</>;
+}
+
+/** The text in the header: its lines, bold or italic as written. */
+function HeaderLines({ doc, accent }: { doc: EmailNode | null; accent: string }) {
+  return (
+    <>
+      {(doc?.content ?? []).map((line, i) => (
+        <div key={i}>
+          {line.content?.length
+            ? line.content.map((node, j) =>
+                node.type === 'hardBreak' ? (
+                  <br key={j} />
+                ) : (
+                  <Marks key={j} node={node} accent={accent}>
+                    {node.text}
+                  </Marks>
+                ),
+              )
+            : '\u00a0'}
+        </div>
+      ))}
+    </>
+  );
 }
 
 function Nodes({ nodes, ctx }: { nodes: EmailNode[] | undefined; ctx: Ctx }) {
@@ -411,7 +439,7 @@ export function EmailDocument({ input }: { input: RenderInput }) {
                 <Column
                   style={{ textAlign: 'right', fontSize: '12px', color: dark ? '#a9c9c7' : MUTED }}
                 >
-                  {look.headerText}
+                  <HeaderLines doc={look.headerDoc} accent={look.accent} />
                 </Column>
               </Row>
             </Section>
@@ -524,6 +552,7 @@ export async function renderEmail(input: RenderInput) {
   const element = <EmailDocument input={input} />;
   return {
     subject: plainOf(input.subject, input.values, input.labels),
+    fromName: senderNameOf(input.look, { values: input.values, optional: OPTIONAL_VARIABLES }),
     html: await render(element),
     text: await render(element, { plainText: true }),
     missing: missingOf([input.subject, input.body], input.values),

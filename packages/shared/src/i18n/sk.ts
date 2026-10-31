@@ -2563,7 +2563,9 @@ export const sk = {
     sender: 'Odosielateľ',
     senderAddress: 'Adresa odosielateľa',
     senderName: 'Meno odosielateľa',
-    senderHint: 'Skladá sa z názvu značky a názvu organizácie. Príjemca ho uvidí v schránke.',
+    senderHint:
+      'Príjemca ho uvidí v schránke. Premenná sa doplní pre každého adresáta. Prázdne pole alebo chýbajúca hodnota: použije sa predvolené meno.',
+    senderDefault: (name: string) => `Predvolené meno: ${name}`,
     replies: 'Odpovede zákazníkov',
     replyModes: {
       company: 'Na firemnú adresu',

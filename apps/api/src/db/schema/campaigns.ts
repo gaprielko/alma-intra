@@ -111,6 +111,8 @@ export const campaignMessages = pgTable(
     skipReason: text('skip_reason'),
     toEmail: text('to_email'),
     toName: text('to_name'),
+    /** Who it is from, filled for this recipient when it was queued. */
+    fromName: text('from_name'),
     subject: text('subject'),
     html: text('html'),
     text: text('text'),

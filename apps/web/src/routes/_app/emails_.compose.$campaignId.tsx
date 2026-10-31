@@ -980,7 +980,7 @@ function PreviewStep({
             })}
           </ul>
         </aside>
-        <section className="min-w-0 overflow-hidden rounded-2xl border border-border-subtle bg-white shadow-rest">
+        <section className="min-w-0 overflow-clip rounded-2xl border border-border-subtle bg-white shadow-rest">
           <div className="flex flex-wrap items-center gap-3 border-b border-border-subtle px-4 py-3 text-[13px]">
             <div className="mr-auto min-w-0">
               <p className="truncate">{p.to(message.name, message.email ?? '')}</p>

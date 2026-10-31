@@ -7,7 +7,7 @@ import {
   type ValidateLinkOptions,
 } from '@tanstack/react-router';
 import { ChevronLeft } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { forgetAfter, nameLocation, titleOf, usePreviousLocation } from '@/lib/previous-location';
 import { cn } from '@/lib/utils';
 
@@ -110,8 +110,21 @@ export function PageHeader({
   const scrolled = useScrolled();
   const { pathname } = useLocation();
   useEffect(() => nameLocation(pathname, title), [pathname, title]);
+  // How tall the header is right now, for what sticks under it: it wraps and may have a back row.
+  const header = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const element = header.current;
+    if (!element) return;
+    const root = document.documentElement;
+    const observer = new ResizeObserver(() =>
+      root.style.setProperty('--page-header-height', `${element.offsetHeight}px`),
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
   return (
     <header
+      ref={header}
       className={cn(
         'sticky top-0 z-30 flex min-h-[72px] flex-wrap items-center gap-x-4 gap-y-2 border-b bg-white/80 px-7 py-3 backdrop-blur-lg backdrop-saturate-150 transition-[box-shadow,border-color] duration-150',
         scrolled ? 'border-border shadow-header' : 'border-transparent',

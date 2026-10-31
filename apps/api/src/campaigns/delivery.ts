@@ -91,6 +91,7 @@ export async function drainCampaigns(
         kind: campaigns.kind,
         lookProductId: campaigns.lookProductId,
         to: campaignMessages.toEmail,
+        fromName: campaignMessages.fromName,
         subject: campaignMessages.subject,
         html: campaignMessages.html,
         text: campaignMessages.text,
@@ -139,7 +140,7 @@ export async function drainCampaigns(
           subject: m.subject,
           html: m.html,
           text: m.text ?? '',
-          from: fromAddress(look, env.CAMPAIGN_FROM_ADDRESS),
+          from: fromAddress(look, env.CAMPAIGN_FROM_ADDRESS, m.fromName),
           replyTo,
           headers: m.answers
             ? {

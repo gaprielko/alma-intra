@@ -497,6 +497,7 @@ export async function sendDirect(db: Db, env: Env, id: string) {
             status: 'queued' as const,
             toEmail: recipient.email,
             toName: recipient.name,
+            fromName: rendered.fromName,
             subject: rendered.subject,
             html: rendered.html,
             text: rendered.text,
