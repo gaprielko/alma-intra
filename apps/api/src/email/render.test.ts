@@ -7,7 +7,8 @@ const look: EmailLook = {
   logoKey: 'abcdefghijklmnop.png',
   headerStyle: 'dark',
   brandName: 'Alma ADOS',
-  headerText: '',
+  headerDoc: null,
+  senderNameDoc: null,
   accent: '#b45309',
   footerCompany: '',
   footerIco: '',
@@ -175,8 +176,67 @@ describe('who an e-mail is from', () => {
     expect(from('Alma', 'Alma')).toBe('Alma <info@mail.test>');
   });
 
+  it('is the name written in the settings, its variables filled for the recipient', async () => {
+    const senderNameDoc: EmailNode = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'variable', attrs: { name: 'sender.name' } },
+            { type: 'text', text: ' | Alma' },
+          ],
+        },
+      ],
+    };
+    const empty: EmailNode = { type: 'doc', content: [{ type: 'paragraph' }] };
+    const options = {
+      look: { ...look, senderNameDoc },
+      baseUrl: 'https://intra.test',
+      subject: empty,
+      body: empty,
+      labels: {},
+      signature: false,
+    };
+    const filled = await renderEmail({ ...options, values: { 'sender.name': 'Eva, Tóthová' } });
+    expect(filled.fromName).toBe('Eva, Tóthová | Alma');
+    expect(fromAddress(options.look, 'info@mail.test', filled.fromName)).toBe(
+      '"Eva, Tóthová | Alma" <info@mail.test>',
+    );
+    // A value missing: the brand rather than a broken name.
+    expect((await renderEmail({ ...options, values: {} })).fromName).toBe('Alma ADOS');
+  });
+
   it('goes in quotes when a comma would split the address', () => {
     expect(from('Alma, s.r.o.')).toBe('"Alma ADOS | Alma, s.r.o." <info@mail.test>');
+  });
+});
+
+describe('the text in the header', () => {
+  it('keeps its lines and their bold and italic', async () => {
+    const out = await rendered({
+      headerDoc: {
+        type: 'doc',
+        content: [
+          {
+            type: 'paragraph',
+            content: [{ type: 'text', text: 'Prvý', marks: [{ type: 'bold' }] }],
+          },
+          {
+            type: 'paragraph',
+            content: [
+              { type: 'text', text: 'Druhý' },
+              { type: 'hardBreak' },
+              { type: 'text', text: 'Tretí', marks: [{ type: 'italic' }] },
+            ],
+          },
+        ],
+      },
+    });
+    expect(out.html).toMatch(/<div><strong>Prvý<\/strong><\/div>/);
+    expect(out.html).toMatch(
+      /<div>(<!-- -->)?Druhý(<!-- -->)?<br\/?>(<!-- -->)?<em>Tretí<\/em><\/div>/,
+    );
   });
 });
 

@@ -12,7 +12,7 @@ import { Paperclip, Send, X } from 'lucide-react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useDebounced } from '@/components/customers/organization-list';
 import { PersonDialog } from '@/components/customers/person-dialog';
-import { EmailBodyEditor } from '@/components/emails/email-editor';
+import { EmailBodyEditor, variableLabel } from '@/components/emails/email-editor';
 import { FilePicker } from '@/components/files/file-picker';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -396,7 +396,11 @@ export function DirectComposer({
         {sk.campaigns.discard}
       </Button>
     ),
-    from: t.from(senderNameOf(chosenLook.data?.look ?? look)),
+    from: t.from(
+      senderNameOf(chosenLook.data?.look ?? look, {
+        label: (name) => variableLabel(name, []),
+      }),
+    ),
   });
 }
 

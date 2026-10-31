@@ -408,7 +408,7 @@ function Editor({ template, look }: { template: Template | null; look: EmailLook
           </div>
         </aside>
 
-        <section className="min-w-0 flex-[999_1_640px] overflow-hidden rounded-2xl border border-border-subtle bg-white shadow-rest">
+        <section className="min-w-0 flex-[999_1_640px] overflow-clip rounded-2xl border border-border-subtle bg-white shadow-rest">
           <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-border-subtle px-4 py-3">
             <div
               role="tablist"

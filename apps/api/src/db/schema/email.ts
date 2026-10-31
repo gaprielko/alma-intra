@@ -95,7 +95,8 @@ export const productEmailLooks = pgTable('product_email_looks', {
     .notNull()
     .default('dark'),
   brandName: text('brand_name').notNull().default('Alma'),
-  headerText: text('header_text').notNull().default(''),
+  headerDoc: jsonb('header_doc').$type<EmailNode>(),
+  senderNameDoc: jsonb('sender_name_doc').$type<EmailNode>(),
   accent: text('accent').notNull().default('#0f766e'),
   footerWeb: text('footer_web').notNull().default(''),
   footerEmail: text('footer_email').notNull().default(''),
@@ -113,7 +114,8 @@ export const emailLook = pgTable(
       .notNull()
       .default('dark'),
     brandName: text('brand_name').notNull().default('Alma'),
-    headerText: text('header_text').notNull().default(''),
+    headerDoc: jsonb('header_doc').$type<EmailNode>(),
+    senderNameDoc: jsonb('sender_name_doc').$type<EmailNode>(),
     accent: text('accent').notNull().default('#0f766e'),
     footerCompany: text('footer_company').notNull().default(''),
     footerIco: text('footer_ico').notNull().default(''),

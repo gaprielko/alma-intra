@@ -599,7 +599,7 @@ export function EmailBodyEditor({
       <div
         role="toolbar"
         aria-label={t.editor.toolbar}
-        className="sticky top-[72px] z-10 flex flex-wrap items-center gap-0.5 border-b border-border-subtle bg-surface px-3 py-2"
+        className="sticky top-[var(--page-header-height,72px)] z-10 flex flex-wrap items-center gap-0.5 border-b border-border-subtle bg-surface px-3 py-2"
       >
         <Select
           aria-label={t.editor.blockType}
@@ -824,7 +824,7 @@ export function EmailBodyEditor({
                 {brand.rest ? <span style={{ color: brand.restColor }}> {brand.rest}</span> : null}
               </span>
               <span className={cn('ml-auto text-xs', dark ? 'text-[#a9c9c7]' : 'text-[#616e7c]')}>
-                {look.headerText}
+                <HeaderLines doc={look.headerDoc} />
               </span>
             </div>
             <div className="px-8 pt-8 pb-2">
@@ -900,17 +900,117 @@ export function EmailBodyEditor({
   );
 }
 
+/** The header's own text: lines, bold and italic, and nothing else the e-mail would not show. */
+const headerExtensions = [
+  StarterKit.configure({
+    heading: false,
+    blockquote: false,
+    bulletList: false,
+    orderedList: false,
+    listItem: false,
+    listKeymap: false,
+    code: false,
+    codeBlock: false,
+    horizontalRule: false,
+    strike: false,
+    underline: false,
+    link: false,
+    trailingNode: false,
+  }),
+];
+
+export function EmailHeaderEditor({
+  value,
+  onChange,
+  labelledBy,
+  disabled = false,
+}: {
+  value: EmailNode | null;
+  onChange: (value: EmailNode) => void;
+  labelledBy: string;
+  disabled?: boolean;
+}) {
+  const editor = useEditor({
+    extensions: headerExtensions,
+    editable: !disabled,
+    content: (value ?? { type: 'doc', content: [{ type: 'paragraph' }] }) as JSONContent,
+    editorProps: {
+      attributes: {
+        class: 'min-h-12 px-3.5 py-2 text-sm leading-5 outline-none',
+        role: 'textbox',
+        'aria-multiline': 'true',
+        'aria-labelledby': labelledBy,
+      },
+    },
+    onUpdate: ({ editor: current }) => onChange(current.getJSON() as EmailNode),
+  });
+  const state = useEditorState({
+    editor,
+    selector: ({ editor: e }) => ({
+      bold: e?.isActive('bold') ?? false,
+      italic: e?.isActive('italic') ?? false,
+    }),
+  });
+  return (
+    <div className="rounded-xl border border-border focus-within:border-primary">
+      {disabled ? null : (
+        <div className="flex gap-0.5 border-b border-border-subtle px-1.5 py-1">
+          <ToolButton
+            label={t.editor.bold}
+            active={state?.bold}
+            onClick={() => editor?.chain().focus().toggleBold().run()}
+          >
+            <Bold className="size-4" aria-hidden />
+          </ToolButton>
+          <ToolButton
+            label={t.editor.italic}
+            active={state?.italic}
+            onClick={() => editor?.chain().focus().toggleItalic().run()}
+          >
+            <Italic className="size-4" aria-hidden />
+          </ToolButton>
+        </div>
+      )}
+      <EditorContent editor={editor} />
+    </div>
+  );
+}
+
+/** The header's text as it shows in the e-mail's layout. */
+function HeaderLines({ doc }: { doc: EmailNode | null }) {
+  return (
+    <>
+      {(doc?.content ?? []).map((line, i) => (
+        <div key={i} className="text-right">
+          {line.content?.length
+            ? line.content.map((node, j) => {
+                if (node.type === 'hardBreak') return <br key={j} />;
+                let out: ReactNode = node.text;
+                if (node.marks?.some((m) => m.type === 'italic')) out = <em>{out}</em>;
+                if (node.marks?.some((m) => m.type === 'bold')) out = <strong>{out}</strong>;
+                return <span key={j}>{out}</span>;
+              })
+            : '\u00a0'}
+        </div>
+      ))}
+    </>
+  );
+}
+
 /** The subject: one line, variables as chips, a menu to insert them. */
 export function EmailSubjectEditor({
   value,
   onChange,
   fields,
   labelledBy,
+  label = t.fields.subject,
 }: {
   value: EmailNode;
   onChange: (value: EmailNode) => void;
   fields: readonly CustomField[];
   labelledBy: string;
+  /** What the line is, when it is not the subject: the sender's name has the same form. */
+  label?: string;
 }) {
   const editor = useEditor({
     extensions: subjectExtensions,
@@ -940,7 +1040,7 @@ export function EmailSubjectEditor({
       <div className="rounded-xl border border-border px-3.5 pt-2 pb-1.5 focus-within:border-primary">
         <div className="flex items-center justify-between gap-2">
           <span id={labelledBy} className="text-xs font-medium text-muted">
-            {t.fields.subject}
+            {label}
           </span>
           <VariableMenu editor={editor} fields={fields} compact />
         </div>

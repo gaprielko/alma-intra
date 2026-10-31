@@ -2,6 +2,7 @@ import { sk } from '@intra/shared/i18n';
 import {
   ACCENT_COLORS,
   type EmailLook,
+  type EmailNode,
   HEADER_STYLES,
   REPLY_MODES,
   senderNameOf,
@@ -10,6 +11,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { createFileRoute } from '@tanstack/react-router';
 import { Check, Upload } from 'lucide-react';
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
+import { EmailHeaderEditor, EmailSubjectEditor } from '@/components/emails/email-editor';
 import { ErrorState } from '@/components/empty-state';
 import { FilePicker } from '@/components/files/file-picker';
 import { CardSkeleton } from '@/components/skeletons';
@@ -117,6 +119,10 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
+/** Whether a one-line document has anything in it. */
+const hasContent = (doc: EmailNode) =>
+  (doc.content ?? []).some((line) => (line.content ?? []).length > 0);
+
 function useDebounced<T>(value: T, ms: number) {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -205,7 +211,7 @@ function LookForm({
   };
 
   const text = (
-    key: 'brandName' | 'headerText' | 'footerCompany' | 'footerIco' | 'footerWeb' | 'footerEmail',
+    key: 'brandName' | 'footerCompany' | 'footerIco' | 'footerWeb' | 'footerEmail',
     label: string,
     max: number,
   ) => (
@@ -247,7 +253,8 @@ function LookForm({
                 logoKey: look.logoKey,
                 headerStyle: look.headerStyle,
                 brandName: look.brandName,
-                headerText: look.headerText,
+                headerDoc: look.headerDoc,
+                senderNameDoc: look.senderNameDoc,
                 accent: look.accent,
                 footerWeb: look.footerWeb,
                 footerEmail: look.footerEmail,
@@ -280,8 +287,8 @@ function LookForm({
         {editable ? (
           <>
             <Section title={t.header}>
-              <div className="flex items-center gap-3">
-                <span className="inline-flex size-14 items-center justify-center overflow-hidden rounded-xl border border-border-subtle bg-surface">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="inline-flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border-subtle bg-surface">
                   {look.logoKey ? (
                     <img
                       src={`/m/${look.logoKey}`}
@@ -290,12 +297,12 @@ function LookForm({
                     />
                   ) : null}
                 </span>
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-[1_1_12rem]">
                   <p className="text-sm font-medium">{t.logo}</p>
                   <p className="text-xs text-muted">{t.logoHint}</p>
                 </div>
                 {canManage ? (
-                  <div className="flex gap-1">
+                  <div className="flex flex-wrap gap-1">
                     <Button
                       type="button"
                       variant="secondary"
@@ -372,7 +379,17 @@ function LookForm({
                 </div>
               </div>
               {text('brandName', t.brandName, 60)}
-              {text('headerText', t.headerText, 120)}
+              <div className="space-y-2">
+                <p id={`${ids}-header-text`} className="text-sm font-medium">
+                  {t.headerText}
+                </p>
+                <EmailHeaderEditor
+                  value={look.headerDoc}
+                  onChange={(doc) => set('headerDoc', doc)}
+                  labelledBy={`${ids}-header-text`}
+                  disabled={!canManage}
+                />
+              </div>
               <div className="space-y-2">
                 <p className="text-sm font-medium">{t.accent}</p>
                 <div role="radiogroup" aria-label={t.accent} className="flex gap-2">
@@ -405,11 +422,16 @@ function LookForm({
                 <Label htmlFor={`${ids}-address`}>{t.senderAddress}</Label>
                 <Input id={`${ids}-address`} value={senderAddress} readOnly />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor={`${ids}-sender`}>{t.senderName}</Label>
-                <Input id={`${ids}-sender`} value={senderNameOf(look)} readOnly />
-              </div>
-              <p className="text-[13px] text-muted">{t.senderHint}</p>
+              <EmailSubjectEditor
+                value={look.senderNameDoc ?? { type: 'doc', content: [{ type: 'paragraph' }] }}
+                onChange={(doc) => set('senderNameDoc', hasContent(doc) ? doc : null)}
+                fields={[]}
+                labelledBy={`${ids}-sender`}
+                label={t.senderName}
+              />
+              <p className="text-[13px] text-muted">
+                {t.senderHint} {t.senderDefault(senderNameOf({ ...look, senderNameDoc: null }))}
+              </p>
             </Section>
 
             {product ? (

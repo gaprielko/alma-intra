@@ -247,7 +247,8 @@ export async function getLook(db: Db | Tx): Promise<EmailLook> {
     logoKey: row?.logoKey ?? null,
     headerStyle: row?.headerStyle ?? 'dark',
     brandName: row?.brandName ?? 'Alma',
-    headerText: row?.headerText ?? '',
+    headerDoc: row?.headerDoc ?? null,
+    senderNameDoc: row?.senderNameDoc ?? null,
     accent: (row?.accent ?? '#0f766e') as EmailLook['accent'],
     footerCompany: row?.footerCompany ?? '',
     footerIco: row?.footerIco ?? '',
@@ -258,9 +259,12 @@ export async function getLook(db: Db | Tx): Promise<EmailLook> {
   };
 }
 
-/** The From of an e-mail; a name with a comma or the like must travel in quotes. */
-export function fromAddress(look: EmailLook, address: string) {
-  const name = senderNameOf(look);
+/**
+ * The From of an e-mail: the name filled for its recipient, else the look's; a name with a comma or
+ * the like must travel in quotes.
+ */
+export function fromAddress(look: EmailLook, address: string, filled?: string | null) {
+  const name = (filled ?? senderNameOf(look)).replace(/\s+/g, ' ').trim().slice(0, 120);
   return `${/[",;:<>@()[\]\\]/.test(name) ? JSON.stringify(name) : name} <${address}>`;
 }
 
@@ -278,7 +282,8 @@ export async function lookFor(db: Db | Tx, productId: string | null): Promise<Em
     logoKey: own.logoKey,
     headerStyle: own.headerStyle,
     brandName: own.brandName,
-    headerText: own.headerText,
+    headerDoc: own.headerDoc,
+    senderNameDoc: own.senderNameDoc ?? look.senderNameDoc,
     accent: own.accent as EmailLook['accent'],
     footerWeb: own.footerWeb,
     footerEmail: own.footerEmail,
@@ -303,7 +308,8 @@ export async function productLooks(db: Db) {
       logoKey: own ? own.logoKey : look.logoKey,
       headerStyle: own?.headerStyle ?? look.headerStyle,
       brandName: own?.brandName ?? look.brandName,
-      headerText: own?.headerText ?? look.headerText,
+      headerDoc: own ? own.headerDoc : look.headerDoc,
+      senderNameDoc: own ? own.senderNameDoc : look.senderNameDoc,
       accent: (own?.accent ?? look.accent) as EmailLook['accent'],
       footerWeb: own?.footerWeb ?? look.footerWeb,
       footerEmail: own?.footerEmail ?? look.footerEmail,
@@ -331,7 +337,7 @@ export async function saveProductLook(
 export async function updateLook(db: Db, userId: string, look: EmailLook) {
   const before = await getLook(db);
   const fields = (Object.keys(look) as (keyof EmailLook)[])
-    .filter((key) => before[key] !== look[key])
+    .filter((key) => JSON.stringify(before[key]) !== JSON.stringify(look[key]))
     .sort();
   await db
     .insert(emailLook)
@@ -513,6 +519,7 @@ export async function previewTemplate(
     html: rendered.html,
     text: rendered.text,
     missing: rendered.missing,
+    fromName: rendered.fromName,
   };
 }
 
@@ -533,7 +540,7 @@ export async function testTemplate(
   ]);
   return {
     to: user!.email,
-    from: fromAddress(look, env.CAMPAIGN_FROM_ADDRESS),
+    from: fromAddress(look, env.CAMPAIGN_FROM_ADDRESS, out.fromName),
     subject: `${sk.campaigns.review.testPrefix} ${out.subject}`,
     html: out.html,
     text: out.text,

@@ -247,11 +247,33 @@ export const ACCENT_COLORS = ['#0f766e', '#0c3b3c', '#0d7f81', '#b45309', '#334e
 export const REPLY_MODES = ['intra', 'company', 'sender'] as const;
 export type ReplyMode = (typeof REPLY_MODES)[number];
 
+/** Whether a document has only these nodes, without any mark but these. */
+const limitedTo = (nodes: readonly string[], marks: readonly string[]) => (doc: EmailNode) => {
+  const fine = (node: EmailNode): boolean =>
+    nodes.includes(node.type) &&
+    (node.marks ?? []).every((mark) => marks.includes(mark.type)) &&
+    (node.content ?? []).every(fine);
+  return fine(doc);
+};
+const lengthOf = (node: EmailNode): number =>
+  (node.text?.length ?? 0) + (node.content ?? []).reduce((sum, child) => sum + lengthOf(child), 0);
+
+/** The text in an e-mail's header: lines of text, bold or italic. */
+export const headerDocSchema = emailDocSchema
+  .refine(limitedTo(['doc', 'paragraph', 'text', 'hardBreak'], ['bold', 'italic']), 'invalid')
+  .refine((doc) => lengthOf(doc) <= 400, 'too_long');
+/** The name an e-mail is from: one line of text and variables, as the subject. */
+export const senderNameDocSchema = emailDocSchema
+  .refine(limitedTo(['doc', 'paragraph', 'text', 'variable'], []), 'invalid')
+  .refine((doc) => lengthOf(doc) <= 120, 'too_long');
+
 export const emailLookSchema = z.object({
   logoKey: z.string().regex(IMAGE_KEY).nullable(),
   headerStyle: z.enum(HEADER_STYLES),
   brandName: z.string().trim().min(1, 'required').max(60, 'too_long'),
-  headerText: z.string().trim().max(120, 'too_long'),
+  headerDoc: headerDocSchema.nullable(),
+  /** Who the e-mail is from; NULL: the brand and the company (D-50). */
+  senderNameDoc: senderNameDocSchema.nullable(),
   accent: z.enum(ACCENT_COLORS),
   footerCompany: z.string().trim().max(200, 'too_long'),
   footerIco: z.string().trim().max(20, 'too_long'),
@@ -263,13 +285,38 @@ export const emailLookSchema = z.object({
 export type EmailLook = z.infer<typeof emailLookSchema>;
 
 /**
- * Who an e-mail is from in the recipient's inbox (D-50): „Alma ADOS | Alma Care Solutions“, the
- * brand and the company's name from Settings › Vzhľad e-mailov.
+ * Who an e-mail is from in the recipient's inbox (D-50): the name written in Settings › Vzhľad
+ * e-mailov, else „Alma ADOS | Alma Care Solutions“, the brand and the company's name. Its variables
+ * take `values` when it goes out, and a name with a value missing falls back on the brand and the
+ * company; without values, in a screen, a variable shows by its `label`.
  */
-export function senderNameOf(look: Pick<EmailLook, 'brandName' | 'footerCompany'>) {
+export function senderNameOf(
+  look: Pick<EmailLook, 'brandName' | 'footerCompany' | 'senderNameDoc'>,
+  fill: {
+    values?: Readonly<Record<string, string | undefined>>;
+    optional?: readonly string[];
+    label?: (name: string) => string;
+  } = {},
+) {
   const brand = look.brandName.trim();
   const company = look.footerCompany.trim();
-  return company && company !== brand ? `${brand} | ${company}` : brand;
+  const fallback = company && company !== brand ? `${brand} | ${company}` : brand;
+  let complete = true;
+  const walk = (node: EmailNode): string => {
+    if (node.type === 'text') return node.text ?? '';
+    if (node.type === 'variable') {
+      const name = typeof node.attrs?.name === 'string' ? node.attrs.name : '';
+      if (fill.values) {
+        const value = fill.values[name]?.trim();
+        if (!value && !fill.optional?.includes(name)) complete = false;
+        return value ?? '';
+      }
+      return fill.label ? fill.label(name) : name;
+    }
+    return (node.content ?? []).map(walk).join('');
+  };
+  const written = look.senderNameDoc ? walk(look.senderNameDoc).replace(/\s+/g, ' ').trim() : '';
+  return written && complete ? written : fallback;
 }
 
 /**
@@ -295,7 +342,8 @@ export const productLookSchema = emailLookSchema
     logoKey: true,
     headerStyle: true,
     brandName: true,
-    headerText: true,
+    headerDoc: true,
+    senderNameDoc: true,
     accent: true,
     footerWeb: true,
     footerEmail: true,

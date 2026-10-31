@@ -776,6 +776,47 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
     expect(await opening(null)).toBe('Dobrý deň,');
   });
 
+  it('sends from the name written in the look, filled for the recipient', async () => {
+    const { look } = (await jana.call<{ look: Record<string, unknown> }>('template.look')).data;
+    const senderNameDoc = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'variable', attrs: { name: 'sender.name' } },
+            { type: 'text', text: ' z Almy' },
+          ],
+        },
+      ],
+    };
+    expect(
+      (await jana.call('template.updateLook', { ...look, senderNameDoc })).code,
+    ).toBeUndefined();
+    const { data: created } = await jana.call<{ id: string }>('campaign.createDirect');
+    await jana.call('campaign.saveDirect', {
+      id: created.id,
+      recipients: [
+        {
+          role: 'to',
+          email: 'odosielatel@example.org',
+          name: null,
+          contactId: null,
+          organizationId: null,
+        },
+      ],
+      subject: 'Meno odosielateľa',
+      body: doc('Text'),
+      templateId: null,
+      lookProductId: null,
+      attachmentFileIds: [],
+    });
+    expect((await jana.call('campaign.sendDirect', { id: created.id })).code).toBeUndefined();
+    await drainCampaigns(api.db, memoryTransport({ quiet: true }), null, loadEnv());
+    await jana.call('template.updateLook', look);
+    expect(outbox.at(-1)!.from).toMatch(/^.*Horváthová.* z Almy <.+>$/);
+  });
+
   it('a product look: over the global one when on, by the template and the new e-mail', async () => {
     type Looks = { productId: string; name: string; look: Record<string, unknown> }[];
     const looks = (await jana.call<Looks>('template.productLooks')).data;

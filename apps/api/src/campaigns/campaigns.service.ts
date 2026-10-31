@@ -850,6 +850,7 @@ export async function previewMessage(db: Db, env: Env, messageId: string) {
       campaignId: campaignMessages.campaignId,
       html: campaignMessages.html,
       subject: campaignMessages.subject,
+      fromName: campaignMessages.fromName,
     })
     .from(campaignMessages)
     .where(eq(campaignMessages.id, messageId));
@@ -857,16 +858,21 @@ export async function previewMessage(db: Db, env: Env, messageId: string) {
   const campaign = await getCampaign(db, row.campaignId);
   const message = campaign.messages.find((m) => m.id === messageId)!;
   const look = await lookFor(db, campaign.lookProductId);
-  const from = fromAddress(look, env.CAMPAIGN_FROM_ADDRESS);
   if (campaign.status !== 'draft' && row.html) {
-    return { subject: row.subject ?? '', html: row.html, missing: [], from, to: message.email };
+    return {
+      subject: row.subject ?? '',
+      html: row.html,
+      missing: [],
+      from: fromAddress(look, env.CAMPAIGN_FROM_ADDRESS, row.fromName),
+      to: message.email,
+    };
   }
   const rendered = await renderFor(db, env, campaign, message, `${env.WEB_URL}/odhlasenie`);
   return {
     subject: rendered.subject,
     html: rendered.html,
     missing: rendered.missing,
-    from,
+    from: fromAddress(look, env.CAMPAIGN_FROM_ADDRESS, rendered.fromName),
     to: message.email,
   };
 }
@@ -986,6 +992,7 @@ export async function queueCampaign(db: Db, env: Env, id: string, at?: Date) {
           ),
           toEmail: message.email,
           toName: message.name,
+          fromName: out.fromName,
           subject: out.subject,
           html: out.html,
           text: out.text,
@@ -1080,7 +1087,7 @@ export async function testMessage(db: Db, env: Env, id: string) {
   const look = await lookFor(db, campaign.lookProductId);
   return {
     to: campaign.sender.email,
-    from: fromAddress(look, env.CAMPAIGN_FROM_ADDRESS),
+    from: fromAddress(look, env.CAMPAIGN_FROM_ADDRESS, out.fromName),
     subject: `${sk.campaigns.review.testPrefix} ${out.subject}`,
     html: out.html,
     text: out.text,

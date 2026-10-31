@@ -655,6 +655,7 @@ both attach files.
 | D-53  | Podnety from Alma ADOS arrive as activities, assigned by the organization's id and the reporter's e-mail; their text only in the detail. Intra owns organizations, prevádzky and product validity and will create them in ADOS (`docs/activities-from-apps.md`, `docs/integrations/products.md`). The way back to Alma comes later (30 Oct 2026) |
 | D-54  | The file preview takes almost the whole screen and also shows Markdown. HTML and Markdown stay in a frame without scripts; their pictures load, also from the internet, and no referrer goes with them. An e-mail's frame still loads nothing from outside (30 Oct 2026) |
 | D-55  | Draft, not implemented. Intra is the main app and owns everything but products and roles. A product registers itself with its roles, Intra founds organizations in it and assigns places for new accounts, by scope and workloads (`docs/integrations/products.md`) (31 Oct 2026) |
+| D-56  | The text in an e-mail's header has several lines, bold and italic. The name an e-mail is from can be written in Settings › Vzhľad e-mailov, with variables as in the subject, filled for each recipient when queued; empty or with a value missing it stays as in D-50 (31 Oct 2026) |
 
 ### Still to verify (not decisions)
 

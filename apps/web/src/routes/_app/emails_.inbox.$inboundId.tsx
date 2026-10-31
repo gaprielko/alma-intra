@@ -156,7 +156,7 @@ function InboundPage() {
         </Button>
       </PageHeader>
       <main className="flex flex-wrap items-start gap-5 px-7 py-6">
-        <Card className="min-w-0 flex-[1_1_35rem] overflow-hidden">
+        <Card className="min-w-0 flex-[1_1_35rem] overflow-clip">
           {(drafts.data ?? []).map((draft) => (
             <ReplyDraftRow key={draft.id} id={draft.id} mode={draft.mode} />
           ))}
