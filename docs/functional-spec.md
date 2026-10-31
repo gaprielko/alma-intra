@@ -652,7 +652,8 @@ both attach files.
 | D-50  | From shows „značka | názov organizácie“ instead of the user's name (replaces this part of D-17a). A person without an opening line gets one from their gender and position or surname, else „Dobrý deň“ (30 Oct 2026) |
 | D-51  | A paragraph of an e-mail can be justified, and a logo within a line never parts from the words right after it. Keeping one-letter words off the line's end is written in the text itself, with non-breaking spaces (30 Oct 2026) |
 | D-52  | Aktivity have a code list of types, and a button in an e-mail records any of them (`docs/activity-types.md`) (30 Oct 2026) |
-| D-53  | Podnety from Alma ADOS arrive as activities, assigned by the organization's id and the reporter's e-mail; their text only in the detail. Intra owns organizations, prevádzky and product validity and will create them in ADOS (`docs/activities-from-apps.md`, `docs/integrations/ados-organizations.md`). The way back to Alma comes later (30 Oct 2026) |
+| D-53  | Podnety from Alma ADOS arrive as activities, assigned by the organization's id and the reporter's e-mail; their text only in the detail. Intra owns organizations, prevádzky and product validity and will create them in ADOS (`docs/activities-from-apps.md`, `docs/integrations/products.md`). The way back to Alma comes later (30 Oct 2026) |
+| D-55  | Draft, not implemented. Intra is the main app and owns everything but products and roles. A product registers itself with its roles, Intra founds organizations in it and assigns places for new accounts, by scope and workloads (`docs/integrations/products.md`) (31 Oct 2026) |
 
 ### Still to verify (not decisions)
 
