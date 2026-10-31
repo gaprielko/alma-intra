@@ -2,8 +2,8 @@
 
 Status: **draft from Intra's side, 2026-10-31.** Nothing is implemented and Alma ADOS has not agreed to
 it yet: the user decided that Intra prepares its contracts and ADOS adapts later. The reasoning, the
-sequence diagrams and the decisions are in the Intra file „Alma ADOS - Podnety architektura a napojenie
-na Intru.html“ (Firemné dokumenty / Firma / Technológie). Screens: boards with „(návrh)“ on the pages
+sequence diagrams and the decisions are in the Intra file „Alma - Solutions Architecture.html“
+(Firemné dokumenty / Firma / Technológie). Screens: boards with „(návrh)“ on the pages
 „Produkty“ and „Organizácie“ of the canvas. Podnety keep their own contract,
 `docs/integrations/pilot-feedback-intranet.md` in the `alma-ados` repository, with the one change in
 section 6.
