@@ -102,7 +102,7 @@ For this app:
 - **[A-1] Pracovisko. Decided by the user (2026-10-30).** Intra owns organizations and prevádzky and
   creates them in ADOS, which then sends Intra's id back. The id alone therefore gives the organization
   and the pracovisko: a prevádzka's id gives both, an organization's id gives the organization. See
-  `docs/integrations/ados-organizations.md`. Until ADOS adapts, the receiver also matches
+  `docs/integrations/products.md`. Until ADOS adapts, the receiver also matches
   `alma_organization_id`, so no change on the side of ADOS is needed to start.
 - **[A-2] A reporter without a contact.** Create one automatically? Recommended: no, show the name and
   the e-mail and offer „Vytvoriť kontakt“, so that a typing error in Alma never makes a contact.
