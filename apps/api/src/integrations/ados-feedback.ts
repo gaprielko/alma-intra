@@ -52,7 +52,7 @@ export const feedbackItemSchema = z.object({
     email: text(320),
     role: text(40).nullish(),
   }),
-  /** Intra's id once ADOS has adapted, until then ADOS's (docs/integrations/ados-organizations.md). */
+  /** Intra's id once ADOS has adapted, until then ADOS's (docs/integrations/products.md). */
   organization: z.object({ id: z.string().uuid(), name: text(300).nullish() }),
   app: z.record(z.unknown()),
   device: z.record(z.unknown()),
