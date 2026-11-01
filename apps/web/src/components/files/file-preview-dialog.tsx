@@ -1,5 +1,6 @@
 import { sk } from '@intra/shared/i18n';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import { Download } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { FileBadge } from '@/components/files/file-bits';
@@ -7,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
+import { formatDateTime } from '@/lib/format';
 import { FILES_REFRESH_MS, formatSize, previewKind } from '@/lib/files';
 import { fileDocument, followFragmentLinks, markdownDocument } from '@/lib/safe-html';
 import { trpc, trpcClient } from '@/lib/trpc';
@@ -36,10 +38,12 @@ export function FilePreviewDialog({
   file,
   onClose,
   onVersions,
+  onDrafts,
 }: {
   file: PreviewedFile;
   onClose: () => void;
   onVersions: () => void;
+  onDrafts?: () => void;
 }) {
   const toast = useToast();
   const kind = previewKind(file.name);
@@ -90,6 +94,17 @@ export function FilePreviewDialog({
     return () => URL.revokeObjectURL(url);
   }, [pdf]);
 
+  const comments = useQuery({
+    ...trpc.fileShare.comments.queryOptions({ fileId: file.id }),
+    enabled: kind === 'html',
+    refetchInterval: FILES_REFRESH_MS,
+  });
+  const waiting = useQuery({
+    ...trpc.fileShare.drafts.queryOptions({ fileId: file.id }),
+    enabled: kind === 'html',
+    refetchInterval: FILES_REFRESH_MS,
+  });
+  const waitingCount = waiting.data?.filter((draft) => draft.state === 'waiting').length ?? 0;
   const save = () =>
     void downloadFile(file.id, file.name).catch((error: unknown) =>
       toast('error', errorMessage(error, t.errors)),
@@ -129,6 +144,11 @@ export function FilePreviewDialog({
           </div>
           {kind ? (
             <>
+              {waitingCount > 0 && onDrafts ? (
+                <Button variant="secondary" onClick={onDrafts}>
+                  {sk.sharing.preview.drafts(waitingCount)}
+                </Button>
+              ) : null}
               {versions}
               {download}
             </>
@@ -155,34 +175,69 @@ export function FilePreviewDialog({
             </div>
           </div>
         ) : (
-          <div className="min-h-0 flex-1 bg-surface">
-            {content.isError ? status(d.failed) : null}
-            {content.isPending ? status(d.loading) : null}
-            {content.data?.image ? (
-              <div className="flex h-full items-center justify-center p-4">
-                <img
-                  src={content.data.image}
-                  alt={file.name}
-                  className="max-h-full max-w-full rounded-lg object-contain"
+          <div className="flex min-h-0 flex-1 flex-wrap">
+            <div className="h-full min-w-0 flex-[999_1_30rem] bg-surface">
+              {content.isError ? status(d.failed) : null}
+              {content.isPending ? status(d.loading) : null}
+              {content.data?.image ? (
+                <div className="flex h-full items-center justify-center p-4">
+                  <img
+                    src={content.data.image}
+                    alt={file.name}
+                    className="max-h-full max-w-full rounded-lg object-contain"
+                  />
+                </div>
+              ) : null}
+              {content.data?.html !== undefined ? (
+                <iframe
+                  title={file.name}
+                  // No scripts, no forms, no popups. The origin is kept only so the frame paints;
+                  // without scripts nothing can use it.
+                  sandbox="allow-same-origin"
+                  srcDoc={content.data.html}
+                  onLoad={(event) => {
+                    const inside = event.currentTarget.contentDocument;
+                    if (inside) followFragmentLinks(inside);
+                  }}
+                  className="block h-full w-full border-0 bg-white"
                 />
-              </div>
-            ) : null}
-            {content.data?.html !== undefined ? (
-              <iframe
-                title={file.name}
-                // No scripts, no forms, no popups. The origin is kept only so the frame paints;
-                // without scripts nothing can use it.
-                sandbox="allow-same-origin"
-                srcDoc={content.data.html}
-                onLoad={(event) => {
-                  const inside = event.currentTarget.contentDocument;
-                  if (inside) followFragmentLinks(inside);
-                }}
-                className="block h-full w-full border-0 bg-white"
-              />
-            ) : null}
-            {pdfUrl ? (
-              <iframe title={file.name} src={pdfUrl} className="block h-full w-full border-0" />
+              ) : null}
+              {pdfUrl ? (
+                <iframe title={file.name} src={pdfUrl} className="block h-full w-full border-0" />
+              ) : null}
+            </div>
+            {comments.data && comments.data.length > 0 ? (
+              <aside
+                aria-label={sk.sharing.comments.open(comments.data.length)}
+                className="h-full flex-[1_1_22rem] overflow-auto border-l border-border-subtle bg-white p-3"
+              >
+                <p className="mb-2 px-2 text-xs font-semibold tracking-[0.06em] text-tertiary uppercase">
+                  {sk.sharing.comments.open(comments.data.length)}
+                </p>
+                <ul className="space-y-2">
+                  {comments.data.map((comment) => (
+                    <li key={comment.id}>
+                      <Link
+                        from="/files"
+                        to="/files"
+                        search={(prev) => ({ ...prev, draft: comment.draftId ?? undefined })}
+                        onClick={onClose}
+                        className="block rounded-xl border border-border-subtle p-3 text-sm hover:border-primary"
+                      >
+                        <span className="block text-xs text-muted">
+                          {comment.authorName} · {formatDateTime(comment.createdAt)}
+                        </span>
+                        {comment.anchor?.quote ? (
+                          <span className="mt-1 block text-xs text-muted">
+                            „{comment.anchor.quote}“
+                          </span>
+                        ) : null}
+                        <span className="mt-1 block whitespace-pre-wrap">{comment.body}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </aside>
             ) : null}
           </div>
         )}
