@@ -103,11 +103,11 @@ export const ParagraphAlign = Extension.create({
         attributes: {
           align: {
             default: null,
-            parseHTML: (el) => (el.dataset.align === 'justify' ? 'justify' : null),
-            renderHTML: (attrs) =>
-              attrs.align === 'justify'
-                ? { 'data-align': 'justify', style: 'text-align: justify' }
-                : {},
+            parseHTML: (el) => el.dataset.align ?? null,
+            renderHTML: (attrs) => {
+              const align = attrs.align as string | null;
+              return align ? { 'data-align': align, style: `text-align: ${align}` } : {};
+            },
           },
         },
       },
