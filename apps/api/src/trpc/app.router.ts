@@ -16,6 +16,7 @@ import { campaignRouter, unsubscribeRouter } from './campaign.router.js';
 import { productRouter } from './product.router.js';
 import { personRouter } from './person.router.js';
 import { templateRouter } from './template.router.js';
+import { fileShareRouter, publicShareRouter } from './share.router.js';
 import { router } from './trpc.js';
 import { userRouter } from './user.router.js';
 
@@ -29,6 +30,8 @@ export const appRouter = router({
   person: personRouter,
   codeList: codeListRouter,
   file: fileRouter,
+  fileShare: fileShareRouter,
+  publicShare: publicShareRouter,
   document: documentRouter,
   activity: activityRouter,
   leadActivity: leadActivityRouter,
