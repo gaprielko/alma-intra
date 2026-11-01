@@ -3,6 +3,8 @@ import {
   HOLDERS_PAGE_SIZE,
   type ItemBilling,
   priceOf,
+  type ProductApp,
+  type ProductItemKind,
   type ProductPeriod,
   withoutVat,
   withVat,
@@ -12,6 +14,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { ChevronDown, ChevronUp, MoreHorizontal, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { ErrorState } from '@/components/empty-state';
+import { AppChips } from '@/components/products/app-chips';
 import { ItemDialog } from '@/components/products/item-dialog';
 import { PageHeader } from '@/components/page-header';
 import { formatEur, moneyText, parseMoney } from '@/components/products/products-header';
@@ -57,6 +60,8 @@ type CatalogItem = RouterOutputs['product']['items'][number];
 /** A row of the price list being edited; prices as typed. */
 interface Row {
   itemId: string;
+  kind: ProductItemKind;
+  apps: ProductApp[];
   name: string;
   unit: string | null;
   billing: ItemBilling;
@@ -99,6 +104,8 @@ const draftOf = (product: Product): Draft => ({
   workloadStep: String(product.workloadStep),
   rows: product.items.map((item) => ({
     itemId: item.itemId,
+    kind: item.kind,
+    apps: item.apps,
     name: item.name,
     unit: item.unit,
     billing: item.billing,
@@ -111,16 +118,22 @@ const draftOf = (product: Product): Draft => ({
 });
 
 /**
- * A row's name and unit belong to the item, not to the draft: a rename in „Položky“ shows here even
- * when the draft was made from a cached product before the refetch brought the new name.
+ * A row's name, unit and applications belong to the item, not to the draft: a change in the catalog
+ * shows here even when the draft was made from a cached product before the refetch brought it.
  */
 const withCurrentItems = (draft: Draft, product: Product | undefined): Draft => ({
   ...draft,
   rows: draft.rows.map((row) => {
     const item = product?.items.find((candidate) => candidate.itemId === row.itemId);
-    return item ? { ...row, name: item.name, unit: item.unit } : row;
+    return item ? { ...row, name: item.name, unit: item.unit, apps: item.apps } : row;
   }),
 });
+
+/** The roles first, then the other items (R-22); each keeps its order. */
+const rolesFirst = (rows: Row[]) => [
+  ...rows.filter((row) => row.kind === 'role'),
+  ...rows.filter((row) => row.kind === 'other'),
+];
 
 const intOf = (text: string, fallback: number) => {
   const n = Number.parseInt(text, 10);
@@ -175,7 +188,7 @@ function ProductEditor({ product, rate }: { product: Product | undefined; rate: 
   const canWrite = useCan('product.write');
   const [edited, setDraft] = useState<Draft>(() => (product ? draftOf(product) : emptyDraft));
   const draft = withCurrentItems(edited, product);
-  const [adding, setAdding] = useState(false);
+  const [adding, setAdding] = useState<ProductItemKind | null>(null);
   const [deleting, setDeleting] = useState(false);
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
     setDraft((current) => ({ ...current, [key]: value }));
@@ -191,6 +204,9 @@ function ProductEditor({ product, rate }: { product: Product | undefined; rate: 
       rows.splice(index + by, 0, row!);
       return { ...current, rows };
     });
+
+  const removeRow = (index: number) =>
+    setDraft((current) => ({ ...current, rows: current.rows.filter((_, i) => i !== index) }));
 
   /** Typing one price fills the other (R-9). */
   const pair = (text: string, gross: boolean) => {
@@ -393,180 +409,78 @@ function ProductEditor({ product, rate }: { product: Product | undefined; rate: 
           </Card>
 
           <Card>
-            <CardHeader
-              title={d.priceList}
-              action={
-                canWrite ? (
-                  <Button variant="secondary" size="sm" onClick={() => setAdding(true)}>
-                    <Plus className="size-3.5" aria-hidden />
-                    {d.addItem}
-                  </Button>
-                ) : null
-              }
-            />
+            <CardHeader title={d.priceList} />
             <p className="px-5 pt-1.5 text-[13px] text-muted">{d.priceListHint}</p>
-            {draft.rows.length === 0 ? (
-              <p className="px-5 py-5 text-sm text-muted">{d.noItems}</p>
-            ) : (
-              <div className="mt-3 overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-y border-border-subtle bg-surface text-left text-xs text-muted">
-                      <th className="w-14 py-2 pl-5" />
-                      <th className="px-2 py-2 font-semibold">{d.columns.item}</th>
-                      <th className="px-2 py-2 font-semibold">{d.columns.billing}</th>
-                      <th className="px-2 py-2 font-semibold">{d.columns.included}</th>
-                      <th className="px-2 py-2 font-semibold">{d.columns.unitNet}</th>
-                      <th className="px-2 py-2 font-semibold">{d.columns.unitGross}</th>
-                      <th className="px-2 py-2 font-semibold">{d.columns.max}</th>
-                      <th className="w-12" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {draft.rows.map((row, index) => (
-                      <tr
-                        key={row.itemId}
-                        className="group/row border-t border-border-subtle first:border-t-0"
-                      >
-                        <td className="py-2 pl-3">
-                          <RowActions className="flex-col gap-0">
-                            <button
-                              type="button"
-                              aria-label={d.moveUp}
-                              disabled={index === 0}
-                              onClick={() => move(index, -1)}
-                              className="text-muted hover:text-foreground disabled:opacity-30"
-                            >
-                              <ChevronUp className="size-4" aria-hidden />
-                            </button>
-                            <button
-                              type="button"
-                              aria-label={d.moveDown}
-                              disabled={index === draft.rows.length - 1}
-                              onClick={() => move(index, 1)}
-                              className="text-muted hover:text-foreground disabled:opacity-30"
-                            >
-                              <ChevronDown className="size-4" aria-hidden />
-                            </button>
-                          </RowActions>
-                        </td>
-                        <td className="px-2 py-2">
-                          <span className="block font-semibold">{row.name}</span>
-                          {row.unit ? (
-                            <span className="block text-xs text-muted">{d.unit(row.unit)}</span>
-                          ) : null}
-                          {row.billing === 'recurring' ? (
-                            <span className="mt-1 flex items-center gap-1.5 text-xs whitespace-nowrap text-muted">
-                              <Switch
-                                checked={row.byWorkload}
-                                label={`${row.name}: ${d.byWorkload}`}
-                                onChange={() => setRow(index, { byWorkload: !row.byWorkload })}
-                              />
-                              {d.byWorkload}
-                            </span>
-                          ) : null}
-                        </td>
-                        <td className="px-2 py-2">
-                          <Select
-                            aria-label={`${row.name}: ${d.columns.billing}`}
-                            value={row.billing}
-                            onChange={(value) => setRow(index, { billing: value as ItemBilling })}
-                            className="h-9 w-36"
-                          >
-                            <SelectItem value="recurring">{d.billings.recurring}</SelectItem>
-                            <SelectItem value="once">{d.billings.once}</SelectItem>
-                          </Select>
-                        </td>
-                        <td className="px-2 py-2">
-                          <Input
-                            aria-label={`${row.name}: ${d.columns.included}`}
-                            inputMode="numeric"
-                            value={row.included}
-                            onChange={(event) => setRow(index, { included: event.target.value })}
-                            className="h-9 w-16 text-right"
-                          />
-                        </td>
-                        <td className="px-2 py-2">
-                          <Input
-                            aria-label={`${row.name}: ${d.columns.unitNet}`}
-                            inputMode="decimal"
-                            value={row.unitPrice}
-                            onChange={(event) => {
-                              const both = pair(event.target.value, false);
-                              setRow(index, { unitPrice: both.net, unitPriceGross: both.gross });
-                            }}
-                            className="h-9 w-24 bg-surface text-right"
-                          />
-                        </td>
-                        <td className="px-2 py-2">
-                          <Input
-                            aria-label={`${row.name}: ${d.columns.unitGross}`}
-                            inputMode="decimal"
-                            value={row.unitPriceGross}
-                            onChange={(event) => {
-                              const both = pair(event.target.value, true);
-                              setRow(index, { unitPrice: both.net, unitPriceGross: both.gross });
-                            }}
-                            className="h-9 w-24 text-right"
-                          />
-                        </td>
-                        <td className="px-2 py-2">
-                          <Input
-                            aria-label={`${row.name}: ${d.columns.max}`}
-                            inputMode="numeric"
-                            value={row.max}
-                            onChange={(event) => setRow(index, { max: event.target.value })}
-                            className="h-9 w-16 text-right"
-                          />
-                        </td>
-                        <td className="pr-3">
-                          <RowActions>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              aria-label={d.remove(row.name)}
-                              onClick={() =>
-                                setDraft((c) => ({
-                                  ...c,
-                                  rows: c.rows.filter((_, i) => i !== index),
-                                }))
-                              }
-                            >
-                              <Trash2 className="size-4" aria-hidden />
-                            </Button>
-                          </RowActions>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            <p className="border-t border-border-subtle px-5 py-3 text-[13px] text-muted">
+            <PricePart
+              kind="role"
+              rows={draft.rows}
+              canWrite={canWrite}
+              onAdd={() => setAdding('role')}
+              setRow={setRow}
+              move={move}
+              removeRow={removeRow}
+              pair={pair}
+            />
+            <div className="mt-3 h-2 border-y border-border-subtle bg-surface" />
+            <PricePart
+              kind="other"
+              rows={draft.rows}
+              canWrite={canWrite}
+              onAdd={() => setAdding('other')}
+              setRow={setRow}
+              move={move}
+              removeRow={removeRow}
+              pair={pair}
+            />
+            <p className="mt-3 border-t border-border-subtle px-5 py-3 text-[13px] text-muted">
               {d.sharedNames}{' '}
               <Link
-                to="/products/items"
+                to="/products/roles"
                 className="font-semibold text-primary-text hover:underline"
               >
-                {sk.products.tabs.items}
+                {sk.products.tabs.roles}
+              </Link>{' '}
+              {d.and}{' '}
+              <Link
+                to="/products/others"
+                className="font-semibold text-primary-text hover:underline"
+              >
+                {sk.products.tabs.others}
               </Link>
+              .
             </p>
           </Card>
 
           {product ? <HoldersCard product={product} /> : null}
         </div>
         <div className="min-w-0 space-y-5">
-          <Calculator draft={draft} input={input} rate={rate} />
+          <Calculator
+            draft={draft}
+            input={input}
+            rate={rate}
+            canWrite={canWrite}
+            customers={product?.customers ?? 0}
+            onInsert={(changes) =>
+              setDraft((current) => ({
+                ...current,
+                rows: current.rows.map((row) => {
+                  const change = changes.find((c) => c.itemId === row.itemId);
+                  return change ? { ...row, included: String(change.to) } : row;
+                }),
+              }))
+            }
+          />
         </div>
       </main>
 
       {adding ? (
         <AddItemDialog
+          kind={adding}
           productName={draft.name || d.newTitle}
           productId={product?.id}
           taken={draft.rows.map((r) => r.itemId)}
-          onClose={() => setAdding(false)}
-          onAdd={(row) => setDraft((c) => ({ ...c, rows: [...c.rows, row] }))}
+          onClose={() => setAdding(null)}
+          onAdd={(row) => setDraft((c) => ({ ...c, rows: rolesFirst([...c.rows, row]) }))}
           rate={rate}
         />
       ) : null}
@@ -586,11 +500,202 @@ function ProductEditor({ product, rate }: { product: Product | undefined; rate: 
   );
 }
 
-/** Výpočet ceny (R-6): counts per item, the totals monthly, yearly and once; stores nothing. */
+/** One part of the Cenník (R-22): its heading, its button and its table. */
+function PricePart({
+  kind,
+  rows,
+  canWrite,
+  onAdd,
+  setRow,
+  move,
+  removeRow,
+  pair,
+}: {
+  kind: ProductItemKind;
+  rows: Row[];
+  canWrite: boolean;
+  onAdd: () => void;
+  setRow: (index: number, patch: Partial<Row>) => void;
+  move: (index: number, by: number) => void;
+  removeRow: (index: number) => void;
+  pair: (text: string, gross: boolean) => { net: string; gross: string };
+}) {
+  const t = d.parts[kind];
+  const part = rows.flatMap((row, index) => (row.kind === kind ? [{ row, index }] : []));
+  return (
+    <section aria-label={t.title}>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 px-5">
+        <div>
+          <h3 className="text-[15px] font-semibold">{t.title}</h3>
+          <p className="text-xs text-muted">{t.hint}</p>
+        </div>
+        {canWrite ? (
+          <Button variant="secondary" size="sm" onClick={onAdd}>
+            <Plus className="size-3.5" aria-hidden />
+            {t.add}
+          </Button>
+        ) : null}
+      </div>
+      {part.length === 0 ? (
+        <p className="px-5 pt-2 text-sm text-muted">{t.empty}</p>
+      ) : (
+        <div className="mt-2.5 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-y border-border-subtle bg-surface text-left text-xs text-muted">
+                <th className="w-14 py-2 pl-5" />
+                <th className="px-2 py-2 font-semibold">{t.column}</th>
+                <th className="px-2 py-2 font-semibold">{d.columns.billing}</th>
+                <th className="px-2 py-2 font-semibold">{d.columns.included}</th>
+                <th className="px-2 py-2 font-semibold">{d.columns.unitNet}</th>
+                <th className="px-2 py-2 font-semibold">{d.columns.unitGross}</th>
+                <th className="px-2 py-2 font-semibold">{d.columns.max}</th>
+                <th className="w-12" />
+              </tr>
+            </thead>
+            <tbody>
+              {part.map(({ row, index }, place) => (
+                <tr
+                  key={row.itemId}
+                  className="group/row border-t border-border-subtle first:border-t-0"
+                >
+                  <td className="py-2 pl-3">
+                    <RowActions className="flex-col gap-0">
+                      <button
+                        type="button"
+                        aria-label={d.moveUp}
+                        disabled={place === 0}
+                        onClick={() => move(index, -1)}
+                        className="text-muted hover:text-foreground disabled:opacity-30"
+                      >
+                        <ChevronUp className="size-4" aria-hidden />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={d.moveDown}
+                        disabled={place === part.length - 1}
+                        onClick={() => move(index, 1)}
+                        className="text-muted hover:text-foreground disabled:opacity-30"
+                      >
+                        <ChevronDown className="size-4" aria-hidden />
+                      </button>
+                    </RowActions>
+                  </td>
+                  <td className="px-2 py-2">
+                    <span className="block font-semibold">{row.name}</span>
+                    {row.unit ? (
+                      <span className="block text-xs text-muted">{d.unit(row.unit)}</span>
+                    ) : null}
+                    {kind === 'role' ? (
+                      <span className="mt-1 block">
+                        <AppChips apps={row.apps} />
+                      </span>
+                    ) : null}
+                    {kind === 'role' && row.billing === 'recurring' ? (
+                      <span className="mt-1 flex items-center gap-1.5 text-xs whitespace-nowrap text-muted">
+                        <Switch
+                          checked={row.byWorkload}
+                          label={`${row.name}: ${d.byWorkload}`}
+                          onChange={() => setRow(index, { byWorkload: !row.byWorkload })}
+                        />
+                        {d.byWorkload}
+                      </span>
+                    ) : null}
+                  </td>
+                  <td className="px-2 py-2">
+                    <Select
+                      aria-label={`${row.name}: ${d.columns.billing}`}
+                      value={row.billing}
+                      onChange={(value) => setRow(index, { billing: value as ItemBilling })}
+                      className="h-9 w-36"
+                    >
+                      <SelectItem value="recurring">{d.billings.recurring}</SelectItem>
+                      <SelectItem value="once">{d.billings.once}</SelectItem>
+                    </Select>
+                  </td>
+                  <td className="px-2 py-2">
+                    <Input
+                      aria-label={`${row.name}: ${d.columns.included}`}
+                      inputMode="numeric"
+                      value={row.included}
+                      onChange={(event) => setRow(index, { included: event.target.value })}
+                      className="h-9 w-16 text-right"
+                    />
+                  </td>
+                  <td className="px-2 py-2">
+                    <Input
+                      aria-label={`${row.name}: ${d.columns.unitNet}`}
+                      inputMode="decimal"
+                      value={row.unitPrice}
+                      onChange={(event) => {
+                        const both = pair(event.target.value, false);
+                        setRow(index, { unitPrice: both.net, unitPriceGross: both.gross });
+                      }}
+                      className="h-9 w-24 bg-surface text-right"
+                    />
+                  </td>
+                  <td className="px-2 py-2">
+                    <Input
+                      aria-label={`${row.name}: ${d.columns.unitGross}`}
+                      inputMode="decimal"
+                      value={row.unitPriceGross}
+                      onChange={(event) => {
+                        const both = pair(event.target.value, true);
+                        setRow(index, { unitPrice: both.net, unitPriceGross: both.gross });
+                      }}
+                      className="h-9 w-24 text-right"
+                    />
+                  </td>
+                  <td className="px-2 py-2">
+                    <Input
+                      aria-label={`${row.name}: ${d.columns.max}`}
+                      inputMode="numeric"
+                      value={row.max}
+                      onChange={(event) => setRow(index, { max: event.target.value })}
+                      className="h-9 w-16 text-right"
+                    />
+                  </td>
+                  <td className="pr-3">
+                    <RowActions>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        aria-label={d.remove(row.name)}
+                        onClick={() => removeRow(index)}
+                      >
+                        <Trash2 className="size-4" aria-hidden />
+                      </Button>
+                    </RowActions>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** A count of the calculator that differs from the price list's „V cene“. */
+interface InsertChange {
+  itemId: string;
+  name: string;
+  from: number;
+  to: number;
+}
+
+/**
+ * Výpočet ceny (R-6): counts per item, the totals monthly, yearly and once. It stores nothing by
+ * itself; „Vložiť do cenníka“ writes the counts of recurring items to the form, once confirmed (R-24).
+ */
 function Calculator({
   draft,
   input,
   rate,
+  canWrite,
+  customers,
+  onInsert,
 }: {
   draft: Draft;
   input: {
@@ -605,8 +710,20 @@ function Calculator({
     }[];
   };
   rate: number;
+  canWrite: boolean;
+  customers: number;
+  onInsert: (changes: InsertChange[]) => void;
 }) {
   const [counts, setCounts] = useState<Record<string, number>>({});
+  const [confirming, setConfirming] = useState(false);
+  const [inserted, setInserted] = useState(false);
+  const t = d.insert;
+  const changes: InsertChange[] = input.items.flatMap((item, index) => {
+    const to = counts[item.itemId];
+    return item.billing === 'recurring' && to !== undefined && to !== item.included
+      ? [{ itemId: item.itemId, name: draft.rows[index]?.name ?? '', from: item.included, to }]
+      : [];
+  });
   const countOf = (itemId: string, included: number) => counts[itemId] ?? included;
   const price = priceOf(
     { basePrice: input.basePrice, items: input.items },
@@ -632,11 +749,13 @@ function Calculator({
         {input.items.map((item, index) => {
           const count = countOf(item.itemId, item.billing === 'once' ? 0 : item.included);
           const name = draft.rows[index]?.name ?? '';
-          const step = (by: number) =>
+          const step = (by: number) => {
+            setInserted(false);
             setCounts((c) => ({
               ...c,
               [item.itemId]: Math.max(0, Math.min(item.max ?? 100_000, count + by)),
             }));
+          };
           return (
             <div
               key={item.itemId}
@@ -678,7 +797,71 @@ function Calculator({
             ))}
           </tbody>
         </table>
+        {canWrite && changes.length > 0 ? (
+          <Button variant="secondary" className="mt-3.5 w-full" onClick={() => setConfirming(true)}>
+            {t.button}
+          </Button>
+        ) : null}
+        {inserted ? (
+          <p className="mt-3.5 rounded-xl bg-success-soft px-3 py-2.5 text-[13px] text-success">
+            {t.done}
+          </p>
+        ) : null}
       </div>
+      <Dialog open={confirming} onOpenChange={setConfirming}>
+        <DialogContent size="sm">
+          <DialogHeader>
+            <DialogTitle>{t.title}</DialogTitle>
+            <DialogDescription>{t.description}</DialogDescription>
+          </DialogHeader>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-y border-border-subtle bg-surface text-xs text-muted">
+                <th className="px-2 py-2 text-left font-semibold">{t.item}</th>
+                <th className="px-2 py-2 text-right font-semibold">{t.from}</th>
+                <th className="px-2 py-2 text-right font-semibold">{t.to}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {changes.map((change) => (
+                <tr key={change.itemId} className="border-b border-border-subtle">
+                  <td className="px-2 py-2 font-semibold">{change.name}</td>
+                  <td className="px-2 py-2 text-right text-muted tabular-nums">{change.from}</td>
+                  <td className="px-2 py-2 text-right font-semibold tabular-nums">{change.to}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {customers > 0 ? (
+            <p className="rounded-xl bg-warning-soft px-3 py-2.5 text-[13px] text-warning">
+              {t.warning(customers)}
+            </p>
+          ) : null}
+          <p className="text-[13px] text-muted">{t.note}</p>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setConfirming(false)}>
+              {sk.common.cancel}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                onInsert(changes);
+                setCounts((current) =>
+                  Object.fromEntries(
+                    Object.entries(current).filter(
+                      ([itemId]) => !changes.some((change) => change.itemId === itemId),
+                    ),
+                  ),
+                );
+                setConfirming(false);
+                setInserted(true);
+              }}
+            >
+              {t.button}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
@@ -775,10 +958,12 @@ function HoldersCard({ product }: { product: Product }) {
 }
 
 /**
- * Pridať položku (docs/products.md 7): the shared catalog with where each item is used; picking one
- * takes over the numbers of the product it was last used in; „Nová položka“ makes one.
+ * Pridať rolu or Pridať položku (docs/products.md 7): one kind of the shared catalog with where each
+ * is used; picking one takes over the numbers of the product it was last used in; the button at the
+ * bottom makes a new one.
  */
 function AddItemDialog({
+  kind,
   productName,
   productId,
   taken,
@@ -786,6 +971,7 @@ function AddItemDialog({
   onAdd,
   rate,
 }: {
+  kind: ProductItemKind;
   productName: string;
   productId: string | undefined;
   taken: string[];
@@ -800,7 +986,7 @@ function AddItemDialog({
   const [creating, setCreating] = useState(false);
   const term = search.trim().toLocaleLowerCase('sk');
   const list = (items.data ?? []).filter(
-    (item) => !term || item.name.toLocaleLowerCase('sk').includes(term),
+    (item) => item.kind === kind && (!term || item.name.toLocaleLowerCase('sk').includes(term)),
   );
   const pickedItem = list.find((i) => i.id === picked) ?? items.data?.find((i) => i.id === picked);
   const elsewhere = (item: CatalogItem) => item.usedIn.find((u) => u.productId !== productId);
@@ -837,6 +1023,8 @@ function AddItemDialog({
     const gross = parseMoney(fields.unitGross);
     onAdd({
       itemId: pickedItem.id,
+      kind: pickedItem.kind,
+      apps: pickedItem.apps,
       name: pickedItem.name,
       unit: pickedItem.unit,
       billing: fields.billing,
@@ -849,14 +1037,15 @@ function AddItemDialog({
     onClose();
   };
   const t = sk.products.itemDialog;
+  const copy = t[kind];
   const sorted = useMemo(() => list, [list]);
   return (
     <>
       <Dialog open={!creating} onOpenChange={(open) => !open && onClose()}>
         <DialogContent size="md">
           <DialogHeader>
-            <DialogTitle>{t.title}</DialogTitle>
-            <DialogDescription>{t.description(productName)}</DialogDescription>
+            <DialogTitle>{copy.title}</DialogTitle>
+            <DialogDescription>{copy.description(productName)}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="relative">
@@ -865,8 +1054,8 @@ function AddItemDialog({
                 aria-hidden
               />
               <Input
-                aria-label={t.search}
-                placeholder={t.search}
+                aria-label={copy.search}
+                placeholder={copy.search}
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 className="pl-9"
@@ -893,7 +1082,7 @@ function AddItemDialog({
                         onChange={() => setPicked(item.id)}
                         className="size-4 accent-[var(--color-primary)]"
                       />
-                      <span className="min-w-0">
+                      <span className="min-w-0 flex-1">
                         <span className="block text-sm font-semibold">
                           {item.name}
                           {item.unit ? (
@@ -904,6 +1093,7 @@ function AddItemDialog({
                           {isTaken ? t.already : describe(item)}
                         </span>
                       </span>
+                      {kind === 'role' ? <AppChips apps={item.apps} /> : null}
                     </label>
                   </li>
                 );
@@ -967,7 +1157,7 @@ function AddItemDialog({
           <DialogFooter className="sm:justify-between">
             <Button type="button" variant="ghost" onClick={() => setCreating(true)}>
               <Plus className="size-4" aria-hidden />
-              {t.newItem}
+              {copy.newItem}
             </Button>
             <div className="flex gap-2">
               <Button type="button" variant="ghost" onClick={onClose}>
@@ -982,6 +1172,7 @@ function AddItemDialog({
       </Dialog>
       {creating ? (
         <ItemDialog
+          kind={kind}
           onClose={() => setCreating(false)}
           onCreated={(id) => {
             setPicked(id);
