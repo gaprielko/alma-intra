@@ -33,6 +33,7 @@ import { RichTextEditor } from '@/components/rich-text';
 import { CardSkeleton } from '@/components/skeletons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ChoiceTabs } from '@/components/ui/tabs';
 import { Card, CardHeader } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import {
@@ -810,29 +811,12 @@ function TimelineCard({ customer }: { customer: Customer }) {
         }
       />
       <div className="px-5 pt-3 pb-4">
-        <div
-          role="tablist"
-          aria-label={a.timeline.filters.label}
-          className="flex flex-wrap gap-1.5"
-        >
-          {TIMELINE_FILTERS.map((key) => (
-            <button
-              key={key}
-              type="button"
-              role="tab"
-              aria-selected={filter === key}
-              onClick={() => setFilter(key)}
-              className={cn(
-                'h-8 rounded-full border px-3 text-[13px] font-semibold transition-colors',
-                filter === key
-                  ? 'border-primary bg-primary-soft text-primary-text'
-                  : 'border-border bg-white text-muted hover:bg-hover',
-              )}
-            >
-              {a.timeline.filters[key]}
-            </button>
-          ))}
-        </div>
+        <ChoiceTabs
+          label={a.timeline.filters.label}
+          value={filter}
+          onChange={setFilter}
+          options={TIMELINE_FILTERS.map((key) => ({ key, label: a.timeline.filters[key] }))}
+        />
 
         {canWrite && (filter === 'all' || filter === 'notes') ? (
           <div className="mt-4 flex items-start gap-3">

@@ -104,6 +104,50 @@ export function TabBar({
 }
 
 /**
+ * Tabs within a page or a dialog, for a choice that is not a route: the look of the page's own tabs
+ * (Organizácie, Produkty, E-maily), each a button.
+ */
+export function ChoiceTabs<T extends string | undefined>({
+  label,
+  options,
+  value,
+  onChange,
+  className,
+}: {
+  label: string;
+  options: readonly { key: T; label: ReactNode }[];
+  value: T;
+  onChange: (key: T) => void;
+  className?: string | undefined;
+}) {
+  return (
+    <div
+      role="tablist"
+      aria-label={label}
+      className={cn('flex flex-wrap gap-1 border-b border-border', className)}
+    >
+      {options.map((option) => (
+        <button
+          key={option.key ?? 'all'}
+          type="button"
+          role="tab"
+          aria-selected={value === option.key}
+          onClick={() => onChange(option.key)}
+          className={cn(
+            '-mb-px inline-flex h-10 items-center gap-2 border-b-2 px-3.5 text-sm font-semibold whitespace-nowrap transition-colors',
+            value === option.key
+              ? 'border-primary text-primary-text'
+              : 'border-transparent text-muted hover:text-foreground',
+          )}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/**
  * Where the line goes: the chosen tab's `offsetLeft` and width. `offsetLeft` is measured from the
  * bar's padding edge (the bar is `relative`, so it is the tab's offset parent), padding included.
  */

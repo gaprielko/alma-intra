@@ -2,6 +2,9 @@ import { randomUUID } from 'node:crypto';
 import { sk } from '@intra/shared/i18n';
 import {
   type DirectRecipient,
+  filledLookLines,
+  lookValuesOf,
+  type LookKind,
   type EmailNode,
   MAX_MESSAGE_BYTES,
   type AnswerMode,
@@ -21,7 +24,7 @@ import {
   inboundMessages,
   messageAttachments,
   organizationProducts,
-  productEmailLooks,
+  emailLooks,
   users,
 } from '../db/schema/index.js';
 import { plainOf, renderEmail } from '../email/render.js';
@@ -121,33 +124,33 @@ const quoteNodes = (quote: { head: string; text: string }): EmailNode[] => [
 
 /**
  * The sender's signature as text of the body, so that it can be changed in this one e-mail. It has
- * the same three lines as the signature under other e-mails.
+ * the same lines as the signature under other e-mails of that look.
  */
-async function signatureNodes(db: Db, userId: string, productId: string | null) {
+async function signatureNodes(db: Db, userId: string, kind: LookKind, productId: string | null) {
   const [{ values }, look] = await Promise.all([
     valuesFor(db, {}, userId, {}),
-    lookFor(db, productId),
+    lookFor(db, kind, productId),
   ]);
-  const about = [values['sender.position'], look.brandName, values['sender.phone']]
-    .filter(Boolean)
-    .join(' · ');
-  return [
-    paragraph(sk.templates.signature.greeting),
-    {
-      type: 'paragraph',
-      content: [{ type: 'text', text: values['sender.name'] ?? '', marks: [{ type: 'bold' }] }],
-    } satisfies EmailNode,
-    paragraph(about),
-  ];
+  return filledLookLines(
+    look.signatureDoc,
+    lookValuesOf(look, values),
+    sk.templates.footer.unsubscribe,
+  );
 }
 
 /** The product of an organization that has just one and a look of its own: else the global look. */
 async function lookProductOf(db: Db, organizationId: string | null) {
   if (!organizationId) return null;
   const held = await db
-    .select({ productId: organizationProducts.productId, own: productEmailLooks.enabled })
+    .select({ productId: organizationProducts.productId, own: emailLooks.enabled })
     .from(organizationProducts)
-    .leftJoin(productEmailLooks, eq(productEmailLooks.productId, organizationProducts.productId))
+    .leftJoin(
+      emailLooks,
+      and(
+        eq(emailLooks.productId, organizationProducts.productId),
+        eq(emailLooks.kind, 'personal'),
+      ),
+    )
     .where(eq(organizationProducts.organizationId, organizationId))
     .limit(2);
   return held.length === 1 && held[0]!.own ? held[0]!.productId : null;
@@ -254,7 +257,7 @@ export async function replyDraft(
             ),
           )
       : [];
-  const signature = await signatureNodes(db, userId, lookProductId);
+  const signature = await signatureNodes(db, userId, 'personal', lookProductId);
   return db.transaction(async (tx) => {
     const [row] = await tx
       .insert(campaigns)
@@ -331,6 +334,7 @@ export async function getDirect(db: Db, id: string) {
     recipients: row.directRecipients,
     templateId: row.templateId,
     lookProductId: row.lookProductId,
+    lookKind: row.lookKind,
     attachments,
     reply: await replyOf(db, row),
   };
@@ -350,6 +354,7 @@ export async function saveDirect(db: Db, input: SaveDirectInput) {
         directRecipients: input.recipients,
         templateId: input.templateId,
         lookProductId: input.lookProductId,
+        lookKind: input.lookKind,
         updatedAt: new Date(),
       })
       .where(eq(campaigns.id, input.id));
@@ -387,6 +392,7 @@ export async function directFromTemplate(
       body: emailTemplates.body,
       customFields: emailTemplates.customFields,
       lookProductId: emailTemplates.lookProductId,
+      lookKind: emailTemplates.lookKind,
     })
     .from(emailTemplates)
     .where(eq(emailTemplates.id, input.templateId));
@@ -410,6 +416,7 @@ export async function directFromTemplate(
     subject: plainOf(template.subject, values, labels),
     body: filled(template.body, values, labels),
     lookProductId: template.lookProductId,
+    lookKind: template.lookKind,
   };
 }
 
@@ -430,7 +437,7 @@ export async function sendDirect(db: Db, env: Env, id: string) {
   const reply = await replyOf(db, row);
   // An answer with nothing but the signature says nothing; a forward may say nothing of its own.
   if (reply && reply.mode !== 'forward') {
-    const signature = await signatureNodes(db, row.senderUserId, row.lookProductId);
+    const signature = await signatureNodes(db, row.senderUserId, row.lookKind, row.lookProductId);
     const only = plainOf({ type: 'doc', content: [paragraph(), ...signature] }, {}, {});
     if (plainOf(written, {}, {}).trim() === only.trim()) throw new CampaignError('NO_CONTENT');
   }
@@ -447,7 +454,7 @@ export async function sendDirect(db: Db, env: Env, id: string) {
   // One e-mail for everybody on it: the interest it records is that of the first To, if known.
   const carrierId = randomUUID();
   const rendered = await renderEmail({
-    look: await lookFor(db, row.lookProductId),
+    look: await lookFor(db, row.lookKind, row.lookProductId),
     baseUrl: env.WEB_URL,
     subject: row.subject,
     body,

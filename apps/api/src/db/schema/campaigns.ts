@@ -49,6 +49,10 @@ export const campaigns = pgTable(
     replyMode: text('reply_mode', { enum: ['reply', 'replyAll', 'forward'] }),
     /** Whose look it wears; NULL: the global one (D-39). */
     lookProductId: uuid('look_product_id').references(() => products.id, { onDelete: 'set null' }),
+    /** Of which type of e-mail (D-57). */
+    lookKind: text('look_kind', { enum: ['personal', 'team'] })
+      .notNull()
+      .default('personal'),
     templateId: uuid('template_id').references(() => emailTemplates.id),
     subject: jsonb('subject').$type<EmailNode>(),
     body: jsonb('body').$type<EmailNode>(),

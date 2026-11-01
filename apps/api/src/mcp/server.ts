@@ -7,6 +7,8 @@ import {
   FILE_TYPES,
   folderNameSchema,
   isoDateSchema,
+  LOOK_KINDS,
+  type LookKind,
   MAX_VIDEO_BYTES,
   organizationCustomerSchema,
   personName,
@@ -44,7 +46,7 @@ import {
   listTemplates,
   previewTemplate,
   productLooks,
-  saveProductLook,
+  saveLook,
   TemplateError,
   updateTemplate,
 } from '../email/templates.service.js';
@@ -871,7 +873,7 @@ export function buildMcpServer(ctx: McpContext) {
       }) => {
         const [found, looks] = await Promise.all([
           listTemplates(ctx.db, { search: query, categoryId }),
-          productLooks(ctx.db),
+          productLooks(ctx.db, 'personal'),
         ]);
         return {
           result: {
@@ -939,6 +941,7 @@ export function buildMcpServer(ctx: McpContext) {
             customFields: template.customFields,
             contactId,
             lookProductId: template.lookProductId,
+            lookKind: template.lookKind,
             values: values ?? {},
           },
         );
@@ -966,7 +969,8 @@ export function buildMcpServer(ctx: McpContext) {
       description:
         EMAIL_DOC_RULE +
         'categoryId and lookProductId (whose look its e-mails wear; none is the global one) come ' +
-        'from templates_search. attachmentFileIds are files of Intra offered when sending. A ' +
+        'from templates_search. lookKind is personal (from one colleague, the default) or team. ' +
+        'attachmentFileIds are files of Intra offered when sending. A ' +
         'custom field has a key, a label, a type (text, number, money, date) and a scope (common ' +
         'for the whole sending, recipient for each person). Nothing is sent: a user sends it in ' +
         'the app. Only when the user asked for it.',
@@ -1011,6 +1015,7 @@ export function buildMcpServer(ctx: McpContext) {
           name: now.name,
           categoryId: now.categoryId,
           lookProductId: now.lookProductId,
+          lookKind: now.lookKind,
           language: now.language,
           subject: now.subject,
           body: now.body,
@@ -1057,10 +1062,15 @@ export function buildMcpServer(ctx: McpContext) {
       title: "Set the logo of a product's e-mail look",
       description:
         "A PNG or JPG (2 MB at most) from Files becomes the logo of the product's look: in the " +
-        'header of every e-mail with that look. productId comes from templates_search. It shows ' +
-        'only when the product has a look of its own, which enabled in the result tells; that is ' +
-        'switched on in the app. Only when the user asked for it.',
-      inputSchema: { productId: z.string().uuid(), fileId: z.string().uuid() },
+        'header of every e-mail with that look. productId comes from templates_search. kind says ' +
+        'of which type of e-mail, personal (the default) or team. It shows only when the product ' +
+        'has a look of its own, which enabled in the result tells; that is switched on in the ' +
+        'app. Only when the user asked for it.',
+      inputSchema: {
+        productId: z.string().uuid(),
+        fileId: z.string().uuid(),
+        kind: z.enum(LOOK_KINDS).default('personal'),
+      },
       annotations: UPDATES,
     },
     guardedWrite(
@@ -1069,13 +1079,24 @@ export function buildMcpServer(ctx: McpContext) {
       'This user may not change the look of e-mails.',
     )(
       'product_look_set_logo',
-      async ({ productId, fileId }: { productId: string; fileId: string }) => {
-        const product = (await productLooks(ctx.db)).find((p) => p.productId === productId);
+      async ({
+        productId,
+        fileId,
+        kind,
+      }: {
+        productId: string;
+        fileId: string;
+        kind: LookKind;
+      }) => {
+        const product = (await productLooks(ctx.db, kind)).find((p) => p.productId === productId);
         if (!product) throw new TemplateError('NOT_FOUND');
         const { key } = await imageFromFile(ctx.db, ctx.storage, ctx.userId, fileId);
-        await saveProductLook(ctx.db, ctx.userId, {
+        const { enabled, ...look } = product.look;
+        await saveLook(ctx.db, ctx.userId, {
+          kind,
           productId,
-          look: { ...product.look, logoKey: key },
+          enabled,
+          look: { ...look, logoKey: key },
         });
         return {
           result: { productId, key, enabled: product.look.enabled },

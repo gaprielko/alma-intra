@@ -590,7 +590,10 @@ function ContentStep({
   const refresh = useRefresh(campaign.id);
   const me = useSession((s) => s.user);
   const look = useQuery(
-    trpc.template.effectiveLook.queryOptions({ productId: campaign.lookProductId }),
+    trpc.template.effectiveLook.queryOptions({
+      kind: campaign.lookKind,
+      productId: campaign.lookProductId,
+    }),
   );
   const [subject, setSubject] = useState<EmailNode>(campaign.subject);
   const [body, setBody] = useState<EmailNode>(campaign.body);
@@ -885,7 +888,10 @@ function PreviewStep({
   const queryClient = useQueryClient();
   const me = useSession((s) => s.user);
   const look = useQuery(
-    trpc.template.effectiveLook.queryOptions({ productId: campaign.lookProductId }),
+    trpc.template.effectiveLook.queryOptions({
+      kind: campaign.lookKind,
+      productId: campaign.lookProductId,
+    }),
   );
   const sendable = campaign.messages.filter((m) => !m.skipReason);
   const [index, setIndex] = useState(0);

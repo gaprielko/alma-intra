@@ -32,6 +32,7 @@ export const ACTIONS = [
   'template.read',
   'template.write',
   'email_look.manage',
+  'company.manage',
   // E-mails to customers: the sent ones and their delivery; composing and sending.
   'email.read',
   'email.send',
@@ -74,6 +75,7 @@ const POLICY: Record<Action, readonly Role[]> = {
   'template.read': ['admin'],
   'template.write': ['admin'],
   'email_look.manage': ['admin'],
+  'company.manage': ['admin'],
   'email.read': ['admin'],
   'email.send': ['admin'],
   'audit.read': ['admin'],

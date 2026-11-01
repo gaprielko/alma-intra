@@ -1,9 +1,12 @@
 import {
+  companySchema,
   confirmImageSchema,
   effectiveLookSchema,
-  emailLookSchema,
+  emailSettingsSchema,
   imageFromFileSchema,
-  saveProductLookSchema,
+  lookFieldsSchema,
+  lookKindSchema,
+  saveLookSchema,
   requestImageSchema,
   templateIdSchema,
   templateInputSchema,
@@ -134,38 +137,60 @@ export const templateRouter = router({
     inboundReady: Boolean(ctx.env.INBOUND_REPLY_DOMAIN && ctx.env.RESEND_API_KEY),
   })),
 
-  /** The look an e-mail with this product wears, for the editor's frame. */
+  /** The look an e-mail of this type with this product wears, for the editor's frame. */
   effectiveLook: authorizedProcedure('template.read')
     .input(effectiveLookSchema)
-    .query(async ({ ctx, input }) => ({ look: await templates.lookFor(ctx.db, input.productId) })),
+    .query(async ({ ctx, input }) => ({
+      look: await templates.lookFor(ctx.db, input.kind, input.productId),
+    })),
 
-  productLooks: authorizedProcedure('template.read').query(({ ctx }) =>
-    templates.productLooks(ctx.db),
-  ),
+  /** The global look of a type, as it is edited. */
+  globalLook: authorizedProcedure('template.read')
+    .input(lookKindSchema)
+    .query(({ ctx, input }) => templates.globalLook(ctx.db, input.kind)),
 
-  saveProductLook: authorizedProcedure('email_look.manage')
-    .input(saveProductLookSchema)
+  productLooks: authorizedProcedure('template.read')
+    .input(lookKindSchema)
+    .query(({ ctx, input }) => templates.productLooks(ctx.db, input.kind)),
+
+  saveLook: authorizedProcedure('email_look.manage')
+    .input(saveLookSchema)
     .mutation(async ({ ctx, input }) => {
-      await run(() => templates.saveProductLook(ctx.db, ctx.session.userId, input));
+      const { fields } = await run(() => templates.saveLook(ctx.db, ctx.session.userId, input));
       ctx.audit.set({
         entityType: 'email_look',
-        entityId: input.productId,
-        diff: { enabled: input.look.enabled },
+        ...(input.productId ? { entityId: input.productId } : {}),
+        diff: { kind: input.kind, enabled: input.enabled, fields },
       });
       return { ok: true as const };
     }),
 
   lookPreview: authorizedProcedure('template.read')
-    .input(emailLookSchema)
+    .input(lookFieldsSchema)
     .query(({ ctx, input }) =>
       templates.previewLook(ctx.db, ctx.env.WEB_URL, ctx.session.userId, input),
     ),
 
-  updateLook: authorizedProcedure('email_look.manage')
-    .input(emailLookSchema)
+  emailSettings: authorizedProcedure('template.read').query(({ ctx }) =>
+    templates.getEmailSettings(ctx.db),
+  ),
+
+  updateEmailSettings: authorizedProcedure('email_look.manage')
+    .input(emailSettingsSchema)
     .mutation(async ({ ctx, input }) => {
-      const { fields } = await templates.updateLook(ctx.db, ctx.session.userId, input);
+      const { fields } = await templates.updateEmailSettings(ctx.db, ctx.session.userId, input);
       ctx.audit.set({ entityType: 'email_look', diff: { fields } });
+      return { ok: true as const };
+    }),
+
+  /** Settings › Firma. */
+  company: authorizedProcedure('template.read').query(({ ctx }) => templates.getCompany(ctx.db)),
+
+  updateCompany: authorizedProcedure('company.manage')
+    .input(companySchema)
+    .mutation(async ({ ctx, input }) => {
+      const { fields } = await templates.updateCompany(ctx.db, ctx.session.userId, input);
+      ctx.audit.set({ entityType: 'company', diff: { fields } });
       return { ok: true as const };
     }),
 

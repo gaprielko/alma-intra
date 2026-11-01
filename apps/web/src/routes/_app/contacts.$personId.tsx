@@ -18,6 +18,7 @@ import { PageHeader } from '@/components/page-header';
 import { CardSkeleton } from '@/components/skeletons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ChoiceTabs } from '@/components/ui/tabs';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -474,32 +475,27 @@ function PersonTimeline({ person: c }: { person: Person }) {
       <CardHeader title={p.timeline} />
       <p className="px-5 pt-1 text-[13px] text-muted">{p.timelineLead}</p>
       <div className="px-5 pt-3 pb-4">
-        <div className="flex flex-wrap gap-1.5">
-          {TIMELINE_FILTERS.map((key) => (
-            <button
-              key={key}
-              type="button"
-              aria-pressed={filter === key}
-              onClick={() => setFilter(key)}
-              className={chip(filter === key)}
-            >
-              {a.timeline.filters[key]}
-            </button>
-          ))}
-          {c.organizations.length > 1
-            ? c.organizations.map((org) => (
-                <button
-                  key={org.id}
-                  type="button"
-                  aria-pressed={organization === org.id}
-                  onClick={() => setOrganization(organization === org.id ? '' : org.id)}
-                  className={chip(organization === org.id)}
-                >
-                  {placeName(org)}
-                </button>
-              ))
-            : null}
-        </div>
+        <ChoiceTabs
+          label={a.timeline.filters.label}
+          value={filter}
+          onChange={setFilter}
+          options={TIMELINE_FILTERS.map((key) => ({ key, label: a.timeline.filters[key] }))}
+        />
+        {c.organizations.length > 1 ? (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {c.organizations.map((org) => (
+              <button
+                key={org.id}
+                type="button"
+                aria-pressed={organization === org.id}
+                onClick={() => setOrganization(organization === org.id ? '' : org.id)}
+                className={chip(organization === org.id)}
+              >
+                {placeName(org)}
+              </button>
+            ))}
+          </div>
+        ) : null}
         <div className="mt-4">
           {timeline.isPending ? (
             <p className="text-sm text-muted">{sk.common.loading}</p>
