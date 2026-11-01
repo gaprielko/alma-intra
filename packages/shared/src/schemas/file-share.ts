@@ -58,9 +58,18 @@ export const fragmentSchema = publicShareSchema.extend({ block: z.number().int()
 
 const changeOpSchema = z.object({
   block: z.number().int().min(0),
-  /** `edit` needs the fragment's new HTML. */
-  kind: z.enum(['edit', 'delete']),
+  /** `edit` needs the fragment's new HTML, `text` the runs of text that changed. */
+  kind: z.enum(['edit', 'delete', 'text']),
   html: z.string().max(SHARE_LIMITS.fragmentBytes).optional(),
+  texts: z
+    .array(
+      z.object({
+        i: z.number().int().min(0),
+        text: z.string().max(SHARE_LIMITS.fragmentBytes),
+      }),
+    )
+    .max(5000)
+    .optional(),
 });
 
 export const saveDraftSchema = publicShareSchema.extend({

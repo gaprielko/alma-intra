@@ -153,7 +153,7 @@ cannot be edited, only its block's source can, and a comment on it may lose its 
 
 - **Hover:** the fragment under the cursor is outlined, with icons at its top right: „Upraviť“, „Zmazať“ and, on a
   changed fragment, „Zobraziť zmeny“. On a touch screen a tap selects [S-17].
-- **What a fragment is:** the smallest of `p`, `h1`–`h6`, `ul`/`ol` as a whole, `table` as a whole, `blockquote`,
+- **What a fragment is:** the smallest of `p`, `h1`–`h6`, `li` (changed 1 Nov 2026: a contract's paragraphs are list items), `table` as a whole, `blockquote`,
   `pre`, `figure`, `img`, `svg`, `hr`, and a `div` or `section` holding text directly. An extra icon „Nadradený blok“
   climbs to the enclosing `div`, `section` or `details`, so a whole card or chapter can be deleted [S-18].
 - **„Upraviť“:** a WYSIWYG editor (TipTap, already in the app) opens over the fragment with its content and „Uložiť“,
@@ -162,8 +162,13 @@ cannot be edited, only its block's source can, and a comment on it may lose its 
 - **„Zmazať“:** removes the fragment, without a confirmation since it can be undone (6.3).
 - **Fidelity [S-20]:** existing `class` and `style` survive an edit, and the editor shows the document's own styles. A
   fragment the editor cannot hold without loss (an `svg`, a chart, a layout of nested blocks, anything with a script)
-  offers no „Upraviť“: it can be deleted, or its inner parts edited one by one, as the owner agreed. This is checked
+  changes by its words alone [S-38], or is deleted. This is checked
   by a round trip before the editor opens. No image can be added or replaced.
+- **Only the words [S-38]:** added 1 Nov 2026 at the owner's request. A block the editor cannot hold, a whole article for
+  one, still offers „Upraviť“: its text can be changed and its format cannot. Each run of text is a field of its own, so a
+  selection cannot cross it and Enter adds nothing. The save sends the runs and their new text, never HTML; the server writes
+  them escaped into their byte ranges, so nothing but words can change, and the block's markup, whatever it holds, stays as
+  the document had it. A block with unsaved changes inside asks to save or undo them first.
 - **Top bar:** after the first change a bar stays on top: the number of changes, „Zahodiť zmeny“ (with a
   confirmation) and **„Uložiť a poslať na schválenie“**. A fragment edited back to the original drops out of the
   count, and with no changes the bar goes away [S-21].

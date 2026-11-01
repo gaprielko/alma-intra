@@ -3271,7 +3271,9 @@ export const sk = {
       parent: 'Nadradený blok',
       comment: 'Komentovať',
       undo: 'Vrátiť späť',
-      notEditable: 'Tento blok sa nedá upraviť celý. Upravte jeho časti, alebo ho zmažte.',
+      notEditable: 'Tento blok nemá text, ktorý by sa dal upraviť. Môžete ho zmazať.',
+      pendingInside:
+        'Vo vnútri tohto bloku sú neuložené zmeny. Najprv ich uložte alebo vráťte späť.',
     },
     editor: {
       label: 'Úprava bloku',
@@ -3284,6 +3286,7 @@ export const sk = {
       link: 'Odkaz',
       linkPrompt: 'Adresa odkazu',
       linkApply: 'Použiť',
+      textOnly: 'Tento blok má formátovanie, ktoré sa tu nedá meniť. Upravovať môžete len text.',
       addRow: 'Pridať riadok',
       deleteRow: 'Zmazať riadok',
       addColumn: 'Pridať stĺpec',

@@ -20,6 +20,10 @@ const CONTAINERS = new Set([
   'footer',
   'nav',
   'details',
+  // Lists hold their items, so a paragraph of a contract is a fragment of its own.
+  'ul',
+  'ol',
+  'li',
 ]);
 /** The smallest units of a document ([S-18]); nothing inside them is a fragment of its own. */
 const LEAVES = new Set([
@@ -30,8 +34,6 @@ const LEAVES = new Set([
   'h4',
   'h5',
   'h6',
-  'ul',
-  'ol',
   'table',
   'blockquote',
   'pre',
@@ -40,6 +42,21 @@ const LEAVES = new Set([
   'svg',
   'hr',
 ]);
+
+/** Text that is no reader's to change: code, or something drawn. */
+const NO_TEXT = new Set([
+  'script',
+  'style',
+  'noscript',
+  'template',
+  'textarea',
+  'svg',
+  'math',
+  'select',
+  'title',
+]);
+/** These hold other blocks and the editor still takes them whole. */
+const RICH_WITH_BLOCKS = new Set(['ul', 'ol', 'li']);
 
 /** What the editor produces, and all that an outsider's fragment can hold ([S-32]). */
 const ALLOWED_TAGS = new Set([
@@ -141,6 +158,27 @@ const SAFE_STYLE_PROPERTY =
   /^(color|background-color|font-(size|weight|style|family|variant)|line-height|letter-spacing|word-spacing|text-(align|decoration|decoration-line|decoration-color|decoration-style|transform|indent|underline-offset)|white-space|vertical-align|(margin|padding)(-(top|right|bottom|left))?|border(-(top|right|bottom|left))?(-(width|style|color))?|border-(collapse|spacing|radius)|width|min-width|max-width|height|min-height|max-height|display|gap|flex(-(wrap|direction|grow|shrink|basis))?|align-items|justify-content|list-style(-type)?|opacity|overflow-wrap|word-break|--[a-z0-9-]+)$/i;
 const UNSAFE_STYLE_VALUE = /url\s*\(|expression\s*\(|javascript:|@import|[\\<>]/i;
 
+/** A run of text in the source, without the white space around it. */
+export interface TextNode {
+  start: number;
+  end: number;
+  value: string;
+}
+
+function textNodesOf(node: ParentNode): TextNode[] {
+  return node.childNodes.flatMap((child): TextNode[] => {
+    if (isElement(child)) return NO_TEXT.has(child.tagName) ? [] : textNodesOf(child);
+    if (!isText(child) || !child.value.trim() || !child.sourceCodeLocation) return [];
+    return [
+      {
+        start: child.sourceCodeLocation.startOffset,
+        end: child.sourceCodeLocation.endOffset,
+        value: child.value,
+      },
+    ];
+  });
+}
+
 /** A fragment of a document: a numbered byte range of its source. */
 export interface Fragment {
   block: number;
@@ -150,8 +188,10 @@ export interface Fragment {
   /** Where the attribute goes in the start tag. */
   afterTagName: number;
   container: boolean;
-  /** Offers „Upraviť“: the editor can hold it without loss. */
+  /** The WYSIWYG editor can hold it without loss. */
   editable: boolean;
+  /** Its text, which can be changed in any fragment, with the format left as it is. */
+  texts: TextNode[];
   parent: number | null;
 }
 
@@ -204,12 +244,13 @@ export function parseFragments(source: string): Fragment[] {
         afterTagName: location.startOffset + 1 + child.tagName.length,
         container: container && holdsBlocks(child),
         editable: false,
+        texts: textNodesOf(child),
         parent,
       };
       fragments.push(fragment);
       const slice = source.slice(fragment.start, fragment.end);
       fragment.editable =
-        !fragment.container &&
+        (!fragment.container || RICH_WITH_BLOCKS.has(child.tagName)) &&
         !['img', 'svg', 'hr', 'figure'].includes(child.tagName) &&
         (leaf || hasDirectText(child) || slice.replace(/<[^>]*>/g, '').trim().length > 0) &&
         losslessThroughSanitizer(slice);
@@ -494,6 +535,7 @@ export function framePage(
     const marks = [
       ` data-alma-b="${fragment.block}"`,
       fragment.editable ? ' data-alma-e="1"' : '',
+      fragment.texts.length > 0 ? ' data-alma-x="1"' : '',
     ].join('');
     splices.push({ start: fragment.afterTagName, end: fragment.afterTagName, text: marks });
   }
@@ -510,11 +552,93 @@ export function framePage(
   return page.slice(0, at) + bridge + page.slice(at);
 }
 
-/** One fragment's source for the editor, the text of the document's own styles beside it. */
+const escapeText = (value: string) =>
+  value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/** A run of text as it stands in the source, split from the white space around it. */
+function coreOf(source: string, node: TextNode) {
+  const raw = source.slice(node.start, node.end);
+  const before = /^\s*/.exec(raw)![0];
+  const after = /\s*$/.exec(raw)![0];
+  return { before, core: raw.slice(before.length, raw.length - after.length), after };
+}
+
+/**
+ * One fragment for the editor. `html` for the WYSIWYG editor where it can hold it. `textHtml` for
+ * any fragment with text: the same source with each run of text a field of its own, so nothing but
+ * words can change. Only ever shown in the editor's frame, which runs no script.
+ */
 export function fragmentForEditor(source: string, block: number) {
   const fragment = parseFragments(source)[block];
-  if (!fragment?.editable) return null;
-  return { html: source.slice(fragment.start, fragment.end), tag: fragment.tag };
+  if (!fragment || (!fragment.editable && fragment.texts.length === 0)) return null;
+  const textHtml =
+    fragment.texts.length === 0
+      ? null
+      : applySplices(
+          source.slice(fragment.start, fragment.end),
+          fragment.texts.map((node, i) => {
+            const { before, core, after } = coreOf(source, node);
+            return {
+              start: node.start - fragment.start,
+              end: node.end - fragment.start,
+              text: `${before}<span data-alma-t="${i}" contenteditable="plaintext-only">${core}</span>${after}`,
+            };
+          }),
+        );
+  return {
+    html: fragment.editable ? source.slice(fragment.start, fragment.end) : null,
+    textHtml,
+    tag: fragment.tag,
+  };
+}
+
+/**
+ * A fragment with only its words changed: every other byte stays, whatever it holds, and what was
+ * typed can only ever be text.
+ */
+export function withTexts(
+  source: string,
+  fragment: Fragment,
+  texts: { i: number; text: string }[],
+) {
+  const edits: Splice[] = [];
+  for (const { i, text } of texts) {
+    const node = fragment.texts[i];
+    if (!node) continue;
+    const { before, after } = coreOf(source, node);
+    if (text.trim() === node.value.trim()) continue;
+    edits.push({ start: node.start, end: node.end, text: `${before}${escapeText(text)}${after}` });
+  }
+  const ordered = edits.map((edit) => ({
+    start: edit.start - fragment.start,
+    end: edit.end - fragment.start,
+    text: edit.text,
+  }));
+  return applySplices(source.slice(fragment.start, fragment.end), ordered);
+}
+
+/** The markup of a fragment without its words. */
+function markupOf(html: string) {
+  const tree = parseFragment(html);
+  const walk = (node: ParentNode) => {
+    for (const child of node.childNodes) {
+      if (isElement(child)) {
+        if (!NO_TEXT.has(child.tagName)) walk(child);
+      } else if (isText(child)) {
+        child.value = '';
+      }
+    }
+  };
+  walk(tree);
+  return serialize(tree);
+}
+
+/**
+ * What goes into a version. A change of words alone keeps the fragment's markup, which is the
+ * document's own and may hold what the sanitizer would drop; anything else goes through it.
+ */
+export function safeNewHtml(newHtml: string, oldHtml: string) {
+  return markupOf(newHtml) === markupOf(oldHtml) ? newHtml : sanitizeFragment(newHtml, oldHtml);
 }
 
 export function documentStyles(source: string): string {

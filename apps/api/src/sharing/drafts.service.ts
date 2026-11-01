@@ -20,7 +20,7 @@ import {
   framePage,
   type PlacedChange,
   resolveChanges,
-  sanitizeFragment,
+  safeNewHtml,
 } from './share-html.js';
 import { frameToken } from './share-tokens.js';
 import { ShareError } from './shares.service.js';
@@ -459,7 +459,7 @@ export async function finishDraft(db: Db, storage: Storage | null, userId: strin
     source,
     approved.map((c) => ({
       block: c.block!,
-      html: c.newHtml === null ? null : sanitizeFragment(c.newHtml, c.oldHtml),
+      html: c.newHtml === null ? null : safeNewHtml(c.newHtml, c.oldHtml),
     })),
   );
   const version = await addVersionFromBytes(db, storage, {

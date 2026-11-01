@@ -19,6 +19,8 @@ export type BridgeMessage =
       block: number | null;
       change?: string | null;
       editable?: boolean;
+      textable?: boolean;
+      pendingInside?: boolean;
       tag?: string;
       src?: string | null;
       text?: string | null;

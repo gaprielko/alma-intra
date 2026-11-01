@@ -1,5 +1,7 @@
 import {
   applyChanges,
+  safeNewHtml,
+  withTexts,
   documentStyles,
   fragmentForEditor,
   framePage,
@@ -159,7 +161,7 @@ describe('framePage', () => {
     expect(page).not.toContain('<base');
     expect(page).not.toContain('alma-edit');
     expect(page).toContain('window.keep=1');
-    expect(page).toContain('<h1 data-alma-b="0" data-alma-e="1" class="a">');
+    expect(page).toContain('<h1 data-alma-b="0" data-alma-e="1" data-alma-x="1" class="a">');
     expect(page.indexOf("MODE='read'")).toBeLessThan(page.indexOf('window.keep=1'));
   });
 
@@ -187,5 +189,69 @@ describe('the editor', () => {
     expect(fragmentForEditor(DOC, 0)?.html).toBe('<h1 class="a">Nadpis</h1>');
     expect(fragmentForEditor(DOC, 6)).toBeNull();
     expect(documentStyles(DOC)).toContain('.a{color:red}');
+  });
+});
+
+describe('lists', () => {
+  const contract = `<body><section class="article"><header><span>Článok 1</span><h2>Predmet</h2></header>
+<ol class="paras"><li>Prvý&nbsp;odsek (<span class="term">Softvér</span>).</li><li>Pilot zahŕňa:
+<ol class="items"><li>webovú aplikáciu;</li></ol></li></ol></section></body>`;
+  const fragments = parseFragments(contract);
+  const of = (tag: string) => fragments.filter((f) => f.tag === tag);
+
+  it('each item is a fragment, nested ones too', () => {
+    expect(of('li')).toHaveLength(3);
+    expect(of('ol')).toHaveLength(2);
+    const nested = of('li')[2]!;
+    expect(contract.slice(nested.start, nested.end)).toBe('<li>webovú aplikáciu;</li>');
+    expect(fragments[nested.parent!]!.tag).toBe('ol');
+  });
+
+  it('an item and a list go through the editor, a section with a heading only by its words', () => {
+    expect(of('li').every((f) => f.editable)).toBe(true);
+    expect(of('ol').every((f) => f.editable)).toBe(true);
+    const section = of('section')[0]!;
+    expect(section.editable).toBe(false);
+    expect(section.texts.length).toBeGreaterThan(3);
+  });
+});
+
+describe('changing only the words', () => {
+  const doc = `<body><section class="a" onclick="own()"><h2>Nadpis &amp; text</h2>
+<svg><text>graf</text></svg><script>code()</script><p>Veta <b>tučná</b> koniec</p></section></body>`;
+  const section = parseFragments(doc).find((f) => f.tag === 'section')!;
+  const old = doc.slice(section.start, section.end);
+
+  it('offers every run of text as a field, and none in code or a drawing', () => {
+    const fragment = fragmentForEditor(doc, section.block)!;
+    expect(fragment.html).toBeNull();
+    expect(section.texts.map((t) => t.value.trim())).toEqual([
+      'Nadpis & text',
+      'Veta',
+      'tučná',
+      'koniec',
+    ]);
+    expect(fragment.textHtml).toContain(
+      '<span data-alma-t="0" contenteditable="plaintext-only">Nadpis &amp; text</span>',
+    );
+    expect(fragment.textHtml).toContain('<script>code()</script>');
+    expect(fragment.textHtml!.endsWith('</section>')).toBe(true);
+  });
+
+  it('changes those bytes and nothing else, and what was typed stays text', () => {
+    const out = withTexts(doc, section, [{ i: 2, text: '<img src=x onerror=alert(1)>' }]);
+    expect(out).toBe(old.replace('<b>tučná</b>', '<b>&lt;img src=x onerror=alert(1)&gt;</b>'));
+  });
+
+  it('an unchanged run keeps its bytes, entity and all', () => {
+    expect(withTexts(doc, section, [{ i: 0, text: 'Nadpis & text' }])).toBe(old);
+  });
+
+  it('a change of words keeps the markup into the version, any other goes through the sanitizer', () => {
+    const words = withTexts(doc, section, [{ i: 1, text: 'Nová' }]);
+    expect(safeNewHtml(words, old)).toBe(words);
+    const smuggled = words.replace('<b>', '<b onclick="x()">');
+    expect(safeNewHtml(smuggled, old)).not.toContain('onclick');
+    expect(safeNewHtml(smuggled, old)).not.toContain('<script');
   });
 });

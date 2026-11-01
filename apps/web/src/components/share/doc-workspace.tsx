@@ -2,7 +2,7 @@ import { sk } from '@intra/shared/i18n';
 import type { CommentAnchor } from '@intra/shared/schemas';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { ArrowUp, History, MessageSquare, Pencil, Trash2, Undo2, X } from 'lucide-react';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type MouseEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import {
   CommentCard,
   CommentForm,
@@ -11,7 +11,7 @@ import {
 } from '@/components/share/comment-list';
 import { DiffText } from '@/components/share/diff-text';
 import { type BridgeMessage, DocFrame, type FrameRect } from '@/components/share/doc-frame';
-import { FragmentEditor } from '@/components/share/fragment-editor';
+import { type EditedText, FragmentEditor } from '@/components/share/fragment-editor';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/components/ui/toast';
@@ -20,9 +20,14 @@ import { FILES_REFRESH_MS } from '@/lib/files';
 
 const t = sk.sharing;
 
+const COMPOSER_WIDTH = 352;
+const COMPOSER_HEIGHT = 172;
+
 interface Hovered {
   block: number | null;
   editable: boolean;
+  textable: boolean;
+  pendingInside: boolean;
   tag: string;
   src: string | null;
   text: string;
@@ -31,14 +36,16 @@ interface Hovered {
 }
 
 interface PendingChange {
-  kind: 'edit' | 'delete';
+  kind: 'edit' | 'delete' | 'text';
+  texts?: EditedText[];
   html: string | null;
   before: string;
   after: string;
 }
 
 type Composer = {
-  rect: FrameRect | null;
+  /** Where the pointer was, in the frame's box: the window opens there, wherever the text is. */
+  at: { x: number; y: number };
   anchor: {
     block: number | null;
     quote: string | null;
@@ -69,13 +76,19 @@ export interface DocApi {
   }) => Promise<unknown>;
   editComment: (id: string, body: string) => Promise<unknown>;
   deleteComment: (id: string) => Promise<unknown>;
-  fragment: (block: number) => Promise<{ html: string; tag: string; styles: string }>;
+  fragment: (block: number) => Promise<{
+    html: string | null;
+    textHtml: string | null;
+    tag: string;
+    styles: string;
+  }>;
 }
 
 export interface SaveOp {
   block: number;
-  kind: 'edit' | 'delete';
+  kind: 'edit' | 'delete' | 'text';
   html?: string;
+  texts?: EditedText[];
 }
 
 export interface WorkspaceBar {
@@ -135,10 +148,13 @@ export function DocWorkspace({
   const [editing, setEditing] = useState<{
     block: number;
     before: string;
-    source: string;
+    source: string | null;
+    textHtml: string | null;
+    texts: EditedText[] | undefined;
     tag: string;
     styles: string;
     rect: FrameRect;
+    textable: boolean;
   } | null>(null);
   const [revision, setRevision] = useState<PendingChange | null>(null);
   const [unplaced, setUnplaced] = useState<string[]>([]);
@@ -223,6 +239,8 @@ export function DocWorkspace({
         setHovered({
           block: message.block,
           editable: message.editable === true,
+          textable: message.textable === true,
+          pendingInside: message.pendingInside === true,
           tag: String(message.tag ?? ''),
           src: message.src ?? null,
           text: message.text ?? '',
@@ -256,7 +274,11 @@ export function DocWorkspace({
 
   const startEdit = (target: Hovered) => {
     if (target.block === null) return;
-    if (!target.editable) {
+    if (target.pendingInside) {
+      toast('error', t.tools.pendingInside);
+      return;
+    }
+    if (!target.editable && !target.textable) {
       toast('error', t.tools.notEditable);
       return;
     }
@@ -267,19 +289,35 @@ export function DocWorkspace({
         setEditing({
           block,
           before: pending?.before ?? target.text,
-          source: pending?.html ?? result.html,
+          source: pending?.kind === 'edit' ? pending.html : result.html,
+          textHtml: result.textHtml,
+          texts: pending?.texts,
           tag: result.tag,
           styles: result.styles,
           rect: target.rect,
+          textable: target.textable,
         }),
     });
   };
 
-  const applyEdit = (html: string, text: string) => {
+  const applyEdit = (html: string, text: string, texts?: EditedText[]) => {
     if (!editing) return;
-    const { block, before } = editing;
-    send.current?.({ type: 'apply', block, html, editable: true });
-    setChanges((now) => new Map(now).set(block, { kind: 'edit', html, before, after: text }));
+    const { block, before, textable } = editing;
+    if (texts?.length === 0) {
+      undoBlock(block);
+      setEditing(null);
+      return;
+    }
+    send.current?.({ type: 'apply', block, html, editable: !texts, textable });
+    setChanges((now) =>
+      new Map(now).set(block, {
+        kind: texts ? 'text' : 'edit',
+        html,
+        before,
+        after: text,
+        ...(texts ? { texts } : {}),
+      }),
+    );
     setJustSaved(false);
     setEditing(null);
   };
@@ -318,9 +356,13 @@ export function DocWorkspace({
     setDiscarding(false);
   };
 
-  const openComposer = (anchor: Composer['anchor'], rect: FrameRect | null) => {
+  const openComposer = (anchor: Composer['anchor'], event: MouseEvent) => {
+    const here = frameBox.current?.getBoundingClientRect();
     setDraftBody('');
-    setComposer({ anchor, rect });
+    setComposer({
+      anchor,
+      at: { x: event.clientX - (here?.left ?? 0), y: event.clientY - (here?.top ?? 0) },
+    });
   };
 
   const sortedComments = [...list].sort((a, b) => {
@@ -381,6 +423,7 @@ export function DocWorkspace({
 
   const box = frameBox.current?.getBoundingClientRect();
   const boxWidth = box?.width ?? 800;
+  const boxHeight = box?.height ?? 600;
   const pending = hovered?.block != null ? changes.get(hovered.block) : undefined;
   const tools =
     hovered &&
@@ -423,7 +466,7 @@ export function DocWorkspace({
           {canComment && !pending ? (
             <ToolIcon
               label={t.tools.comment}
-              onClick={() =>
+              onClick={(event) =>
                 openComposer(
                   {
                     block: hovered.block,
@@ -434,7 +477,7 @@ export function DocWorkspace({
                     tag: hovered.tag,
                     src: hovered.src,
                   },
-                  hovered.rect,
+                  event,
                 )
               }
             >
@@ -456,7 +499,7 @@ export function DocWorkspace({
                   <ArrowUp className="size-4" aria-hidden />
                 </ToolIcon>
               ) : null}
-              {hovered.editable ? (
+              {hovered.editable || hovered.textable ? (
                 <ToolIcon label={t.tools.edit} onClick={() => startEdit(hovered)}>
                   <Pencil className="size-4" aria-hidden />
                 </ToolIcon>
@@ -476,7 +519,7 @@ export function DocWorkspace({
   const ops = [...changes.entries()].map(([block, change]) => ({
     block,
     kind: change.kind,
-    ...(change.html === null ? {} : { html: change.html }),
+    ...(change.texts ? { texts: change.texts } : change.html === null ? {} : { html: change.html }),
   }));
 
   return (
@@ -501,7 +544,7 @@ export function DocWorkspace({
       <div className="flex min-h-0 flex-1 flex-wrap overflow-auto md:overflow-hidden">
         <div
           ref={frameBox}
-          className="relative h-[70dvh] min-w-0 flex-[999_1_20rem] bg-white md:h-full"
+          className="relative h-[70dvh] min-w-0 flex-[999_1_20rem] overflow-hidden bg-white md:h-full"
         >
           <DocFrame src={frame} title={title} sendRef={send} onMessage={onMessage} />
           {tools}
@@ -513,7 +556,7 @@ export function DocWorkspace({
                 top: Math.max(4, selection.rect.top - 38),
                 left: Math.max(4, Math.min(boxWidth - 130, selection.rect.left)),
               }}
-              onClick={() =>
+              onClick={(event) =>
                 openComposer(
                   {
                     block: selection.block,
@@ -523,7 +566,7 @@ export function DocWorkspace({
                     tag: null,
                     src: null,
                   },
-                  selection.rect,
+                  event,
                 )
               }
             >
@@ -536,8 +579,8 @@ export function DocWorkspace({
               aria-label={t.comments.new}
               className="absolute z-20 w-[min(22rem,calc(100%-1rem))] rounded-xl border border-border-subtle bg-white p-3 shadow-[0_12px_32px_rgba(12,43,44,0.25)]"
               style={{
-                top: Math.max(8, (composer.rect?.top ?? 0) + (composer.rect?.height ?? 0) + 6),
-                left: Math.max(8, Math.min(boxWidth - 360, composer.rect?.left ?? 8)),
+                top: Math.max(8, Math.min(boxHeight - COMPOSER_HEIGHT - 8, composer.at.y + 8)),
+                left: Math.max(8, Math.min(boxWidth - COMPOSER_WIDTH - 8, composer.at.x - 16)),
               }}
               onSubmit={(event) => {
                 event.preventDefault();
@@ -575,13 +618,15 @@ export function DocWorkspace({
             <div
               className="absolute z-20"
               style={{
-                top: Math.max(8, Math.min(editing.rect.top, 120)),
+                top: Math.max(8, Math.min(editing.rect.top, boxHeight * 0.2)),
                 left: Math.max(8, Math.min(boxWidth - 520, editing.rect.left)),
                 width: Math.min(boxWidth - 16, Math.max(512, editing.rect.width)),
               }}
             >
               <FragmentEditor
                 source={editing.source}
+                textHtml={editing.textHtml}
+                texts={editing.texts}
                 tag={editing.tag}
                 styles={editing.styles}
                 onCancel={() => setEditing(null)}
@@ -657,7 +702,7 @@ function ToolIcon({
   children,
 }: {
   label: string;
-  onClick: () => void;
+  onClick: (event: MouseEvent) => void;
   children: ReactNode;
 }) {
   return (
