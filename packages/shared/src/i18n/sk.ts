@@ -3009,6 +3009,16 @@ export const sk = {
     fromApp: 'Z\u00a0aplikácie, bez tlačidla',
     asksProduct: 'Vyberá sa',
     noProduct: 'Nevyberá sa',
+    noButton: 'Bez tlačidla',
+    kept: {
+      system:
+        'Tento typ používa systém pre podnety z00a0aplikácií, nedá sa odstrániť. Môžete ho len vypnúť.',
+      entries: (n: number) => `Typ má záznamy v00a0Aktivitách: ${n}. Môžete ho len vypnúť.`,
+      sent: (n: number) =>
+        `Typ je v00a0odoslaných e-mailoch: ${n}. Ich tlačidlá musia ďalej fungovať, môžete ho len vypnúť.`,
+      buttons: (templates: number, drafts: number) =>
+        `Typ je v00a0tlačidle. Šablóny: ${templates}, koncepty: ${drafts}. Keď tlačidlo odstránite, typ sa dá vymazať.`,
+    },
     active: 'Aktívny',
     inactive: 'Vypnutý',
     edit: 'Upraviť',
@@ -3019,6 +3029,9 @@ export const sk = {
     dialog: {
       title: 'Typ aktivity',
       name: 'Názov',
+      button: 'Tlačidlo v00a0e-maile',
+      buttonHint: 'Typ sa ponúkne pri vkladaní tlačidla do šablóny a00a0e-mailu.',
+      buttonHeld: 'Typ je v00a0tlačidle v00a0šablóne alebo e-maile, preto to musí ostať zapnuté.',
       confirmLabel: 'Text potvrdzovacieho tlačidla',
       confirmHint:
         'Adresát ho uvidí na stránke po kliknutí v\u00a0e-maile. Aktivita vznikne až po jeho potvrdení.',

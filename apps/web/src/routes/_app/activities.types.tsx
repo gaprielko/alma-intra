@@ -29,6 +29,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/toast';
+import { Tooltip } from '@/components/ui/tooltip';
 import { errorMessage } from '@/lib/errors';
 import { loadFailed } from '@/lib/query-view';
 import { useCan } from '@/lib/session';
@@ -38,6 +39,16 @@ export const Route = createFileRoute('/_app/activities/types')({ component: Type
 
 const t = sk.activityTypes;
 type ActivityType = RouterOutputs['activityType']['list'][number];
+
+/** Why a type cannot be removed, in words for the disabled icon; `null` when it can. */
+function keptBecause(row: ActivityType): string | null {
+  const k = t.kept;
+  if (row.system) return k.system;
+  if (row.entries > 0) return k.entries(row.entries);
+  if (row.inSent > 0) return k.sent(row.inSent);
+  if (row.inTemplates + row.inDrafts > 0) return k.buttons(row.inTemplates, row.inDrafts);
+  return null;
+}
 
 /** Typy aktivít: the code list a button in an e-mail records from (docs/activity-types.md). */
 function TypesPage() {
@@ -91,7 +102,9 @@ function TypesPage() {
                     <TableRow key={row.id} onClick={canWrite ? () => setEditing(row) : undefined}>
                       <TableCell className="font-semibold">{row.name}</TableCell>
                       <TableCell>
-                        {row.confirmLabel ?? <span className="text-muted">{t.fromApp}</span>}
+                        {row.confirmLabel ?? (
+                          <span className="text-muted">{row.system ? t.fromApp : t.noButton}</span>
+                        )}
                       </TableCell>
                       <TableCell>{row.asksProduct ? t.asksProduct : t.noProduct}</TableCell>
                       <TableCell className="tabular-nums">{row.entries}</TableCell>
@@ -115,7 +128,18 @@ function TypesPage() {
                             >
                               <Pencil className="size-4" aria-hidden />
                             </Button>
-                            {!row.system && row.entries === 0 && !row.inButtons ? (
+                            {keptBecause(row) ? (
+                              <Tooltip text={keptBecause(row)}>
+                                <span
+                                  tabIndex={0}
+                                  aria-label={keptBecause(row) ?? undefined}
+                                  onClick={(event) => event.stopPropagation()}
+                                  className="inline-flex size-9 cursor-not-allowed items-center justify-center rounded-[10px] text-tertiary"
+                                >
+                                  <Trash2 className="size-4" aria-hidden />
+                                </span>
+                              </Tooltip>
+                            ) : (
                               <Button
                                 size="icon"
                                 variant="ghost"
@@ -129,7 +153,7 @@ function TypesPage() {
                               >
                                 <Trash2 className="size-4" aria-hidden />
                               </Button>
-                            ) : null}
+                            )}
                           </RowActions>
                         ) : null}
                       </TableCell>
@@ -159,7 +183,7 @@ function TypeDialog({ type, onClose }: { type?: ActivityType | undefined; onClos
   const d = t.dialog;
   const toast = useToast();
   const queryClient = useQueryClient();
-  const hasButton = !type || type.confirmLabel !== null;
+  const [hasButton, setHasButton] = useState(!type || type.confirmLabel !== null);
   const [name, setName] = useState(type?.name ?? '');
   const [confirmLabel, setConfirmLabel] = useState(type?.confirmLabel ?? '');
   const [asksProduct, setAsksProduct] = useState(type?.asksProduct ?? false);
@@ -199,7 +223,7 @@ function TypeDialog({ type, onClose }: { type?: ActivityType | undefined; onClos
             } else {
               create.mutate({
                 name: name.trim(),
-                confirmLabel: confirmLabel.trim(),
+                confirmLabel: hasButton ? confirmLabel.trim() : null,
                 asksProduct,
                 active,
               });
@@ -216,6 +240,22 @@ function TypeDialog({ type, onClose }: { type?: ActivityType | undefined; onClos
               onChange={(event) => setName(event.target.value)}
             />
           </div>
+          {type?.system ? null : (
+            <div className="flex items-center gap-3 text-sm font-medium">
+              <Switch
+                checked={hasButton}
+                disabled={type?.inButtons ?? false}
+                onChange={() => setHasButton(!hasButton)}
+                label={d.button}
+              />
+              <span>
+                {d.button}
+                <span className="block text-xs font-normal text-muted">
+                  {type?.inButtons ? d.buttonHeld : d.buttonHint}
+                </span>
+              </span>
+            </div>
+          )}
           {hasButton ? (
             <>
               <div className="space-y-2">
