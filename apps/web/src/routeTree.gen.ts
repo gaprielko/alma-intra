@@ -17,6 +17,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as OdhlasenieRouteImport } from './routes/odhlasenie'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ZaujemRouteImport } from './routes/zaujem'
+import { Route as ZdielanieRouteImport } from './routes/zdielanie'
 import { Route as AppAccountRouteImport } from './routes/_app/account'
 import { Route as AppEmailsRouteImport } from './routes/_app/emails'
 import { Route as AppFilesRouteImport } from './routes/_app/files'
@@ -95,6 +96,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const ZaujemRoute = ZaujemRouteImport.update({
   id: '/zaujem',
   path: '/zaujem',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ZdielanieRoute = ZdielanieRouteImport.update({
+  id: '/zdielanie',
+  path: '/zdielanie',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppAccountRoute = AppAccountRouteImport.update({
@@ -315,6 +321,7 @@ export interface FileRoutesByFullPath {
   '/odhlasenie': typeof OdhlasenieRoute
   '/reset-password': typeof ResetPasswordRoute
   '/zaujem': typeof ZaujemRoute
+  '/zdielanie': typeof ZdielanieRoute
   '/account': typeof AppAccountRoute
   '/emails': typeof AppEmailsRouteWithChildren
   '/files': typeof AppFilesRoute
@@ -364,6 +371,7 @@ export interface FileRoutesByTo {
   '/odhlasenie': typeof OdhlasenieRoute
   '/reset-password': typeof ResetPasswordRoute
   '/zaujem': typeof ZaujemRoute
+  '/zdielanie': typeof ZdielanieRoute
   '/account': typeof AppAccountRoute
   '/emails': typeof AppEmailsRouteWithChildren
   '/files': typeof AppFilesRoute
@@ -415,6 +423,7 @@ export interface FileRoutesById {
   '/odhlasenie': typeof OdhlasenieRoute
   '/reset-password': typeof ResetPasswordRoute
   '/zaujem': typeof ZaujemRoute
+  '/zdielanie': typeof ZdielanieRoute
   '/_app/account': typeof AppAccountRoute
   '/_app/emails': typeof AppEmailsRouteWithChildren
   '/_app/files': typeof AppFilesRoute
@@ -466,6 +475,7 @@ export interface FileRouteTypes {
     | '/odhlasenie'
     | '/reset-password'
     | '/zaujem'
+    | '/zdielanie'
     | '/account'
     | '/emails'
     | '/files'
@@ -515,6 +525,7 @@ export interface FileRouteTypes {
     | '/odhlasenie'
     | '/reset-password'
     | '/zaujem'
+    | '/zdielanie'
     | '/account'
     | '/emails'
     | '/files'
@@ -565,6 +576,7 @@ export interface FileRouteTypes {
     | '/odhlasenie'
     | '/reset-password'
     | '/zaujem'
+    | '/zdielanie'
     | '/_app/account'
     | '/_app/emails'
     | '/_app/files'
@@ -616,6 +628,7 @@ export interface RootRouteChildren {
   OdhlasenieRoute: typeof OdhlasenieRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ZaujemRoute: typeof ZaujemRoute
+  ZdielanieRoute: typeof ZdielanieRoute
   OauthConsentRoute: typeof OauthConsentRoute
 }
 
@@ -675,6 +688,13 @@ declare module '@tanstack/react-router' {
       path: '/zaujem'
       fullPath: '/zaujem'
       preLoaderRoute: typeof ZaujemRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/zdielanie': {
+      id: '/zdielanie'
+      path: '/zdielanie'
+      fullPath: '/zdielanie'
+      preLoaderRoute: typeof ZdielanieRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/account': {
@@ -1075,6 +1095,7 @@ const rootRouteChildren: RootRouteChildren = {
   OdhlasenieRoute: OdhlasenieRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ZaujemRoute: ZaujemRoute,
+  ZdielanieRoute: ZdielanieRoute,
   OauthConsentRoute: OauthConsentRoute,
 }
 export const routeTree = rootRouteImport

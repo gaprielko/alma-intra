@@ -148,6 +148,8 @@ export const folderContentsSchema = z.object({
   /** The document's date, from and to, both days included. */
   dateFrom: isoDateSchema.optional(),
   dateTo: isoDateSchema.optional(),
+  /** Only files with a public link. */
+  shared: z.boolean().optional(),
 });
 export type FolderContentsInput = z.infer<typeof folderContentsSchema>;
 

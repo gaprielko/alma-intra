@@ -24,6 +24,8 @@ export default defineConfig({
       '/m/': 'http://localhost:3100',
       // Files sent as download links (D-26).
       '/d/': 'http://localhost:3100',
+      // A shared document, in its isolated frame.
+      '/share-frame/': 'http://localhost:3100',
       // Claude's MCP endpoint and its OAuth metadata, so the address shown in dev works too.
       '/mcp': 'http://localhost:3100',
       '/.well-known': 'http://localhost:3100',

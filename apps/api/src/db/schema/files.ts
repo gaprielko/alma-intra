@@ -55,12 +55,16 @@ export const folders = pgTable(
   ],
 );
 
-/** What made a version: a person in the web; later Claude, a generated document, an inbound mail. */
+/**
+ * What made a version: a person in the web, Claude, a generated document, an inbound mail, or a
+ * draft from a public link that a colleague approved.
+ */
 export const fileVersionSource = pgEnum('file_version_source', [
   'web',
   'mcp',
   'generated',
   'inbound',
+  'share',
 ]);
 /** `pending` between the signed upload and its confirmation; `uploaded` once the object was checked. */
 export const fileVersionStatus = pgEnum('file_version_status', ['pending', 'uploaded']);
@@ -122,6 +126,8 @@ export const fileVersions = pgTable(
     restoredFrom: integer('restored_from'),
     createdVia: fileVersionSource('created_via').notNull().default('web'),
     createdByUserId: uuid('created_by_user_id').references(() => users.id),
+    /** The name(s) typed on a public link, on a `share` version. Self-declared: never a colleague's. */
+    externalAuthor: text('external_author'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

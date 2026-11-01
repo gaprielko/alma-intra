@@ -7,13 +7,18 @@ import { idSchema } from './common.js';
  */
 export const ACTIVITY_TYPE_INTEREST_ID = '00000000-0000-4000-8000-0000000000b1';
 export const ACTIVITY_TYPE_FEEDBACK_ID = '00000000-0000-4000-8000-0000000000b2';
-export const SYSTEM_ACTIVITY_TYPE_IDS: readonly string[] = [ACTIVITY_TYPE_FEEDBACK_ID];
+/** A draft an outsider sent through a file's public link (docs/file-sharing.md). */
+export const ACTIVITY_TYPE_DOCUMENT_CHANGE_ID = '00000000-0000-4000-8000-0000000000b3';
+export const SYSTEM_ACTIVITY_TYPE_IDS: readonly string[] = [
+  ACTIVITY_TYPE_FEEDBACK_ID,
+  ACTIVITY_TYPE_DOCUMENT_CHANGE_ID,
+];
 
 /** The product ADOS: a podnet from Alma ADOS is about it (docs/activities-from-apps.md). */
 export const ADOS_PRODUCT_ID = '00000000-0000-4000-8000-0000000000a1';
 
-/** Where an entry came from: a button in an e-mail, or an application. */
-export const LEAD_ACTIVITY_SOURCES = ['email', 'app'] as const;
+/** Where an entry came from: a button in an e-mail, an application, or a shared file. */
+export const LEAD_ACTIVITY_SOURCES = ['email', 'app', 'share'] as const;
 export type LeadActivitySource = (typeof LEAD_ACTIVITY_SOURCES)[number];
 
 const dayOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);

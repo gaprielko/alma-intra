@@ -24,6 +24,7 @@ import { errorMessage } from '@/lib/errors';
 import { canPreview, FILES_REFRESH_MS, formatSize } from '@/lib/files';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { loadFailed } from '@/lib/query-view';
+import { FileDrafts } from '@/components/files/file-drafts';
 import { useCan } from '@/lib/session';
 import { type RouterOutputs, trpc } from '@/lib/trpc';
 import { downloadFile, previewFile } from '@/lib/uploads';
@@ -34,7 +35,15 @@ const d = t.detail;
 type Detail = RouterOutputs['file']['get'];
 
 /** A file's side sheet: where it is, who made it, its versions and its history. */
-export function FileSheet({ fileId, onClose }: { fileId: string; onClose: () => void }) {
+export function FileSheet({
+  fileId,
+  initialTab = 'versions',
+  onClose,
+}: {
+  fileId: string;
+  initialTab?: 'versions' | 'drafts';
+  onClose: () => void;
+}) {
   const file = useQuery({
     ...trpc.file.get.queryOptions({ id: fileId }),
     refetchInterval: FILES_REFRESH_MS,
@@ -58,14 +67,22 @@ export function FileSheet({ fileId, onClose }: { fileId: string; onClose: () => 
             />
           </>
         ) : (
-          <SheetBody file={file.data} onClose={onClose} />
+          <SheetBody file={file.data} initialTab={initialTab} onClose={onClose} />
         )}
       </SheetContent>
     </Sheet>
   );
 }
 
-function SheetBody({ file, onClose }: { file: Detail; onClose: () => void }) {
+function SheetBody({
+  file,
+  initialTab,
+  onClose,
+}: {
+  file: Detail;
+  initialTab: 'versions' | 'drafts';
+  onClose: () => void;
+}) {
   const toast = useToast();
   const queryClient = useQueryClient();
   const canWrite = useCan('file.write');
@@ -79,7 +96,8 @@ function SheetBody({ file, onClose }: { file: Detail; onClose: () => void }) {
       onError: (error) => toast('error', errorMessage(error, sk.campaigns.errors)),
     }),
   );
-  const [tab, setTab] = useState<'versions' | 'usage' | 'history'>('versions');
+  const [tab, setTab] = useState<'versions' | 'drafts' | 'usage' | 'history'>(initialTab);
+  const drafts = useQuery(trpc.fileShare.drafts.queryOptions({ fileId: file.id }));
   const usage = useQuery(trpc.activity.fileUsage.queryOptions({ fileId: file.id }));
   const [dialog, setDialog] = useState<FilesDialog | null>(null);
   const current = file.versions[0];
@@ -222,7 +240,13 @@ function SheetBody({ file, onClose }: { file: Detail; onClose: () => void }) {
         <div>
           <dt className="text-xs font-medium text-muted">{d.changedBy}</dt>
           <dd className="mt-0.5 text-sm">
-            {current ? <ChangedBy name={current.createdBy} via={current.createdVia} /> : null}
+            {current ? (
+              <ChangedBy
+                name={current.createdBy}
+                via={current.createdVia}
+                external={current.externalAuthor}
+              />
+            ) : null}
           </dd>
         </div>
         <div>
@@ -246,7 +270,7 @@ function SheetBody({ file, onClose }: { file: Detail; onClose: () => void }) {
         aria-label={d.tabs.label}
         className="mt-5 flex gap-5 border-b border-border-subtle px-6"
       >
-        {(['versions', 'usage', 'history'] as const).map((key) => (
+        {(['versions', 'drafts', 'usage', 'history'] as const).map((key) => (
           <button
             key={key}
             type="button"
@@ -262,9 +286,13 @@ function SheetBody({ file, onClose }: { file: Detail; onClose: () => void }) {
           >
             {key === 'versions'
               ? d.tabs.versions(file.versions.length)
-              : key === 'usage'
-                ? d.tabs.usage(usage.data?.length ?? 0)
-                : d.tabs.history}
+              : key === 'drafts'
+                ? sk.sharing.drafts.tab(
+                    drafts.data?.filter((draft) => draft.state === 'waiting').length ?? 0,
+                  )
+                : key === 'usage'
+                  ? d.tabs.usage(usage.data?.length ?? 0)
+                  : d.tabs.history}
           </button>
         ))}
       </div>
@@ -272,6 +300,8 @@ function SheetBody({ file, onClose }: { file: Detail; onClose: () => void }) {
       <div role="tabpanel" className="px-6 pt-1 pb-6">
         {tab === 'versions' ? (
           <Versions file={file} canWrite={canWrite} onDownload={download} onPreview={preview} />
+        ) : tab === 'drafts' ? (
+          <FileDrafts fileId={file.id} />
         ) : tab === 'usage' ? (
           <Usage rows={usage.data ?? []} />
         ) : (
@@ -331,7 +361,11 @@ function Versions({
             </span>
             <div className="min-w-[13rem] flex-1">
               <p className="flex flex-wrap items-center gap-2 text-sm font-semibold">
-                <ChangedBy name={version.createdBy} via={version.createdVia} />
+                <ChangedBy
+                  name={version.createdBy}
+                  via={version.createdVia}
+                  external={version.externalAuthor}
+                />
                 {isCurrent ? <Badge tone="info">{d.current}</Badge> : null}
               </p>
               <p className="mt-0.5 text-[13px] text-muted">
@@ -341,11 +375,25 @@ function Versions({
                   formatSize(version.size),
                   version.restoredFrom ? d.restoredFrom(version.restoredFrom) : null,
                   version.note ? `„${version.note}“` : null,
+                  version.createdVia === 'share' && version.createdBy
+                    ? t.approvedBy(version.createdBy)
+                    : null,
                 ]
                   .filter(Boolean)
                   .join(' · ')}
               </p>
             </div>
+            {version.draftId ? (
+              <Button variant="ghost" size="sm" asChild>
+                <Link
+                  from="/files"
+                  to="/files"
+                  search={(prev) => ({ ...prev, draft: version.draftId ?? undefined })}
+                >
+                  {sk.sharing.draft.showChanges}
+                </Link>
+              </Button>
+            ) : null}
             {previewable ? (
               <Button variant="ghost" size="sm" onClick={() => onPreview(version.id)}>
                 {d.preview}

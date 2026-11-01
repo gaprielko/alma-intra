@@ -11,6 +11,7 @@ import { DB, type Db } from '../db/db.module.js';
 import { describeError } from '../logging/describe-error.js';
 import { STORAGE } from '../storage/storage.module.js';
 import type { Storage } from '../storage/storage.js';
+import { ShareFrameController } from '../sharing/share-frame.controller.js';
 import { purgeFiles } from './files.service.js';
 
 const PURGE_INTERVAL_MS = 3_600_000;
@@ -53,5 +54,5 @@ export class FilePurgeWorker implements OnModuleInit, OnApplicationShutdown {
   }
 }
 
-@Module({ providers: [FilePurgeWorker] })
+@Module({ providers: [FilePurgeWorker], controllers: [ShareFrameController] })
 export class FilesModule {}
