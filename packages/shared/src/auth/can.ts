@@ -20,6 +20,8 @@ export const ACTIONS = [
   'file.read',
   'file.write',
   'file.delete',
+  // A file's public link, and what comes back through it (docs/file-sharing.md).
+  'file.share',
   // Activities: calls, meetings and notes with a customer; anyone may edit one, and every edit is
   // audited. The same actions cover the list in Aktivity (docs/activities.md).
   'activity.read',
@@ -67,6 +69,7 @@ const POLICY: Record<Action, readonly Role[]> = {
   'file.read': ['admin'],
   'file.write': ['admin'],
   'file.delete': ['admin'],
+  'file.share': ['admin'],
   'activity.read': ['admin'],
   'activity.write': ['admin'],
   'activity.delete': ['admin'],

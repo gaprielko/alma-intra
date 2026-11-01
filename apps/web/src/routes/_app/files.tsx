@@ -19,6 +19,7 @@ import {
   Search,
   Trash2,
   Upload,
+  Share2,
 } from 'lucide-react';
 import {
   type CSSProperties,
@@ -35,7 +36,9 @@ import { FilterMenu } from '@/components/customers/customer-bits';
 import { ChangedBy, FileBadge, FolderTile } from '@/components/files/file-bits';
 import { type FilesDialog, FilesDialogs } from '@/components/files/file-dialogs';
 import { FilePreviewDialog } from '@/components/files/file-preview-dialog';
+import { DraftDialog } from '@/components/files/draft-dialog';
 import { FileSheet } from '@/components/files/file-sheet';
+import { ShareDialog } from '@/components/files/share-dialog';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
 import { TableShell } from '@/components/table-shell';
@@ -72,9 +75,14 @@ const search = z.object({
   /** The document's date, from and to. */
   from: isoDateSchema.optional().catch(undefined),
   to: isoDateSchema.optional().catch(undefined),
-  /** The file whose sheet is open. */
+  /** The file whose sheet is open, and on which tab. */
   file: z.string().uuid().optional(),
+  tab: z.enum(['drafts']).optional(),
   view: z.enum(['trash']).optional(),
+  /** Only files with a public link. */
+  shared: z.boolean().optional(),
+  /** The draft open over the page, from a file's list or an activity. */
+  draft: z.string().uuid().optional(),
 });
 type FilesSearch = z.infer<typeof search>;
 
@@ -166,6 +174,7 @@ function FilesPage() {
               setSearch={setSearch}
               onOpenFolder={openFolder}
               onOpenFile={(id) => setSearch({ file: id }, false)}
+              onOpenDrafts={(id) => setSearch({ file: id, tab: 'drafts' }, false)}
               onDialog={setDialog}
               onPick={() => picker.current?.click()}
               canUpload={canWrite && configured}
@@ -175,7 +184,19 @@ function FilesPage() {
       </div>
 
       {params.file ? (
-        <FileSheet fileId={params.file} onClose={() => setSearch({ file: undefined })} />
+        <FileSheet
+          key={params.file}
+          fileId={params.file}
+          initialTab={params.tab ?? 'versions'}
+          onClose={() => setSearch({ file: undefined, tab: undefined })}
+        />
+      ) : null}
+      {params.draft ? (
+        <DraftDialog
+          id={params.draft}
+          onOpen={(draft) => setSearch({ draft })}
+          onClose={() => setSearch({ draft: undefined })}
+        />
       ) : null}
       <FilesDialogs
         dialog={dialog}
@@ -537,6 +558,7 @@ function ContentsSection({
   setSearch,
   onOpenFolder,
   onOpenFile,
+  onOpenDrafts,
   onDialog,
   onPick,
   canUpload,
@@ -546,6 +568,7 @@ function ContentsSection({
   setSearch: (next: Partial<FilesSearch>) => void;
   onOpenFolder: (id: string) => void;
   onOpenFile: (id: string) => void;
+  onOpenDrafts: (id: string) => void;
   onDialog: (dialog: FilesDialog) => void;
   onPick: () => void;
   canUpload: boolean;
@@ -621,6 +644,7 @@ function ContentsSection({
     folderId,
     ...(params.q ? { search: params.q } : {}),
     ...(params.group ? { group: params.group } : {}),
+    ...(params.shared ? { shared: true } : {}),
     ...(params.by ? { changedBy: params.by } : {}),
     ...(params.period ? { period: params.period } : {}),
     ...(params.from ? { dateFrom: params.from } : {}),
@@ -698,6 +722,8 @@ function ContentsSection({
 
   /** A click on a file shows its preview; only „Verzie“ opens its detail. */
   const openFile = (file: FileRow) => setPreviewing(file);
+  const canShare = useCan('file.share');
+  const [sharing, setSharing] = useState<FileRow | null>(null);
 
   const fileMenu = (file: FileRow) => (
     <DropdownMenu>
@@ -722,6 +748,9 @@ function ContentsSection({
         </DropdownMenuItem>
         {previewKind(file.name) ? (
           <DropdownMenuItem onSelect={() => setPreviewing(file)}>{t.menu.preview}</DropdownMenuItem>
+        ) : null}
+        {canShare ? (
+          <DropdownMenuItem onSelect={() => setSharing(file)}>{t.menu.share}</DropdownMenuItem>
         ) : null}
         {canWrite ? (
           <>
@@ -850,6 +879,12 @@ function ContentsSection({
                   }}
                 >
                   {file.name}
+                  {file.shared ? (
+                    <Share2
+                      className="ml-1.5 inline size-3.5 text-primary-text"
+                      aria-label={sk.sharing.shared}
+                    />
+                  ) : null}
                 </button>
                 {searched ? (
                   <button
@@ -889,6 +924,23 @@ function ContentsSection({
             >
               {t.versions(file.version)}
             </button>
+          </TableCell>
+          <TableCell className="text-xs whitespace-nowrap">
+            {file.draftCount > 0 ? (
+              <button
+                type="button"
+                aria-label={sk.sharing.drafts.tab(file.draftCount)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onOpenDrafts(file.id);
+                }}
+                className="inline-flex h-7 min-w-7 items-center justify-center rounded-lg bg-warning-soft px-2 font-semibold text-warning"
+              >
+                {file.draftCount}
+              </button>
+            ) : (
+              <span className="text-tertiary">{sk.common.none}</span>
+            )}
           </TableCell>
           <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
             <RowActions>{fileMenu(file)}</RowActions>
@@ -972,6 +1024,18 @@ function ContentsSection({
           options={FILE_PERIODS.map((value) => ({ value, label: t.periods[value] }))}
           onChange={(period) => setSearch({ period })}
         />
+        <button
+          type="button"
+          aria-pressed={params.shared === true}
+          onClick={() => setSearch({ shared: params.shared ? undefined : true })}
+          className={cn(
+            'inline-flex h-9 items-center gap-2 rounded-[10px] border border-border bg-white px-3 text-[13px] font-medium',
+            params.shared && 'border-primary text-primary-text',
+          )}
+        >
+          <Share2 className="size-3.5" aria-hidden />
+          {sk.sharing.filter}
+        </button>
         <label
           className={cn(
             'inline-flex h-9 items-center gap-2 rounded-[10px] border border-border bg-white px-3 text-[13px] font-medium',
@@ -1019,6 +1083,7 @@ function ContentsSection({
             t.columns.dates,
             t.columns.size,
             t.columns.version,
+            sk.sharing.drafts.column,
             <span key="actions" className="sr-only">
               {t.columns.actions}
             </span>,
@@ -1053,6 +1118,7 @@ function ContentsSection({
         </div>
       ) : null}
       <DropDialog drop={drop} onClose={() => setDrop(null)} />
+      {sharing ? <ShareDialog file={sharing} onClose={() => setSharing(null)} /> : null}
       {previewing ? (
         <FilePreviewDialog
           file={previewing}
@@ -1060,6 +1126,10 @@ function ContentsSection({
           onVersions={() => {
             setPreviewing(null);
             onOpenFile(previewing.id);
+          }}
+          onDrafts={() => {
+            setPreviewing(null);
+            onOpenDrafts(previewing.id);
           }}
         />
       ) : null}

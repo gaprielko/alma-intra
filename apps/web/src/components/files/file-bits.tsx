@@ -58,7 +58,19 @@ export function FolderTile() {
 }
 
 /** Who made a version: a colleague, or later „Claude za …“ with Claude's mark. */
-export function ChangedBy({ name, via }: { name: string | null; via: string }) {
+export function ChangedBy({
+  name,
+  via,
+  external = null,
+}: {
+  name: string | null;
+  via: string;
+  /** The name(s) typed on a public link: never passes for a colleague. */
+  external?: string | null;
+}) {
+  if (via === 'share' && external) {
+    return <>{sk.files.externalChange(external)}</>;
+  }
   if (!name) return <>{sk.common.none}</>;
   if (via !== 'mcp') return <>{name}</>;
   return (

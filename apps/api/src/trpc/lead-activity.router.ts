@@ -8,6 +8,7 @@ import {
 } from '@intra/shared/schemas';
 import { TRPCError } from '@trpc/server';
 import * as activityTypes from '../activities/activity-types.service.js';
+import { draftOfActivity } from '../sharing/drafts.service.js';
 import * as leadActivities from '../activities/lead-activities.service.js';
 import { writeAuditEvent } from '../audit/audit.js';
 import { loadEnv } from '../config/env.js';
@@ -33,6 +34,11 @@ export const leadActivityRouter = router({
   get: authorizedProcedure('activity.read')
     .input(leadActivityIdSchema)
     .query(({ ctx, input }) => run(() => leadActivities.getLeadActivity(ctx.db, input.id))),
+
+  /** A document change: its draft as it is now, and what happened to it. */
+  documentChange: authorizedProcedure('activity.read')
+    .input(leadActivityIdSchema)
+    .query(({ ctx, input }) => draftOfActivity(ctx.db, input.id)),
 
   /** A podnet's text and picture: a sensitive read, so it leaves a trace of who opened it. */
   feedback: authorizedProcedure('activity.read')

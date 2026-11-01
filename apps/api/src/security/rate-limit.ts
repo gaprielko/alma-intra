@@ -62,6 +62,14 @@ export const RATE_LIMITS = {
   mcpPerUser: { scope: 'mcp:user', limit: 600, windowMs: 15 * MINUTE },
   /** Per IP: requests to `/mcp` with a token that opens nothing. */
   mcpBadTokenPerIp: { scope: 'mcp-bad-token:ip', limit: 60, windowMs: 15 * MINUTE },
+  /** Per IP: every call of a public link's page; it asks for news every 15 s. */
+  sharePerIp: { scope: 'share:ip', limit: 1200, windowMs: 15 * MINUTE },
+  /** Wrong passwords on a public link, per IP and per link; the last locks the link for the window. */
+  shareUnlockPerIp: { scope: 'share-unlock:ip', limit: 30, windowMs: 15 * MINUTE },
+  shareUnlockPerLink: { scope: 'share-unlock:link', limit: 20, windowMs: 15 * MINUTE },
+  /** Per link: drafts saved and comments written; each is a row, and a draft also an activity. */
+  shareSavePerLink: { scope: 'share-save:link', limit: 30, windowMs: 60 * MINUTE },
+  shareCommentPerLink: { scope: 'share-comment:link', limit: 200, windowMs: 60 * MINUTE },
   /** Per user: how many refusals are written to the audit trail; the refusals themselves go on. */
   deniedAuditPerUser: { scope: 'audit-denied:user', limit: 20, windowMs: 15 * MINUTE },
 } as const satisfies Record<string, RateLimitRule>;

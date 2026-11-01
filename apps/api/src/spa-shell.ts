@@ -23,6 +23,8 @@ const API_PREFIXES = [
   '/.well-known',
   // Files sent as download links (D-26).
   '/d',
+  // A shared document, in its isolated frame (docs/file-sharing.md).
+  '/share-frame',
   // The OAuth endpoints of the MCP SDK (main.ts).
   '/authorize',
   '/token',

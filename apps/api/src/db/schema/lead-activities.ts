@@ -14,6 +14,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { campaignMessages } from './campaigns.js';
 import { contacts, organizations, products } from './customers.js';
+import { fileDrafts } from './file-shares.js';
 
 /** A contact's name with the titles, as `personName` writes it; NULL when no contact is joined. */
 export const contactFullName = sql<string | null>`nullif(concat_ws(' ',
@@ -113,6 +114,8 @@ export const leadActivities = pgTable(
     appFeedbackId: uuid('app_feedback_id')
       .references(() => appFeedback.id)
       .unique(),
+    /** The draft an outsider sent; the file and all else are read from it. */
+    fileDraftId: uuid('file_draft_id').references(() => fileDrafts.id, { onDelete: 'set null' }),
     email: text('email'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     lastConfirmedAt: timestamp('last_confirmed_at', { withTimezone: true }).notNull().defaultNow(),

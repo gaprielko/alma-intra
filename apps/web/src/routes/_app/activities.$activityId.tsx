@@ -89,6 +89,30 @@ function ActivityPage() {
     );
   }
   const fromApp = row.source === 'app';
+  if (row.source === 'share') {
+    return (
+      <div className="min-w-0">
+        <PageHeader title={row.typeName} back={back}>
+          {canDelete ? (
+            <Button variant="secondary" onClick={() => setRemoving(true)}>
+              {d.delete}
+            </Button>
+          ) : null}
+        </PageHeader>
+        <DocumentChange id={row.id} createdAt={row.createdAt} typeName={row.typeName} />
+        <ConfirmDialog
+          open={removing}
+          onOpenChange={setRemoving}
+          title={d.deleteConfirm.title}
+          description={d.deleteConfirm.text}
+          confirmLabel={d.deleteConfirm.confirm}
+          destructive
+          pending={remove.isPending}
+          onConfirm={() => remove.mutate({ id: row.id })}
+        />
+      </div>
+    );
+  }
   return (
     <div className="min-w-0">
       <PageHeader
@@ -250,6 +274,108 @@ function ActivityPage() {
         />
       ) : null}
     </div>
+  );
+}
+
+const s = sk.sharing.activity;
+
+/** One step of a draft's trail in words, from what the audit event may hold. */
+function trailLine(action: string, diff: Record<string, unknown> | null, names: string) {
+  const e = s.events;
+  if (action === 'publicShare.saveDraft') return s.saved(names);
+  if (action === 'fileShare.decide') {
+    const decision = diff?.decision;
+    return decision === 'approved' || decision === 'rejected' || decision === 'pending'
+      ? e.decision[decision]
+      : null;
+  }
+  if (action === 'fileShare.reply') return e.reply;
+  if (action === 'fileShare.agree') return diff?.agreed ? e.agreed : e.reopened;
+  if (action === 'fileShare.merge') return e.merged;
+  if (action === 'fileShare.discard') return e.discarded;
+  if (action === 'fileShare.finish') {
+    return typeof diff?.version === 'number' ? e.version(diff.version) : e.finished;
+  }
+  return null;
+}
+
+/** An activity from a public link: the draft as it is now, and what happened to it. */
+function DocumentChange({
+  id,
+  createdAt,
+  typeName,
+}: {
+  id: string;
+  createdAt: Date | string;
+  typeName: string;
+}) {
+  const change = useQuery(trpc.leadActivity.documentChange.queryOptions({ id }));
+  const data = change.data;
+  const states = sk.sharing.drafts.states;
+  return (
+    <main className="grid max-w-[1080px] items-start gap-5 px-7 pt-5 pb-10 md:grid-cols-2">
+      <Card>
+        <CardHeader title={d.what} />
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-3.5 px-5 pt-3 pb-5">
+          <Field label={d.type}>
+            <Badge tone="info" dot>
+              {typeName}
+            </Badge>
+          </Field>
+          <Field label={s.state}>
+            {data
+              ? data.versionNumber
+                ? sk.sharing.drafts.version(data.versionNumber)
+                : states[data.state]
+              : sk.common.none}
+          </Field>
+          <Field label={d.createdAt}>{formatDateTime(createdAt)}</Field>
+          <Field label={s.content}>
+            {data ? sk.sharing.drafts.counts(data.changes, data.comments) : sk.common.none}
+          </Field>
+        </dl>
+      </Card>
+      <Card>
+        <CardHeader title={d.who} />
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-3.5 px-5 pt-3 pb-5">
+          <Field label={s.visitor}>{data?.authorNames.join(', ') ?? sk.common.none}</Field>
+          <Field label={s.file}>{data?.fileName ?? sk.common.none}</Field>
+        </dl>
+        {data ? (
+          <div className="px-5 pb-5">
+            <Button asChild>
+              <Link to="/files" search={{ file: data.fileId, draft: data.draftId }}>
+                {s.openDraft}
+              </Link>
+            </Button>
+          </div>
+        ) : null}
+      </Card>
+      {data ? (
+        <Card className="md:col-span-2">
+          <CardHeader title={s.trail} />
+          <ol className="px-5 pt-2 pb-5">
+            {data.trail.flatMap((event, i) => {
+              const line = trailLine(event.action, event.diff, data.authorNames.join(', '));
+              if (!line) return [];
+              return [
+                <li
+                  key={i}
+                  className="flex flex-wrap gap-x-4 gap-y-1 border-t border-border-subtle py-2.5 text-sm first:border-t-0"
+                >
+                  <span className="w-36 shrink-0 text-muted">{formatDateTime(event.at)}</span>
+                  <span className="min-w-[14rem] flex-1">
+                    {event.userName && event.action !== 'publicShare.saveDraft'
+                      ? `${event.userName}: ${line}`
+                      : line}
+                  </span>
+                </li>,
+              ];
+            })}
+          </ol>
+        </Card>
+      ) : null}
+    </main>
   );
 }
 

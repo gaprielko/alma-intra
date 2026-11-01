@@ -296,7 +296,11 @@ function fileRows(db: Db, where: SQL[]) {
       changedAt: fileVersions.createdAt,
       changedVia: fileVersions.createdVia,
       changedBy: changer.name,
+      externalAuthor: fileVersions.externalAuthor,
       documentDate: fileVersions.documentDate,
+      shared: sql<boolean>`exists (select 1 from file_shares s where s.file_id = ${files.id})`,
+      draftCount: sql<number>`(select count(*)::int from file_drafts d
+        where d.file_id = ${files.id} and d.state = 'waiting')`,
     })
     .from(files)
     .innerJoin(fileVersions, eq(fileVersions.id, files.currentVersionId))
@@ -322,6 +326,9 @@ export async function folderContents(db: Db, input: FolderContentsInput) {
   }
   if (input.dateFrom) where.push(sql`${fileVersions.documentDate} >= ${input.dateFrom}`);
   if (input.dateTo) where.push(sql`${fileVersions.documentDate} <= ${input.dateTo}`);
+  if (input.shared) {
+    where.push(sql`exists (select 1 from file_shares s where s.file_id = ${files.id})`);
+  }
 
   if (input.search) {
     where.push(
@@ -517,7 +524,7 @@ export async function requestUpload(
 }
 
 /** A file outside the trash, or NOT_FOUND. */
-async function liveFile(db: Db | Tx, id: string, lock = false) {
+export async function liveFile(db: Db | Tx, id: string, lock = false) {
   const query = db
     .select()
     .from(files)
@@ -657,6 +664,10 @@ export async function fileDetail(db: Db, id: string) {
       createdVia: fileVersions.createdVia,
       createdAt: fileVersions.createdAt,
       createdBy: users.name,
+      externalAuthor: fileVersions.externalAuthor,
+      draftId: sql<
+        string | null
+      >`(select d.id from file_drafts d where d.version_id = ${fileVersions.id} limit 1)`,
     })
     .from(fileVersions)
     .leftJoin(users, eq(users.id, fileVersions.createdByUserId))
@@ -1045,7 +1056,7 @@ export async function purgeFiles(db: Db, storage: Storage) {
 // ---------------------------------------------------------------------------------------------
 // Bytes the server has in hand (Claude through MCP, an e-mail's attachment, a generated document)
 
-type ServerSource = 'mcp' | 'generated' | 'inbound';
+type ServerSource = 'mcp' | 'generated' | 'inbound' | 'share';
 
 /**
  * The checks of an upload, for bytes the server got: an allowed extension, at most the size
@@ -1122,6 +1133,7 @@ export async function addVersionFromBytes(
     via: ServerSource;
     note?: string | undefined;
     documentDate?: string | undefined;
+    externalAuthor?: string | undefined;
   },
 ) {
   const bucket = requireStorage(storage);
@@ -1145,6 +1157,7 @@ export async function addVersionFromBytes(
       documentDate: input.documentDate ?? today(),
       createdVia: input.via,
       createdByUserId: input.userId,
+      externalAuthor: input.externalAuthor ?? null,
     });
     await tx
       .update(files)

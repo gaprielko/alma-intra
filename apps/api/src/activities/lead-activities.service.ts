@@ -64,6 +64,10 @@ const fields = {
   feedbackClient: sql<string | null>`${appFeedback.app} ->> 'client'`,
   reporterName: appFeedback.reporterName,
   sourceOrganizationName: appFeedback.sourceOrganizationName,
+  fileDraftId: leadActivities.fileDraftId,
+  /** The file a draft from a public link is about, for the list. */
+  fileName: sql<string | null>`(select f.name from file_drafts d join files f on f.id = d.file_id
+    where d.id = ${leadActivities.fileDraftId})`,
 };
 
 const joined = (db: Db) =>

@@ -4,6 +4,7 @@ export * from './account.js';
 export * from './user.js';
 export * from './customer.js';
 export * from './file.js';
+export * from './file-share.js';
 export * from './activity.js';
 export * from './email-template.js';
 export * from './campaign.js';

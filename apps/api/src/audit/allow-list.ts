@@ -10,6 +10,7 @@ import {
   LEAD_ACTIVITY_SOURCES,
   ORGANIZATION_ROLES,
   SECOND_STEPS,
+  SHARE_MODES,
   USER_STATUSES,
 } from '@intra/shared/schemas';
 
@@ -391,6 +392,38 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
     folderId: uuid,
     versionId: uuid,
     count: number,
+  },
+  /** A file's public link: the file, the mode, whether a password or an expiry is set. */
+  fileShare: {
+    fileId: uuid,
+    mode: oneOf(SHARE_MODES),
+    hasPassword: flag,
+    hasExpiry: flag,
+    passwordChanged: flag,
+    cancelled: flag,
+  },
+  /** A draft from a public link: ids, counts and decisions, never a name or a text. */
+  fileDraft: {
+    fileId: uuid,
+    changes: number,
+    comments: number,
+    changeId: uuid,
+    decision: oneOf(['approved', 'rejected', 'pending']),
+    commentId: uuid,
+    reply: flag,
+    agreed: flag,
+    mergedFrom: number,
+    versionId: uuid,
+    version: number,
+    discarded: flag,
+    finished: flag,
+  },
+  /** A comment from a public link. Never its text or who wrote it. */
+  fileComment: {
+    fileId: uuid,
+    reply: flag,
+    edited: flag,
+    deleted: flag,
   },
   /** Notifications marked read: how many. */
   notification: {

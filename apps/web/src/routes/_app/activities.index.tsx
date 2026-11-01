@@ -183,6 +183,8 @@ function ActivitiesPage() {
                           <p className="mt-1 text-xs text-muted">{t.roles[row.organizationRole]}</p>
                         ) : null}
                       </>
+                    ) : row.source === 'share' ? (
+                      <span className="text-[13px] text-muted">{sk.common.none}</span>
                     ) : (
                       <>
                         <span className="font-semibold text-warning">{t.unassigned}</span>
@@ -211,7 +213,12 @@ function ActivitiesPage() {
                     ) : null}
                   </TableCell>
                   <TableCell>
-                    {row.source === 'app' ? (
+                    {row.source === 'share' ? (
+                      <>
+                        <p className="text-[13px]">{row.fileName ?? sk.common.none}</p>
+                        <p className="text-xs text-muted">{sk.sharing.activity.source}</p>
+                      </>
+                    ) : row.source === 'app' ? (
                       <>
                         <p className="text-[13px]">{t.fromApp(row.productName ?? '')}</p>
                         <p className="text-xs text-muted">
