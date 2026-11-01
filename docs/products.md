@@ -147,7 +147,11 @@ Board `ProdDetail`, at `/products/<id>`. One page that is edited in place (no se
 - **Výpočet ceny** (right): counts per item, each line explained („Sestra: 10, z toho 4 v cene,
   6 × 8 € = 48 €“), and the totals in a small table: monthly, yearly (12 months; for a yearly product
   the month is a twelfth) and one-off, each without and with VAT. It is a calculator for offers; it
-  stores nothing [R-6].
+  stores nothing by itself [R-6]. **„Vložiť do cenníka“**, shown while the counts differ from the
+  price list, first opens a step that lists what changes in „V cene“ (from, to) and warns that the
+  base price stays, so the price of customers on the list or a discount can change. Once confirmed,
+  the counts of the recurring items become „V cene“ in the form; one-off items, the prices and the
+  maximum stay, and it is stored by „Uložiť zmeny“ as any other change [R-24].
 - **Majú ho** (under the price list): a table of the organizations and prevádzky with the product:
   name (and whose prevádzka), what they have („2 admin · 10 sestier“), the monthly and the yearly
   price without VAT. Its numbers come with the product at a customer (section 9).
@@ -296,6 +300,7 @@ organization_product_workloads   for an item counted by workloads: the people an
 | R-21 | A role reaches one or more of Mobil, Web and Backend; at least one. Set on the role in the catalog, valid in every product. | agreed |
 | R-22 | A product's Cenník shows roles and further items as two parts apart to the eye, ordered within each. | agreed |
 | R-23 | Only a role can be counted from workloads. | agreed |
+| R-24 | The calculator can write its counts of recurring items to „V cene“, after a confirming step listing the changes; stored by „Uložiť zmeny“. | agreed |
 | R-19 | A time-limited discount can have several steps, each its percent for so many months, one after another; then the list price. A permanent discount has one percent. | agreed |
 
 ## 12. Stages (after approval)
