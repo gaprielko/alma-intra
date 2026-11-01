@@ -1,12 +1,11 @@
-# Súbory: public sharing of a file, drafts and their approval (draft)
+# Súbory: public sharing of a file, drafts and their approval
 
-Status: **draft, phase 1 of 3** (2026-11-01). The owner answered the first round of questions (section 14)
-and changed the concept: an outsider never makes a version, only a draft that a colleague approves. Waits
-for the second round (section 15); screens follow on the canvas „Alma Intra – screens“, page „Súbory“, and
-only then code. Builds on section 7 of `docs/functional-spec.md`, D-43, D-54 and `docs/activity-types.md`.
+Status: **agreed** (2026-11-01), all recommendations of section 15 accepted. Phase 2 (screens on the canvas
+„Alma Intra – screens“, page „Súbory“) is next, and only then code. The owner changed the concept in the first
+round: an outsider never makes a version, only a draft that a colleague approves. Builds on section 7 of
+`docs/functional-spec.md`, D-43, D-54 and `docs/activity-types.md`.
 
-Marks: **[S-n]** a decision of this spec. Items marked _(Q-n)_ are the recommendation until the owner
-answers question n of section 15.
+Marks: **[S-n]** a decision of this spec. _(Q-n)_ points to the question that settled it (section 15).
 
 ---
 
@@ -405,11 +404,11 @@ system font. This holds for new documents at once; the 10 existing ones are a se
 
 ---
 
-## 15. Open questions, second round
+## 15. Second round (2026-11-01)
 
-Put to the owner in Slovak; each has a recommendation.
+The owner accepted every recommendation.
 
-| #    | Question                                                                 | Recommendation                                                                                       |
+| #    | Question                                                                 | Decision                                                                                             |
 | ---- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
 | Q-13 | Scripts in comments and edits as well?                                   | Yes, it is possible and it is one way for all modes. Calculated values cannot be edited              |
 | Q-14 | A second save in one session: everything so far, or only what is new?    | Everything so far. Each draft is complete, and a merge removes the duplicates                        |
