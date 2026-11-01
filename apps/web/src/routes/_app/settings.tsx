@@ -7,54 +7,46 @@ export const Route = createFileRoute('/_app/settings')({
     // The settings open on their first section.
     if (location.pathname.replace(/\/$/, '') === '/settings')
       // eslint-disable-next-line @typescript-eslint/only-throw-error -- TanStack Router redirects are thrown
-      throw redirect({ to: '/settings/users', replace: true });
+      throw redirect({ to: '/settings/company', replace: true });
   },
   component: SettingsLayout,
 });
 
+// The same tabs as Organizácie, Produkty and E-maily.
 const tabClass =
-  'relative inline-flex h-10 items-center px-1 text-sm font-medium text-muted transition-colors hover:text-foreground';
-const activeTabClass =
-  'text-foreground after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-full after:bg-primary';
+  '-mb-px inline-flex h-[46px] items-center gap-2 border-b-2 px-3.5 text-sm font-semibold whitespace-nowrap';
+const activeTabClass = 'border-primary text-primary-text';
+const inactive = { className: 'border-transparent text-muted hover:text-foreground' };
 
 /** Nastavenia: the header and the tabs of its sections. */
 function SettingsLayout() {
   const t = sk.settings;
+  const tabs = [
+    { to: '/settings/company', label: t.tabs.company },
+    { to: '/settings/users', label: t.tabs.users },
+    { to: '/settings/code-lists', label: t.tabs.codeLists },
+    { to: '/settings/email-look', label: t.tabs.emailLook },
+    { to: '/settings/pricing', label: sk.products.vat.tab },
+    { to: '/settings/activity-log', label: t.tabs.activityLog },
+  ] as const;
   return (
     <>
       <PageHeader title={t.title} subtitle={t.subtitle} />
-      <nav aria-label={t.tabs.label} className="flex gap-6 border-b border-border px-7">
-        <Link to="/settings/users" className={tabClass} activeProps={{ className: activeTabClass }}>
-          {t.tabs.users}
-        </Link>
-        <Link
-          to="/settings/code-lists"
-          className={tabClass}
-          activeProps={{ className: activeTabClass }}
-        >
-          {t.tabs.codeLists}
-        </Link>
-        <Link
-          to="/settings/email-look"
-          className={tabClass}
-          activeProps={{ className: activeTabClass }}
-        >
-          {t.tabs.emailLook}
-        </Link>
-        <Link
-          to="/settings/pricing"
-          className={tabClass}
-          activeProps={{ className: activeTabClass }}
-        >
-          {sk.products.vat.tab}
-        </Link>
-        <Link
-          to="/settings/activity-log"
-          className={tabClass}
-          activeProps={{ className: activeTabClass }}
-        >
-          {t.tabs.activityLog}
-        </Link>
+      <nav
+        aria-label={t.tabs.label}
+        className="flex gap-1 overflow-x-auto border-b border-border bg-white/80 px-7"
+      >
+        {tabs.map((tab) => (
+          <Link
+            key={tab.to}
+            to={tab.to}
+            className={tabClass}
+            activeProps={{ className: activeTabClass }}
+            inactiveProps={inactive}
+          >
+            {tab.label}
+          </Link>
+        ))}
       </nav>
       <Outlet />
     </>

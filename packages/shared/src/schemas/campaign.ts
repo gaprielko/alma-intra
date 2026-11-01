@@ -58,6 +58,7 @@ export const saveDirectSchema = z.object({
   body: emailDocSchema,
   templateId: idSchema.nullable(),
   lookProductId: idSchema.nullable(),
+  lookKind: z.enum(['personal', 'team']),
   attachmentFileIds: z.array(idSchema).max(20),
 });
 export type SaveDirectInput = z.infer<typeof saveDirectSchema>;

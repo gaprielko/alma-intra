@@ -3,6 +3,8 @@ import {
   type DirectRecipient,
   type EmailNode,
   hasActivityButton,
+  LOOK_KINDS,
+  type LookKind,
   personName,
   senderNameOf,
   userFullName,
@@ -64,9 +66,10 @@ export function DirectComposer({
   const [bodyKey, setBodyKey] = useState(0);
   const [templateId, setTemplateId] = useState<string | null>(draft.templateId);
   const [lookProductId, setLookProductId] = useState<string | null>(draft.lookProductId);
-  const productLooks = useQuery(trpc.template.productLooks.queryOptions());
+  const [lookKind, setLookKind] = useState<LookKind>(draft.lookKind);
+  const productLooks = useQuery(trpc.template.productLooks.queryOptions({ kind: lookKind }));
   const chosenLook = useQuery(
-    trpc.template.effectiveLook.queryOptions({ productId: lookProductId }),
+    trpc.template.effectiveLook.queryOptions({ kind: lookKind, productId: lookProductId }),
   );
   const [attachments, setAttachments] = useState(draft.attachments);
   const [copies, setCopies] = useState(draft.recipients.some((one) => one.role !== 'to'));
@@ -86,6 +89,7 @@ export function DirectComposer({
     body,
     templateId,
     lookProductId,
+    lookKind,
     attachmentFileIds: attachments.map((a) => a.id),
   };
   // Saved as it is written, so it is in „Koncepty“ whatever happens to this page.
@@ -131,6 +135,7 @@ export function DirectComposer({
         setSubject(filled.subject);
         setBody(filled.body);
         setLookProductId(filled.lookProductId);
+        setLookKind(filled.lookKind);
         setBodyKey((key) => key + 1);
       },
       onError,
@@ -252,6 +257,27 @@ export function DirectComposer({
           </div>
         </div>
       )}
+      {draft.reply ? null : (
+        <div className="flex items-center gap-3 border-b border-border-subtle px-5 py-2">
+          <span className="w-24 shrink-0 text-[13px] font-medium text-muted">
+            {sk.emailLook.kindField}
+          </span>
+          <div className="w-full max-w-sm">
+            <Select
+              id={`direct-kind-${draft.id}`}
+              value={lookKind}
+              onChange={(value) => setLookKind(value as LookKind)}
+              aria-label={sk.emailLook.kindField}
+            >
+              {LOOK_KINDS.map((kind) => (
+                <SelectItem key={kind} value={kind}>
+                  {sk.emailLook.kinds[kind]}
+                </SelectItem>
+              ))}
+            </Select>
+          </div>
+        </div>
+      )}
       <div className="flex items-center gap-3 border-b border-border-subtle px-5 py-2">
         <span className="w-24 shrink-0 text-[13px] font-medium text-muted">
           {sk.emailLook.field}
@@ -281,7 +307,7 @@ export function DirectComposer({
       ) : null}
       <div className="p-5">
         <EmailBodyEditor
-          key={`${bodyKey}-${lookProductId ?? ''}-${chosenLook.isSuccess}`}
+          key={`${bodyKey}-${lookKind}-${lookProductId ?? ''}-${chosenLook.isSuccess}`}
           value={body}
           onChange={setBody}
           fields={[]}

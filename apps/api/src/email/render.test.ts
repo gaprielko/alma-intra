@@ -1,7 +1,12 @@
 import type { EmailLook, EmailNode } from '@intra/shared/schemas';
-import { emailDocProblem } from '@intra/shared/schemas';
+import {
+  emailDocProblem,
+  filledLookLines,
+  footerDocSchema,
+  signatureDocSchema,
+} from '@intra/shared/schemas';
 import { renderEmail } from './render.js';
-import { fromAddress } from './templates.service.js';
+import { defaultFooterDoc, defaultSignatureDoc, fromAddress } from './templates.service.js';
 
 const look: EmailLook = {
   logoKey: 'abcdefghijklmnop.png',
@@ -10,6 +15,8 @@ const look: EmailLook = {
   headerDoc: null,
   senderNameDoc: null,
   accent: '#b45309',
+  signatureDoc: defaultSignatureDoc('personal'),
+  footerDoc: defaultFooterDoc(),
   footerCompany: '',
   footerIco: '',
   footerWeb: '',
@@ -48,6 +55,73 @@ const rendered = (over: Partial<EmailLook>) =>
 
 /** The paragraph of the body, without the header, which has its own logo. */
 const paragraph = (html: string) => /<p[^>]*>.*?ADOS.*?<\/p>/s.exec(html)![0];
+
+describe('a signature and a footer of the look', () => {
+  const out = (over: Partial<EmailLook>, values: Record<string, string>, unsubscribe = true) =>
+    renderEmail({
+      look: { ...look, ...over },
+      baseUrl: 'https://intra.example.test',
+      subject: body,
+      body,
+      values,
+      labels: {},
+      signature: true,
+      customerName: 'ADOS Slnečnica',
+      ...(unsubscribe ? { unsubscribeUrl: 'https://intra.example.test/odhlasenie#x' } : {}),
+    });
+  const sender = { 'sender.name': 'Eva Tóthová', 'sender.position': 'Konateľka' };
+
+  it('fill the variables, and a part without a value goes with its separator', async () => {
+    const { text } = await out({ footerCompany: 'Alma Care', footerIco: '' }, sender);
+    expect(text).toContain('Eva Tóthová');
+    expect(text).toContain('Konateľka · Alma ADOS');
+    expect(text).not.toContain('Alma ADOS ·\n');
+    expect(text).toContain('Alma ADOS · Alma Care');
+    expect(text).not.toContain('IČO');
+    expect(text).toContain('kontakt spoločnosti ADOS Slnečnica.');
+  });
+
+  it('make links of the addresses and of the way to unsubscribe', async () => {
+    const { html } = await out({ footerEmail: 'info@alma.test', footerWeb: 'alma.test' }, sender);
+    expect(html).toContain('href="mailto:info@alma.test"');
+    expect(html).toContain('href="https://alma.test"');
+    expect(html).toContain('href="https://intra.example.test/odhlasenie#x"');
+  });
+
+  it('a direct e-mail has no link to unsubscribe, and a team signature names no colleague', async () => {
+    const { html, text } = await out({ signatureDoc: defaultSignatureDoc('team') }, sender, false);
+    expect(html).not.toContain('odhlasenie');
+    expect(text).toContain('Tím Alma ADOS');
+    expect(text).not.toContain('Eva Tóthová');
+  });
+
+  it('keep a line left empty on purpose and the lines of a signature from Môj účet', () => {
+    const lines = filledLookLines(
+      {
+        type: 'doc',
+        content: [
+          { type: 'paragraph' },
+          {
+            type: 'paragraph',
+            content: [{ type: 'variable', attrs: { name: 'sender.signature' } }],
+          },
+        ],
+      },
+      { 'sender.signature': 'Prvý\nDruhý' },
+      'x',
+    );
+    expect(lines[0]!.content).toBeUndefined();
+    expect(lines[1]!.content!.map((node) => node.type)).toEqual(['text', 'hardBreak', 'text']);
+  });
+
+  it('a footer must keep the link to unsubscribe, a signature must not have it', () => {
+    expect(footerDocSchema.safeParse(defaultFooterDoc()).success).toBe(true);
+    expect(signatureDocSchema.safeParse(defaultSignatureDoc('team')).success).toBe(true);
+    const without = footerDocSchema.safeParse(defaultSignatureDoc('personal'));
+    expect(without.error?.issues[0]?.message).toBe('unsubscribe_required');
+    expect(signatureDocSchema.safeParse(defaultFooterDoc()).success).toBe(false);
+  });
+});
 
 describe('the logo and the accent within a line', () => {
   it('are allowed in a document', () => {

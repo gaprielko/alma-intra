@@ -303,7 +303,7 @@ const sameActivity = (target: Target) =>
 export async function activityInfo(db: Db, env: Env, token: string) {
   const target = await targetOf(db, env, token);
   if (!target) return null;
-  const look = await lookFor(db, target.productId);
+  const look = await lookFor(db, 'personal', target.productId);
   return {
     email: maskEmail(target.email),
     type: target.typeName,

@@ -2,6 +2,8 @@ import { sk } from '@intra/shared/i18n';
 import type { EmailLook, EmailNode } from '@intra/shared/schemas';
 import {
   brandParts,
+  filledLookLines,
+  lookValuesOf,
   OPTIONAL_VARIABLES,
   recordedActivityOf,
   senderNameOf,
@@ -380,17 +382,30 @@ function NodeView({ node, ctx }: { node: EmailNode; ctx: Ctx }): ReactNode {
   }
 }
 
+/** A signature or a footer: its lines, filled for this recipient, one under the other. */
+function LookLines({ doc, ctx, style }: { doc: EmailNode; ctx: Ctx; style: CSSProperties }) {
+  const { input } = ctx;
+  const values = lookValuesOf(input.look, input.values, {
+    customerName: input.customerName,
+    unsubscribeUrl: input.unsubscribeUrl,
+  });
+  return (
+    <>
+      {filledLookLines(doc, values, t.footer.unsubscribe).map((line, i) => (
+        <Text key={i} style={style}>
+          {line.content?.length ? <InlineNodes nodes={line.content} ctx={ctx} /> : ' '}
+        </Text>
+      ))}
+    </>
+  );
+}
+
 /** The whole e-mail: the company header, the body, the sender's signature and the footer. */
 export function EmailDocument({ input }: { input: RenderInput }) {
   const { look } = input;
   const dark = look.headerStyle === 'dark';
   const brand = brandParts(look);
   const ctx: Ctx = { input, accent: look.accent };
-  const sender = {
-    name: input.values['sender.name'],
-    position: input.values['sender.position'],
-    phone: input.values['sender.phone'],
-  };
   return (
     <Html lang="sk">
       <Head />
@@ -469,17 +484,13 @@ export function EmailDocument({ input }: { input: RenderInput }) {
               ) : null}
               {input.signature ? (
                 <Section
-                  style={{ marginTop: '12px', paddingTop: '20px', borderTop: '1px solid #e5eaea' }}
+                  style={{
+                    marginTop: '12px',
+                    padding: '20px 0 24px',
+                    borderTop: '1px solid #e5eaea',
+                  }}
                 >
-                  <Text style={{ ...text, margin: 0 }}>{t.signature.greeting}</Text>
-                  <Text style={{ ...text, margin: '12px 0 0', fontWeight: 700 }}>
-                    {sender.name ?? (
-                      <span style={chip}>{t.variables.missing(t.variables['sender.name'])}</span>
-                    )}
-                  </Text>
-                  <Text style={{ ...text, margin: '0 0 24px', color: MUTED, fontSize: '14px' }}>
-                    {[sender.position, look.brandName, sender.phone].filter(Boolean).join(' · ')}
-                  </Text>
+                  <LookLines doc={look.signatureDoc} ctx={ctx} style={{ ...text, margin: 0 }} />
                 </Section>
               ) : null}
             </Section>
@@ -494,51 +505,11 @@ export function EmailDocument({ input }: { input: RenderInput }) {
                 color: MUTED,
               }}
             >
-              <Text style={{ margin: 0, fontSize: '12px', lineHeight: '18px', color: MUTED }}>
-                {[
-                  look.brandName,
-                  look.footerCompany,
-                  look.footerIco ? `IČO ${look.footerIco}` : null,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </Text>
-              {look.footerEmail || look.footerWeb ? (
-                <Text
-                  style={{ margin: '2px 0 0', fontSize: '12px', lineHeight: '18px', color: MUTED }}
-                >
-                  {look.footerEmail ? (
-                    <Link href={`mailto:${look.footerEmail}`} style={{ color: look.accent }}>
-                      {look.footerEmail}
-                    </Link>
-                  ) : null}
-                  {look.footerEmail && look.footerWeb ? ' · ' : null}
-                  {look.footerWeb ? (
-                    <Link
-                      href={
-                        /^https?:\/\//.test(look.footerWeb)
-                          ? look.footerWeb
-                          : `https://${look.footerWeb}`
-                      }
-                      style={{ color: look.accent }}
-                    >
-                      {look.footerWeb}
-                    </Link>
-                  ) : null}
-                </Text>
-              ) : null}
-              {input.customerName ? (
-                <Text
-                  style={{ margin: '10px 0 0', fontSize: '12px', lineHeight: '18px', color: MUTED }}
-                >
-                  {t.footer.reason(input.customerName)}{' '}
-                  {input.unsubscribeUrl ? (
-                    <Link href={input.unsubscribeUrl} style={{ color: look.accent }}>
-                      {t.footer.unsubscribe}
-                    </Link>
-                  ) : null}
-                </Text>
-              ) : null}
+              <LookLines
+                doc={look.footerDoc}
+                ctx={ctx}
+                style={{ margin: '0 0 2px', fontSize: '12px', lineHeight: '18px', color: MUTED }}
+              />
             </Section>
           </Section>
         </Container>

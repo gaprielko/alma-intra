@@ -1,23 +1,29 @@
 import { isDeepStrictEqual } from 'node:util';
 import { sk } from '@intra/shared/i18n';
 import {
+  type Company,
   type CustomField,
   type EmailLook,
   type EmailNode,
+  type EmailSettings,
+  LOOK_SEPARATOR,
+  type LookFields,
+  type LookKind,
   personName,
+  type SaveLookInput,
   senderNameOf,
   suggestSalutation,
   type TemplateValues,
-  type ProductLook,
 } from '@intra/shared/schemas';
 import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import type { Db, Tx } from '../db/db.module.js';
 import {
+  companySettings,
   contactLinks,
   contacts,
-  emailLook,
-  productEmailLooks,
+  emailLooks,
+  emailSettings,
   products,
   emailTemplateAttachments,
   emailTemplates,
@@ -120,6 +126,7 @@ export async function getTemplate(db: Db, id: string) {
       name: emailTemplates.name,
       categoryId: emailTemplates.categoryId,
       lookProductId: emailTemplates.lookProductId,
+      lookKind: emailTemplates.lookKind,
       language: emailTemplates.language,
       subject: emailTemplates.subject,
       body: emailTemplates.body,
@@ -183,6 +190,7 @@ const columnsOf = (input: TemplateValues) => ({
   name: input.name,
   categoryId: input.categoryId,
   lookProductId: input.lookProductId,
+  lookKind: input.lookKind,
   language: input.language,
   subject: input.subject,
   body: input.body,
@@ -232,6 +240,7 @@ export async function duplicateTemplate(db: Db, userId: string, id: string) {
     name: sk.templates.copyName(source.name).slice(0, 120),
     categoryId: source.categoryId,
     lookProductId: source.lookProductId,
+    lookKind: source.lookKind,
     language: 'sk',
     subject: source.subject,
     body: source.body,
@@ -241,22 +250,148 @@ export async function duplicateTemplate(db: Db, userId: string, id: string) {
   });
 }
 
-export async function getLook(db: Db | Tx): Promise<EmailLook> {
-  const [row] = await db.select().from(emailLook).where(eq(emailLook.id, 1));
+const variable = (name: string, bold = false): EmailNode => ({
+  type: 'variable',
+  attrs: { name },
+  ...(bold ? { marks: [{ type: 'bold' as const }] } : {}),
+});
+const words = (text: string, bold = false): EmailNode => ({
+  type: 'text',
+  text,
+  ...(bold ? { marks: [{ type: 'bold' as const }] } : {}),
+});
+const line = (...content: EmailNode[]): EmailNode => ({ type: 'paragraph', content });
+
+/** A signature nobody has written yet: a colleague's name and contact, or the team's. */
+export function defaultSignatureDoc(kind: LookKind): EmailNode {
+  const s = sk.templates.signature;
+  const greeting = line(words(s.greeting));
   return {
-    logoKey: row?.logoKey ?? null,
-    headerStyle: row?.headerStyle ?? 'dark',
-    brandName: row?.brandName ?? 'Alma',
-    headerDoc: row?.headerDoc ?? null,
-    senderNameDoc: row?.senderNameDoc ?? null,
-    accent: (row?.accent ?? '#0f766e') as EmailLook['accent'],
-    footerCompany: row?.footerCompany ?? '',
-    footerIco: row?.footerIco ?? '',
-    footerWeb: row?.footerWeb ?? '',
-    footerEmail: row?.footerEmail ?? '',
+    type: 'doc',
+    content:
+      kind === 'personal'
+        ? [
+            greeting,
+            line(variable('sender.name', true)),
+            line(
+              variable('sender.position'),
+              words(LOOK_SEPARATOR),
+              variable('brand.name'),
+              words(LOOK_SEPARATOR),
+              variable('sender.phone'),
+            ),
+          ]
+        : [
+            greeting,
+            line(words(`${s.team} `, true), variable('brand.name', true)),
+            line(variable('company.email'), words(LOOK_SEPARATOR), variable('company.web')),
+          ],
+  };
+}
+
+/** A footer nobody has written yet: as e-mails have looked so far. */
+export function defaultFooterDoc(): EmailNode {
+  const f = sk.templates.footer;
+  return {
+    type: 'doc',
+    content: [
+      line(
+        variable('brand.name'),
+        words(LOOK_SEPARATOR),
+        variable('company.name'),
+        words(`${LOOK_SEPARATOR}${f.ico} `),
+        variable('company.ico'),
+      ),
+      line(variable('company.email'), words(LOOK_SEPARATOR), variable('company.web')),
+      line(words(f.reasonBefore), variable('customer.name'), words(f.reasonAfter)),
+      line(variable('unsubscribe')),
+    ],
+  };
+}
+
+type LookRow = typeof emailLooks.$inferSelect;
+
+/** A global look as it stands: without its row, the defaults of its type. */
+const globalFields = (kind: LookKind, row: LookRow | undefined): LookFields => ({
+  logoKey: row?.logoKey ?? null,
+  headerStyle: row?.headerStyle ?? 'dark',
+  brandName: row?.brandName ?? 'Alma',
+  headerDoc: row?.headerDoc ?? null,
+  senderNameDoc: row?.senderNameDoc ?? null,
+  accent: (row?.accent ?? '#0f766e') as LookFields['accent'],
+  signatureDoc: row?.signatureDoc ?? defaultSignatureDoc(kind),
+  footerDoc: row?.footerDoc ?? defaultFooterDoc(),
+  footerWeb: row?.footerWeb ?? '',
+  footerEmail: row?.footerEmail ?? '',
+});
+
+/** A product's look over the global one: what it has not written comes from there. */
+const productFields = (row: LookRow, global: LookFields): LookFields => ({
+  logoKey: row.logoKey,
+  headerStyle: row.headerStyle,
+  brandName: row.brandName,
+  headerDoc: row.headerDoc,
+  senderNameDoc: row.senderNameDoc ?? global.senderNameDoc,
+  accent: row.accent as LookFields['accent'],
+  signatureDoc: row.signatureDoc ?? global.signatureDoc,
+  footerDoc: row.footerDoc ?? global.footerDoc,
+  footerWeb: row.footerWeb,
+  footerEmail: row.footerEmail,
+});
+
+/** Settings › Firma. */
+export async function getCompany(db: Db | Tx): Promise<Company> {
+  const [row] = await db.select().from(companySettings).where(eq(companySettings.id, 1));
+  return { name: row?.name ?? '', ico: row?.ico ?? '' };
+}
+
+/** „Spoločné nastavenia e-mailov“. */
+export async function getEmailSettings(db: Db | Tx): Promise<EmailSettings> {
+  const [row] = await db.select().from(emailSettings).where(eq(emailSettings.id, 1));
+  return {
     replyMode: row?.replyMode ?? 'company',
     replyToAddress: row?.replyToAddress ?? 'info@alma-care.eu',
   };
+}
+
+export async function updateCompany(db: Db, userId: string, company: Company) {
+  const before = await getCompany(db);
+  const fields = (Object.keys(company) as (keyof Company)[])
+    .filter((key) => before[key] !== company[key])
+    .sort();
+  const values = { ...company, updatedByUserId: userId, updatedAt: new Date() };
+  await db
+    .insert(companySettings)
+    .values({ id: 1, ...values })
+    .onConflictDoUpdate({ target: companySettings.id, set: values });
+  return { fields };
+}
+
+export async function updateEmailSettings(db: Db, userId: string, settings: EmailSettings) {
+  const before = await getEmailSettings(db);
+  const fields = (Object.keys(settings) as (keyof EmailSettings)[])
+    .filter((key) => before[key] !== settings[key])
+    .sort();
+  const values = { ...settings, updatedByUserId: userId, updatedAt: new Date() };
+  await db
+    .insert(emailSettings)
+    .values({ id: 1, ...values })
+    .onConflictDoUpdate({ target: emailSettings.id, set: values });
+  return { fields };
+}
+
+/** A look's fields with what is common to all of them: what an e-mail wears. */
+export async function withCommon(db: Db | Tx, fields: LookFields): Promise<EmailLook> {
+  const [company, settings] = await Promise.all([getCompany(db), getEmailSettings(db)]);
+  return { ...fields, ...settings, footerCompany: company.name, footerIco: company.ico };
+}
+
+/**
+ * The look of an e-mail with nothing else to go by: the personal global one, as what Intra itself
+ * says about the company (a brand, an address) must come from somewhere.
+ */
+export async function getLook(db: Db | Tx): Promise<EmailLook> {
+  return lookFor(db, 'personal', null);
 }
 
 /**
@@ -268,84 +403,83 @@ export function fromAddress(look: EmailLook, address: string, filled?: string | 
   return `${/[",;:<>@()[\]\\]/.test(name) ? JSON.stringify(name) : name} <${address}>`;
 }
 
-/** The look an e-mail wears: the global one, with its product's over it when that is on. */
-export async function lookFor(db: Db | Tx, productId: string | null): Promise<EmailLook> {
-  const look = await getLook(db);
-  if (!productId) return look;
+const globalRowOf = async (db: Db | Tx, kind: LookKind) => {
+  const [row] = await db
+    .select()
+    .from(emailLooks)
+    .where(and(eq(emailLooks.kind, kind), isNull(emailLooks.productId)));
+  return row;
+};
+
+/** The look an e-mail of this type wears: the global one, or its product's when that is on. */
+export async function lookFor(
+  db: Db | Tx,
+  kind: LookKind,
+  productId: string | null,
+): Promise<EmailLook> {
+  const global = globalFields(kind, await globalRowOf(db, kind));
+  if (!productId) return withCommon(db, global);
   const [own] = await db
     .select()
-    .from(productEmailLooks)
-    .where(eq(productEmailLooks.productId, productId));
-  if (!own?.enabled) return look;
-  return {
-    ...look,
-    logoKey: own.logoKey,
-    headerStyle: own.headerStyle,
-    brandName: own.brandName,
-    headerDoc: own.headerDoc,
-    senderNameDoc: own.senderNameDoc ?? look.senderNameDoc,
-    accent: own.accent as EmailLook['accent'],
-    footerWeb: own.footerWeb,
-    footerEmail: own.footerEmail,
-  };
+    .from(emailLooks)
+    .where(and(eq(emailLooks.kind, kind), eq(emailLooks.productId, productId)));
+  return withCommon(db, own?.enabled ? productFields(own, global) : global);
 }
 
-/** Every product with its look: one not set up yet starts from the global one, off. */
-export async function productLooks(db: Db) {
-  const [look, rows] = await Promise.all([
-    getLook(db),
+/** The global look of a type, as it is edited in the settings. */
+export async function globalLook(db: Db | Tx, kind: LookKind): Promise<LookFields> {
+  return globalFields(kind, await globalRowOf(db, kind));
+}
+
+/** Every product with its look of this type: one not set up yet starts from the global one, off. */
+export async function productLooks(db: Db, kind: LookKind) {
+  const [global, rows] = await Promise.all([
+    globalLook(db, kind),
     db
-      .select({ id: products.id, name: products.name, own: productEmailLooks })
+      .select({ id: products.id, name: products.name, own: emailLooks })
       .from(products)
-      .leftJoin(productEmailLooks, eq(productEmailLooks.productId, products.id))
+      .leftJoin(emailLooks, and(eq(emailLooks.productId, products.id), eq(emailLooks.kind, kind)))
       .orderBy(asc(products.position), asc(products.name)),
   ]);
   return rows.map(({ id, name, own }) => ({
     productId: id,
     name,
-    look: {
-      enabled: own?.enabled ?? false,
-      logoKey: own ? own.logoKey : look.logoKey,
-      headerStyle: own?.headerStyle ?? look.headerStyle,
-      brandName: own?.brandName ?? look.brandName,
-      headerDoc: own ? own.headerDoc : look.headerDoc,
-      senderNameDoc: own ? own.senderNameDoc : look.senderNameDoc,
-      accent: (own?.accent ?? look.accent) as EmailLook['accent'],
-      footerWeb: own?.footerWeb ?? look.footerWeb,
-      footerEmail: own?.footerEmail ?? look.footerEmail,
-    },
+    look: { enabled: own?.enabled ?? false, ...(own ? productFields(own, global) : global) },
   }));
 }
 
-export async function saveProductLook(
-  db: Db,
-  userId: string,
-  input: { productId: string; look: ProductLook },
-) {
-  const values = { ...input.look, updatedByUserId: userId, updatedAt: new Date() };
-  const [product] = await db
-    .select({ id: products.id })
-    .from(products)
-    .where(eq(products.id, input.productId));
-  if (!product) throw new TemplateError('NOT_FOUND');
-  await db
-    .insert(productEmailLooks)
-    .values({ productId: input.productId, ...values })
-    .onConflictDoUpdate({ target: productEmailLooks.productId, set: values });
-}
-
-export async function updateLook(db: Db, userId: string, look: EmailLook) {
-  const before = await getLook(db);
-  const fields = (Object.keys(look) as (keyof EmailLook)[])
-    .filter((key) => JSON.stringify(before[key]) !== JSON.stringify(look[key]))
+/** Saves a look; answers which of its fields changed, for the audit. */
+export async function saveLook(db: Db, userId: string, input: SaveLookInput) {
+  const { kind, productId, look } = input;
+  if (productId) {
+    const [product] = await db
+      .select({ id: products.id })
+      .from(products)
+      .where(eq(products.id, productId));
+    if (!product) throw new TemplateError('NOT_FOUND');
+  }
+  const global = await globalLook(db, kind);
+  const [row] = productId
+    ? await db
+        .select()
+        .from(emailLooks)
+        .where(and(eq(emailLooks.kind, kind), eq(emailLooks.productId, productId)))
+    : [await globalRowOf(db, kind)];
+  const before = row ? (productId ? productFields(row, global) : globalFields(kind, row)) : global;
+  const fields = (Object.keys(look) as (keyof LookFields)[])
+    // Not by their JSON text: the database keeps a document's keys in an order of its own.
+    .filter((key) => !isDeepStrictEqual(before[key], look[key]))
     .sort();
+  const values = {
+    ...look,
+    enabled: productId ? input.enabled : true,
+    updatedByUserId: userId,
+    updatedAt: new Date(),
+  };
   await db
-    .insert(emailLook)
-    .values({ id: 1, ...look, updatedByUserId: userId })
-    .onConflictDoUpdate({
-      target: emailLook.id,
-      set: { ...look, updatedByUserId: userId, updatedAt: new Date() },
-    });
+    .insert(emailLooks)
+    .values({ kind, productId, ...values })
+    .onConflictDoUpdate({ target: [emailLooks.kind, emailLooks.productId], set: values });
   return { fields };
 }
 
@@ -473,12 +607,20 @@ export async function valuesFor(
     }
   }
   const [sender] = await db
-    .select({ name: fullNameOf(users), phone: users.phone, position: users.position })
+    .select({
+      name: fullNameOf(users),
+      phone: users.phone,
+      position: users.position,
+      email: users.email,
+      signature: users.emailSignature,
+    })
     .from(users)
     .where(eq(users.id, senderUserId));
   values['sender.name'] = sender?.name;
   values['sender.phone'] = sender?.phone ?? undefined;
   values['sender.position'] = sender?.position ?? undefined;
+  values['sender.email'] = sender?.email;
+  values['sender.signature'] = sender?.signature ?? undefined;
   for (const [key, value] of Object.entries(custom)) {
     values[`custom.${key}`] = value.trim() || undefined;
   }
@@ -496,11 +638,12 @@ export async function previewTemplate(
     customFields: CustomField[];
     contactId?: string | undefined;
     lookProductId?: string | null | undefined;
+    lookKind: LookKind;
     values: Readonly<Record<string, string>>;
   },
 ) {
   const [look, filled] = await Promise.all([
-    lookFor(db, input.lookProductId ?? null),
+    lookFor(db, input.lookKind, input.lookProductId ?? null),
     valuesFor(db, { contactId: input.contactId }, senderUserId, input.values),
   ]);
   const rendered = await renderEmail({
@@ -535,7 +678,7 @@ export async function testTemplate(
 ) {
   const [[user], look, out] = await Promise.all([
     db.select({ email: users.email }).from(users).where(eq(users.id, userId)),
-    lookFor(db, input.lookProductId ?? null),
+    lookFor(db, input.lookKind, input.lookProductId ?? null),
     previewTemplate(db, env.WEB_URL, userId, input),
   ]);
   return {
@@ -548,8 +691,16 @@ export async function testTemplate(
 }
 
 /** The look alone, with a sample body: Settings › Vzhľad e-mailov. */
-export async function previewLook(db: Db, baseUrl: string, senderUserId: string, look: EmailLook) {
-  const filled = await valuesFor(db, {}, senderUserId, {});
+export async function previewLook(
+  db: Db,
+  baseUrl: string,
+  senderUserId: string,
+  fields: LookFields,
+) {
+  const [look, filled] = await Promise.all([
+    withCommon(db, fields),
+    valuesFor(db, {}, senderUserId, {}),
+  ]);
   const body: EmailNode = {
     type: 'doc',
     content: [

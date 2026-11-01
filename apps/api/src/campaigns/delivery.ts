@@ -90,6 +90,7 @@ export async function drainCampaigns(
         campaignId: campaignMessages.campaignId,
         kind: campaigns.kind,
         lookProductId: campaigns.lookProductId,
+        lookKind: campaigns.lookKind,
         to: campaignMessages.toEmail,
         fromName: campaignMessages.fromName,
         subject: campaignMessages.subject,
@@ -107,7 +108,7 @@ export async function drainCampaigns(
       .innerJoin(users, eq(users.id, campaigns.senderUserId))
       .where(and(eq(campaignMessages.id, id), eq(campaignMessages.status, 'queued')));
     if (!m?.to || !m.html || !m.subject) continue;
-    const look = await lookFor(db, m.lookProductId);
+    const look = await lookFor(db, m.lookKind, m.lookProductId);
     try {
       const attached = await db
         .select({ key: fileVersions.storageKey, mime: fileVersions.mime, name: files.name })

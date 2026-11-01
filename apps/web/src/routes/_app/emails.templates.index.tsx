@@ -9,6 +9,7 @@ import { CardSkeleton } from '@/components/skeletons';
 import { TablePagination } from '@/components/table-shell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ChoiceTabs } from '@/components/ui/tabs';
 import { formatDate } from '@/lib/format';
 import { loadFailed } from '@/lib/query-view';
 import { useCan } from '@/lib/session';
@@ -109,24 +110,13 @@ function TemplatesPage() {
               className="min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-tertiary"
             />
           </label>
-          <div role="tablist" aria-label={t.filters.label} className="flex flex-wrap gap-1.5">
-            {chips.map((chip) => (
-              <button
-                key={chip.key ?? 'all'}
-                type="button"
-                role="tab"
-                aria-selected={params.category === chip.key}
-                onClick={() => setCategory(chip.key)}
-                className={cn(
-                  'h-8 rounded-full border px-3 text-[13px] font-semibold transition-colors',
-                  params.category === chip.key
-                    ? 'border-primary bg-primary-soft text-primary-text'
-                    : 'border-border bg-white text-muted hover:bg-hover',
-                )}
-              >
-                {chip.label}
-              </button>
-            ))}
+          <div className="w-full">
+            <ChoiceTabs
+              label={t.filters.label}
+              value={params.category}
+              onChange={setCategory}
+              options={chips}
+            />
           </div>
         </div>
 

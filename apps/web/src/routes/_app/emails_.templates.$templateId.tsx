@@ -5,6 +5,8 @@ import {
   type CustomField,
   type EmailLook,
   type EmailNode,
+  LOOK_KINDS,
+  type LookKind,
   userFullName,
   variablesOf,
 } from '@intra/shared/schemas';
@@ -38,6 +40,7 @@ import { formatDateTime } from '@/lib/format';
 import { loadFailed } from '@/lib/query-view';
 import { useCan, useSession } from '@/lib/session';
 import { type RouterOutputs, trpc } from '@/lib/trpc';
+import { ChoiceTabs } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
 const t = sk.templates;
@@ -125,9 +128,10 @@ function Editor({ template, look }: { template: Template | null; look: EmailLook
   const [name, setName] = useState(template?.name ?? '');
   const [categoryId, setCategoryId] = useState(template?.categoryId ?? '');
   const [lookProductId, setLookProductId] = useState(template?.lookProductId ?? '');
-  const productLooks = useQuery(trpc.template.productLooks.queryOptions());
+  const [lookKind, setLookKind] = useState<LookKind>(template?.lookKind ?? 'personal');
+  const productLooks = useQuery(trpc.template.productLooks.queryOptions({ kind: lookKind }));
   const chosenLook = useQuery(
-    trpc.template.effectiveLook.queryOptions({ productId: lookProductId || null }),
+    trpc.template.effectiveLook.queryOptions({ kind: lookKind, productId: lookProductId || null }),
   );
   const [subject, setSubject] = useState<EmailNode>(template?.subject ?? EMPTY_SUBJECT);
   const [body, setBody] = useState<EmailNode>(template?.body ?? EMPTY_BODY);
@@ -153,6 +157,7 @@ function Editor({ template, look }: { template: Template | null; look: EmailLook
     name: name.trim(),
     categoryId: categoryId || null,
     lookProductId: lookProductId || null,
+    lookKind,
     language: 'sk' as const,
     subject,
     body,
@@ -286,18 +291,34 @@ function Editor({ template, look }: { template: Template | null; look: EmailLook
                 </Select>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor={`${ids}-look`}>{sk.emailLook.field}</Label>
-              <Select id={`${ids}-look`} value={lookProductId} onChange={touch(setLookProductId)}>
-                <SelectItem value="">{sk.emailLook.fieldGlobal}</SelectItem>
-                {(productLooks.data ?? [])
-                  .filter((p) => p.look.enabled || p.productId === lookProductId)
-                  .map((p) => (
-                    <SelectItem key={p.productId} value={p.productId}>
-                      {p.name}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor={`${ids}-kind`}>{sk.emailLook.kindField}</Label>
+                <Select
+                  id={`${ids}-kind`}
+                  value={lookKind}
+                  onChange={(value) => touch(setLookKind)(value as LookKind)}
+                >
+                  {LOOK_KINDS.map((kind) => (
+                    <SelectItem key={kind} value={kind}>
+                      {sk.emailLook.kinds[kind]}
                     </SelectItem>
                   ))}
-              </Select>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor={`${ids}-look`}>{sk.emailLook.field}</Label>
+                <Select id={`${ids}-look`} value={lookProductId} onChange={touch(setLookProductId)}>
+                  <SelectItem value="">{sk.emailLook.fieldGlobal}</SelectItem>
+                  {(productLooks.data ?? [])
+                    .filter((p) => p.look.enabled || p.productId === lookProductId)
+                    .map((p) => (
+                      <SelectItem key={p.productId} value={p.productId}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                </Select>
+              </div>
             </div>
             <EmailSubjectEditor
               value={subject}
@@ -409,28 +430,17 @@ function Editor({ template, look }: { template: Template | null; look: EmailLook
         </aside>
 
         <section className="min-w-0 flex-[999_1_640px] overflow-clip rounded-2xl border border-border-subtle bg-white shadow-rest">
-          <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-border-subtle px-4 py-3">
-            <div
-              role="tablist"
-              aria-label={t.modes.label}
-              className="flex rounded-[10px] bg-surface p-1"
-            >
-              {(['edit', 'preview'] as const).map((key) => (
-                <button
-                  key={key}
-                  type="button"
-                  role="tab"
-                  aria-selected={mode === key}
-                  onClick={() => setMode(key)}
-                  className={cn(
-                    'h-8 rounded-lg px-3 text-[13px] font-semibold transition-colors',
-                    mode === key ? 'bg-white text-primary-text shadow-rest' : 'text-muted',
-                  )}
-                >
-                  {t.modes[key]}
-                </button>
-              ))}
-            </div>
+          <div className="border-b border-border-subtle px-4">
+            <ChoiceTabs
+              label={t.modes.label}
+              value={mode}
+              onChange={setMode}
+              options={(['edit', 'preview'] as const).map((key) => ({
+                key,
+                label: t.modes[key],
+              }))}
+              className="-mb-px w-full border-b-0"
+            />
           </div>
           {mode === 'edit' ? (
             <EmailBodyEditor
@@ -447,6 +457,7 @@ function Editor({ template, look }: { template: Template | null; look: EmailLook
               body={body}
               fields={fields}
               lookProductId={lookProductId || null}
+              lookKind={lookKind}
             />
           )}
         </section>
@@ -588,11 +599,13 @@ function useDebounced<T>(value: T, ms: number) {
  */
 function Preview({
   lookProductId,
+  lookKind,
   subject,
   body,
   fields,
 }: {
   lookProductId: string | null;
+  lookKind: LookKind;
   subject: EmailNode;
   body: EmailNode;
   fields: CustomField[];
@@ -610,6 +623,7 @@ function Preview({
       body,
       customFields: fields,
       lookProductId,
+      lookKind,
       ...(chosen ? { contactId: chosen } : {}),
       values: typed,
     }),
@@ -683,6 +697,7 @@ function Preview({
                   body,
                   customFields: fields,
                   lookProductId,
+                  lookKind,
                   ...(chosen ? { contactId: chosen } : {}),
                   values,
                 })

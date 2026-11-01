@@ -1,7 +1,7 @@
 import { and, eq, inArray, ne, sql } from 'drizzle-orm';
 import { loadEnv } from '../config/env.js';
 import type { Db, Tx } from '../db/db.module.js';
-import { getLook } from '../email/templates.service.js';
+import { getEmailSettings, globalLook } from '../email/templates.service.js';
 import {
   campaignMessages,
   campaigns,
@@ -79,8 +79,17 @@ export async function recordSentImport(
 
 /** The addresses Alma itself writes from: the sender of its e-mails and the company mailbox. */
 export async function companyAddresses(db: Db) {
-  const look = await getLook(db);
-  return [loadEnv().CAMPAIGN_FROM_ADDRESS, look.replyToAddress, look.footerEmail]
+  const [settings, personal, team] = await Promise.all([
+    getEmailSettings(db),
+    globalLook(db, 'personal'),
+    globalLook(db, 'team'),
+  ]);
+  return [
+    loadEnv().CAMPAIGN_FROM_ADDRESS,
+    settings.replyToAddress,
+    personal.footerEmail,
+    team.footerEmail,
+  ]
     .filter(Boolean)
     .map((address) => address.toLowerCase());
 }

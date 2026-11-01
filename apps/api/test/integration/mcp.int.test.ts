@@ -224,15 +224,12 @@ describe('Claude through MCP', () => {
         });
         const adosId = '00000000-0000-4000-8000-0000000000a1';
         type Looks = { productId: string; look: { logoKey: string | null; brandName: string } }[];
-        const before = (await jana.call<Looks>('template.productLooks', undefined)).data.find(
-          (p) => p.productId === adosId,
-        )!;
+        const looks = () => jana.call<Looks>('template.productLooks', { kind: 'personal' });
+        const before = (await looks()).data.find((p) => p.productId === adosId)!;
         const set = await tool('product_look_set_logo', { productId: adosId, fileId });
         expect(set.error).toBe(false);
         const { key } = JSON.parse(set.text) as { key: string };
-        const after = (await jana.call<Looks>('template.productLooks', undefined)).data.find(
-          (p) => p.productId === adosId,
-        )!;
+        const after = (await looks()).data.find((p) => p.productId === adosId)!;
         expect(after.look).toMatchObject({ logoKey: key, brandName: before.look.brandName });
       });
     });

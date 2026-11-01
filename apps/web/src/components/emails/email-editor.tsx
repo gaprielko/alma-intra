@@ -6,7 +6,10 @@ import {
   type CustomField,
   type EmailLook,
   type EmailNode,
+  filledLookLines,
+  lookValuesOf,
   SYSTEM_VARIABLES,
+  variablesOf,
 } from '@intra/shared/schemas';
 import {
   type Editor,
@@ -149,14 +152,37 @@ const variableGroups = (fields: readonly CustomField[]) => [
   { label: v.groups.custom, names: fields.map((f) => `custom.${f.key}`) },
 ];
 
+const lookGroup = {
+  label: v.groups.look,
+  names: ['brand.name', 'company.name', 'company.ico', 'company.web', 'company.email'],
+};
+const recipientGroup = { label: v.groups.recipient, names: ['customer.name'] };
+/** What a signature may say: the sender, the company and whom it is written to. */
+export const SIGNATURE_VARIABLES = [
+  {
+    label: v.groups.sender,
+    names: ['sender.name', 'sender.position', 'sender.phone', 'sender.email', 'sender.signature'],
+  },
+  lookGroup,
+  recipientGroup,
+];
+/** What a footer may say: the link to unsubscribe first, as it must stay in it. */
+export const FOOTER_VARIABLES = [
+  { label: v.groups.required, names: ['unsubscribe'] },
+  lookGroup,
+  recipientGroup,
+];
+
 /** „Vložiť premennú“: the variables by group, inserted as chips where the cursor is. */
 function VariableMenu({
   editor,
   fields,
+  groups = variableGroups(fields),
   compact = false,
 }: {
   editor: Editor | null;
   fields: readonly CustomField[];
+  groups?: readonly { label: string; names: readonly string[] }[];
   compact?: boolean;
 }) {
   return (
@@ -175,7 +201,7 @@ function VariableMenu({
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="max-h-96 min-w-56 overflow-y-auto">
-        {variableGroups(fields).map((group, i) => (
+        {groups.map((group, i) => (
           <div key={group.label}>
             {i > 0 ? <DropdownMenuSeparator /> : null}
             <DropdownMenuLabel>{group.label}</DropdownMenuLabel>
@@ -831,33 +857,22 @@ export function EmailBodyEditor({
               <EditorContent editor={editor} />
               {signature ? (
                 <div className="mt-3 border-t border-[#e5eaea] pt-5 pb-6 text-[15px] leading-6">
-                  <p>{t.signature.greeting}</p>
-                  <p className="mt-3 font-bold">{senderName}</p>
-                  <p className="text-sm text-[#616e7c]">
-                    {[v['sender.position'], look.brandName, v['sender.phone']].join(' · ')}
-                  </p>
+                  <LookLines
+                    doc={look.signatureDoc}
+                    look={look}
+                    senderName={senderName}
+                    unsubscribe={false}
+                  />
                 </div>
               ) : null}
             </div>
             <div className="border-t border-[#e5eaea] bg-[#f7f9f9] px-8 py-5 text-xs leading-[18px] text-[#616e7c]">
-              <p>
-                {[
-                  look.brandName,
-                  look.footerCompany,
-                  look.footerIco ? `IČO ${look.footerIco}` : null,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </p>
-              <p className="mt-0.5" style={{ color: look.accent }}>
-                {[look.footerEmail, look.footerWeb].filter(Boolean).join(' · ')}
-              </p>
-              {unsubscribe ? (
-                <p className="mt-2.5">
-                  {t.footer.reason(v['customer.name'])}{' '}
-                  <span style={{ color: look.accent }}>{t.footer.unsubscribe}</span>
-                </p>
-              ) : null}
+              <LookLines
+                doc={look.footerDoc}
+                look={look}
+                senderName={senderName}
+                unsubscribe={unsubscribe}
+              />
             </div>
           </div>
         </div>
@@ -919,6 +934,8 @@ const headerExtensions = [
   }),
 ];
 
+const lookDocExtensions = [...headerExtensions, Variable];
+
 export function EmailHeaderEditor({
   value,
   onChange,
@@ -973,6 +990,124 @@ export function EmailHeaderEditor({
       )}
       <EditorContent editor={editor} />
     </div>
+  );
+}
+
+/**
+ * A signature or a footer of a look: lines of text and variables, bold or italic, with a menu of the
+ * variables it may use.
+ */
+export function EmailLookDocEditor({
+  value,
+  onChange,
+  labelledBy,
+  groups,
+  disabled = false,
+}: {
+  value: EmailNode;
+  onChange: (value: EmailNode) => void;
+  labelledBy: string;
+  groups: readonly { label: string; names: readonly string[] }[];
+  disabled?: boolean;
+}) {
+  const editor = useEditor({
+    extensions: lookDocExtensions,
+    editable: !disabled,
+    content: value as JSONContent,
+    editorProps: {
+      attributes: {
+        class: 'min-h-16 px-3.5 py-2 text-sm leading-6 outline-none',
+        role: 'textbox',
+        'aria-multiline': 'true',
+        'aria-labelledby': labelledBy,
+      },
+    },
+    onUpdate: ({ editor: current }) => onChange(current.getJSON() as EmailNode),
+  });
+  const state = useEditorState({
+    editor,
+    selector: ({ editor: e }) => ({
+      bold: e?.isActive('bold') ?? false,
+      italic: e?.isActive('italic') ?? false,
+    }),
+  });
+  const context = useMemo<EmailEditorContextValue>(
+    () => ({
+      label: (name) => variableLabel(name, []),
+      accent: '#0f766e',
+      logoKey: null,
+      editButton: () => undefined,
+    }),
+    [],
+  );
+  return (
+    <EmailEditorContext.Provider value={context}>
+      <div className="rounded-xl border border-border focus-within:border-primary">
+        {disabled ? null : (
+          <div className="flex items-center gap-0.5 border-b border-border-subtle px-1.5 py-1">
+            <ToolButton
+              label={t.editor.bold}
+              active={state?.bold}
+              onClick={() => editor?.chain().focus().toggleBold().run()}
+            >
+              <Bold className="size-4" aria-hidden />
+            </ToolButton>
+            <ToolButton
+              label={t.editor.italic}
+              active={state?.italic}
+              onClick={() => editor?.chain().focus().toggleItalic().run()}
+            >
+              <Italic className="size-4" aria-hidden />
+            </ToolButton>
+            <VariableMenu editor={editor} fields={[]} groups={groups} />
+          </div>
+        )}
+        <EditorContent editor={editor} />
+      </div>
+    </EmailEditorContext.Provider>
+  );
+}
+
+/** A signature or a footer as it shows in the frame around the body: filled as far as known. */
+function LookLines({
+  doc,
+  look,
+  senderName,
+  unsubscribe,
+}: {
+  doc: EmailNode;
+  look: EmailLook;
+  senderName: string;
+  unsubscribe: boolean;
+}) {
+  const labels = Object.fromEntries(
+    variablesOf(doc).map((name) => [name, variableLabel(name, [])]),
+  );
+  const values = {
+    ...labels,
+    ...lookValuesOf(look, labels, { unsubscribeUrl: unsubscribe ? '#' : undefined }),
+    'sender.name': senderName,
+    ...(unsubscribe ? {} : { 'customer.name': undefined }),
+  };
+  return (
+    <>
+      {filledLookLines(doc, values, t.footer.unsubscribe).map((line, i) => (
+        <p key={i}>
+          {line.content?.length
+            ? line.content.map((node, j) => {
+                if (node.type === 'hardBreak') return <br key={j} />;
+                let out: ReactNode = node.text;
+                if (node.marks?.some((m) => m.type === 'link')) {
+                  out = <span style={{ color: look.accent }}>{out}</span>;
+                }
+                if (node.marks?.some((m) => m.type === 'italic')) out = <em>{out}</em>;
+                if (node.marks?.some((m) => m.type === 'bold')) out = <strong>{out}</strong>;
+                return <span key={j}>{out}</span>;
+              })
+            : ' '}
+        </p>
+      ))}
+    </>
   );
 }
 

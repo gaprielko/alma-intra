@@ -554,6 +554,7 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
         body,
         templateId: draft.templateId,
         lookProductId: draft.lookProductId,
+        lookKind: 'personal',
         attachmentFileIds: [],
       });
     expect((await jana.call('campaign.sendDirect', { id: answer.id })).message).toBe('NO_CONTENT');
@@ -638,6 +639,7 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
         body,
         templateId: null,
         lookProductId: null,
+        lookKind: 'personal',
         attachmentFileIds: [],
       });
     // Without anyone in Komu it does not leave.
@@ -777,7 +779,16 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
   });
 
   it('sends from the name written in the look, filled for the recipient', async () => {
-    const { look } = (await jana.call<{ look: Record<string, unknown> }>('template.look')).data;
+    const look = (
+      await jana.call<Record<string, unknown>>('template.globalLook', { kind: 'personal' })
+    ).data;
+    const saveLook = (fields: Record<string, unknown>) =>
+      jana.call('template.saveLook', {
+        kind: 'personal',
+        productId: null,
+        enabled: true,
+        look: fields,
+      });
     const senderNameDoc = {
       type: 'doc',
       content: [
@@ -790,9 +801,7 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
         },
       ],
     };
-    expect(
-      (await jana.call('template.updateLook', { ...look, senderNameDoc })).code,
-    ).toBeUndefined();
+    expect((await saveLook({ ...look, senderNameDoc })).code).toBeUndefined();
     const { data: created } = await jana.call<{ id: string }>('campaign.createDirect');
     await jana.call('campaign.saveDirect', {
       id: created.id,
@@ -809,26 +818,113 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
       body: doc('Text'),
       templateId: null,
       lookProductId: null,
+      lookKind: 'personal',
       attachmentFileIds: [],
     });
     expect((await jana.call('campaign.sendDirect', { id: created.id })).code).toBeUndefined();
     await drainCampaigns(api.db, memoryTransport({ quiet: true }), null, loadEnv());
-    await jana.call('template.updateLook', look);
+    await saveLook(look);
     expect(outbox.at(-1)!.from).toMatch(/^.*Horváthová.* z Almy <.+>$/);
+  });
+
+  it('a look per type of e-mail: a team e-mail signs as the team, with its own footer', async () => {
+    const team = (await jana.call<Record<string, unknown>>('template.globalLook', { kind: 'team' }))
+      .data;
+    const unsubscribe = { type: 'variable', attrs: { name: 'unsubscribe' } };
+    const footerDoc = {
+      type: 'doc',
+      content: [
+        { type: 'paragraph', content: [{ type: 'text', text: 'Pätička tímu' }] },
+        { type: 'paragraph', content: [unsubscribe] },
+      ],
+    };
+    const save = (fields: Record<string, unknown>) =>
+      jana.call('template.saveLook', {
+        kind: 'team',
+        productId: null,
+        enabled: true,
+        look: fields,
+      });
+    // Without the link to unsubscribe a footer is refused.
+    expect((await save({ ...team, footerDoc: doc('Bez odkazu') })).code).toBe('BAD_REQUEST');
+    expect((await save({ ...team, footerDoc })).code).toBeUndefined();
+
+    const send = async (lookKind: 'personal' | 'team', email: string) => {
+      const { data } = await jana.call<{ id: string }>('campaign.createDirect');
+      await jana.call('campaign.saveDirect', {
+        id: data.id,
+        recipients: [{ role: 'to', email, name: null, contactId: null, organizationId: null }],
+        subject: 'Typ e-mailu',
+        body: doc('Text'),
+        templateId: null,
+        lookProductId: null,
+        lookKind,
+        attachmentFileIds: [],
+      });
+      expect((await jana.call('campaign.sendDirect', { id: data.id })).code).toBeUndefined();
+      await drainCampaigns(api.db, memoryTransport({ quiet: true }), null, loadEnv());
+      return outbox.at(-1)!;
+    };
+    const fromTeam = await send('team', 'tim@example.org');
+    expect(fromTeam.text).toContain('Tím ');
+    expect(fromTeam.text).toContain('Pätička tímu');
+    expect(fromTeam.text).not.toContain('Horváthová');
+    const fromColleague = await send('personal', 'kolega@example.org');
+    expect(fromColleague.text).toContain('Horváthová');
+    expect(fromColleague.text).not.toContain('Pätička tímu');
+
+    // A template keeps its type and hands it to the wizard's draft.
+    const template = await jana.call<{ id: string }>('template.create', {
+      name: `Tímová ${Date.now()}`,
+      categoryId: null,
+      lookKind: 'team',
+      subject: doc('Predmet'),
+      body: doc('Text'),
+    });
+    const id = await draft();
+    await jana.call('campaign.chooseTemplate', { id, templateId: template.data.id });
+    expect((await jana.call<{ lookKind: string }>('campaign.get', { id })).data.lookKind).toBe(
+      'team',
+    );
+    await save(team);
+  });
+
+  it('the company and the common settings are one, whatever the look', async () => {
+    const before = (await jana.call<{ name: string; ico: string }>('template.company')).data;
+    expect(
+      (await jana.call('template.updateCompany', { name: 'Skúšobná firma', ico: '11223344' })).code,
+    ).toBeUndefined();
+    for (const kind of ['personal', 'team']) {
+      const { look } = (
+        await jana.call<{ look: { footerCompany: string; footerIco: string } }>(
+          'template.effectiveLook',
+          { kind, productId: null },
+        )
+      ).data;
+      expect(look).toMatchObject({ footerCompany: 'Skúšobná firma', footerIco: '11223344' });
+    }
+    await jana.call('template.updateCompany', before);
   });
 
   it('a product look: over the global one when on, by the template and the new e-mail', async () => {
     type Looks = { productId: string; name: string; look: Record<string, unknown> }[];
-    const looks = (await jana.call<Looks>('template.productLooks')).data;
+    const looks = (await jana.call<Looks>('template.productLooks', { kind: 'personal' })).data;
     const ados = looks.find((p) => p.name === 'ADOS')!;
+    const { enabled: _enabled, ...adosLook } = ados.look;
     const save = (enabled: boolean) =>
-      jana.call('template.saveProductLook', {
+      jana.call('template.saveLook', {
+        kind: 'personal',
         productId: ados.productId,
-        look: { ...ados.look, enabled, brandName: 'Alma Skuska', footerWeb: 'skuska.example.net' },
+        enabled,
+        look: { ...adosLook, brandName: 'Alma Skuska', footerWeb: 'skuska.example.net' },
       });
     const brandOf = async (productId: string | null) =>
-      (await jana.call<{ look: { brandName: string } }>('template.effectiveLook', { productId }))
-        .data.look.brandName;
+      (
+        await jana.call<{ look: { brandName: string } }>('template.effectiveLook', {
+          kind: 'personal',
+          productId,
+        })
+      ).data.look.brandName;
 
     expect((await save(true)).code).toBeUndefined();
     expect(await brandOf(ados.productId)).toBe('Alma Skuska');
@@ -873,6 +969,7 @@ describe('e-mails: sending, scheduling, segments, replies', () => {
       body: text,
       templateId: null,
       lookProductId: ados.productId,
+      lookKind: 'personal',
       attachmentFileIds: [],
     });
     await jana.call('campaign.sendDirect', { id: direct.data.id });

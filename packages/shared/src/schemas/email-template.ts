@@ -5,6 +5,13 @@ import { ACTIVITY_TYPE_INTEREST_ID } from './lead-activity.js';
 /** Languages of a template (D-20b): only Slovak is offered at first. */
 export const TEMPLATE_LANGUAGES = ['sk'] as const;
 
+/**
+ * What an e-mail is (D-57): from one colleague, with their name in the signature, or from a team.
+ * Each has a global look and a look per product.
+ */
+export const LOOK_KINDS = ['personal', 'team'] as const;
+export type LookKind = (typeof LOOK_KINDS)[number];
+
 /** What a custom field holds; `money` and `date` are formatted at sending. */
 export const CUSTOM_FIELD_TYPES = ['text', 'number', 'money', 'date'] as const;
 export type CustomFieldType = (typeof CUSTOM_FIELD_TYPES)[number];
@@ -199,6 +206,8 @@ export const templateInputSchema = z
     customFields: z.array(customFieldSchema).max(20).default([]),
     /** Whose look its e-mails wear: a product's, or NULL for the global one. */
     lookProductId: idSchema.nullable().default(null),
+    /** Of which type of e-mail (D-57). */
+    lookKind: z.enum(LOOK_KINDS).default('personal'),
     /** Files of the Files module offered as attachments when sending; their current version. */
     attachmentFileIds: z.array(idSchema).max(10).default([]),
     active: z.boolean().default(true),
@@ -233,6 +242,7 @@ export const templatePreviewSchema = z.object({
   customFields: z.array(customFieldSchema).max(20).default([]),
   contactId: idSchema.optional(),
   lookProductId: idSchema.nullable().default(null),
+  lookKind: z.enum(LOOK_KINDS).default('personal'),
   /** Values typed for the custom fields, by key; empty ones stay missing. */
   values: z.record(z.string().max(500)).default({}),
 });
@@ -267,7 +277,48 @@ export const senderNameDocSchema = emailDocSchema
   .refine(limitedTo(['doc', 'paragraph', 'text', 'variable'], []), 'invalid')
   .refine((doc) => lengthOf(doc) <= 120, 'too_long');
 
-export const emailLookSchema = z.object({
+/**
+ * The variables of a signature and a footer only: what the look and the company say, and the
+ * sender's details no template needs. `unsubscribe` is the recipient's link, in the footer only.
+ */
+export const LOOK_VARIABLES = [
+  'sender.email',
+  'sender.signature',
+  'brand.name',
+  'company.name',
+  'company.ico',
+  'company.web',
+  'company.email',
+  'unsubscribe',
+] as const;
+export type LookVariable = (typeof LOOK_VARIABLES)[number];
+
+const lookDocFine = (doc: EmailNode) =>
+  [...walk(doc)].every(
+    (node) =>
+      node.type !== 'variable' ||
+      (LOOK_VARIABLES as readonly unknown[]).includes(node.attrs?.name) ||
+      (SYSTEM_VARIABLES as readonly unknown[]).includes(node.attrs?.name),
+  );
+const lookDocSchema = emailDocSchema
+  .refine(
+    limitedTo(['doc', 'paragraph', 'text', 'hardBreak', 'variable'], ['bold', 'italic']),
+    'invalid',
+  )
+  .refine(lookDocFine, 'unknown_variable')
+  .refine((doc) => lengthOf(doc) <= 2000, 'too_long');
+const hasUnsubscribe = (doc: EmailNode) => variablesOf(doc).includes('unsubscribe');
+
+/** The signature under an e-mail: lines of text and variables, bold or italic. */
+export const signatureDocSchema = lookDocSchema.refine(
+  (doc) => !hasUnsubscribe(doc),
+  'unknown_variable',
+);
+/** The small print at the very end: the same, and the link to unsubscribe must stay in it. */
+export const footerDocSchema = lookDocSchema.refine(hasUnsubscribe, 'unsubscribe_required');
+
+/** What a look sets: per type of e-mail, globally or for a product. */
+export const lookFieldsSchema = z.object({
   logoKey: z.string().regex(IMAGE_KEY).nullable(),
   headerStyle: z.enum(HEADER_STYLES),
   brandName: z.string().trim().min(1, 'required').max(60, 'too_long'),
@@ -275,14 +326,123 @@ export const emailLookSchema = z.object({
   /** Who the e-mail is from; NULL: the brand and the company (D-50). */
   senderNameDoc: senderNameDocSchema.nullable(),
   accent: z.enum(ACCENT_COLORS),
-  footerCompany: z.string().trim().max(200, 'too_long'),
-  footerIco: z.string().trim().max(20, 'too_long'),
+  signatureDoc: signatureDocSchema,
+  footerDoc: footerDocSchema,
   footerWeb: z.string().trim().max(120, 'too_long'),
   footerEmail: z.union([z.literal(''), z.string().trim().email('invalid_email').max(120)]),
+});
+export type LookFields = z.infer<typeof lookFieldsSchema>;
+
+/** Settings › Firma: true of the company everywhere in Intra, not only in e-mails. */
+export const companySchema = z.object({
+  name: z.string().trim().max(200, 'too_long'),
+  ico: z.string().trim().max(20, 'too_long'),
+});
+export type Company = z.infer<typeof companySchema>;
+
+/** „Spoločné nastavenia e-mailov“: the same for every look. */
+export const emailSettingsSchema = z.object({
   replyMode: z.enum(REPLY_MODES),
   replyToAddress: z.string().trim().email('invalid_email').max(120),
 });
-export type EmailLook = z.infer<typeof emailLookSchema>;
+export type EmailSettings = z.infer<typeof emailSettingsSchema>;
+
+/** The look an e-mail wears: its look's fields with the company's and the common settings. */
+export type EmailLook = LookFields &
+  EmailSettings & {
+    footerCompany: string;
+    footerIco: string;
+  };
+
+export const LOOK_SEPARATOR = ' · ';
+
+/** The values a signature and a footer read, besides those of the recipient and the sender. */
+export function lookValuesOf(
+  look: Pick<EmailLook, 'brandName' | 'footerCompany' | 'footerIco' | 'footerWeb' | 'footerEmail'>,
+  values: Readonly<Record<string, string | undefined>>,
+  recipient: { customerName?: string | undefined; unsubscribeUrl?: string | undefined } = {},
+): Record<string, string | undefined> {
+  return {
+    ...values,
+    'customer.name': recipient.customerName ?? values['customer.name'],
+    'brand.name': look.brandName,
+    'company.name': look.footerCompany,
+    'company.ico': look.footerIco,
+    'company.web': look.footerWeb,
+    'company.email': look.footerEmail,
+    unsubscribe: recipient.unsubscribeUrl,
+  };
+}
+
+const hrefOf = (name: string, value: string) => {
+  if (name === 'unsubscribe') return value;
+  if (name === 'company.email' || name === 'sender.email') return `mailto:${value}`;
+  if (name === 'company.web') return /^https?:\/\//.test(value) ? value : `https://${value}`;
+  return null;
+};
+
+/**
+ * A signature or a footer as it goes out: its variables written out, an address as a link. A part
+ * of a line (between „ · “) whose variable has no value is left out with its separator, a line left
+ * with nothing goes too: such an e-mail is never stopped, unlike one with a value missing in its
+ * text. A line left empty on purpose stays.
+ */
+export function filledLookLines(
+  doc: EmailNode,
+  values: Readonly<Record<string, string | undefined>>,
+  unsubscribeLabel: string,
+): EmailNode[] {
+  const lines: EmailNode[] = [];
+  for (const line of doc.content ?? []) {
+    const nodes = line.content ?? [];
+    if (nodes.length === 0) {
+      lines.push(line);
+      continue;
+    }
+    const parts: EmailNode[][] = [[]];
+    for (const node of nodes) {
+      if (node.type !== 'text') {
+        parts[parts.length - 1]!.push(node);
+        continue;
+      }
+      (node.text ?? '').split(LOOK_SEPARATOR).forEach((text, i) => {
+        if (i > 0) parts.push([]);
+        if (text) parts[parts.length - 1]!.push({ ...node, text });
+      });
+    }
+    const kept = parts.flatMap((part) => {
+      const out: EmailNode[] = [];
+      for (const node of part) {
+        if (node.type !== 'variable') {
+          out.push(node);
+          continue;
+        }
+        const name = typeof node.attrs?.name === 'string' ? node.attrs.name : '';
+        const value = values[name]?.trim();
+        if (!value) return [];
+        const href = hrefOf(name, value);
+        const marks = [
+          ...(node.marks ?? []),
+          ...(href ? [{ type: 'link' as const, attrs: { href } }] : []),
+        ];
+        (name === 'unsubscribe' ? unsubscribeLabel : value).split(/\r?\n/).forEach((text, i) => {
+          if (i > 0) out.push({ type: 'hardBreak' });
+          if (text) out.push({ type: 'text', text, ...(marks.length > 0 ? { marks } : {}) });
+        });
+      }
+      const said = out.some((node) => node.type === 'text' && (node.text ?? '').trim() !== '');
+      return said ? [out] : [];
+    });
+    if (kept.length === 0) continue;
+    lines.push({
+      type: 'paragraph',
+      content: kept.flatMap((part, i) =>
+        i === 0 ? part : [{ type: 'text' as const, text: LOOK_SEPARATOR }, ...part],
+      ),
+    });
+  }
+  return lines;
+}
 
 /**
  * Who an e-mail is from in the recipient's inbox (D-50): the name written in Settings › Vzhľad
@@ -334,24 +494,21 @@ export function brandParts(look: Pick<EmailLook, 'brandName' | 'headerStyle' | '
 }
 
 /**
- * A product's own look (D-39): what it sets over the global one. The company's name, its IČO, the
- * sending address and where replies go stay common.
+ * Saving a look of one type: the global one, or a product's (D-39), which is used only when
+ * `enabled`. The company's name, its IČO, the sending address and where replies go stay common.
  */
-export const productLookSchema = emailLookSchema
-  .pick({
-    logoKey: true,
-    headerStyle: true,
-    brandName: true,
-    headerDoc: true,
-    senderNameDoc: true,
-    accent: true,
-    footerWeb: true,
-    footerEmail: true,
-  })
-  .extend({ enabled: z.boolean() });
-export type ProductLook = z.infer<typeof productLookSchema>;
-export const saveProductLookSchema = z.object({ productId: idSchema, look: productLookSchema });
-export const effectiveLookSchema = z.object({ productId: idSchema.nullable() });
+export const saveLookSchema = z.object({
+  kind: z.enum(LOOK_KINDS),
+  productId: idSchema.nullable(),
+  enabled: z.boolean(),
+  look: lookFieldsSchema,
+});
+export type SaveLookInput = z.infer<typeof saveLookSchema>;
+export const lookKindSchema = z.object({ kind: z.enum(LOOK_KINDS) });
+export const effectiveLookSchema = z.object({
+  kind: z.enum(LOOK_KINDS),
+  productId: idSchema.nullable(),
+});
 
 /** An image for e-mails, resized in the browser; its bytes go straight to the bucket. */
 export const EMAIL_IMAGE_TYPES = {

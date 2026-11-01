@@ -5,6 +5,7 @@ import { Search, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { FileBadge } from '@/components/files/file-bits';
 import { Button } from '@/components/ui/button';
+import { ChoiceTabs } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
@@ -17,7 +18,6 @@ import {
 import { formatSize } from '@/lib/files';
 import { trpc } from '@/lib/trpc';
 import { uploadFiles } from '@/lib/uploads';
-import { cn } from '@/lib/utils';
 
 const t = sk.activities.picker;
 
@@ -123,27 +123,16 @@ export function FilePicker({
 
         <div className="flex flex-wrap items-center gap-2">
           {customerId ? (
-            <div
-              role="tablist"
-              aria-label={t.tabs.label}
-              className="flex rounded-[10px] bg-surface p-1"
-            >
-              {(['customer', 'company'] as const).map((key) => (
-                <button
-                  key={key}
-                  type="button"
-                  role="tab"
-                  aria-selected={scope === key}
-                  onClick={() => setScope(key)}
-                  className={cn(
-                    'h-8 rounded-lg px-3 text-[13px] font-semibold transition-colors',
-                    scope === key ? 'bg-white text-primary-text shadow-rest' : 'text-muted',
-                  )}
-                >
-                  {t.tabs[key]}
-                </button>
-              ))}
-            </div>
+            <ChoiceTabs
+              label={t.tabs.label}
+              value={scope}
+              onChange={setScope}
+              options={(['customer', 'company'] as const).map((key) => ({
+                key,
+                label: t.tabs[key],
+              }))}
+              className="w-full"
+            />
           ) : null}
           <Button
             variant="ghost"
