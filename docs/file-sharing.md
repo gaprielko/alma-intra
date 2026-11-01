@@ -426,40 +426,57 @@ The owner accepted every recommendation.
 
 ---
 
-## 16. A colleague opening the link (draft, 2026-11-01)
+## 16. A colleague opening the link (agreed, 2026-11-01)
 
-Asked by the owner after the rest was implemented. Waits for the answers below, then screens, then code.
+Asked by the owner after the rest was implemented. The answers are in 16.3. Screens first, then code.
 
 A colleague has access to every file anyway, so a link is only a way to find the file. It opens the file in
-„Súbory“, whatever the link's mode, password or expiry.
+„Súbory“, whatever the link's mode, password or expiry, and always in the view mode first.
 
 - **Signed in:** `/zdielanie#<token>` restores the session and asks the new `fileShare.resolve` (POST, the token in
-  the body, `file.read`) for the file and its folder, then goes to `/files`. No access screen and no public session.
+  the body, `file.read`) for the file and its folder, then goes to `/files` with the file's preview open. No access
+  screen and no public session.
 - **Not signed in:** the access screen gets „Prihlásiť sa účtom Alma“. So does „Odkaz nie je platný“, as an expired
   link must still open for a colleague, and that screen must keep looking the same for every invalid link. The token
   waits in `sessionStorage` through the login, never in an address (CLAUDE.md rule 5), and is removed once used.
 - **Expiry** does not apply to `fileShare.resolve`. A cancelled link is gone from the database and a file in the trash
   is not live, so both stay „Odkaz nie je platný“ after signing in too.
 - **Visitors are unchanged:** without a session nothing of this reaches them, and `publicShare.*` still ignores
-  `ctx.session`. A signed-in colleague who only wants to see the visitor's page has no way to it (_Q-27_).
+  `ctx.session`.
 
-### 16.1 Editing in „Súbory“
+### 16.1 View and edit in „Súbory“
 
-An HTML file opens in a full-screen dialog like the preview, with the isolated frame, hover icons, the editor and the
-top bar of section 6.2. Other files open in the existing preview. Needs `file.write`.
+- The preview of an HTML file gets „Upraviť“, for anyone with `file.write`, and the file's menu gets the same item, which
+  opens the dialog directly in the edit mode. The preview itself stays as it is (D-54): no scripts. Other files have no
+  edit mode.
+- The edit mode is the isolated frame, hover icons, editor and comments of section 6, in a full-screen dialog, with the
+  colleague's name. The server path is the same: operations and the sanitizer of section 9.3, so no script can be added
+  here either. Documents over 10 MB offer comments only.
+- **The top bar has two ways to save [S-35]:** „Uložiť ako koncept“ always, and „Uložiť ako novú verziu“ only while this
+  visit of the edit mode wrote no comment, since a comment waits for an answer and a version has no place for it.
+  With a comment written the button is off and says why.
+- **Comments of a colleague [S-36]** are saved at once and work as a visitor's (6.1): the first of a visit makes a
+  comments-only draft, and saving a draft fills it. The colleague changes and deletes their own until they are agreed to.
+  They show on the public page under the colleague's name.
+- **A colleague's draft** goes through the same list and approval as any other, and makes no activity: Aktivity hold what
+  somebody outside did [S-37].
+- **„Uložiť ako novú verziu“** makes a version at once under the colleague's name, ordinary `web`. A newer version arriving
+  meanwhile: changes whose fragment is unchanged apply to it; the save stops and names the ones that no longer fit, and
+  they stay on the page, where they can still go into a draft.
 
-- „Uložiť ako novú verziu“ makes a version at once, under the colleague's name, without a draft (_Q-23_). It goes through
-  the same operations and sanitizer as section 9.3, so no script can be added here either.
-- A newer version arriving meanwhile: changes whose fragment is unchanged apply to it; the save stops and names the
-  ones that no longer fit, and the rest stays on the page.
-- Open comments show in the panel, leading to their draft (_Q-24_).
+### 16.2 Data and API
 
-### 16.2 Questions
+- `file_comments` and `file_drafts` take a colleague as they are: `user_id` and `created_by_user_id` exist, `session_id`
+  is a random id per opening of the edit mode, sent by the page.
+- `fileShare.resolve`, `fileShare.editFrame`, `fileShare.fragment`, `fileShare.comments` and its comment mutations, and
+  `fileShare.saveEdits` (`mode`: `version` or `draft`), all behind `can()`: `file.write`.
 
-| #    | Question                                                  | Recommendation                                                                       |
-| ---- | --------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Q-23 | Does a colleague's edit make a version at once?           | Yes, under the colleague's name, no approval: they can upload a new version anyway   |
-| Q-24 | Comments in the colleague's editing view?                 | Shown, answered and agreed to in the draft as today; no new comment there            |
-| Q-25 | Only through a link, or also „Upraviť“ in the file's menu? | Both, for every HTML file: it is the same screen                                     |
-| Q-26 | A link in the „Čítanie“ mode?                             | The colleague edits as well: the mode limits outsiders                               |
-| Q-27 | A way to see the page as the visitor does?                | Not now; a private window does that                                                  |
+### 16.3 Answers
+
+| #    | Question                                         | Answer                                                                                     |
+| ---- | ------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| Q-23 | Does a colleague's edit make a version at once?  | The colleague chooses: a new version, unless they wrote a comment, or a draft              |
+| Q-24 | Comments in the colleague's editing view?        | Covered by Q-23: they can write them                                                       |
+| Q-25 | Only through a link, or also from „Súbory“?      | Both: viewing a file in Intra offers the button to edit it                                 |
+| Q-26 | A link in the „Čítanie“ mode?                    | A colleague can edit too, but always sees the view first and switches with that button     |
+| Q-27 | A way to see the page as the visitor does?       | Not now                                                                                    |
