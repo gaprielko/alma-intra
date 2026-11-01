@@ -631,7 +631,7 @@ function PricePart({
                         const both = pair(event.target.value, false);
                         setRow(index, { unitPrice: both.net, unitPriceGross: both.gross });
                       }}
-                      className="h-9 w-24 bg-surface text-right"
+                      className="h-9 w-20 bg-surface text-right"
                     />
                   </td>
                   <td className="px-2 py-2">
@@ -643,7 +643,7 @@ function PricePart({
                         const both = pair(event.target.value, true);
                         setRow(index, { unitPrice: both.net, unitPriceGross: both.gross });
                       }}
-                      className="h-9 w-24 text-right"
+                      className="h-9 w-20 text-right"
                     />
                   </td>
                   <td className="px-2 py-2">
