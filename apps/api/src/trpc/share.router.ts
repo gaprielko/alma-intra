@@ -1,5 +1,10 @@
 import {
   addCommentSchema,
+  colleagueAddCommentSchema,
+  colleagueCommentSchema,
+  colleagueFileSchema,
+  colleagueFragmentSchema,
+  colleagueSaveSchema,
   deleteCommentSchema,
   draftCommentSchema,
   draftDecisionSchema,
@@ -18,6 +23,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { FileError } from '../files/files.service.js';
 import { hit, ipSubject, RATE_LIMITS, refund } from '../security/rate-limit.js';
+import * as colleague from '../sharing/colleague.service.js';
 import * as drafts from '../sharing/drafts.service.js';
 import * as shares from '../sharing/shares.service.js';
 import { authorizedProcedure, limitPerIp, publicProcedure, router } from './trpc.js';
@@ -36,6 +42,7 @@ const CODES: Record<shares.ShareError['code'], TRPCError['code']> = {
   NOT_YOURS: 'FORBIDDEN',
   NOT_WAITING: 'CONFLICT',
   NOT_READY: 'CONFLICT',
+  HAS_COMMENTS: 'CONFLICT',
 };
 
 /** The service's refusals as tRPC errors, with the code as message for the web to word. */
@@ -88,6 +95,95 @@ export const fileShareRouter = router({
         diff: { fileId: input.fileId, cancelled: true },
       });
       return { ok: true as const };
+    }),
+
+  /** Which file a link is about: a colleague has no use for the link's own limits. */
+  resolve: authorizedProcedure('file.read')
+    .input(publicShareSchema)
+    .mutation(async ({ ctx, input }) => {
+      const file = await run(() => colleague.resolveShare(ctx.db, input.token));
+      ctx.audit.set({ entityType: 'fileShare', diff: { fileId: file.fileId } });
+      return file;
+    }),
+
+  editInfo: authorizedProcedure('file.write')
+    .input(shareFileIdSchema)
+    .query(({ ctx, input }) => run(() => colleague.editInfo(ctx.db, ctx.env, input.fileId))),
+
+  editFragment: authorizedProcedure('file.write')
+    .input(colleagueFragmentSchema)
+    .query(({ ctx, input }) =>
+      run(() => colleague.colleagueFragment(ctx.db, ctx.storage, input.fileId, input.block)),
+    ),
+
+  editComments: authorizedProcedure('file.write')
+    .input(colleagueFileSchema)
+    .query(({ ctx, input }) =>
+      run(() => colleague.colleagueComments(ctx.db, input, ctx.session.userId)),
+    ),
+
+  addComment: authorizedProcedure('file.write')
+    .input(colleagueAddCommentSchema)
+    .mutation(async ({ ctx, input }) => {
+      const added = await run(() =>
+        colleague.colleagueAddComment(ctx.db, ctx.session.userId, input),
+      );
+      ctx.audit.set({
+        entityType: 'fileComment',
+        entityId: added.id,
+        diff: { fileId: input.fileId, reply: added.reply },
+      });
+      return { id: added.id };
+    }),
+
+  editComment: authorizedProcedure('file.write')
+    .input(colleagueCommentSchema)
+    .mutation(async ({ ctx, input }) => {
+      const edited = await run(() =>
+        colleague.colleagueEditComment(ctx.db, ctx.session.userId, input.id, input.body),
+      );
+      ctx.audit.set({
+        entityType: 'fileComment',
+        entityId: input.id,
+        diff: { fileId: edited.fileId, edited: true },
+      });
+      return { ok: true as const };
+    }),
+
+  deleteComment: authorizedProcedure('file.write')
+    .input(draftIdSchema)
+    .mutation(async ({ ctx, input }) => {
+      const deleted = await run(() =>
+        colleague.colleagueDeleteComment(ctx.db, ctx.session.userId, input.id),
+      );
+      ctx.audit.set({
+        entityType: 'fileComment',
+        entityId: input.id,
+        diff: { fileId: deleted.fileId, deleted: true },
+      });
+      return { ok: true as const };
+    }),
+
+  saveEdits: authorizedProcedure('file.write')
+    .input(colleagueSaveSchema)
+    .mutation(async ({ ctx, input }) => {
+      const saved = await run(() =>
+        colleague.saveEdits(ctx.db, ctx.storage, ctx.session.userId, input),
+      );
+      if (saved.kind === 'draft') {
+        ctx.audit.set({
+          entityType: 'fileDraft',
+          entityId: saved.draftId,
+          diff: { fileId: input.fileId, changes: input.ops.length },
+        });
+      } else if (saved.kind === 'version') {
+        ctx.audit.set({
+          entityType: 'file',
+          entityId: input.fileId,
+          diff: { versionId: saved.versionId, version: saved.number },
+        });
+      }
+      return saved;
     }),
 
   drafts: authorizedProcedure('file.read')

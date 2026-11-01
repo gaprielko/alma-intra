@@ -1,20 +1,18 @@
 import { sk } from '@intra/shared/i18n';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
-import { ArrowUp, Download, History, MessageSquare, Pencil, Trash2, Undo2, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { Download } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { BrandMark } from '@/components/brand-mark';
-import { CommentCard, CommentForm, textareaClass } from '@/components/share/comment-list';
-import { DiffText } from '@/components/share/diff-text';
-import { type BridgeMessage, DocFrame, type FrameRect } from '@/components/share/doc-frame';
-import { FragmentEditor } from '@/components/share/fragment-editor';
+import { type DocApi, DocWorkspace, type SaveOp } from '@/components/share/doc-workspace';
 import { Button } from '@/components/ui/button';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
+import { restoreSession } from '@/lib/auth';
 import { errorCode, errorMessage } from '@/lib/errors';
 import { FILES_REFRESH_MS, formatSize, previewKind } from '@/lib/files';
 import { followFragmentLinks, markdownDocument } from '@/lib/safe-html';
+import { rememberShareLink } from '@/lib/share-return';
 import { trpc, trpcClient, type RouterOutputs } from '@/lib/trpc';
 
 const t = sk.sharing;
@@ -33,9 +31,27 @@ const isLocked = (error: unknown) => errorCode(error) === 'LOCKED';
 function SharePage() {
   const [token] = useState(() => window.location.hash.slice(1));
   const valid = /^[A-Za-z0-9_-]{43}$/.test(token);
+  const navigate = useNavigate();
+  // A colleague needs no link's permission: only to learn which file this is, then on to Súbory.
+  const [colleague, setColleague] = useState<'checking' | 'no' | 'gone'>(valid ? 'checking' : 'no');
+  useEffect(() => {
+    if (!valid) return;
+    void (async () => {
+      if (!(await restoreSession({ quick: true }))) {
+        setColleague('no');
+        return;
+      }
+      try {
+        const file = await trpcClient.fileShare.resolve.mutate({ token });
+        await navigate({ to: '/files', search: { folder: file.folderId, open: file.fileId } });
+      } catch {
+        setColleague('gone');
+      }
+    })();
+  }, [valid, token, navigate]);
   const info = useQuery({
     queryKey: ['public-share-info', token],
-    enabled: valid,
+    enabled: valid && colleague === 'no',
     retry: false,
     refetchOnWindowFocus: false,
     queryFn: () => trpcClient.publicShare.info.mutate({ token }),
@@ -49,7 +65,10 @@ function SharePage() {
     return () => window.removeEventListener('hashchange', reload);
   }, []);
 
-  if (!valid || (info.isError && !unlocked)) return <Invalid />;
+  if (colleague === 'checking') return <Centered>{null}</Centered>;
+  if (!valid || colleague === 'gone' || (info.isError && !unlocked)) {
+    return <Invalid token={valid && colleague !== 'gone' ? token : null} />;
+  }
   if (!info.data) return <Centered>{null}</Centered>;
   const access = (
     <Access
@@ -91,11 +110,31 @@ function Centered({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Invalid() {
+/**
+ * A colleague opens any link, an expired one too. On a link that does not open, the offer looks the
+ * same whatever the reason; `null`: signed in already and it still does not open.
+ */
+function ColleagueLogin({ token }: { token: string }) {
+  return (
+    <p className="mt-[18px] border-t border-border-subtle pt-4 text-center text-sm">
+      {t.access.colleague}{' '}
+      <Link
+        to="/login"
+        onClick={() => rememberShareLink(token)}
+        className="font-semibold text-primary-text hover:underline"
+      >
+        {t.access.colleagueLogin}
+      </Link>
+    </p>
+  );
+}
+
+function Invalid({ token }: { token: string | null }) {
   return (
     <Centered>
       <h1 className="text-2xl leading-[30px] font-bold">{t.access.invalidTitle}</h1>
       <p className="mt-2 text-[15px] leading-[23px] text-muted">{t.access.invalidText}</p>
+      {token ? <ColleagueLogin token={token} /> : null}
     </Centered>
   );
 }
@@ -119,7 +158,7 @@ function Access({
   const title = info.returningName ? a.back(info.returningName) : a.title;
   const text = info.returningName ? a.backText : info.needsName ? a.textName : a.textPassword;
   const code = unlock.error ? errorCode(unlock.error) : undefined;
-  if (code === 'NOT_FOUND') return <Invalid />;
+  if (code === 'NOT_FOUND') return <Invalid token={token} />;
   return (
     <Centered>
       <h1 className="text-2xl leading-[30px] font-bold">{title}</h1>
@@ -182,6 +221,7 @@ function Access({
           </button>
         </p>
       ) : null}
+      <ColleagueLogin token={token} />
     </Centered>
   );
 }
@@ -231,7 +271,7 @@ function Viewer({ token, onLocked }: { token: string; onLocked: () => void }) {
       })
       .catch((error: unknown) => toast('error', errorMessage(error, t.errors)));
 
-  if (opened.isError && !opened.data && !isLocked(opened.error)) return <Invalid />;
+  if (opened.isError && !opened.data && !isLocked(opened.error)) return <Invalid token={token} />;
   const file = opened.data;
   if (!file) return <Centered>{null}</Centered>;
   if (file.frame) {
@@ -326,35 +366,6 @@ function FileViewer({
   );
 }
 
-interface Hovered {
-  block: number | null;
-  editable: boolean;
-  tag: string;
-  src: string | null;
-  text: string;
-  parent: boolean;
-  rect: FrameRect;
-}
-
-interface PendingChange {
-  kind: 'edit' | 'delete';
-  html: string | null;
-  before: string;
-  after: string;
-}
-
-type Composer = {
-  rect: FrameRect | null;
-  anchor: {
-    block: number | null;
-    quote: string | null;
-    prefix: string | null;
-    suffix: string | null;
-    tag: string | null;
-    src: string | null;
-  };
-};
-
 /** A shared HTML document: reading, and in the other modes its comments and fragments. */
 function HtmlViewer({
   token,
@@ -370,384 +381,22 @@ function HtmlViewer({
   const [shown, setShown] = useState(() => ({ frame: file.frame!, versionId: file.versionId }));
   const [dismissed, setDismissed] = useState<string | null>(null);
   const newer = file.versionId !== shown.versionId && file.versionId !== dismissed;
-  const canComment = file.mode !== 'read';
-  const canEdit = file.canEdit;
-
-  const send = useRef<((message: Record<string, unknown>) => void) | null>(null);
-  const frameBox = useRef<HTMLDivElement>(null);
-  const [hovered, setHovered] = useState<Hovered | null>(null);
-  const hoverOut = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // The frame's message that the pointer left arrives after the pointer is on the icons.
-  const overTools = useRef(false);
-  const [selection, setSelection] = useState<{
-    text: string;
-    prefix: string;
-    suffix: string;
-    block: number | null;
-    rect: FrameRect;
-  } | null>(null);
-  const [composer, setComposer] = useState<Composer | null>(null);
-  const [draftBody, setDraftBody] = useState('');
-  const [changes, setChanges] = useState<Map<number, PendingChange>>(new Map());
-  const [saved, setSaved] = useState<Map<number, PendingChange>>(new Map());
-  const [justSaved, setJustSaved] = useState(false);
-  const [discarding, setDiscarding] = useState(false);
-  const [editing, setEditing] = useState<{
-    block: number;
-    before: string;
-    source: string;
-    tag: string;
-    styles: string;
-    rect: FrameRect;
-  } | null>(null);
-  const [revision, setRevision] = useState<PendingChange | null>(null);
-  const [unplaced, setUnplaced] = useState<string[]>([]);
-  const [order, setOrder] = useState<string[]>([]);
-  const [selectedComment, setSelectedComment] = useState<string | null>(null);
-  const [replying, setReplying] = useState<string | null>(null);
-  const [changing, setChanging] = useState<string | null>(null);
-  const ready = useRef(false);
-
-  const comments = useQuery({
-    queryKey: ['public-share-comments', token],
-    enabled: canComment,
-    retry: false,
-    refetchInterval: FILES_REFRESH_MS,
-    queryFn: () => trpcClient.publicShare.comments.mutate({ token }),
+  const api = useMemo<DocApi>(
+    () => ({
+      key: ['public-share-comments', token],
+      comments: () => trpcClient.publicShare.comments.mutate({ token }),
+      addComment: (input) => trpcClient.publicShare.addComment.mutate({ token, ...input }),
+      editComment: (id, body) => trpcClient.publicShare.editComment.mutate({ token, id, body }),
+      deleteComment: (id) => trpcClient.publicShare.deleteComment.mutate({ token, id }),
+      fragment: (block) => trpcClient.publicShare.fragment.mutate({ token, block }),
+    }),
+    [token],
+  );
+  const saveDraft = useMutation({
+    mutationFn: (ops: SaveOp[]) =>
+      trpcClient.publicShare.saveDraft.mutate({ token, baseVersionId: shown.versionId, ops }),
+    onError: (error) => toast('error', errorMessage(error, t.errors)),
   });
-  const list = comments.data ?? [];
-  const frameComments = list.map((comment) => ({
-    id: comment.id,
-    anchor: comment.anchor,
-    sameVersion: comment.sameVersion,
-  }));
-  const commentsKey = list.map((comment) => comment.id).join();
-  useEffect(() => {
-    if (ready.current) send.current?.({ type: 'comments', list: frameComments });
-    // Only when the set changes.
-  }, [commentsKey]);
-
-  const failed = (error: unknown) => toast('error', errorMessage(error, t.errors));
-  const add = useMutation(
-    trpc.publicShare.addComment.mutationOptions({
-      onSuccess: async () => {
-        setComposer(null);
-        setDraftBody('');
-        setReplying(null);
-        setSelection(null);
-        await comments.refetch();
-      },
-      onError: failed,
-    }),
-  );
-  const editComment = useMutation(
-    trpc.publicShare.editComment.mutationOptions({
-      onSuccess: async () => {
-        setChanging(null);
-        await comments.refetch();
-      },
-      onError: failed,
-    }),
-  );
-  const removeComment = useMutation(
-    trpc.publicShare.deleteComment.mutationOptions({
-      onSuccess: () => comments.refetch(),
-      onError: failed,
-    }),
-  );
-  const fragment = useMutation(trpc.publicShare.fragment.mutationOptions({ onError: failed }));
-  const saveDraft = useMutation(
-    trpc.publicShare.saveDraft.mutationOptions({
-      onSuccess: () => {
-        setSaved(new Map(changes));
-        setJustSaved(true);
-      },
-      onError: failed,
-    }),
-  );
-
-  const signature = (map: Map<number, PendingChange>) =>
-    JSON.stringify([...map.entries()].sort((a, b) => a[0] - b[0]).map(([k, v]) => [k, v.html]));
-  const dirty = signature(changes) !== signature(saved);
-  const unsaved = [...new Set([...changes.keys(), ...saved.keys()])].filter(
-    (block) =>
-      (changes.get(block)?.html ?? null) !== (saved.get(block)?.html ?? null) ||
-      changes.has(block) !== saved.has(block),
-  ).length;
-
-  useEffect(() => {
-    if (!dirty) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [dirty]);
-
-  const onMessage = (message: BridgeMessage) => {
-    if (message.type === 'ready') {
-      ready.current = true;
-      if (canComment) send.current?.({ type: 'comments', list: frameComments });
-    } else if (message.type === 'hover') {
-      if (hoverOut.current) clearTimeout(hoverOut.current);
-      if (message.block === null || !message.rect) {
-        setHovered(null);
-      } else {
-        setHovered({
-          block: message.block,
-          editable: message.editable === true,
-          tag: String(message.tag ?? ''),
-          src: message.src ?? null,
-          text: message.text ?? '',
-          parent: message.parent === true,
-          rect: message.rect,
-        });
-      }
-    } else if (message.type === 'hover-out') {
-      if (!overTools.current) hoverOut.current = setTimeout(() => setHovered(null), 500);
-    } else if (message.type === 'rect') {
-      setHovered((now) => (now ? { ...now, rect: message.rect } : now));
-    } else if (message.type === 'selection') {
-      setSelection(
-        message.text && message.rect
-          ? {
-              text: message.text,
-              prefix: message.prefix ?? '',
-              suffix: message.suffix ?? '',
-              block: message.block ?? null,
-              rect: message.rect,
-            }
-          : null,
-      );
-    } else if (message.type === 'comments-placed') {
-      setUnplaced(message.unplaced);
-      setOrder(message.order);
-    } else if (message.type === 'comment-click') {
-      setSelectedComment(message.id);
-    }
-  };
-
-  const startEdit = (target: Hovered) => {
-    if (target.block === null) return;
-    if (!target.editable) {
-      toast('error', t.tools.notEditable);
-      return;
-    }
-    const block = target.block;
-    const pending = changes.get(block);
-    fragment.mutate(
-      { token, block },
-      {
-        onSuccess: (result) =>
-          setEditing({
-            block,
-            before: pending?.before ?? target.text,
-            source: pending?.html ?? result.html,
-            tag: result.tag,
-            styles: result.styles,
-            rect: target.rect,
-          }),
-      },
-    );
-  };
-
-  const applyEdit = (html: string, text: string) => {
-    if (!editing) return;
-    const { block, before } = editing;
-    send.current?.({ type: 'apply', block, html, editable: true });
-    setChanges((now) => new Map(now).set(block, { kind: 'edit', html, before, after: text }));
-    setJustSaved(false);
-    setEditing(null);
-  };
-
-  const removeBlock = (target: Hovered) => {
-    if (target.block === null) return;
-    send.current?.({ type: 'apply', block: target.block, html: null });
-    const before = changes.get(target.block)?.before ?? target.text;
-    setChanges((now) =>
-      new Map(now).set(target.block!, { kind: 'delete', html: null, before, after: '' }),
-    );
-    setJustSaved(false);
-    setHovered(null);
-  };
-
-  const undoBlock = (block: number) => {
-    send.current?.({ type: 'restore', block });
-    setChanges((now) => {
-      const next = new Map(now);
-      next.delete(block);
-      return next;
-    });
-    setHovered(null);
-  };
-
-  /** Back to what was last sent, or to the document as it came. */
-  const discardAll = () => {
-    for (const block of new Set([...changes.keys(), ...saved.keys()])) {
-      const kept = saved.get(block);
-      send.current?.({ type: 'restore', block });
-      if (kept) {
-        send.current?.({ type: 'apply', block, html: kept.html, editable: kept.html !== null });
-      }
-    }
-    setChanges(new Map(saved));
-    setDiscarding(false);
-  };
-
-  const openComposer = (anchor: Composer['anchor'], rect: FrameRect | null) => {
-    setDraftBody('');
-    setComposer({ anchor, rect });
-  };
-
-  const sortedComments = [...list].sort((a, b) => {
-    const at = order.indexOf(a.id);
-    const bt = order.indexOf(b.id);
-    return (at < 0 ? Infinity : at) - (bt < 0 ? Infinity : bt);
-  });
-  const placed = sortedComments.filter((comment) => !unplaced.includes(comment.id));
-  const lost = sortedComments.filter((comment) => unplaced.includes(comment.id));
-
-  const commentCard = (comment: (typeof list)[number]) => (
-    <CommentCard
-      key={comment.id}
-      comment={comment}
-      selected={selectedComment === comment.id}
-      {...(comment.own ? { name: t.comments.you(comment.authorName) } : {})}
-      onSelect={() => {
-        setSelectedComment(comment.id);
-        send.current?.({ type: 'focus-comment', id: comment.id });
-      }}
-    >
-      {changing === comment.id ? (
-        <CommentForm
-          initial={comment.body}
-          placeholder={t.comments.placeholder}
-          submit={t.comments.save}
-          pending={editComment.isPending}
-          onCancel={() => setChanging(null)}
-          onSubmit={(body) => editComment.mutate({ token, id: comment.id, body })}
-        />
-      ) : replying === comment.id ? (
-        <CommentForm
-          placeholder={t.comments.replyPlaceholder}
-          submit={t.comments.send}
-          pending={add.isPending}
-          onCancel={() => setReplying(null)}
-          onSubmit={(body) => add.mutate({ token, body, parentId: comment.id })}
-        />
-      ) : (
-        <div className="mt-2 flex flex-wrap gap-1">
-          <Button variant="ghost" size="sm" onClick={() => setReplying(comment.id)}>
-            {t.comments.reply}
-          </Button>
-          {comment.own ? (
-            <>
-              <Button variant="ghost" size="sm" onClick={() => setChanging(comment.id)}>
-                {t.comments.edit}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => removeComment.mutate({ token, id: comment.id })}
-              >
-                {t.comments.delete}
-              </Button>
-            </>
-          ) : null}
-        </div>
-      )}
-    </CommentCard>
-  );
-
-  const box = frameBox.current?.getBoundingClientRect();
-  const boxWidth = box?.width ?? 800;
-  const pending = hovered?.block != null ? changes.get(hovered.block) : undefined;
-  const tools =
-    hovered &&
-    hovered.block !== null &&
-    (canEdit || canComment) &&
-    !editing &&
-    !composer &&
-    !selection ? (
-      <>
-        <div
-          aria-hidden
-          className="pointer-events-none absolute rounded-md outline-2 outline-primary"
-          style={{
-            top: hovered.rect.top,
-            left: hovered.rect.left,
-            width: hovered.rect.width,
-            height: hovered.rect.height,
-          }}
-        />
-        <div
-          className="absolute z-10 flex gap-1"
-          style={{
-            top: Math.max(4, hovered.rect.top - 16),
-            right: Math.max(4, boxWidth - hovered.rect.left - hovered.rect.width + 6),
-          }}
-          onMouseEnter={() => {
-            overTools.current = true;
-            if (hoverOut.current) clearTimeout(hoverOut.current);
-          }}
-          onMouseLeave={() => {
-            overTools.current = false;
-            hoverOut.current = setTimeout(() => setHovered(null), 500);
-          }}
-        >
-          {pending ? (
-            <ToolIcon label={t.tools.changes} onClick={() => setRevision(pending)}>
-              <History className="size-4" aria-hidden />
-            </ToolIcon>
-          ) : null}
-          {canComment && !pending ? (
-            <ToolIcon
-              label={t.tools.comment}
-              onClick={() =>
-                openComposer(
-                  {
-                    block: hovered.block,
-                    // A block of text is found again by its words, a picture by its address.
-                    quote: hovered.text.trim().slice(0, 2000) || null,
-                    prefix: null,
-                    suffix: null,
-                    tag: hovered.tag,
-                    src: hovered.src,
-                  },
-                  hovered.rect,
-                )
-              }
-            >
-              <MessageSquare className="size-4" aria-hidden />
-            </ToolIcon>
-          ) : null}
-          {canEdit && pending ? (
-            <ToolIcon label={t.tools.undo} onClick={() => undoBlock(hovered.block!)}>
-              <Undo2 className="size-4" aria-hidden />
-            </ToolIcon>
-          ) : null}
-          {canEdit && pending?.kind !== 'delete' ? (
-            <>
-              {hovered.parent ? (
-                <ToolIcon
-                  label={t.tools.parent}
-                  onClick={() => send.current?.({ type: 'parent', block: hovered.block })}
-                >
-                  <ArrowUp className="size-4" aria-hidden />
-                </ToolIcon>
-              ) : null}
-              {hovered.editable ? (
-                <ToolIcon label={t.tools.edit} onClick={() => startEdit(hovered)}>
-                  <Pencil className="size-4" aria-hidden />
-                </ToolIcon>
-              ) : null}
-              <ToolIcon label={t.tools.delete} onClick={() => removeBlock(hovered)}>
-                <Trash2 className="size-4" aria-hidden />
-              </ToolIcon>
-            </>
-          ) : null}
-        </div>
-      </>
-    ) : null;
-
   return (
     <div className="flex h-dvh flex-col bg-[#dde6e3]">
       <TopBar file={file} onDownload={onDownload}>
@@ -755,38 +404,6 @@ function HtmlViewer({
           <span className="text-[13px] text-muted">{file.visitorName}</span>
         ) : null}
       </TopBar>
-      {canEdit && dirty ? (
-        <div
-          role="status"
-          className="flex flex-wrap items-center gap-3 bg-sidebar px-5 py-2.5 text-sm text-white"
-        >
-          <p className="min-w-0 flex-[1_1_12rem] font-semibold">{t.bar.unsaved(unsaved)}</p>
-          <Button variant="secondary" onClick={() => setDiscarding(true)}>
-            {t.bar.discard}
-          </Button>
-          <Button
-            disabled={saveDraft.isPending}
-            onClick={() =>
-              saveDraft.mutate({
-                token,
-                baseVersionId: shown.versionId,
-                ops: [...changes.entries()].map(([block, change]) => ({
-                  block,
-                  kind: change.kind,
-                  ...(change.html === null ? {} : { html: change.html }),
-                })),
-              })
-            }
-          >
-            {t.bar.save}
-          </Button>
-        </div>
-      ) : null}
-      {justSaved && !dirty ? (
-        <div role="status" className="bg-success-soft px-5 py-2.5 text-sm">
-          {t.bar.saved}
-        </div>
-      ) : null}
       {newer ? (
         <div
           role="status"
@@ -796,195 +413,37 @@ function HtmlViewer({
           <Button variant="secondary" onClick={() => setDismissed(file.versionId)}>
             {t.page.later}
           </Button>
-          <Button
-            onClick={() => {
-              ready.current = false;
-              setChanges(new Map());
-              setSaved(new Map());
-              setShown({ frame: file.frame!, versionId: file.versionId });
-            }}
-          >
+          <Button onClick={() => setShown({ frame: file.frame!, versionId: file.versionId })}>
             {t.page.load}
           </Button>
         </div>
       ) : null}
-      <div className="flex min-h-0 flex-1 flex-wrap overflow-auto md:overflow-hidden">
-        <div
-          ref={frameBox}
-          className="relative h-[70dvh] min-w-0 flex-[999_1_20rem] bg-white md:h-full"
-        >
-          <DocFrame
-            key={shown.frame}
-            src={shown.frame}
-            title={file.name}
-            sendRef={send}
-            onMessage={onMessage}
-          />
-          {tools}
-          {selection && canComment && !composer && !editing ? (
-            <Button
-              size="sm"
-              className="absolute z-10"
-              style={{
-                top: Math.max(4, selection.rect.top - 38),
-                left: Math.max(4, Math.min(boxWidth - 130, selection.rect.left)),
-              }}
-              onClick={() =>
-                openComposer(
-                  {
-                    block: selection.block,
-                    quote: selection.text,
-                    prefix: selection.prefix,
-                    suffix: selection.suffix,
-                    tag: null,
-                    src: null,
-                  },
-                  selection.rect,
-                )
-              }
-            >
-              <MessageSquare className="size-4" aria-hidden />
-              {t.tools.comment}
-            </Button>
-          ) : null}
-          {composer ? (
-            <form
-              aria-label={t.comments.new}
-              className="absolute z-20 w-[min(22rem,calc(100%-1rem))] rounded-xl border border-border-subtle bg-white p-3 shadow-[0_12px_32px_rgba(12,43,44,0.25)]"
-              style={{
-                top: Math.max(8, (composer.rect?.top ?? 0) + (composer.rect?.height ?? 0) + 6),
-                left: Math.max(8, Math.min(boxWidth - 360, composer.rect?.left ?? 8)),
-              }}
-              onSubmit={(event) => {
-                event.preventDefault();
-                if (draftBody.trim()) {
-                  add.mutate({ token, body: draftBody.trim(), anchor: composer.anchor });
-                }
-              }}
-            >
-              {/* The anchor came from the frame: shown as text and stored as data, nothing more. */}
-              <textarea
-                autoFocus
-                aria-label={t.comments.placeholder}
-                placeholder={t.comments.placeholder}
-                maxLength={4000}
-                value={draftBody}
-                onChange={(event) => setDraftBody(event.target.value)}
-                className={textareaClass}
-              />
-              <div className="mt-2 flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setComposer(null)}
-                >
-                  {t.comments.cancel}
-                </Button>
-                <Button type="submit" size="sm" disabled={add.isPending || !draftBody.trim()}>
-                  {t.comments.add}
-                </Button>
-              </div>
-            </form>
-          ) : null}
-          {editing ? (
-            <div
-              className="absolute z-20"
-              style={{
-                top: Math.max(8, Math.min(editing.rect.top, 120)),
-                left: Math.max(8, Math.min(boxWidth - 520, editing.rect.left)),
-                width: Math.min(boxWidth - 16, Math.max(512, editing.rect.width)),
-              }}
-            >
-              <FragmentEditor
-                source={editing.source}
-                tag={editing.tag}
-                styles={editing.styles}
-                onCancel={() => setEditing(null)}
-                onSave={applyEdit}
-                onRefuse={() => {
-                  setEditing(null);
-                  toast('error', t.tools.notEditable);
-                }}
-              />
-            </div>
-          ) : null}
-          {revision ? (
-            <section
-              aria-label={t.diff.title}
-              className="absolute inset-x-2 bottom-2 z-20 mx-auto max-w-2xl rounded-xl border border-border-subtle bg-white p-4 shadow-[0_12px_32px_rgba(12,43,44,0.25)]"
-            >
-              <div className="flex items-start gap-3">
-                <h2 className="flex-1 text-sm font-semibold">
-                  {revision.kind === 'delete' ? t.diff.deleted : t.diff.title}
-                </h2>
-                <button
-                  type="button"
-                  aria-label={t.diff.close}
-                  onClick={() => setRevision(null)}
-                  className="text-muted"
-                >
-                  <X className="size-4" aria-hidden />
-                </button>
-              </div>
-              <p className="mt-2 max-h-64 overflow-auto text-sm leading-6">
-                <DiffText before={revision.before} after={revision.after} />
-              </p>
-            </section>
-          ) : null}
-        </div>
-        {canComment ? (
-          <aside
-            aria-label={t.comments.title(list.length)}
-            className="max-w-full flex-[1_1_20rem] overflow-auto border-l border-border-subtle bg-white px-3 pb-4 md:h-full md:max-w-[26rem]"
+      <DocWorkspace
+        key={shown.frame}
+        frame={shown.frame}
+        title={file.name}
+        api={api}
+        canComment={file.mode !== 'read'}
+        canEdit={file.canEdit}
+        savedText={t.bar.saved}
+        bar={({ unsaved, ops, discard, markSaved }) => (
+          <div
+            role="status"
+            className="flex flex-wrap items-center gap-3 bg-sidebar px-5 py-2.5 text-sm text-white"
           >
-            <p className="px-1 pt-3 pb-1.5 text-xs font-semibold tracking-[0.06em] text-tertiary uppercase">
-              {t.comments.title(placed.length)}
-            </p>
-            {list.length === 0 ? (
-              <p className="px-1 text-sm text-muted">{t.comments.empty}</p>
-            ) : null}
-            <div className="space-y-2">{placed.map(commentCard)}</div>
-            {lost.length > 0 ? (
-              <p className="px-1 pt-3 pb-1.5 text-xs font-semibold tracking-[0.06em] text-tertiary uppercase">
-                {t.comments.unplaced(lost.length)}
-              </p>
-            ) : null}
-            <div className="space-y-2">{lost.map(commentCard)}</div>
-          </aside>
-        ) : null}
-      </div>
-      <ConfirmDialog
-        open={discarding}
-        onOpenChange={setDiscarding}
-        title={t.bar.discardConfirm.title}
-        description={t.bar.discardConfirm.text}
-        confirmLabel={t.bar.discardConfirm.confirm}
-        destructive
-        onConfirm={discardAll}
+            <p className="min-w-0 flex-[1_1_12rem] font-semibold">{t.bar.unsaved(unsaved)}</p>
+            <Button variant="secondary" onClick={discard}>
+              {t.bar.discard}
+            </Button>
+            <Button
+              disabled={saveDraft.isPending}
+              onClick={() => saveDraft.mutate(ops, { onSuccess: markSaved })}
+            >
+              {t.bar.save}
+            </Button>
+          </div>
+        )}
       />
     </div>
-  );
-}
-
-function ToolIcon({
-  label,
-  onClick,
-  children,
-}: {
-  label: string;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={onClick}
-      className="inline-flex size-8 items-center justify-center rounded-lg border border-border bg-white text-primary-text shadow-rest hover:bg-primary-soft"
-    >
-      {children}
-    </button>
   );
 }

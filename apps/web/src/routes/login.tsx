@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { endSession, restoreSession } from '@/lib/auth';
+import { takeShareLink } from '@/lib/share-return';
 import { errorMessage } from '@/lib/errors';
 import { trpc } from '@/lib/trpc';
 
@@ -47,6 +48,8 @@ export const Route = createFileRoute('/login')({
   // need. Not right after the app signed her out with a reason: that ended the session.
   beforeLoad: async ({ search }) => {
     if (!search.reason && (await restoreSession({ quick: true }))) {
+      const link = takeShareLink();
+      if (link) window.location.assign(link);
       // eslint-disable-next-line @typescript-eslint/only-throw-error -- TanStack Router redirects are thrown
       throw redirect({ to: '/' });
     }
@@ -66,7 +69,9 @@ function LoginPage() {
   /** The session is in the cookies now. */
   const enter = async () => {
     endSession(); // drop whatever the previous user left in the cache
-    await navigate({ to: '/' });
+    const link = takeShareLink();
+    if (link) window.location.assign(link);
+    else await navigate({ to: '/' });
   };
   const login = useMutation(
     trpc.auth.login.mutationOptions({

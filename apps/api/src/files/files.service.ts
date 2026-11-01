@@ -1056,7 +1056,7 @@ export async function purgeFiles(db: Db, storage: Storage) {
 // ---------------------------------------------------------------------------------------------
 // Bytes the server has in hand (Claude through MCP, an e-mail's attachment, a generated document)
 
-type ServerSource = 'mcp' | 'generated' | 'inbound' | 'share';
+type ServerSource = 'web' | 'mcp' | 'generated' | 'inbound' | 'share';
 
 /**
  * The checks of an upload, for bytes the server got: an allowed extension, at most the size

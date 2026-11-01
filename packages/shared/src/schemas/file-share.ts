@@ -96,6 +96,24 @@ export const editCommentSchema = publicShareSchema.extend({
 });
 export const deleteCommentSchema = publicShareSchema.extend({ id: idSchema });
 
+/** What a colleague edits: the file, and one opening of the editor. */
+export const colleagueFileSchema = z.object({ fileId: idSchema, sessionId: idSchema });
+export const colleagueFragmentSchema = z.object({
+  fileId: idSchema,
+  block: z.number().int().min(0),
+});
+export const colleagueAddCommentSchema = colleagueFileSchema.extend({
+  body: commentBodySchema,
+  anchor: commentAnchorSchema.nullable().optional(),
+  parentId: idSchema.nullable().optional(),
+});
+export const colleagueCommentSchema = z.object({ id: idSchema, body: commentBodySchema });
+export const colleagueSaveSchema = colleagueFileSchema.extend({
+  baseVersionId: idSchema,
+  mode: z.enum(['version', 'draft']),
+  ops: z.array(changeOpSchema).min(1).max(SHARE_LIMITS.changes),
+});
+
 export const draftIdSchema = z.object({ id: idSchema });
 export const draftDecisionSchema = z.object({
   changeId: idSchema,

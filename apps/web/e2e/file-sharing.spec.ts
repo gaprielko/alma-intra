@@ -1,4 +1,5 @@
 import { type APIRequestContext, expect, type Page, test } from '@playwright/test';
+import { JANA, SEED_PASSWORD, SEED_TOTP_SECRET, totp } from './totp';
 
 const COMPANY_ROOT = '00000000-0000-4000-8000-0000000000f0';
 const SHOTS = process.env.E2E_SHOTS;
@@ -309,4 +310,85 @@ test('two visitors, two drafts: merged in the sheet, alternatives to choose from
   await expect(panel.getByText('Zamietnuté')).toBeVisible();
   await page.getByRole('button', { name: 'Vytvoriť novú verziu' }).click();
   await expect(page.getByText(/Koncept sa stal verziou 2/)).toBeVisible();
+});
+
+test('a colleague: a link opens the view in Súbory, Upraviť edits, a comment leaves only a draft', async ({
+  browser,
+}) => {
+  test.setTimeout(120_000);
+  const name = `Kolega ${Date.now()}.html`;
+  const file = await uploadHtml(page, name);
+  const saved = await trpc<{ url: string }>(page.request, 'fileShare.save', {
+    fileId: file.fileId,
+    mode: 'read',
+    expiresOn: '2020-01-01',
+  });
+  const address = new URL(saved.url);
+
+  // An expired link: invalid to an outsider, who is still offered the sign-in.
+  const context = await browser.newContext({
+    locale: 'sk-SK',
+    storageState: { cookies: [], origins: [] },
+  });
+  const outsider = await context.newPage();
+  await outsider.goto(`${address.pathname}${address.hash}`);
+  await expect(outsider.getByRole('heading', { name: 'Odkaz nie je platný' })).toBeVisible();
+  await shot(outsider, 'invalid-login');
+  await outsider.getByRole('link', { name: 'Prihlásiť sa účtom Alma' }).click();
+  await expect(outsider).toHaveURL(/\/login/);
+  expect(outsider.url()).not.toContain(address.hash.slice(1));
+
+  // Signing in there leads back to the file. A code works only once: the next one is awaited.
+  await outsider.getByLabel('E-mail').fill(JANA);
+  await outsider.getByLabel('Heslo').fill(SEED_PASSWORD);
+  await outsider.getByRole('button', { name: 'Prihlásiť sa' }).click();
+  await outsider.waitForTimeout(30_500 - (Date.now() % 30_000));
+  await outsider.getByLabel('Číslica 1').fill(totp(SEED_TOTP_SECRET));
+  await outsider.getByRole('button', { name: 'Overiť' }).click();
+  await expect(outsider).toHaveURL(/\/files/);
+  await expect(outsider.getByRole('dialog').getByRole('heading', { name })).toBeVisible();
+  await context.close();
+
+  // Signed in: straight to the view of the file, whatever the link's expiry.
+  await page.goto('/overview');
+  await page.goto(`${address.pathname}${address.hash}`);
+  await expect(page).toHaveURL(/\/files/);
+  await expect(page.getByRole('dialog').getByRole('heading', { name })).toBeVisible();
+  await shot(page, 'colleague-view');
+  await page.getByRole('button', { name: 'Upraviť', exact: true }).click();
+
+  const doc = page.frameLocator('iframe[title^="Kolega"]');
+  await doc.getByText('Alma ADOS zjednodušuje').hover();
+  await page.getByRole('button', { name: 'Upraviť', exact: true }).click();
+  const editor = page.frameLocator('iframe[title="Úprava bloku"]').locator('.ProseMirror');
+  await editor.click();
+  await page.keyboard.press('End');
+  await page.keyboard.type(' Veta kolegu.');
+  await page.getByRole('button', { name: 'Uložiť', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Uložiť ako novú verziu' })).toBeEnabled();
+  await shot(page, 'colleague-edit');
+
+  // A comment leaves only the draft.
+  await doc.getByText('ako dnes pracujete').dblclick();
+  await page.getByRole('button', { name: 'Komentovať' }).first().click();
+  await page.getByLabel('Váš komentár').fill('Prediskutujeme.');
+  await page.getByRole('button', { name: 'Pridať komentár' }).click();
+  await expect(page.getByText('Prediskutujeme.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Uložiť ako novú verziu' })).toBeDisabled();
+  await shot(page, 'colleague-comment');
+  await page.getByRole('button', { name: 'Uložiť ako koncept' }).click();
+  await expect(page.getByText('Zmeny sú uložené ako koncept.')).toBeVisible();
+
+  // The comment deleted again: a version is possible, after one more change.
+  await page.getByRole('complementary').getByRole('button', { name: 'Zmazať' }).click();
+  await expect(page.getByText('Prediskutujeme.')).toHaveCount(0);
+  await doc.getByText('Krátka poznámka').hover();
+  await page.getByRole('button', { name: 'Zmazať', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Uložiť ako novú verziu' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Uložiť ako novú verziu' }).click();
+
+  // Back in the view, with a new version.
+  await expect(page.getByRole('button', { name: 'Upraviť', exact: true })).toBeVisible();
+  await page.goto(`/files?file=${file.fileId}`);
+  await expect(page.getByText('v2')).toBeVisible();
 });

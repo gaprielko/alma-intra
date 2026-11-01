@@ -1,7 +1,7 @@
 import { sk } from '@intra/shared/i18n';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { Download } from 'lucide-react';
+import { Download, Pencil } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { FileBadge } from '@/components/files/file-bits';
 import { Button } from '@/components/ui/button';
@@ -39,11 +39,14 @@ export function FilePreviewDialog({
   onClose,
   onVersions,
   onDrafts,
+  onEdit,
 }: {
   file: PreviewedFile;
   onClose: () => void;
   onVersions: () => void;
   onDrafts?: () => void;
+  /** „Upraviť“: an HTML file, for whoever may. */
+  onEdit?: () => void;
 }) {
   const toast = useToast();
   const kind = previewKind(file.name);
@@ -115,7 +118,7 @@ export function FilePreviewDialog({
     </Button>
   );
   const download = (
-    <Button onClick={save}>
+    <Button variant={onEdit ? 'secondary' : 'primary'} onClick={save}>
       <Download className="size-4" aria-hidden />
       {d.download}
     </Button>
@@ -144,6 +147,12 @@ export function FilePreviewDialog({
           </div>
           {kind ? (
             <>
+              {onEdit ? (
+                <Button onClick={onEdit}>
+                  <Pencil className="size-4" aria-hidden />
+                  {sk.sharing.preview.edit}
+                </Button>
+              ) : null}
               {waitingCount > 0 && onDrafts ? (
                 <Button variant="secondary" onClick={onDrafts}>
                   {sk.sharing.preview.drafts(waitingCount)}

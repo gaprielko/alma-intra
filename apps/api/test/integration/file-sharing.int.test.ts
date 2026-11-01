@@ -566,6 +566,186 @@ describe('file sharing', () => {
     });
   });
 
+  describe('a colleague', () => {
+    const session = () => crypto.randomUUID();
+    const edit = (html: string, newHtml: string) => op(html, newHtml);
+
+    it('finds the file by its link, also an expired one; a cancelled link and the trash stay closed', async () => {
+      const expired = await shared('read');
+      await jana.call('fileShare.save', {
+        fileId: expired.fileId,
+        mode: 'read',
+        expiresOn: '2020-01-01',
+      });
+      const found = await jana.call<{ fileId: string; folderId: string }>('fileShare.resolve', {
+        token: expired.token,
+      });
+      expect(found.data).toEqual({ fileId: expired.fileId, folderId });
+
+      const trashed = await shared('read');
+      await jana.call('file.trashFile', { id: trashed.fileId });
+      expect((await jana.call('fileShare.resolve', { token: trashed.token })).message).toBe(
+        'NOT_FOUND',
+      );
+      const cancelled = await shared('read');
+      await jana.call('fileShare.cancel', { fileId: cancelled.fileId });
+      expect((await jana.call('fileShare.resolve', { token: cancelled.token })).message).toBe(
+        'NOT_FOUND',
+      );
+    });
+
+    it('nobody signed in gets no file from a link this way', async () => {
+      const { token, fileId, versionId } = await shared('read');
+      const stranger = browser(api.baseUrl);
+      expect((await stranger.call('fileShare.resolve', { token })).code).toBe('UNAUTHORIZED');
+      const saved = await stranger.call('fileShare.saveEdits', {
+        fileId,
+        sessionId: session(),
+        baseVersionId: versionId,
+        mode: 'version',
+        ops: [{ block: 0, kind: 'delete' }],
+      });
+      expect(saved.code).toBe('UNAUTHORIZED');
+    });
+
+    it('saves a new version at once, under their own name, through the sanitizer', async () => {
+      const { fileId, versionId } = await shared('read');
+      const saved = await jana.call<{ kind: string; number: number; versionId: string }>(
+        'fileShare.saveEdits',
+        {
+          fileId,
+          sessionId: session(),
+          baseVersionId: versionId,
+          mode: 'version',
+          ops: [edit('Prvý odsek', '<p onclick="x()">Nový<script>y()</script></p>')],
+        },
+      );
+      expect(saved.data).toMatchObject({ kind: 'version', number: 2 });
+      const stored = new TextDecoder().decode(
+        await bucket.storage.read(storageKey(fileId, saved.data.versionId)),
+      );
+      expect(stored).toBe(DOC.replace('<p>Prvý odsek</p>', '<p>Nový</p>'));
+      const file = await jana.call<{
+        versions: { createdVia: string; externalAuthor: string | null; createdBy: string }[];
+      }>('file.get', { id: fileId });
+      expect(file.data.versions[0]).toMatchObject({ createdVia: 'web', externalAuthor: null });
+      expect(file.data.versions[0]!.createdBy).toBeTruthy();
+    });
+
+    it('a comment leaves only the draft, which makes no activity and waits for approval', async () => {
+      const { fileId, versionId } = await shared('read');
+      const sessionId = session();
+      await jana.call<{ id: string }>('fileShare.addComment', {
+        fileId,
+        sessionId,
+        body: 'Prediskutovať',
+      });
+      const ops = [edit('Prvý odsek', '<p>Nový</p>')];
+      const refused = await jana.call('fileShare.saveEdits', {
+        fileId,
+        sessionId,
+        baseVersionId: versionId,
+        mode: 'version',
+        ops,
+      });
+      expect(refused.message).toBe('HAS_COMMENTS');
+      const saved = await jana.call<{ kind: string; draftId: string }>('fileShare.saveEdits', {
+        fileId,
+        sessionId,
+        baseVersionId: versionId,
+        mode: 'draft',
+        ops,
+      });
+      expect(saved.data.kind).toBe('draft');
+      const drafts = await jana.call<{ id: string; changes: number; comments: number }[]>(
+        'fileShare.drafts',
+        { fileId },
+      );
+      expect(drafts.data).toHaveLength(1);
+      expect(drafts.data[0]).toMatchObject({ changes: 1, comments: 1 });
+      const list = await jana.call<{ items: { fileDraftId: string | null }[] }>(
+        'leadActivity.list',
+        {},
+      );
+      expect(list.data.items.some((item) => item.fileDraftId === saved.data.draftId)).toBe(false);
+
+      // A new opening of the editor may make a version again.
+      const again = await jana.call<{ kind: string }>('fileShare.saveEdits', {
+        fileId,
+        sessionId: session(),
+        baseVersionId: versionId,
+        mode: 'version',
+        ops,
+      });
+      expect(again.data.kind).toBe('version');
+    });
+
+    it('on a newer version: what still fits applies, otherwise nothing is saved', async () => {
+      const { fileId, versionId } = await shared('read');
+      const first = await jana.call<{ number: number }>('fileShare.saveEdits', {
+        fileId,
+        sessionId: session(),
+        baseVersionId: versionId,
+        mode: 'version',
+        ops: [edit('Prvý odsek', '<p>Medzitým</p>')],
+      });
+      expect(first.data.number).toBe(2);
+      const fits = await jana.call<{ kind: string; number: number }>('fileShare.saveEdits', {
+        fileId,
+        sessionId: session(),
+        baseVersionId: versionId,
+        mode: 'version',
+        ops: [edit('Druhý odsek', '<p>Druhý nový</p>')],
+      });
+      expect(fits.data).toMatchObject({ kind: 'version', number: 3 });
+      const unfit = await jana.call<{ kind: string; count: number; version: number }>(
+        'fileShare.saveEdits',
+        {
+          fileId,
+          sessionId: session(),
+          baseVersionId: versionId,
+          mode: 'version',
+          ops: [edit('Prvý odsek', '<p>Moje</p>')],
+        },
+      );
+      expect(unfit.data).toEqual({ kind: 'unfit', version: 3, count: 1 });
+    });
+
+    it('a colleague changes only their own comment, and a visitor sees it', async () => {
+      const { token, fileId } = await shared('comment');
+      const person = await visitor(token);
+      const theirs = await person.call<{ id: string }>('publicShare.addComment', {
+        token,
+        body: 'Návštevník',
+      });
+      expect(
+        (await jana.call('fileShare.editComment', { id: theirs.data.id, body: 'x' })).message,
+      ).toBe('NOT_YOURS');
+      expect((await jana.call('fileShare.deleteComment', { id: theirs.data.id })).message).toBe(
+        'NOT_YOURS',
+      );
+      await jana.call('fileShare.addComment', {
+        fileId,
+        sessionId: session(),
+        body: 'Kolega',
+      });
+      const seen = await person.call<{ body: string; own: boolean }[]>('publicShare.comments', {
+        token,
+      });
+      expect(seen.data.map((c) => [c.body, c.own])).toEqual([
+        ['Návštevník', true],
+        ['Kolega', false],
+      ]);
+    });
+
+    it('editInfo is for HTML only', async () => {
+      const pdf = await upload(`C ${Math.random()}.pdf`, text('%PDF-1.4\n'), 'application/pdf');
+      expect((await jana.call('fileShare.editInfo', { fileId: pdf.fileId })).message).toBe(
+        'NOT_HTML',
+      );
+    });
+  });
+
   it('the audit trail holds no name, comment or password', async () => {
     const { token, versionId } = await shared('edit');
     const person = await visitor(token, 'Tajné Meno');
