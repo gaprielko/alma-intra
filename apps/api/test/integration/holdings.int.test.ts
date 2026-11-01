@@ -23,9 +23,12 @@ describe('a product at an organization or a prevádzka', () => {
     api = await startApi();
     jana = browser(api.baseUrl);
     await jana.signIn(JANA);
-    admin = (await jana.call<{ id: string }>('product.itemCreate', { name: 'Admin prístup' })).data
-      .id;
-    nurse = (await jana.call<{ id: string }>('product.itemCreate', { name: 'Sestra' })).data.id;
+    const role = { kind: 'role', apps: ['web'] };
+    admin = (
+      await jana.call<{ id: string }>('product.itemCreate', { ...role, name: 'Admin prístup' })
+    ).data.id;
+    nurse = (await jana.call<{ id: string }>('product.itemCreate', { ...role, name: 'Sestra' }))
+      .data.id;
     product = (
       await jana.call<{ id: string }>('product.create', {
         name: 'ADOS Holding',

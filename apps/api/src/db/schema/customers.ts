@@ -2,6 +2,8 @@ import {
   CUSTOMER_KINDS,
   type DiscountStep,
   ITEM_BILLINGS,
+  type ProductApp,
+  PRODUCT_ITEM_KINDS,
   PRODUCT_PERIODS,
   PRODUCT_PRICINGS,
   ORGANIZATION_ROLES,
@@ -54,6 +56,7 @@ export const codeListColumns = () => ({
 
 export const productPeriod = pgEnum('product_period', PRODUCT_PERIODS);
 export const itemBilling = pgEnum('item_billing', ITEM_BILLINGS);
+export const productItemKind = pgEnum('product_item_kind', PRODUCT_ITEM_KINDS);
 
 /** EUR to the cent, read as a number. */
 const money = (name: string) => numeric(name, { precision: 10, scale: 2, mode: 'number' });
@@ -81,18 +84,32 @@ export const products = pgTable(
   ],
 );
 
-/** The shared catalog of what price lists count or add (R-2): „Admin prístup“, „Sestra“, … */
+/** The shared catalog of what price lists count or add (R-2): roles, and other items (R-20). */
 export const productItems = pgTable(
   'product_items',
   {
     id: uuid('id').primaryKey().defaultRandom(),
+    /** Set when created, never changed. */
+    kind: productItemKind('kind').notNull().default('role'),
     name: text('name').notNull(),
     /** The word for one („prístup“, „sestra“). */
     unit: text('unit'),
     description: text('description'),
+    /** What a role reaches: `PRODUCT_APPS`, at least one; another item reaches nothing (R-21). */
+    apps: text('apps')
+      .array()
+      .$type<ProductApp[]>()
+      .notNull()
+      .default(sql`'{}'::text[]`),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [uniqueIndex('product_items_name_unique').on(sql`lower(${t.name})`)],
+  (t) => [
+    uniqueIndex('product_items_name_unique').on(sql`lower(${t.name})`),
+    check(
+      'product_items_apps',
+      sql`(${t.kind} = 'role' and cardinality(${t.apps}) > 0) or (${t.kind} = 'other' and cardinality(${t.apps}) = 0)`,
+    ),
+  ],
 );
 
 /** One product's price list (R-3): an item with this product's numbers. */

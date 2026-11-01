@@ -386,6 +386,13 @@
       "when": 1793512675917,
       "tag": "0054_famous_vampiro",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1793568497501,
+      "tag": "0055_organic_silver_centurion",
+      "breakpoints": true
     }
   ]
 }

@@ -9,6 +9,14 @@ export type ProductPeriod = (typeof PRODUCT_PERIODS)[number];
 export const ITEM_BILLINGS = ['recurring', 'once'] as const;
 export type ItemBilling = (typeof ITEM_BILLINGS)[number];
 
+/** What a catalog item is: a role, an access of a user, or anything else a price list adds (R-20). */
+export const PRODUCT_ITEM_KINDS = ['role', 'other'] as const;
+export type ProductItemKind = (typeof PRODUCT_ITEM_KINDS)[number];
+
+/** The applications a role reaches (R-21). */
+export const PRODUCT_APPS = ['mobile', 'web', 'backend'] as const;
+export type ProductApp = (typeof PRODUCT_APPS)[number];
+
 /** EUR to the cent. */
 export const toCents = (n: number) => Math.round(n * 100) / 100;
 
@@ -61,12 +69,18 @@ export const productHoldersSchema = z.object({
 export type ProductHoldersInput = z.input<typeof productHoldersSchema>;
 export const updateProductSchema = z.object({ id: idSchema, product: productSchema });
 
-/** An item of the shared catalog (R-2). */
-export const productItemSchema = z.object({
-  name: z.string().trim().min(1).max(80),
-  unit: z.string().trim().max(40).optional(),
-  description: z.string().trim().max(400).optional(),
-});
+/** An item of the shared catalog (R-2): a role reaches at least one application, another item none. */
+export const productItemSchema = z
+  .object({
+    kind: z.enum(PRODUCT_ITEM_KINDS),
+    name: z.string().trim().min(1).max(80),
+    unit: z.string().trim().max(40).optional(),
+    description: z.string().trim().max(400).optional(),
+    apps: z.array(z.enum(PRODUCT_APPS)).max(PRODUCT_APPS.length),
+  })
+  .refine((item) => (item.kind === 'role' ? item.apps.length > 0 : item.apps.length === 0), {
+    path: ['apps'],
+  });
 export type ProductItemInput = z.infer<typeof productItemSchema>;
 export const updateProductItemSchema = z.object({ id: idSchema, item: productItemSchema });
 
