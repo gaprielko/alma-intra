@@ -2,7 +2,7 @@
 <html lang="sk">
 <head>
 <meta charset="utf-8">
-<title>Položky produktov</title>
+<title>Role produktov</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -94,6 +94,11 @@ tr:first-child td{border-top:0}
 .calc-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:center;padding:10px 0;border-top:1px solid #edf2f0}
 .total{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:14px 0 0;border-top:2px solid #dfe8e6;margin-top:4px}
 .hint{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:#fdf6ea;color:#7a4508;font-size:13px;line-height:19px}
+tbody tr{cursor:pointer}tbody tr:hover>td{background:#eef7f6}
+td a,td a:hover{text-decoration:none}
+.cell-link{display:inline-flex;align-items:center;max-width:100%;padding:1px 8px;border:1px solid rgba(15,139,141,.25);border-radius:8px;background:#e3f3f2;color:#0a6466;font-size:13px;font-weight:600;white-space:nowrap;text-decoration:none}
+.cell-link:hover{background:#d6ebe9;color:#0a6466;text-decoration:none}
+tbody tr :is(.dots,.mv,.btn-icon,button[aria-label^="Odstr"],svg[aria-label="Presunúť"]){opacity:0;transition:opacity .15s}tbody tr:is(:hover,:focus-within,:has(.menu)) :is(.dots,.mv,.btn-icon,button[aria-label^="Odstr"],svg[aria-label="Presunúť"]){opacity:1}
 </style>
 </helmet>
 <div style="position: relative; display: flex; flex-wrap: wrap; min-height: 900px; background: #eaf0ee">
@@ -106,61 +111,56 @@ tr:first-child td{border-top:0}
         <h1 style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em">Produkty</h1>
         <p style="margin: 2px 0 0; font-size: 13px; color: #48625f">Softvér, ktorý si zákazníci kupujú, a jeho cenníky</p>
       </div>
-      <a href="#" class="btn btn-primary"><svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Nová položka</a>
+      <a href="#" class="btn btn-primary"><svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Nová rola</a>
     </header>
-    <nav class="tabs" aria-label="Produkty"><a href="ProdList.dc.html" class="tab">Produkty<span class="n">3</span></a><a href="ProdItems.dc.html" class="tab tab-on">Položky<span class="n">5</span></a></nav>
-    <div style="padding: 24px 28px 40px; max-width: 1400px">
+    <nav class="tabs" aria-label="Produkty"><a href="ProdList.dc.html" class="tab">Produkty<span class="n">3</span></a><a href="ProdRoles.dc.html" class="tab tab-on">Role<span class="n">4</span></a><a href="ProdOtherItems.dc.html" class="tab">Ďalšie položky<span class="n">2</span></a></nav>
+    <div style="padding: 24px 28px 40px; ">
       <section class="card">
         <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 16px 20px 0">
-          <div class="search"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Hľadať položku</div>
-          <span class="meta" style="margin-left: auto">Premenovanie sa prejaví vo všetkých produktoch. Odstrániť sa dá len nepoužitá položka.</span>
+          <div class="search"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Hľadať rolu</div>
+          <span class="meta" style="margin-left: auto">Rola má prístup aspoň do jednej aplikácie. Premenovanie sa prejaví vo všetkých produktoch. Odstrániť sa dá len nepoužitá rola.</span>
         </div>
         <div class="tblwrap">
           <table>
-            <thead><tr><th>Položka</th><th>Jednotka</th><th>Používa sa v</th><th>Popis</th><th></th></tr></thead>
+            <thead><tr><th>Rola</th><th>Aplikácie</th><th>Používa sa v</th><th>Jednotka</th><th>Popis</th><th></th></tr></thead>
             <tbody>
-              <tr>
-                <td class="name">Admin prístup</td>
-                <td style="color: #48625f">prístup</td>
-                <td><div style="display: flex; flex-wrap: wrap; gap: 4px"><a href="ProdDetail.dc.html" class="prod">ADOS</a><a href="ProdDetail.dc.html" class="prod">DOS</a></div></td>
-                <td style="color: #48625f">Používateľ s plnými právami v organizácii</td>
-                <td style="width: 40px"><button type="button" class="dots" aria-label="Akcie pre Admin prístup"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg></button></td>
-              </tr>
-<tr>
-                <td class="name">Sestra</td>
-                <td style="color: #48625f">sestra</td>
-                <td><div style="display: flex; flex-wrap: wrap; gap: 4px"><a href="ProdDetail.dc.html" class="prod">ADOS</a></div></td>
-                <td style="color: #48625f">Prístup sestry do mobilnej aplikácie</td>
-                <td style="width: 40px"><button type="button" class="dots" aria-label="Akcie pre Sestra"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg></button></td>
-              </tr>
-<tr>
-                <td class="name">Opatrovateľ</td>
-                <td style="color: #48625f">opatrovateľ</td>
-                <td><div style="display: flex; flex-wrap: wrap; gap: 4px"><a href="ProdDetail.dc.html" class="prod">DOS</a></div></td>
-                <td style="color: #48625f">Prístup opatrovateľa v dennom centre</td>
-                <td style="width: 40px"><button type="button" class="dots" aria-label="Akcie pre Opatrovateľ"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg></button></td>
-              </tr>
-<tr>
-                <td class="name">Superadmin</td>
-                <td style="color: #48625f">prístup</td>
-                <td><div style="display: flex; flex-wrap: wrap; gap: 4px"><a href="ProdDetail.dc.html" class="prod">ADOS</a></div></td>
-                <td style="color: #48625f">Správa viacerých prevádzok jednej organizácie</td>
-                <td style="width: 40px"><button type="button" class="dots" aria-label="Akcie pre Superadmin"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg></button></td>
-              </tr>
-<tr>
-                <td class="name">Implementácia</td>
-                <td style="color: #48625f">implementácia</td>
-                <td><div style="display: flex; flex-wrap: wrap; gap: 4px"><a href="ProdDetail.dc.html" class="prod">ADOS</a><a href="ProdDetail.dc.html" class="prod">DOS</a></div></td>
-                <td style="color: #48625f">Nastavenie, prenos údajov a zaškolenie</td>
-                <td style="width: 40px"><button type="button" class="dots" aria-label="Akcie pre Implementácia"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg></button></td>
-              </tr>
-            </tbody>
+<tr><td class="name">Admin prístup</td><td><span style="display: inline-flex; gap: 4px"><span class="tag" style="height: 22px">Web</span><span class="tag" style="height: 22px">Backend</span></span></td><td><div style="display: flex; flex-wrap: wrap; gap: 4px"><a href="ProdRoleDetail.dc.html" class="cell-link">ADOS</a><a href="ProdRoleDetail.dc.html" class="cell-link">DOS</a></div></td><td style="color: #48625f">prístup</td><td style="color: #48625f">Používateľ s plnými právami v organizácii</td><td style="width: 40px"><button type="button" class="dots" aria-label="Akcie pre Admin prístup"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg></button></td></tr>
+<tr><td class="name">Sestra</td><td><span style="display: inline-flex; gap: 4px"><span class="tag" style="height: 22px">Mobil</span><span class="tag" style="height: 22px">Web</span></span></td><td><div style="display: flex; flex-wrap: wrap; gap: 4px"><a href="ProdRoleDetail.dc.html" class="cell-link">ADOS</a></div></td><td style="color: #48625f">sestra</td><td style="color: #48625f">Prístup sestry do mobilnej aplikácie</td><td style="width: 40px"><button type="button" class="dots" aria-label="Akcie pre Sestra"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg></button></td></tr>
+<tr><td class="name">Opatrovateľ</td><td><span style="display: inline-flex; gap: 4px"><span class="tag" style="height: 22px">Mobil</span></span></td><td><div style="display: flex; flex-wrap: wrap; gap: 4px"><a href="ProdRoleDetail.dc.html" class="cell-link">DOS</a></div></td><td style="color: #48625f">opatrovateľ</td><td style="color: #48625f">Prístup opatrovateľa v dennom centre</td><td style="width: 40px"><button type="button" class="dots" aria-label="Akcie pre Opatrovateľ"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg></button></td></tr>
+<tr><td class="name">Superadmin</td><td><span style="display: inline-flex; gap: 4px"><span class="tag" style="height: 22px">Web</span><span class="tag" style="height: 22px">Backend</span></span></td><td><div style="display: flex; flex-wrap: wrap; gap: 4px"><a href="ProdRoleDetail.dc.html" class="cell-link">ADOS</a></div></td><td style="color: #48625f">prístup</td><td style="color: #48625f">Správa viacerých prevádzok jednej organizácie</td><td style="width: 40px"><button type="button" class="dots" aria-label="Akcie pre Superadmin"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg></button></td></tr>
+</tbody>
           </table>
         </div>
         <div style="height: 8px"></div>
       </section>
     </div>
   </main>
+  <div style="position: absolute; inset: 0; background: rgba(12,43,44,0.45); display: flex; align-items: flex-start; justify-content: center; padding: 48px 24px; box-sizing: border-box">
+    <section role="dialog" aria-modal="true" aria-label="Nová rola" style="width: 100%; max-width: 560px; border-radius: 20px; background: #fff; box-shadow: 0 1px 3px rgba(12,59,60,0.06), 0 24px 60px rgba(12,43,44,0.28)">
+      <header style="display: flex; align-items: flex-start; gap: 12px; padding: 24px 24px 0">
+        <h2 style="flex: 1; margin: 0; font-size: 20px; line-height: 26px; font-weight: 700">Nová rola</h2>
+        <a href="ProdRoles.dc.html" aria-label="Zavrieť" style="width: 36px; height: 36px; border-radius: 10px; color: #48625f; display: inline-flex; align-items: center; justify-content: center"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></a>
+      </header>
+      <form style="padding: 20px 24px 0; display: flex; flex-direction: column; gap: 12px">
+        <label class="field"><span>Názov</span><input value="Sestra"></label>
+        <label class="field"><span>Jednotka</span><input value="sestra"></label>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <span class="meta" style="font-weight: 500">Aplikácie, do ktorých má rola prístup</span>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <label class="opt opt-on" style="cursor: pointer; flex: 1 1 0; min-width: 0"><input type="checkbox" checked style="width: 18px; height: 18px; accent-color: #0f8b8d; margin: 0"><span style="flex: 1 1 90px; min-width: 0"><span style="display: block; font-size: 14px; font-weight: 600">Mobil</span></span></label>
+            <label class="opt opt-on" style="cursor: pointer; flex: 1 1 0; min-width: 0"><input type="checkbox" checked style="width: 18px; height: 18px; accent-color: #0f8b8d; margin: 0"><span style="flex: 1 1 90px; min-width: 0"><span style="display: block; font-size: 14px; font-weight: 600">Web</span></span></label>
+            <label class="opt" style="cursor: pointer; flex: 1 1 0; min-width: 0"><input type="checkbox" style="width: 18px; height: 18px; accent-color: #0f8b8d; margin: 0"><span style="flex: 1 1 90px; min-width: 0"><span style="display: block; font-size: 14px; font-weight: 600">Backend</span></span></label>
+          </div>
+          <span class="meta">Vyberte aspoň jednu.</span>
+        </div>
+        <label class="field" style="min-height: 76px"><span>Popis</span><textarea rows="2">Prístup sestry do mobilnej aplikácie</textarea></label>
+      </form>
+      <footer style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding: 20px 24px 24px">
+        <a href="ProdRoles.dc.html" class="btn btn-ghost">Zrušiť</a>
+        <a href="ProdRoles.dc.html" class="btn btn-primary">Uložiť</a>
+      </footer>
+    </section>
+  </div>
 
 </div>
 </x-dc>

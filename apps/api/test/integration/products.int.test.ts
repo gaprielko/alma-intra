@@ -59,15 +59,100 @@ describe('products and their price lists', () => {
   it('keeps the item names in one shared catalog, each name once', async () => {
     admin = (
       await jana.call<{ id: string }>('product.itemCreate', {
+        kind: 'role',
+        apps: ['web', 'backend'],
         name: 'Admin prístup',
         unit: 'prístup',
       })
     ).data.id;
     nurse = (
-      await jana.call<{ id: string }>('product.itemCreate', { name: 'Sestra', unit: 'sestra' })
+      await jana.call<{ id: string }>('product.itemCreate', {
+        kind: 'role',
+        apps: ['mobile'],
+        name: 'Sestra',
+        unit: 'sestra',
+      })
     ).data.id;
-    const twice = await jana.call('product.itemCreate', { name: 'sestra' });
+    const twice = await jana.call('product.itemCreate', {
+      kind: 'role',
+      apps: ['web'],
+      name: 'sestra',
+    });
     expect(twice.message).toBe('NAME_TAKEN');
+  });
+
+  it('wants a role to reach an application and another item none (R-21)', async () => {
+    const noApp = await jana.call('product.itemCreate', { kind: 'role', apps: [], name: 'Bez' });
+    expect(noApp.code).toBeDefined();
+    const withApp = await jana.call('product.itemCreate', {
+      kind: 'other',
+      apps: ['web'],
+      name: 'Školenie s aplikáciou',
+    });
+    expect(withApp.code).toBeDefined();
+
+    const made = await jana.call<{ id: string }>('product.itemCreate', {
+      kind: 'role',
+      apps: ['mobile', 'web', 'backend'],
+      name: 'Všade',
+    });
+    const emptied = await jana.call('product.itemUpdate', {
+      id: made.data.id,
+      item: { kind: 'role', apps: [], name: 'Všade' },
+    });
+    expect(emptied.code).toBeDefined();
+    const narrowed = await jana.call('product.itemUpdate', {
+      id: made.data.id,
+      item: { kind: 'role', apps: ['web'], name: 'Všade' },
+    });
+    expect(narrowed.code).toBeUndefined();
+    const items = await jana.call<{ id: string; apps: string[] }[]>('product.items');
+    expect(items.data.find((item) => item.id === made.data.id)?.apps).toEqual(['web']);
+
+    const refused = await jana.call('product.itemUpdate', {
+      id: made.data.id,
+      item: { kind: 'other', apps: [], name: 'Všade' },
+    });
+    expect(refused.message).toBe('KIND_FIXED');
+    expect((await jana.call('product.itemDelete', { id: made.data.id })).code).toBeUndefined();
+  });
+
+  it('lists roles before other items, and counts workloads of roles only (R-22, R-23)', async () => {
+    const other = await jana.call<{ id: string }>('product.itemCreate', {
+      kind: 'other',
+      apps: [],
+      name: 'Implementácia poradia',
+    });
+    const role = await jana.call<{ id: string }>('product.itemCreate', {
+      kind: 'role',
+      apps: ['mobile'],
+      name: 'Rola poradia',
+    });
+    const made = await jana.call<{ id: string }>('product.create', {
+      name: 'Poradie',
+      basePrice: null,
+      basePriceGross: null,
+      period: 'month',
+      active: true,
+      workloadStep: 50,
+      items: [other.data.id, role.data.id].map((itemId) => ({
+        itemId,
+        included: 0,
+        unitPrice: null,
+        unitPriceGross: null,
+        max: null,
+        billing: 'recurring',
+        byWorkload: true,
+      })),
+    });
+    const got = await jana.call<{
+      items: { kind: string; apps: string[]; name: string; byWorkload: boolean }[];
+    }>('product.get', { id: made.data.id });
+    expect(got.data.items.map((i) => [i.kind, i.name, i.byWorkload])).toEqual([
+      ['role', 'Rola poradia', true],
+      ['other', 'Implementácia poradia', false],
+    ]);
+    expect(got.data.items[0]?.apps).toEqual(['mobile']);
   });
 
   it('creates a product with its price list; the missing price is computed with VAT, to the cent', async () => {

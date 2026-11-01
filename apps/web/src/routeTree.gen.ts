@@ -39,7 +39,8 @@ import { Route as AppOrganizationsNewRouteImport } from './routes/_app/organizat
 import { Route as AppOrganizationsPartnersRouteImport } from './routes/_app/organizations.partners'
 import { Route as AppProductsIndexRouteImport } from './routes/_app/products.index'
 import { Route as AppProductsProductIdRouteImport } from './routes/_app/products.$productId'
-import { Route as AppProductsItemsRouteImport } from './routes/_app/products.items'
+import { Route as AppProductsOthersRouteImport } from './routes/_app/products.others'
+import { Route as AppProductsRolesRouteImport } from './routes/_app/products.roles'
 import { Route as AppSettingsActivityLogRouteImport } from './routes/_app/settings.activity-log'
 import { Route as AppSettingsCodeListsRouteImport } from './routes/_app/settings.code-lists'
 import { Route as AppSettingsCompanyRouteImport } from './routes/_app/settings.company'
@@ -210,9 +211,14 @@ const AppProductsProductIdRoute = AppProductsProductIdRouteImport.update({
   path: '/products/$productId',
   getParentRoute: () => AppRoute,
 } as any)
-const AppProductsItemsRoute = AppProductsItemsRouteImport.update({
-  id: '/products/items',
-  path: '/products/items',
+const AppProductsOthersRoute = AppProductsOthersRouteImport.update({
+  id: '/products/others',
+  path: '/products/others',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProductsRolesRoute = AppProductsRolesRouteImport.update({
+  id: '/products/roles',
+  path: '/products/roles',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSettingsActivityLogRoute = AppSettingsActivityLogRouteImport.update({
@@ -333,7 +339,8 @@ export interface FileRoutesByFullPath {
   '/organizations/new': typeof AppOrganizationsNewRoute
   '/organizations/partners': typeof AppOrganizationsPartnersRoute
   '/products/$productId': typeof AppProductsProductIdRoute
-  '/products/items': typeof AppProductsItemsRoute
+  '/products/others': typeof AppProductsOthersRoute
+  '/products/roles': typeof AppProductsRolesRoute
   '/settings/activity-log': typeof AppSettingsActivityLogRoute
   '/settings/code-lists': typeof AppSettingsCodeListsRoute
   '/settings/company': typeof AppSettingsCompanyRoute
@@ -382,7 +389,8 @@ export interface FileRoutesByTo {
   '/organizations/new': typeof AppOrganizationsNewRoute
   '/organizations/partners': typeof AppOrganizationsPartnersRoute
   '/products/$productId': typeof AppProductsProductIdRoute
-  '/products/items': typeof AppProductsItemsRoute
+  '/products/others': typeof AppProductsOthersRoute
+  '/products/roles': typeof AppProductsRolesRoute
   '/settings/activity-log': typeof AppSettingsActivityLogRoute
   '/settings/code-lists': typeof AppSettingsCodeListsRoute
   '/settings/company': typeof AppSettingsCompanyRoute
@@ -433,7 +441,8 @@ export interface FileRoutesById {
   '/_app/organizations/new': typeof AppOrganizationsNewRoute
   '/_app/organizations/partners': typeof AppOrganizationsPartnersRoute
   '/_app/products/$productId': typeof AppProductsProductIdRoute
-  '/_app/products/items': typeof AppProductsItemsRoute
+  '/_app/products/others': typeof AppProductsOthersRoute
+  '/_app/products/roles': typeof AppProductsRolesRoute
   '/_app/settings/activity-log': typeof AppSettingsActivityLogRoute
   '/_app/settings/code-lists': typeof AppSettingsCodeListsRoute
   '/_app/settings/company': typeof AppSettingsCompanyRoute
@@ -484,7 +493,8 @@ export interface FileRouteTypes {
     | '/organizations/new'
     | '/organizations/partners'
     | '/products/$productId'
-    | '/products/items'
+    | '/products/others'
+    | '/products/roles'
     | '/settings/activity-log'
     | '/settings/code-lists'
     | '/settings/company'
@@ -533,7 +543,8 @@ export interface FileRouteTypes {
     | '/organizations/new'
     | '/organizations/partners'
     | '/products/$productId'
-    | '/products/items'
+    | '/products/others'
+    | '/products/roles'
     | '/settings/activity-log'
     | '/settings/code-lists'
     | '/settings/company'
@@ -583,7 +594,8 @@ export interface FileRouteTypes {
     | '/_app/organizations/new'
     | '/_app/organizations/partners'
     | '/_app/products/$productId'
-    | '/_app/products/items'
+    | '/_app/products/others'
+    | '/_app/products/roles'
     | '/_app/settings/activity-log'
     | '/_app/settings/code-lists'
     | '/_app/settings/company'
@@ -832,11 +844,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProductsProductIdRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/products/items': {
-      id: '/_app/products/items'
-      path: '/products/items'
-      fullPath: '/products/items'
-      preLoaderRoute: typeof AppProductsItemsRouteImport
+    '/_app/products/others': {
+      id: '/_app/products/others'
+      path: '/products/others'
+      fullPath: '/products/others'
+      preLoaderRoute: typeof AppProductsOthersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/products/roles': {
+      id: '/_app/products/roles'
+      path: '/products/roles'
+      fullPath: '/products/roles'
+      preLoaderRoute: typeof AppProductsRolesRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/settings/activity-log': {
@@ -1016,7 +1035,8 @@ interface AppRouteChildren {
   AppOrganizationsNewRoute: typeof AppOrganizationsNewRoute
   AppOrganizationsPartnersRoute: typeof AppOrganizationsPartnersRoute
   AppProductsProductIdRoute: typeof AppProductsProductIdRoute
-  AppProductsItemsRoute: typeof AppProductsItemsRoute
+  AppProductsOthersRoute: typeof AppProductsOthersRoute
+  AppProductsRolesRoute: typeof AppProductsRolesRoute
   AppActivitiesIndexRoute: typeof AppActivitiesIndexRoute
   AppCustomersIndexRoute: typeof AppCustomersIndexRoute
   AppOrganizationsIndexRoute: typeof AppOrganizationsIndexRoute
@@ -1047,7 +1067,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppOrganizationsNewRoute: AppOrganizationsNewRoute,
   AppOrganizationsPartnersRoute: AppOrganizationsPartnersRoute,
   AppProductsProductIdRoute: AppProductsProductIdRoute,
-  AppProductsItemsRoute: AppProductsItemsRoute,
+  AppProductsOthersRoute: AppProductsOthersRoute,
+  AppProductsRolesRoute: AppProductsRolesRoute,
   AppActivitiesIndexRoute: AppActivitiesIndexRoute,
   AppCustomersIndexRoute: AppCustomersIndexRoute,
   AppOrganizationsIndexRoute: AppOrganizationsIndexRoute,

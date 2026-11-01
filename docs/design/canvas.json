@@ -551,34 +551,6 @@
       "expand": "fill",
       "is_interactive": true
     },
-    "ProdDetail.dc.html": {
-      "x": 1520,
-      "y": 0,
-      "w": 1440,
-      "h": 1300,
-      "title": "Detail produktu · cenník a výpočet ceny",
-      "page": "prod",
-      "expand": "fill",
-      "is_interactive": true
-    },
-    "ProdItemDialog.dc.html": {
-      "x": 3040,
-      "y": 0,
-      "w": 1440,
-      "h": 1000,
-      "title": "Pridať položku · zo spoločného zoznamu, s nastavením z iného produktu",
-      "page": "prod",
-      "expand": "fill"
-    },
-    "ProdItems.dc.html": {
-      "x": 0,
-      "y": 1020,
-      "w": 1440,
-      "h": 900,
-      "title": "Položky · spoločné názvy pre všetky produkty",
-      "page": "prod",
-      "expand": "fill"
-    },
     "ProdVatSettings.dc.html": {
       "x": 1520,
       "y": 1320,
@@ -597,6 +569,51 @@
       "page": "est",
       "expand": "fill",
       "is_interactive": true
+    },
+    "ProdRoles.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Produkty › Role",
+      "page": "prod",
+      "expand": "fill"
+    },
+    "ProdRoleDetail.dc.html": {
+      "x": 3040,
+      "y": 0,
+      "w": 1440,
+      "h": 1500,
+      "title": "Produkty › Detail produktu",
+      "page": "prod",
+      "expand": "fill"
+    },
+    "ProdRolePicker.dc.html": {
+      "x": 0,
+      "y": 1000,
+      "w": 1440,
+      "h": 1000,
+      "title": "Produkty › Pridať rolu do cenníka (dialóg)",
+      "page": "prod",
+      "expand": "fill"
+    },
+    "ProdRoleDialog.dc.html": {
+      "x": 1520,
+      "y": 1000,
+      "w": 1440,
+      "h": 900,
+      "title": "Produkty › Nová rola (dialóg)",
+      "page": "prod",
+      "expand": "fill"
+    },
+    "ProdOtherItems.dc.html": {
+      "x": 3040,
+      "y": 1600,
+      "w": 1440,
+      "h": 900,
+      "title": "Produkty › Ďalšie položky",
+      "page": "prod",
+      "expand": "fill"
     }
   },
   "order": [
@@ -654,11 +671,13 @@
     "EstDialog.dc.html",
     "EstActivityDialog.dc.html",
     "ProdList.dc.html",
-    "ProdDetail.dc.html",
-    "ProdItemDialog.dc.html",
-    "ProdItems.dc.html",
     "ProdVatSettings.dc.html",
-    "EstProductDialog.dc.html"
+    "EstProductDialog.dc.html",
+    "ProdRoles.dc.html",
+    "ProdRoleDetail.dc.html",
+    "ProdRolePicker.dc.html",
+    "ProdRoleDialog.dc.html",
+    "ProdOtherItems.dc.html"
   ],
   "notes": {
     "logotitle": {
