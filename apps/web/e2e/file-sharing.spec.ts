@@ -29,8 +29,8 @@ async function trpc<T>(request: APIRequestContext, path: string, input: unknown)
   return body.result.data;
 }
 
-async function uploadHtml(page: Page, name: string) {
-  const bytes = Buffer.from(DOC, 'utf8');
+async function uploadHtml(page: Page, name: string, doc = DOC) {
+  const bytes = Buffer.from(doc, 'utf8');
   const asked = await trpc<{ fileId: string; versionId: string; url: string }>(
     page.request,
     'file.requestUpload',
@@ -391,4 +391,96 @@ test('a colleague: a link opens the view in Súbory, Upraviť edits, a comment l
   await expect(page.getByRole('button', { name: 'Upraviť', exact: true })).toBeVisible();
   await page.goto(`/files?file=${file.fileId}`);
   await expect(page.getByText('v2')).toBeVisible();
+});
+
+test('a contract: items are fragments, a whole article changes by its words, the comment window stays in view', async ({
+  browser,
+}) => {
+  test.setTimeout(120_000);
+  const filler = Array.from({ length: 40 }, (_, i) => `<p>Výplň ${i}</p>`).join('');
+  const contract = `<!doctype html><html><head><meta charset="utf-8"><style>.term{font-weight:700}</style></head><body>
+<section class="article" id="cl1"><header><span class="no">Článok 1</span><h2>Predmet zmluvy</h2></header>
+<ol class="paras"><li>Prvý odsek (<span class="term">Softvér</span>).</li><li>Pilot zahŕňa:
+<ol class="items"><li>webovú aplikáciu;</li></ol></li></ol>
+<svg width="30" height="10"><rect width="30" height="10"></rect></svg></section>
+${filler}
+<ol class="paras"><li>${'Dlhý odsek na koniec stránky. '.repeat(60)}</li></ol>
+</body></html>`;
+  const name = `Zmluva ${Date.now()}.html`;
+  const file = await uploadHtml(page, name, contract);
+  const saved = await trpc<{ url: string }>(page.request, 'fileShare.save', {
+    fileId: file.fileId,
+    mode: 'edit',
+    password: 'heslo-pre-navrh',
+  });
+  const address = new URL(saved.url);
+  const context = await browser.newContext({
+    locale: 'sk-SK',
+    storageState: { cookies: [], origins: [] },
+  });
+  const visitor = await context.newPage();
+  await visitor.goto(`${address.pathname}${address.hash}`);
+  await visitor.getByLabel('Vaše meno').fill('Eva');
+  await visitor.getByLabel('Heslo', { exact: true }).fill('heslo-pre-navrh');
+  await visitor.getByRole('button', { name: 'Otvoriť dokument' }).click();
+  const doc = visitor.frameLocator('iframe').first();
+
+  // One item, not the article: and it goes through the editor.
+  await doc.getByText('Prvý odsek').hover();
+  await shot(visitor, 'contract-item');
+  await visitor.getByRole('button', { name: 'Upraviť', exact: true }).click();
+  const editor = visitor.frameLocator('iframe[title="Úprava bloku"]').locator('.ProseMirror');
+  await expect(editor).toContainText('Softvér');
+  await visitor.getByRole('button', { name: 'Zrušiť', exact: true }).click();
+
+  // The whole article: by its words, whatever its format.
+  await doc.getByText('Prvý odsek').hover();
+  await visitor.getByRole('button', { name: 'Nadradený blok' }).click();
+  await visitor.getByRole('button', { name: 'Nadradený blok' }).click();
+  await visitor.getByRole('button', { name: 'Upraviť', exact: true }).click();
+  await expect(visitor.getByText('Upravovať môžete len text.')).toBeVisible();
+  const fields = visitor.frameLocator('iframe[title="Úprava bloku"]');
+  await shot(visitor, 'contract-article');
+  const field = fields.getByText('Predmet zmluvy');
+  await field.click();
+  await visitor.keyboard.press('End');
+  await visitor.keyboard.type(' nový');
+  await visitor.keyboard.press('Enter');
+  await visitor.getByRole('button', { name: 'Uložiť', exact: true }).click();
+  await expect(doc.getByText('Predmet zmluvy nový')).toBeVisible();
+  await expect(doc.locator('svg')).toHaveCount(1);
+  await expect(doc.locator('.term')).toHaveText('Softvér');
+
+  // A tall block low on the page: the window opens at the pointer and stays in view.
+  await doc.getByText('Výplň 39').scrollIntoViewIfNeeded();
+  await doc.getByText('Dlhý odsek').scrollIntoViewIfNeeded();
+  await doc.getByText('Dlhý odsek').hover();
+  await visitor.getByRole('button', { name: 'Komentovať' }).first().click();
+  const form = visitor.getByRole('form', { name: 'Nový komentár' });
+  await expect(form).toBeVisible();
+  const box = (await form.boundingBox())!;
+  const view = visitor.viewportSize()!;
+  expect(box.y + box.height).toBeLessThanOrEqual(view.height);
+  await shot(visitor, 'contract-comment');
+  await visitor.getByRole('button', { name: 'Zrušiť', exact: true }).click();
+
+  await visitor.getByRole('button', { name: 'Uložiť a poslať na schválenie' }).click();
+  await expect(visitor.getByText('Zmeny sme poslali na schválenie.')).toBeVisible();
+  await context.close();
+
+  // Approved: only the words changed in the file.
+  const drafts = await trpc<{ id: string }[]>(page.request, 'fileShare.drafts', {
+    fileId: file.fileId,
+  });
+  const draft = await trpc<{ changes: { id: string }[] }>(page.request, 'fileShare.draft', {
+    id: drafts[0]!.id,
+  });
+  await trpc(page.request, 'fileShare.decide', {
+    changeId: draft.changes[0]!.id,
+    decision: 'approved',
+  });
+  const finished = await trpc<{ version: number }>(page.request, 'fileShare.finish', {
+    id: drafts[0]!.id,
+  });
+  expect(finished.version).toBe(2);
 });
