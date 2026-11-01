@@ -23,6 +23,7 @@ import { NewEmailButton } from '@/components/emails/new-email-button';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { TablePagination, TableShell } from '@/components/table-shell';
 import { Button } from '@/components/ui/button';
+import { ChoiceTabs } from '@/components/ui/tabs';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { RowActions, RowLink, TableCell, TableRow } from '@/components/ui/table';
@@ -121,22 +122,6 @@ function InboxPage() {
     }, REFRESH_MS);
     return () => window.clearInterval(timer);
   }, [syncQuietly]);
-  const chip = (key: (typeof INBOUND_VIEWS)[number], label: string) => (
-    <button
-      key={key}
-      type="button"
-      aria-pressed={view === key}
-      onClick={() => setFilters({ view: key === 'all' ? undefined : key })}
-      className={cn(
-        'inline-flex h-8 items-center rounded-full border px-3 text-[13px] font-medium whitespace-nowrap transition-colors',
-        view === key
-          ? 'border-primary bg-primary-soft font-semibold text-primary-text'
-          : 'border-border bg-white hover:bg-hover',
-      )}
-    >
-      {label}
-    </button>
-  );
   return (
     <main className="space-y-4 px-7 pt-5 pb-10">
       <div className="flex flex-wrap items-center gap-2">
@@ -206,11 +191,16 @@ function InboxPage() {
         </button>
       </div>
       <div className="flex items-center gap-2">
-        <div role="group" aria-label={t.views.label} className="flex gap-2">
-          {chip('all', t.views.all)}
-          {chip('unassigned', t.views.unassigned(list.data?.unassigned ?? 0))}
-        </div>
-        <span className="ml-auto" />
+        <ChoiceTabs
+          label={t.views.label}
+          value={view}
+          onChange={(key) => setFilters({ view: key === 'all' ? undefined : key })}
+          options={[
+            { key: 'all' as const, label: t.views.all },
+            { key: 'unassigned' as const, label: t.views.unassigned(list.data?.unassigned ?? 0) },
+          ]}
+          className="min-w-0 flex-1"
+        />
         <NewEmailButton size="sm" />
         <BulkEmailButton size="sm" />
         <Button
