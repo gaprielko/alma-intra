@@ -184,7 +184,7 @@ the other items.
 ## 8. Role and Ďalšie položky (catalog tabs)
 
 Boards `ProdRoles` and `ProdOtherItems`. A table each: name, unit, description, the products that
-use it (chips); Role also has a column **Aplikácie**. Actions: „Nová rola“ or „Nová položka“, rename
+use it (chips); Role also has a column **Aplikácie** right after the name, then „Používa sa v“. Actions: „Nová rola“ or „Nová položka“, rename
 (the new name shows in every product), delete (only while no product uses it). The role's form
 (board `ProdRoleDialog`) has a checkbox for each application; it cannot be saved with none.
 
