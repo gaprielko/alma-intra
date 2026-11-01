@@ -268,9 +268,22 @@ const limitedTo = (nodes: readonly string[], marks: readonly string[]) => (doc: 
 const lengthOf = (node: EmailNode): number =>
   (node.text?.length ?? 0) + (node.content ?? []).reduce((sum, child) => sum + lengthOf(child), 0);
 
+/** How a line of a look's text lies: its own alignment, else the standard of its field. */
+export const LOOK_ALIGNS = ['left', 'center', 'right'] as const;
+export type LookAlign = (typeof LOOK_ALIGNS)[number];
+export const alignOf = (line: EmailNode, standard: LookAlign): LookAlign => {
+  const align = line.attrs?.align;
+  return LOOK_ALIGNS.includes(align as LookAlign) ? (align as LookAlign) : standard;
+};
+const alignFine = (doc: EmailNode) =>
+  (doc.content ?? []).every(
+    (line) => line.attrs?.align == null || LOOK_ALIGNS.includes(line.attrs.align as LookAlign),
+  );
+
 /** The text in an e-mail's header: lines of text, bold or italic. */
 export const headerDocSchema = emailDocSchema
   .refine(limitedTo(['doc', 'paragraph', 'text', 'hardBreak'], ['bold', 'italic']), 'invalid')
+  .refine(alignFine, 'invalid')
   .refine((doc) => lengthOf(doc) <= 400, 'too_long');
 /** The name an e-mail is from: one line of text and variables, as the subject. */
 export const senderNameDocSchema = emailDocSchema
@@ -305,6 +318,7 @@ const lookDocSchema = emailDocSchema
     limitedTo(['doc', 'paragraph', 'text', 'hardBreak', 'variable'], ['bold', 'italic']),
     'invalid',
   )
+  .refine(alignFine, 'invalid')
   .refine(lookDocFine, 'unknown_variable')
   .refine((doc) => lengthOf(doc) <= 2000, 'too_long');
 const hasUnsubscribe = (doc: EmailNode) => variablesOf(doc).includes('unsubscribe');
@@ -436,6 +450,7 @@ export function filledLookLines(
     if (kept.length === 0) continue;
     lines.push({
       type: 'paragraph',
+      ...(line.attrs ? { attrs: line.attrs } : {}),
       content: kept.flatMap((part, i) =>
         i === 0 ? part : [{ type: 'text' as const, text: LOOK_SEPARATOR }, ...part],
       ),

@@ -81,6 +81,35 @@ describe('a signature and a footer of the look', () => {
     expect(text).toContain('kontakt spoločnosti ADOS Slnečnica.');
   });
 
+  it('a footer lies in the centre and a signature on the left, unless a line says else', async () => {
+    const { html } = await out({}, sender);
+    const lineWith = (words: string) => new RegExp(`<p[^>]*>[^<]*${words}`).exec(html)![0];
+    expect(lineWith('Tento e-mail')).toContain('text-align:center');
+    expect(lineWith('S pozdravom')).toContain('text-align:left');
+    const right = await out(
+      {
+        signatureDoc: {
+          type: 'doc',
+          content: [
+            {
+              type: 'paragraph',
+              attrs: { align: 'right' },
+              content: [{ type: 'text', text: 'Vpravo' }],
+            },
+          ],
+        },
+      },
+      sender,
+    );
+    expect(/<p[^>]*>Vpravo/.exec(right.html)![0]).toContain('text-align:right');
+    expect(
+      signatureDocSchema.safeParse({
+        type: 'doc',
+        content: [{ type: 'paragraph', attrs: { align: 'nabok' } }],
+      }).success,
+    ).toBe(false);
+  });
+
   it('make links of the addresses and of the way to unsubscribe', async () => {
     const { html } = await out({ footerEmail: 'info@alma.test', footerWeb: 'alma.test' }, sender);
     expect(html).toContain('href="mailto:info@alma.test"');
@@ -307,9 +336,9 @@ describe('the text in the header', () => {
         ],
       },
     });
-    expect(out.html).toMatch(/<div><strong>Prvý<\/strong><\/div>/);
+    expect(out.html).toMatch(/<div style="text-align:left"><strong>Prvý<\/strong><\/div>/);
     expect(out.html).toMatch(
-      /<div>(<!-- -->)?Druhý(<!-- -->)?<br\/?>(<!-- -->)?<em>Tretí<\/em><\/div>/,
+      /<div style="text-align:left">(<!-- -->)?Druhý(<!-- -->)?<br\/?>(<!-- -->)?<em>Tretí<\/em><\/div>/,
     );
   });
 });

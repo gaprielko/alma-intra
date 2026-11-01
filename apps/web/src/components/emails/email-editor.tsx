@@ -6,7 +6,10 @@ import {
   type CustomField,
   type EmailLook,
   type EmailNode,
+  alignOf,
   filledLookLines,
+  LOOK_ALIGNS,
+  type LookAlign,
   lookValuesOf,
   SYSTEM_VARIABLES,
   variablesOf,
@@ -21,7 +24,10 @@ import {
 } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import {
+  AlignCenter,
   AlignJustify,
+  AlignLeft,
+  AlignRight,
   Bold,
   Braces,
   Columns2,
@@ -849,7 +855,9 @@ export function EmailBodyEditor({
                 {brand.first}
                 {brand.rest ? <span style={{ color: brand.restColor }}> {brand.rest}</span> : null}
               </span>
-              <span className={cn('ml-auto text-xs', dark ? 'text-[#a9c9c7]' : 'text-[#616e7c]')}>
+              <span
+                className={cn('min-w-0 flex-1 text-xs', dark ? 'text-[#a9c9c7]' : 'text-[#616e7c]')}
+              >
                 <HeaderLines doc={look.headerDoc} />
               </span>
             </div>
@@ -872,6 +880,7 @@ export function EmailBodyEditor({
                 look={look}
                 senderName={senderName}
                 unsubscribe={unsubscribe}
+                standard="center"
               />
             </div>
           </div>
@@ -932,9 +941,37 @@ const headerExtensions = [
     link: false,
     trailingNode: false,
   }),
+  ParagraphAlign,
 ];
 
 const lookDocExtensions = [...headerExtensions, Variable];
+
+/** Left, centre or right for the lines the cursor is on; a line unset keeps the field's standard. */
+function AlignButtons({ editor, standard }: { editor: Editor | null; standard: LookAlign }) {
+  const current = useEditorState({
+    editor,
+    selector: ({ editor: e }) =>
+      (e?.getAttributes('paragraph').align as LookAlign | null | undefined) ?? standard,
+  });
+  const icons = { left: AlignLeft, center: AlignCenter, right: AlignRight };
+  return (
+    <>
+      {LOOK_ALIGNS.map((align) => {
+        const Icon = icons[align];
+        return (
+          <ToolButton
+            key={align}
+            label={t.editor.aligns[align]}
+            active={current === align}
+            onClick={() => editor?.chain().focus().updateAttributes('paragraph', { align }).run()}
+          >
+            <Icon className="size-4" aria-hidden />
+          </ToolButton>
+        );
+      })}
+    </>
+  );
+}
 
 export function EmailHeaderEditor({
   value,
@@ -986,6 +1023,7 @@ export function EmailHeaderEditor({
           >
             <Italic className="size-4" aria-hidden />
           </ToolButton>
+          <AlignButtons editor={editor} standard="left" />
         </div>
       )}
       <EditorContent editor={editor} />
@@ -1002,12 +1040,15 @@ export function EmailLookDocEditor({
   onChange,
   labelledBy,
   groups,
+  standard = 'left',
   disabled = false,
 }: {
   value: EmailNode;
   onChange: (value: EmailNode) => void;
   labelledBy: string;
   groups: readonly { label: string; names: readonly string[] }[];
+  /** How a line with no alignment of its own goes: the footer's are in the centre. */
+  standard?: LookAlign;
   disabled?: boolean;
 }) {
   const editor = useEditor({
@@ -1016,7 +1057,10 @@ export function EmailLookDocEditor({
     content: value as JSONContent,
     editorProps: {
       attributes: {
-        class: 'min-h-16 px-3.5 py-2 text-sm leading-6 outline-none',
+        class: cn(
+          'min-h-16 px-3.5 py-2 text-sm leading-6 outline-none',
+          standard === 'center' && 'text-center',
+        ),
         role: 'textbox',
         'aria-multiline': 'true',
         'aria-labelledby': labelledBy,
@@ -1059,6 +1103,7 @@ export function EmailLookDocEditor({
             >
               <Italic className="size-4" aria-hidden />
             </ToolButton>
+            <AlignButtons editor={editor} standard={standard} />
             <VariableMenu editor={editor} fields={[]} groups={groups} />
           </div>
         )}
@@ -1074,11 +1119,13 @@ function LookLines({
   look,
   senderName,
   unsubscribe,
+  standard = 'left',
 }: {
   doc: EmailNode;
   look: EmailLook;
   senderName: string;
   unsubscribe: boolean;
+  standard?: LookAlign;
 }) {
   const labels = Object.fromEntries(
     variablesOf(doc).map((name) => [name, variableLabel(name, [])]),
@@ -1092,7 +1139,7 @@ function LookLines({
   return (
     <>
       {filledLookLines(doc, values, t.footer.unsubscribe).map((line, i) => (
-        <p key={i}>
+        <p key={i} style={{ textAlign: alignOf(line, standard) }}>
           {line.content?.length
             ? line.content.map((node, j) => {
                 if (node.type === 'hardBreak') return <br key={j} />;
@@ -1116,7 +1163,7 @@ function HeaderLines({ doc }: { doc: EmailNode | null }) {
   return (
     <>
       {(doc?.content ?? []).map((line, i) => (
-        <div key={i} className="text-right">
+        <div key={i} style={{ textAlign: alignOf(line, 'left') }}>
           {line.content?.length
             ? line.content.map((node, j) => {
                 if (node.type === 'hardBreak') return <br key={j} />;

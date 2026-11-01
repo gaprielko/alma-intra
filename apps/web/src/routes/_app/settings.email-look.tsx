@@ -716,6 +716,7 @@ function LookForm({
                   onChange={(doc) => set('footerDoc', doc)}
                   labelledBy={`${ids}-footer`}
                   groups={FOOTER_VARIABLES}
+                  standard="center"
                   disabled={!canManage}
                 />
                 <p className="text-xs leading-[17px] text-muted">{t.footerHint}</p>

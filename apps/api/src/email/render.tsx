@@ -1,6 +1,7 @@
 import { sk } from '@intra/shared/i18n';
-import type { EmailLook, EmailNode } from '@intra/shared/schemas';
+import type { EmailLook, EmailNode, LookAlign } from '@intra/shared/schemas';
 import {
+  alignOf,
   brandParts,
   filledLookLines,
   lookValuesOf,
@@ -144,7 +145,7 @@ function HeaderLines({ doc, accent }: { doc: EmailNode | null; accent: string })
   return (
     <>
       {(doc?.content ?? []).map((line, i) => (
-        <div key={i}>
+        <div key={i} style={{ textAlign: alignOf(line, 'left') }}>
           {line.content?.length
             ? line.content.map((node, j) =>
                 node.type === 'hardBreak' ? (
@@ -218,12 +219,21 @@ function NodeView({ node, ctx }: { node: EmailNode; ctx: Ctx }): ReactNode {
   switch (node.type) {
     case 'doc':
       return <Nodes nodes={node.content} ctx={ctx} />;
-    case 'paragraph':
+    case 'paragraph': {
+      // A signature written into an answer keeps its lines' alignment.
+      const align = str(node.attrs?.align);
       return (
-        <Text style={node.attrs?.align === 'justify' ? { ...text, textAlign: 'justify' } : text}>
+        <Text
+          style={
+            ['justify', 'center', 'right'].includes(align)
+              ? { ...text, textAlign: align as 'justify' | 'center' | 'right' }
+              : text
+          }
+        >
           <InlineNodes nodes={node.content} ctx={ctx} />
         </Text>
       );
+    }
     case 'heading': {
       const level = node.attrs?.level === 3 ? 'h3' : 'h2';
       return (
@@ -383,7 +393,17 @@ function NodeView({ node, ctx }: { node: EmailNode; ctx: Ctx }): ReactNode {
 }
 
 /** A signature or a footer: its lines, filled for this recipient, one under the other. */
-function LookLines({ doc, ctx, style }: { doc: EmailNode; ctx: Ctx; style: CSSProperties }) {
+function LookLines({
+  doc,
+  ctx,
+  style,
+  standard,
+}: {
+  doc: EmailNode;
+  ctx: Ctx;
+  style: CSSProperties;
+  standard: LookAlign;
+}) {
   const { input } = ctx;
   const values = lookValuesOf(input.look, input.values, {
     customerName: input.customerName,
@@ -392,7 +412,7 @@ function LookLines({ doc, ctx, style }: { doc: EmailNode; ctx: Ctx; style: CSSPr
   return (
     <>
       {filledLookLines(doc, values, t.footer.unsubscribe).map((line, i) => (
-        <Text key={i} style={style}>
+        <Text key={i} style={{ ...style, textAlign: alignOf(line, standard) }}>
           {line.content?.length ? <InlineNodes nodes={line.content} ctx={ctx} /> : ' '}
         </Text>
       ))}
@@ -451,9 +471,7 @@ export function EmailDocument({ input }: { input: RenderInput }) {
                     ) : null}
                   </span>
                 </Column>
-                <Column
-                  style={{ textAlign: 'right', fontSize: '12px', color: dark ? '#a9c9c7' : MUTED }}
-                >
+                <Column style={{ fontSize: '12px', color: dark ? '#a9c9c7' : MUTED }}>
                   <HeaderLines doc={look.headerDoc} accent={look.accent} />
                 </Column>
               </Row>
@@ -490,7 +508,12 @@ export function EmailDocument({ input }: { input: RenderInput }) {
                     borderTop: '1px solid #e5eaea',
                   }}
                 >
-                  <LookLines doc={look.signatureDoc} ctx={ctx} style={{ ...text, margin: 0 }} />
+                  <LookLines
+                    doc={look.signatureDoc}
+                    ctx={ctx}
+                    style={{ ...text, margin: 0 }}
+                    standard="left"
+                  />
                 </Section>
               ) : null}
             </Section>
@@ -509,6 +532,7 @@ export function EmailDocument({ input }: { input: RenderInput }) {
                 doc={look.footerDoc}
                 ctx={ctx}
                 style={{ margin: '0 0 2px', fontSize: '12px', lineHeight: '18px', color: MUTED }}
+                standard="center"
               />
             </Section>
           </Section>

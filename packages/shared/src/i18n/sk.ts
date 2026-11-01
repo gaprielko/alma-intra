@@ -2457,6 +2457,7 @@ export const sk = {
       bold: 'Tučné',
       italic: 'Kurzíva',
       justify: 'Zarovnať do bloku',
+      aligns: { left: 'Zarovnať vľavo', center: 'Zarovnať na stred', right: 'Zarovnať vpravo' },
       accent: 'Farba značky',
       link: 'Odkaz',
       bulletList: 'Odrážky',
