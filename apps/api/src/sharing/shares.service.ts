@@ -60,7 +60,8 @@ export class ShareError extends Error {
       | 'TOO_LARGE'
       | 'NOT_YOURS'
       | 'NOT_WAITING'
-      | 'NOT_READY',
+      | 'NOT_READY'
+      | 'HAS_COMMENTS',
   ) {
     super(code);
   }
@@ -399,7 +400,7 @@ export async function fileUrl(db: Db, storage: Storage | null, opened: LiveShare
   return { url: signed.url };
 }
 
-async function versionSource(db: Db, storage: Storage, versionId: string, fileId: string) {
+export async function versionSource(db: Db, storage: Storage, versionId: string, fileId: string) {
   const [version] = await db
     .select()
     .from(fileVersions)
@@ -475,24 +476,17 @@ async function createDraft(
 
 const utf8Length = (text: string) => Buffer.byteLength(text, 'utf8');
 
+export interface ChangeOp {
+  block: number;
+  kind: 'edit' | 'delete';
+  html?: string | undefined;
+}
+
 /**
- * „Uložiť a poslať na schválenie“: never a version. The server reads each changed fragment itself and
- * lets only what the sanitizer keeps through. A visit's comments-only draft takes the changes; any
- * other save is a draft of its own holding all of what this visit did so far.
+ * What a save holds: the server reads each changed fragment itself, and only what the sanitizer
+ * keeps goes through (docs/file-sharing.md 9.3).
  */
-export async function saveDraft(
-  db: Db,
-  storage: Storage | null,
-  opened: OpenedShare,
-  input: {
-    baseVersionId: string;
-    ops: { block: number; kind: 'edit' | 'delete'; html?: string | undefined }[];
-  },
-) {
-  const session = opened.session!;
-  if (!storage) throw new ShareError('NOT_FOUND');
-  const source = await versionSource(db, storage, input.baseVersionId, opened.file.id);
-  if (utf8Length(source) > SHARE_LIMITS.editableBytes) throw new ShareError('TOO_LARGE');
+export function preparedChanges(source: string, ops: ChangeOp[]) {
   const fragments = parseFragments(source);
   type Change = {
     fragment: (typeof fragments)[number];
@@ -500,7 +494,7 @@ export async function saveDraft(
     oldHtml: string;
     newHtml: string | null;
   };
-  const changes = input.ops.flatMap((op): Change[] => {
+  const changes = ops.flatMap((op): Change[] => {
     const fragment = fragments[op.block];
     if (!fragment) throw new ShareError('NOT_EDITABLE');
     const oldHtml = source.slice(fragment.start, fragment.end);
@@ -527,6 +521,28 @@ export async function saveDraft(
     0,
   );
   if (total > SHARE_LIMITS.draftBytes) throw new ShareError('TOO_LARGE');
+  return outermost;
+}
+
+/**
+ * „Uložiť a poslať na schválenie“: never a version. The server reads each changed fragment itself and
+ * lets only what the sanitizer keeps through. A visit's comments-only draft takes the changes; any
+ * other save is a draft of its own holding all of what this visit did so far.
+ */
+export async function saveDraft(
+  db: Db,
+  storage: Storage | null,
+  opened: OpenedShare,
+  input: {
+    baseVersionId: string;
+    ops: { block: number; kind: 'edit' | 'delete'; html?: string | undefined }[];
+  },
+) {
+  const session = opened.session!;
+  if (!storage) throw new ShareError('NOT_FOUND');
+  const source = await versionSource(db, storage, input.baseVersionId, opened.file.id);
+  if (utf8Length(source) > SHARE_LIMITS.editableBytes) throw new ShareError('TOO_LARGE');
+  const outermost = preparedChanges(source, input.ops);
   return db.transaction(async (tx) => {
     const [empty] = await tx
       .select({ id: fileDrafts.id })
@@ -706,33 +722,38 @@ export async function editComment(db: Db, opened: OpenedShare, id: string, body:
 }
 
 /** Deleting the last comment of a draft holding nothing else discards the draft as well. */
+export async function dropComment(tx: Tx, comment: { id: string; parentId: string | null }) {
+  const { id } = comment;
+  await tx
+    .update(fileComments)
+    .set({ deletedAt: new Date(), updatedAt: new Date() })
+    .where(or(eq(fileComments.id, id), eq(fileComments.parentId, id)));
+  if (comment.parentId) return;
+  const holding = await tx
+    .select({ draftId: fileDraftComments.draftId })
+    .from(fileDraftComments)
+    .where(eq(fileDraftComments.commentId, id));
+  if (holding.length === 0) return;
+  await tx.delete(fileDraftComments).where(eq(fileDraftComments.commentId, id));
+  await tx
+    .update(fileDrafts)
+    .set({ state: 'discarded', finishedAt: new Date() })
+    .where(
+      and(
+        inArray(
+          fileDrafts.id,
+          holding.map((h) => h.draftId),
+        ),
+        eq(fileDrafts.state, 'waiting'),
+        sql`not exists (select 1 from file_draft_changes c where c.draft_id = ${fileDrafts.id})`,
+        sql`not exists (select 1 from file_draft_comments dc where dc.draft_id = ${fileDrafts.id})`,
+      ),
+    );
+}
+
 export async function deleteComment(db: Db, opened: OpenedShare, id: string) {
   return db.transaction(async (tx) => {
     const comment = await ownComment(tx, opened, id);
-    await tx
-      .update(fileComments)
-      .set({ deletedAt: new Date(), updatedAt: new Date() })
-      .where(or(eq(fileComments.id, id), eq(fileComments.parentId, id)));
-    if (comment.parentId) return;
-    const holding = await tx
-      .select({ draftId: fileDraftComments.draftId })
-      .from(fileDraftComments)
-      .where(eq(fileDraftComments.commentId, id));
-    if (holding.length === 0) return;
-    await tx.delete(fileDraftComments).where(eq(fileDraftComments.commentId, id));
-    await tx
-      .update(fileDrafts)
-      .set({ state: 'discarded', finishedAt: new Date() })
-      .where(
-        and(
-          inArray(
-            fileDrafts.id,
-            holding.map((h) => h.draftId),
-          ),
-          eq(fileDrafts.state, 'waiting'),
-          sql`not exists (select 1 from file_draft_changes c where c.draft_id = ${fileDrafts.id})`,
-          sql`not exists (select 1 from file_draft_comments dc where dc.draft_id = ${fileDrafts.id})`,
-        ),
-      );
+    await dropComment(tx, comment);
   });
 }
