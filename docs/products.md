@@ -122,7 +122,7 @@ Odstrániť (only while no customer has it).
 
 ## 6. A product's detail and price list
 
-Board `ProdDetail`, at `/products/<id>`. One page that is edited in place (no separate form):
+Board `ProdRoleDetail`, at `/products/<id>`. One page that is edited in place (no separate form):
 
 - **Základné údaje**: name, description, base price, period (Mesačne / Ročne), state. The price is
   shown without VAT first and with VAT next to it; the one with VAT is the one entered (the other
@@ -167,7 +167,7 @@ a similar product.
 
 ## 7. Adding an item: the shared catalog
 
-Dialog „Pridať položku“ (board `ProdItemDialog`) on a product's price list:
+Dialog „Pridať rolu“ or „Pridať položku“ on a product's price list:
 
 - a search over the catalog; each item shows where it is already used, with that product's numbers
   („v ADOS: 1 v cene, +10 €, max. 3“);

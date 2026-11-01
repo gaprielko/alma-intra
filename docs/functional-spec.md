@@ -203,15 +203,16 @@ Agreed and implemented on 29 Oct 2026; the decisions P-1…P-14 are in
 Agreed and implemented on 29 Oct 2026; the decisions R-1…R-15 are in [products.md](products.md),
 the screens in `design/Prod*.dc.html`. In short:
 
-- „Produkty“ in the sidebar: products with a base price and period, and a price list of items from
-  a shared catalog (Položky): how many are in the base price, the price of each further one, a
+- „Produkty“ in the sidebar: products with a base price and period, and a price list of roles and
+  other items from shared catalogs (Role, Ďalšie položky): a role reaches one or more of Mobil, Web
+  and Backend; how many are in the base price, the price of each further one, a
   maximum, recurring or one-off, counted from workloads or not. Prices without and with VAT; the
   VAT rate is set in Nastavenia › Ceny a DPH.
 - An organization or a prevádzka holds a product from a date (optionally to one), with counts that
   never go below the package, priced by the list, with a discount (permanent or for some months)
   or at a fixed price. A change of the list applies to every holder unless the price is fixed.
-- Items counted from workloads: each workload rounds up to the product's step, the sum rounds up to
-  whole ones. „Sestry“ in the organization's header is the count of the item „Sestra“.
+- Roles counted from workloads: each workload rounds up to the product's step, the sum rounds up to
+  whole ones. „Sestry“ in the organization's header is the count of the role „Sestra“.
 
 ---
 
@@ -659,6 +660,7 @@ both attach files.
 | D-55  | Draft, not implemented. Intra is the main app and owns everything but products and roles. A product registers itself with its roles, Intra founds organizations in it and assigns places for new accounts, by scope and workloads (`docs/integrations/products.md`) (31 Oct 2026) |
 | D-56  | The text in an e-mail's header has several lines, bold and italic. The name an e-mail is from can be written in Settings › Vzhľad e-mailov, with variables as in the subject, filled for each recipient when queued; empty or with a value missing it stays as in D-50 (31 Oct 2026) |
 | D-57  | An e-mail is personal or team. Each type has a global look and a look per product, with a signature and a footer of its own: lines, bold, italic and variables. A part of a line whose variable has no value is left out and never stops a sending; the footer must keep the link to unsubscribe. A look can be filled from another („Prevziať“). What was one look became the same look for both types, what was written so far stays personal; an answer in a conversation is personal. The company's name and IČO moved to Settings › Firma, true of all of Intra; the sending address and customer replies stay in „Spoločné nastavenia e-mailov“. The signature from Môj účet is the variable „Podpis z Môjho účtu“ (1 Nov 2026) |
+| D-58  | The catalog has roles, which reach Mobil, Web or Backend, and other items; a price list shows them apart; a calculator can write its counts to the list after a confirming step (products.md, R-20…R-24; 1 Nov 2026) |
 
 ### Still to verify (not decisions)
 

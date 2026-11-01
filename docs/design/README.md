@@ -73,9 +73,11 @@ with the code so the implementation can be checked against them.
 | Est | `EstActivityDialog.dc.html` | Record an activity: the prevádzka found by the contact |
 | Est | `EstProductDialog.dc.html` | Assign a product to the organization or a prevádzka: counts, price mode, price with and without VAT (interactive) |
 | Prod | `ProdList.dc.html` | Produkty: products with base price, what it includes and surcharges |
-| Prod | `ProdDetail.dc.html` | Product detail: price list and price calculator (interactive) |
-| Prod | `ProdItemDialog.dc.html` | Add an item to a price list from the shared catalog |
-| Prod | `ProdItems.dc.html` | Položky: the shared catalog of item names |
+| Prod | `ProdRoleDetail.dc.html` | Product detail: price list in two parts, price calculator with „Vložiť do cenníka“ (interactive) |
+| Prod | `ProdRolePicker.dc.html` | Add a role to a price list from the shared catalog |
+| Prod | `ProdRoles.dc.html` | Role: the shared catalog of roles with their applications |
+| Prod | `ProdRoleDialog.dc.html` | A new role: its applications, at least one |
+| Prod | `ProdOtherItems.dc.html` | Ďalšie položky: the shared catalog of the other items |
 | Prod | `ProdVatSettings.dc.html` | Settings › Ceny a DPH: the VAT rate |
 
 The `Org` boards are the agreed redesign of [contacts-redesign.md](../contacts-redesign.md) (29 Oct
