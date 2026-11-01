@@ -1826,6 +1826,7 @@ export const sk = {
     menu: {
       download: 'Stiahnuť',
       preview: 'Náhľad',
+      edit: 'Upraviť',
       share: 'Zdieľať',
       newVersion: 'Nahrať novú verziu',
       rename: 'Premenovať',
@@ -3235,6 +3236,7 @@ export const sk = {
       NOT_YOURS: 'Tento komentár už nemôžete meniť.',
       NOT_WAITING: 'Koncept je už vybavený.',
       NOT_READY: 'Ešte nie je rozhodnuté o všetkých zmenách a komentároch.',
+      HAS_COMMENTS: 'Napísali ste komentár, preto sa dá uložiť len ako koncept.',
       TOO_MANY_REQUESTS: 'Priveľa pokusov. Skúste to o chvíľu.',
     },
     access: {
@@ -3248,6 +3250,8 @@ export const sk = {
       password: 'Heslo',
       open: 'Otvoriť dokument',
       notMe: (name: string) => `Nie som ${name}`,
+      colleague: 'Pracujete v Alme?',
+      colleagueLogin: 'Prihlásiť sa účtom Alma',
       invalidTitle: 'Odkaz nie je platný',
       invalidText: 'Mohol vypršať alebo bol zrušený. Požiadajte o nový toho, kto vám ho poslal.',
     },
@@ -3400,6 +3404,22 @@ export const sk = {
     },
     preview: {
       drafts: (n: number) => `Koncepty · ${n}`,
+      edit: 'Upraviť',
+    },
+    edit: {
+      back: 'Späť na náhľad',
+      saveDraft: 'Uložiť ako koncept',
+      saveVersion: 'Uložiť ako novú verziu',
+      onlyDraft: 'Napísali ste komentár, preto sa dá uložiť len ako koncept.',
+      draftSaved: 'Zmeny sú uložené ako koncept. Ďalšie uloženie vytvorí nový.',
+      versionMade: (n: number) => `Vznikla verzia ${n}.`,
+      unfit: (version: number, n: number) =>
+        `Medzitým vznikla verzia ${version} a ${plural(n, 'zmena', 'zmeny', 'zmien')} sa do nej nedá zaradiť. Môžete ich uložiť ako koncept alebo zahodiť.`,
+      leave: {
+        title: 'Zavrieť bez uloženia?',
+        text: 'Neuložené zmeny sa stratia.',
+        confirm: 'Zavrieť bez uloženia',
+      },
     },
     activity: {
       file: 'Súbor',

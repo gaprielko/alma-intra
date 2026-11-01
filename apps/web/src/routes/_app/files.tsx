@@ -37,6 +37,7 @@ import { ChangedBy, FileBadge, FolderTile } from '@/components/files/file-bits';
 import { type FilesDialog, FilesDialogs } from '@/components/files/file-dialogs';
 import { FilePreviewDialog } from '@/components/files/file-preview-dialog';
 import { DraftDialog } from '@/components/files/draft-dialog';
+import { FileEditDialog } from '@/components/files/file-edit-dialog';
 import { FileSheet } from '@/components/files/file-sheet';
 import { ShareDialog } from '@/components/files/share-dialog';
 import { EmptyState, ErrorState } from '@/components/empty-state';
@@ -81,6 +82,8 @@ const search = z.object({
   view: z.enum(['trash']).optional(),
   /** Only files with a public link. */
   shared: z.boolean().optional(),
+  /** Open this file's preview: the way in from a public link. */
+  open: z.string().uuid().optional(),
   /** The draft open over the page, from a file's list or an activity. */
   draft: z.string().uuid().optional(),
 });
@@ -724,6 +727,16 @@ function ContentsSection({
   const openFile = (file: FileRow) => setPreviewing(file);
   const canShare = useCan('file.share');
   const [sharing, setSharing] = useState<FileRow | null>(null);
+  const [editing, setEditing] = useState<FileRow | null>(null);
+  // A colleague arriving through a public link: the file in view first.
+  const arriving = params.open;
+  const arrived = data?.files.find((file) => file.id === arriving);
+  useEffect(() => {
+    if (!arriving || !data) return;
+    if (arrived) setPreviewing(arrived);
+    else onOpenFile(arriving);
+    setSearch({ open: undefined });
+  }, [arriving, arrived, data]);
 
   const fileMenu = (file: FileRow) => (
     <DropdownMenu>
@@ -748,6 +761,9 @@ function ContentsSection({
         </DropdownMenuItem>
         {previewKind(file.name) ? (
           <DropdownMenuItem onSelect={() => setPreviewing(file)}>{t.menu.preview}</DropdownMenuItem>
+        ) : null}
+        {canWrite && previewKind(file.name) === 'html' ? (
+          <DropdownMenuItem onSelect={() => setEditing(file)}>{t.menu.edit}</DropdownMenuItem>
         ) : null}
         {canShare ? (
           <DropdownMenuItem onSelect={() => setSharing(file)}>{t.menu.share}</DropdownMenuItem>
@@ -1119,6 +1135,16 @@ function ContentsSection({
       ) : null}
       <DropDialog drop={drop} onClose={() => setDrop(null)} />
       {sharing ? <ShareDialog file={sharing} onClose={() => setSharing(null)} /> : null}
+      {editing ? (
+        <FileEditDialog
+          file={editing}
+          onClose={() => setEditing(null)}
+          onBack={() => {
+            setPreviewing(editing);
+            setEditing(null);
+          }}
+        />
+      ) : null}
       {previewing ? (
         <FilePreviewDialog
           file={previewing}
@@ -1131,6 +1157,14 @@ function ContentsSection({
             setPreviewing(null);
             onOpenDrafts(previewing.id);
           }}
+          {...(canWrite && previewKind(previewing.name) === 'html'
+            ? {
+                onEdit: () => {
+                  setEditing(previewing);
+                  setPreviewing(null);
+                },
+              }
+            : {})}
         />
       ) : null}
     </section>

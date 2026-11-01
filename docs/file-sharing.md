@@ -426,9 +426,9 @@ The owner accepted every recommendation.
 
 ---
 
-## 16. A colleague opening the link (agreed, 2026-11-01)
+## 16. A colleague opening the link (implemented, 2026-11-01)
 
-Asked by the owner after the rest was implemented. The answers are in 16.3. Screens first, then code.
+Asked by the owner after the rest was implemented. The answers are in 16.3. Screens: the `ShareApp*` boards.
 
 A colleague has access to every file anyway, so a link is only a way to find the file. It opens the file in
 „Súbory“, whatever the link's mode, password or expiry, and always in the view mode first.
