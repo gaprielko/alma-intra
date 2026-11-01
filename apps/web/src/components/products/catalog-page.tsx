@@ -1,9 +1,11 @@
 import { sk } from '@intra/shared/i18n';
+import type { ProductItemKind } from '@intra/shared/schemas';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 import { MoreHorizontal, Plus, Search } from 'lucide-react';
 import { useState } from 'react';
 import { ErrorState } from '@/components/empty-state';
+import { AppChips } from '@/components/products/app-chips';
 import { ItemDialog } from '@/components/products/item-dialog';
 import { ProductsHeader } from '@/components/products/products-header';
 import { CardSkeleton } from '@/components/skeletons';
@@ -32,13 +34,13 @@ import { loadFailed } from '@/lib/query-view';
 import { useCan } from '@/lib/session';
 import { type RouterOutputs, trpc } from '@/lib/trpc';
 
-export const Route = createFileRoute('/_app/products/items')({ component: ItemsPage });
-
 const t = sk.products.items;
 type Item = RouterOutputs['product']['items'][number];
 
-/** Položky: the shared catalog of item names (R-2), with the products that use each. */
-function ItemsPage() {
+/** Role or Ďalšie položky: a shared catalog (R-2, R-20), with the products that use each. */
+export function CatalogPage({ kind }: { kind: ProductItemKind }) {
+  const copy = t[kind];
+  const isRole = kind === 'role';
   const toast = useToast();
   const queryClient = useQueryClient();
   const items = useQuery(trpc.product.items.queryOptions());
@@ -48,7 +50,7 @@ function ItemsPage() {
   const remove = useMutation(
     trpc.product.itemDelete.mutationOptions({
       onSuccess: async () => {
-        toast('success', t.deleted);
+        toast('success', copy.deleted);
         await queryClient.invalidateQueries(trpc.product.pathFilter());
       },
       onError: (error) => toast('error', errorMessage(error, sk.products.errors)),
@@ -56,15 +58,15 @@ function ItemsPage() {
   );
   const term = search.trim().toLocaleLowerCase('sk');
   const rows = (items.data ?? []).filter(
-    (item) => !term || item.name.toLocaleLowerCase('sk').includes(term),
+    (item) => item.kind === kind && (!term || item.name.toLocaleLowerCase('sk').includes(term)),
   );
   return (
     <div className="min-w-0">
-      <ProductsHeader active="items">
+      <ProductsHeader active={isRole ? 'roles' : 'others'}>
         {canWrite ? (
           <Button onClick={() => setEditing('new')}>
             <Plus className="size-4" aria-hidden />
-            {t.new}
+            {copy.new}
           </Button>
         ) : null}
       </ProductsHeader>
@@ -82,25 +84,26 @@ function ItemsPage() {
                   aria-hidden
                 />
                 <Input
-                  aria-label={t.search}
-                  placeholder={t.search}
+                  aria-label={copy.search}
+                  placeholder={copy.search}
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   className="h-9 pl-9"
                 />
               </div>
-              <span className="ml-auto text-xs text-muted">{t.hint}</span>
+              <span className="ml-auto text-xs text-muted">{copy.hint}</span>
             </div>
             {rows.length === 0 ? (
-              <p className="px-5 py-6 text-sm text-muted">{t.empty}</p>
+              <p className="px-5 py-6 text-sm text-muted">{copy.empty}</p>
             ) : (
               <div className="mt-3 overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <tr>
-                      <TableHead>{t.columns.name}</TableHead>
-                      <TableHead>{t.columns.unit}</TableHead>
+                      <TableHead>{copy.name}</TableHead>
+                      {isRole ? <TableHead>{t.columns.apps}</TableHead> : null}
                       <TableHead>{t.columns.usedIn}</TableHead>
+                      <TableHead>{t.columns.unit}</TableHead>
                       <TableHead>{t.columns.description}</TableHead>
                       <TableHead className="w-12" />
                     </tr>
@@ -112,7 +115,11 @@ function ItemsPage() {
                         onClick={canWrite ? () => setEditing(item) : undefined}
                       >
                         <TableCell className="font-semibold">{item.name}</TableCell>
-                        <TableCell className="text-muted">{item.unit ?? sk.common.none}</TableCell>
+                        {isRole ? (
+                          <TableCell>
+                            <AppChips apps={item.apps} />
+                          </TableCell>
+                        ) : null}
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
                             {item.usedIn.map((use) => (
@@ -127,6 +134,7 @@ function ItemsPage() {
                             ))}
                           </div>
                         </TableCell>
+                        <TableCell className="text-muted">{item.unit ?? sk.common.none}</TableCell>
                         <TableCell className="text-muted">{item.description}</TableCell>
                         <TableCell>
                           {canWrite ? (
@@ -166,6 +174,7 @@ function ItemsPage() {
       </main>
       {editing ? (
         <ItemDialog
+          kind={kind}
           item={editing === 'new' ? undefined : editing}
           onClose={() => setEditing(null)}
         />

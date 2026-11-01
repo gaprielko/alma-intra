@@ -62,7 +62,7 @@ export async function holdingsOf(db: Db | Tx, organizationId: string) {
       .from(productPriceItems)
       .innerJoin(productItems, eq(productItems.id, productPriceItems.itemId))
       .where(inArray(productPriceItems.productId, productIds))
-      .orderBy(productPriceItems.position),
+      .orderBy(productItems.kind, productPriceItems.position),
     db
       .select()
       .from(organizationProductCounts)

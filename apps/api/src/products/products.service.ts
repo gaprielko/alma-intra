@@ -2,8 +2,10 @@ import {
   HOLDERS_PAGE_SIZE,
   type ProductHoldersInput,
   productHoldersSchema,
+  type ProductApp,
   type ProductInput,
   type ProductItemInput,
+  type ProductItemKind,
   withoutVat,
   withVat,
 } from '@intra/shared/schemas';
@@ -21,7 +23,7 @@ import {
 
 /** A refusal the web words for itself (`sk.products.errors`). */
 export class ProductError extends Error {
-  constructor(readonly code: 'NOT_FOUND' | 'NAME_TAKEN' | 'IN_USE' | 'ITEM_TWICE') {
+  constructor(readonly code: 'NOT_FOUND' | 'NAME_TAKEN' | 'IN_USE' | 'ITEM_TWICE' | 'KIND_FIXED') {
     super(code);
   }
 }
@@ -91,13 +93,15 @@ const customersOf = sql<number>`(select count(*) from organization_products op
   join organizations o on o.id = op.organization_id
   where op.product_id = "products"."id" and o.deleted_at is null)`.mapWith(Number);
 
-/** The price list of products, in its order, with the items' names. */
+/** The price list of products: the roles, then the other items, each in its order (R-22). */
 async function priceListsOf(db: Db | Tx, productIds: string[]) {
   if (productIds.length === 0) return new Map<string, PriceListRow[]>();
   const rows = await db
     .select({
       productId: productPriceItems.productId,
       itemId: productPriceItems.itemId,
+      kind: productItems.kind,
+      apps: productItems.apps,
       name: productItems.name,
       unit: productItems.unit,
       included: productPriceItems.included,
@@ -110,7 +114,7 @@ async function priceListsOf(db: Db | Tx, productIds: string[]) {
     .from(productPriceItems)
     .innerJoin(productItems, eq(productItems.id, productPriceItems.itemId))
     .where(inArray(productPriceItems.productId, productIds))
-    .orderBy(asc(productPriceItems.position));
+    .orderBy(asc(productItems.kind), asc(productPriceItems.position));
   const byProduct = new Map<string, PriceListRow[]>();
   for (const { productId, ...row } of rows) {
     byProduct.set(productId, [...(byProduct.get(productId) ?? []), row]);
@@ -118,6 +122,8 @@ async function priceListsOf(db: Db | Tx, productIds: string[]) {
   return byProduct;
 }
 type PriceListRow = {
+  kind: ProductItemKind;
+  apps: ProductApp[];
   itemId: string;
   name: string;
   unit: string | null;
@@ -229,6 +235,14 @@ async function setPriceList(tx: Tx, productId: string, input: ProductInput, rate
     .select()
     .from(productPriceItems)
     .where(eq(productPriceItems.productId, productId));
+  const roles = new Set(
+    (
+      await tx
+        .select({ id: productItems.id })
+        .from(productItems)
+        .where(and(inArray(productItems.id, ids), eq(productItems.kind, 'role')))
+    ).map((item) => item.id),
+  );
   await tx.delete(productPriceItems).where(eq(productPriceItems.productId, productId));
   const rows = input.items.map((item, position) => {
     const unit = bothPrices(item.unitPrice, item.unitPriceGross, rate);
@@ -240,7 +254,8 @@ async function setPriceList(tx: Tx, productId: string, input: ProductInput, rate
       unitPriceGross: unit.gross,
       max: item.max,
       billing: item.billing,
-      byWorkload: item.billing === 'recurring' && item.byWorkload,
+      // Only a role is people, whose workloads can be counted (R-23).
+      byWorkload: item.billing === 'recurring' && item.byWorkload && roles.has(item.itemId),
       position,
     };
   });
@@ -365,7 +380,7 @@ export async function deleteProduct(db: Db, id: string) {
 // ---------------------------------------------------------------------------------------------
 // The shared items (R-2)
 
-/** Položky: every item with the products whose price list has it, and its numbers there. */
+/** Role and Ďalšie položky: every item with the products whose price list has it, and its numbers. */
 export async function listItems(db: Db | Tx) {
   const usedIn = sql<
     {
@@ -384,6 +399,8 @@ export async function listItems(db: Db | Tx) {
   return db
     .select({
       id: productItems.id,
+      kind: productItems.kind,
+      apps: productItems.apps,
       name: productItems.name,
       unit: productItems.unit,
       description: productItems.description,
@@ -397,13 +414,14 @@ const itemColumns = (input: ProductItemInput) => ({
   name: input.name,
   unit: input.unit || null,
   description: input.description || null,
+  apps: input.apps,
 });
 
 export async function createItem(db: Db, input: ProductItemInput) {
   return mapNameClash(async () => {
     const [created] = await db
       .insert(productItems)
-      .values(itemColumns(input))
+      .values({ ...itemColumns(input), kind: input.kind })
       .returning({ id: productItems.id });
     return { id: created!.id };
   });
@@ -414,9 +432,12 @@ export async function updateItem(db: Db, id: string, input: ProductItemInput) {
   return mapNameClash(async () => {
     const [current] = await db.select().from(productItems).where(eq(productItems.id, id));
     if (!current) throw new ProductError('NOT_FOUND');
+    if (current.kind !== input.kind) throw new ProductError('KIND_FIXED');
     const values = itemColumns(input);
+    const text = (value: string | string[] | null) =>
+      Array.isArray(value) ? [...value].sort().join() : value;
     const fields = (Object.keys(values) as (keyof typeof values)[]).filter(
-      (key) => (current[key] ?? null) !== (values[key] ?? null),
+      (key) => text(current[key]) !== text(values[key]),
     );
     await db.update(productItems).set(values).where(eq(productItems.id, id));
     return { fields };

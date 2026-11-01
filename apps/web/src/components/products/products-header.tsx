@@ -1,4 +1,5 @@
 import { sk } from '@intra/shared/i18n';
+import type { ProductItemKind } from '@intra/shared/schemas';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
@@ -24,15 +25,17 @@ export function parseMoney(text: string): number | null {
 export const moneyText = (n: number | null | undefined) =>
   n === null || n === undefined ? '' : n.toFixed(2).replace('.', ',');
 
-type Tab = 'products' | 'items';
+type Tab = 'products' | 'roles' | 'others';
 
-/** Produkty: the page header and the tabs Produkty and Položky, each with its count. */
+/** Produkty: the page header and the tabs Produkty, Role and Ďalšie položky, each with its count. */
 export function ProductsHeader({ active, children }: { active: Tab; children?: ReactNode }) {
   const products = useQuery(trpc.product.list.queryOptions());
   const items = useQuery(trpc.product.items.queryOptions());
+  const countOf = (kind: ProductItemKind) => items.data?.filter((i) => i.kind === kind).length;
   const tabs: { key: Tab; to: string; count: number | undefined }[] = [
     { key: 'products', to: '/products', count: products.data?.length },
-    { key: 'items', to: '/products/items', count: items.data?.length },
+    { key: 'roles', to: '/products/roles', count: countOf('role') },
+    { key: 'others', to: '/products/others', count: countOf('other') },
   ];
   return (
     <>

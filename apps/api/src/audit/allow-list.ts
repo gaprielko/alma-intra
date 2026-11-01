@@ -230,7 +230,7 @@ const AUDIT_ALLOW_LIST: Record<string, Record<string, Rule>> = {
   product_item: {
     created: flag,
     deleted: flag,
-    fields: subsetOf(['name', 'unit', 'description']),
+    fields: subsetOf(['name', 'unit', 'description', 'apps']),
   },
   /** The VAT rate (Nastavenia › Ceny a DPH). */
   pricing: {
