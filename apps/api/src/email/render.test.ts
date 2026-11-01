@@ -336,9 +336,9 @@ describe('the text in the header', () => {
         ],
       },
     });
-    expect(out.html).toMatch(/<div style="text-align:left"><strong>Prvý<\/strong><\/div>/);
+    expect(out.html).toMatch(/<div style="text-align:right"><strong>Prvý<\/strong><\/div>/);
     expect(out.html).toMatch(
-      /<div style="text-align:left">(<!-- -->)?Druhý(<!-- -->)?<br\/?>(<!-- -->)?<em>Tretí<\/em><\/div>/,
+      /<div style="text-align:right">(<!-- -->)?Druhý(<!-- -->)?<br\/?>(<!-- -->)?<em>Tretí<\/em><\/div>/,
     );
   });
 });

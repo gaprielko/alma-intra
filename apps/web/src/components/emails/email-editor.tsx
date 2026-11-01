@@ -990,7 +990,7 @@ export function EmailHeaderEditor({
     content: (value ?? { type: 'doc', content: [{ type: 'paragraph' }] }) as JSONContent,
     editorProps: {
       attributes: {
-        class: 'min-h-12 px-3.5 py-2 text-sm leading-5 outline-none',
+        class: 'min-h-12 px-3.5 py-2 text-right text-sm leading-5 outline-none',
         role: 'textbox',
         'aria-multiline': 'true',
         'aria-labelledby': labelledBy,
@@ -1023,7 +1023,7 @@ export function EmailHeaderEditor({
           >
             <Italic className="size-4" aria-hidden />
           </ToolButton>
-          <AlignButtons editor={editor} standard="left" />
+          <AlignButtons editor={editor} standard="right" />
         </div>
       )}
       <EditorContent editor={editor} />
@@ -1163,7 +1163,7 @@ function HeaderLines({ doc }: { doc: EmailNode | null }) {
   return (
     <>
       {(doc?.content ?? []).map((line, i) => (
-        <div key={i} style={{ textAlign: alignOf(line, 'left') }}>
+        <div key={i} style={{ textAlign: alignOf(line, 'right') }}>
           {line.content?.length
             ? line.content.map((node, j) => {
                 if (node.type === 'hardBreak') return <br key={j} />;

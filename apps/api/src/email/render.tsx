@@ -145,7 +145,7 @@ function HeaderLines({ doc, accent }: { doc: EmailNode | null; accent: string })
   return (
     <>
       {(doc?.content ?? []).map((line, i) => (
-        <div key={i} style={{ textAlign: alignOf(line, 'left') }}>
+        <div key={i} style={{ textAlign: alignOf(line, 'right') }}>
           {line.content?.length
             ? line.content.map((node, j) =>
                 node.type === 'hardBreak' ? (
