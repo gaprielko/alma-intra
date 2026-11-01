@@ -1,9 +1,10 @@
 # Súbory: public sharing of a file, drafts and their approval
 
-Status: **agreed** (2026-11-01), all recommendations of section 15 accepted. Phase 2 (screens on the canvas
-„Alma Intra – screens“, page „Súbory“) is next, and only then code. The owner changed the concept in the first
-round: an outsider never makes a version, only a draft that a colleague approves. Builds on section 7 of
-`docs/functional-spec.md`, D-43, D-54 and `docs/activity-types.md`.
+Status: **implemented** (2026-11-01), all recommendations of section 15 accepted. Screens: the `Share*`
+boards on the canvas „Alma Intra – screens“, page „Súbory“, and `AktDetailShare` on page „Aktivity“. The
+owner changed the concept in the first round: an outsider never makes a version, only a draft that a
+colleague approves. Builds on section 7 of `docs/functional-spec.md`, D-43, D-54 and
+`docs/activity-types.md`. Decision D-58.
 
 Marks: **[S-n]** a decision of this spec. _(Q-n)_ points to the question that settled it (section 15).
 
@@ -214,7 +215,7 @@ The selected drafts become one new draft on the file's current version, and they
 - Comments of all of them are in the new one. Those that do not fit go to „Nezaradené komentáre“ at the end of the document,
   as the owner decided.
 - The same change twice becomes one, and a decision already made on it carries over.
-- Two different changes of one fragment stay as alternatives, each with its author: a colleague approves at most one.
+- Two different changes of one fragment stay as alternatives, each with its author: approving one rejects the others.
 - A merge creates no new activity; the activities of the merged drafts lead to the new draft _(Q-18)_.
 
 ### 7.4 A draft on an older version [S-29]
@@ -265,7 +266,7 @@ As the owner decided, replacing a separate notification [S-31]:
 | Reading without the password        | Nothing about the file before unlocking; every procedure checks the cookie against the link and `password_generation`  |
 | Mode bypass                         | Mode is read from the database on each call, never from the cookie or the client                                       |
 | Changing somebody else's comment    | The visitor comes from the server's cookie, never from input; the row's `visitor_id` must match                        |
-| Link or token leaking               | The fragment; `Referrer-Policy`; `X-Robots-Tag: noindex`; the token never logged; stored only hashed and encrypted     |
+| Link or token leaking               | The fragment; `Referrer-Policy`; `X-Robots-Tag: noindex` on the frame; the token never logged; stored hashed and encrypted |
 | Cross-site requests                 | `SameSite=Strict`, POST only, as the rest of Intra                                                                     |
 | A public call acting as a colleague | Public procedures ignore `ctx.session`; a signed-in colleague opening a link is a visitor like any other               |
 | Reaching other files                | Every query goes through the link's `file_id`; ids of versions and drafts are checked against that file                |
@@ -317,7 +318,8 @@ rendered as text by React, never as HTML, in the app too.
 ### 9.5 Other
 
 - **No tracking of opening** [S-33], in line with D-13 and the owner's decision of 30 Oct 2026: no list of who opened a link and
-  when. The audit trail and the activity hold what changes something.
+  when. The audit trail and the activity hold what changes something. Wrong passwords only count
+  towards the limits.
 - **External pictures** tell their servers the visitor's address, with no referrer, as in the preview (D-54). Google Fonts no longer do.
 - **Personal data:** the typed name is kept with the draft or comment as long as the file exists, and the 90-day cookie is needed
   for what the visitor does, not for tracking. Noted for the owner's list of legal questions.
@@ -331,11 +333,11 @@ New tables, by Drizzle migration:
 - `file_shares`: `id`, `file_id` (cascade, unique), `token_hash` (unique), `token_encrypted`, `mode`, `password_hash`,
   `password_generation`, `expires_at`, `created_by_user_id`, `created_at`, `updated_at`. A check: `mode = 'read' or
 password_hash is not null`. Cancelling deletes the row, so a new link is a new address.
-- `file_share_visitors`: `id`, `share_id` (set null), `file_id`, `name`, `device_token_hash`, `created_at`, `last_seen_at`.
+- `file_share_visitors`: `id`, `file_id` (cascade), `share_id` (set null), `name`, `device_token_hash`, `created_at`, `last_seen_at`.
 - `file_drafts`: `id`, `file_id` (cascade), `base_version_id`, `visitor_id`, `author_names`, `state`, `merged_into_id`,
   `version_id`, `created_by_user_id` (of a merge), `created_at`, `finished_at`.
 - `file_draft_changes`: `id`, `draft_id` (cascade), `block`, `kind` (`edited`, `deleted`), `old_html`, `new_html`, `author_name`,
-  `alternative_of`, `decision` (`pending`, `approved`, `rejected`), `decided_by_user_id`, `decided_at`.
+  `decision` (`pending`, `approved`, `rejected`), `decided_by_user_id`, `decided_at`.
 - `file_comments`: `id`, `file_id` (cascade), `version_id`, `parent_id`, `anchor` (jsonb), `body`, `visitor_id` or `user_id`
   (exactly one), `author_name`, `agreed_at`, `agreed_by_user_id`, `created_at`, `updated_at`, `deleted_at`.
 - `file_draft_comments`: `draft_id`, `comment_id`. All drafts of one session hold its comments, and a merged draft holds those of
@@ -343,8 +345,9 @@ password_hash is not null`. Cancelling deletes the row, so a new link is a new a
 
 Changed:
 
-- `file_versions`: `external_author` (text), the new `share` value of `file_version_source`, `draft_id`; a check that a `share`
-  version has an external author.
+- `file_versions`: `external_author` (text), the new `share` value of `file_version_source`. The draft it
+  came from is found through `file_drafts.version_id`. A new enum value cannot be used in the migration
+  that adds it, so no check ties the two together.
 - `lead_activities`: new `share` value of its source, `file_draft_id` (set null). `activity_types`: seeded „Zmena dokumentu“.
 - The audit allow-list gets `fileShare`, `fileDraft` and `fileComment`: ids, the mode, counts, decisions. Never a name, a text or the
   password (`input-keys.test.ts`).

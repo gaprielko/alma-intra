@@ -423,6 +423,9 @@ its files; they never store bytes themselves.
   alone opens the file's detail.
   Links within a document work and open its collapsed parts. While a preview is open, a newer version
   only offers itself („Načítať“, „Neskôr“); lists, the detail and the preview ask for news every 15 s.
+- **„Zdieľať“ [D-58]**: a file's public link, optionally with a password and an expiry. An HTML file can
+  also be commented on and edited through it; what comes back is a draft („Koncept“) a colleague approves
+  (`docs/file-sharing.md`).
 - Rename, move, new version, version history, download, trash, restore.
 - „Priložiť k e-mailu“ and „Priložiť k aktivite“ from a file's menu; in the e-mail wizard and the
   activity form a **file picker** that opens the customer's folder first, with a switch to the
@@ -659,6 +662,7 @@ both attach files.
 | D-55  | Draft, not implemented. Intra is the main app and owns everything but products and roles. A product registers itself with its roles, Intra founds organizations in it and assigns places for new accounts, by scope and workloads (`docs/integrations/products.md`) (31 Oct 2026) |
 | D-56  | The text in an e-mail's header has several lines, bold and italic. The name an e-mail is from can be written in Settings › Vzhľad e-mailov, with variables as in the subject, filled for each recipient when queued; empty or with a value missing it stays as in D-50 (31 Oct 2026) |
 | D-57  | An e-mail is personal or team. Each type has a global look and a look per product, with a signature and a footer of its own: lines, bold, italic and variables. A part of a line whose variable has no value is left out and never stops a sending; the footer must keep the link to unsubscribe. A look can be filled from another („Prevziať“). What was one look became the same look for both types, what was written so far stays personal; an answer in a conversation is personal. The company's name and IČO moved to Settings › Firma, true of all of Intra; the sending address and customer replies stay in „Spoločné nastavenia e-mailov“. The signature from Môj účet is the variable „Podpis z Môjho účtu“ (1 Nov 2026) |
+| D-58  | Any file can be shared by a unique public address, with an optional password and expiry. An HTML file can also be commented on and edited by an outsider who gives a name and the password. An outsider never makes a version: each save is a draft („Koncept“) with an activity „Zmena dokumentu“; drafts can be merged, and a colleague makes a version once every change is decided and every comment agreed to. The document runs in a sandboxed frame without access to the app, its own scripts included; nothing is tracked about who opens a link (1 Nov 2026, docs/file-sharing.md) |
 
 ### Still to verify (not decisions)
 
