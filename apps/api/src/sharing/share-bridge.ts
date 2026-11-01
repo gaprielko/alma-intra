@@ -50,6 +50,8 @@ function report(el){
     block:el.hasAttribute('data-alma-b')?Number(el.getAttribute('data-alma-b')):null,
     change:gone||el.getAttribute('data-alma-change'),
     editable:el.getAttribute('data-alma-e')==='1',
+    textable:el.getAttribute('data-alma-x')==='1',
+    pendingInside:!!el.querySelector('[data-alma-pending],[data-alma-gone]'),
     tag:el.localName,
     src:el.localName==='img'?el.getAttribute('src'):null,
     text:gone?null:(el.innerText||el.textContent||'').slice(0,20000),
@@ -172,7 +174,7 @@ window.addEventListener('message',function(e){
     }else{holder.innerHTML=m.html;}
     var fresh=holder.firstElementChild;
     if(!fresh)return;
-    if(m.html!==null){fresh.setAttribute('data-alma-b',String(Number(m.block)));fresh.setAttribute('data-alma-pending','1');if(m.editable)fresh.setAttribute('data-alma-e','1');}
+    if(m.html!==null){fresh.setAttribute('data-alma-b',String(Number(m.block)));fresh.setAttribute('data-alma-pending','1');if(m.editable)fresh.setAttribute('data-alma-e','1');if(m.textable)fresh.setAttribute('data-alma-x','1');}
     else{fresh.setAttribute('data-alma-b',String(Number(m.block)));}
     var after=fresh;
     el.parentNode.insertBefore(fresh,el);el.parentNode.removeChild(el);

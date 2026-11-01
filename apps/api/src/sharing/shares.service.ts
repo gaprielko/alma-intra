@@ -32,6 +32,7 @@ import {
   fragmentForEditor,
   parseFragments,
   sanitizeFragment,
+  withTexts,
 } from './share-html.js';
 import {
   clearDeviceCookie,
@@ -478,8 +479,9 @@ const utf8Length = (text: string) => Buffer.byteLength(text, 'utf8');
 
 export interface ChangeOp {
   block: number;
-  kind: 'edit' | 'delete';
+  kind: 'edit' | 'delete' | 'text';
   html?: string | undefined;
+  texts?: { i: number; text: string }[] | undefined;
 }
 
 /**
@@ -500,6 +502,11 @@ export function preparedChanges(source: string, ops: ChangeOp[]) {
     const oldHtml = source.slice(fragment.start, fragment.end);
     if (op.kind === 'delete') {
       return [{ fragment, kind: 'deleted', oldHtml, newHtml: null }];
+    }
+    if (op.kind === 'text') {
+      if (fragment.texts.length === 0) throw new ShareError('NOT_EDITABLE');
+      const changed = withTexts(source, fragment, op.texts ?? []);
+      return changed === oldHtml ? [] : [{ fragment, kind: 'edited', oldHtml, newHtml: changed }];
     }
     if (!fragment.editable || op.html === undefined) throw new ShareError('NOT_EDITABLE');
     const newHtml = sanitizeFragment(op.html, oldHtml);
@@ -535,7 +542,7 @@ export async function saveDraft(
   opened: OpenedShare,
   input: {
     baseVersionId: string;
-    ops: { block: number; kind: 'edit' | 'delete'; html?: string | undefined }[];
+    ops: ChangeOp[];
   },
 ) {
   const session = opened.session!;
