@@ -1,4 +1,8 @@
-import { ACTIVITY_TYPE_FEEDBACK_ID, SYSTEM_ACTIVITY_TYPE_IDS } from '@intra/shared/schemas';
+import {
+  ACTIVITY_TYPE_FEEDBACK_ID,
+  ACTIVITY_TYPE_INTEREST_ID,
+  SYSTEM_ACTIVITY_TYPE_IDS,
+} from '@intra/shared/schemas';
 import { and, asc, eq, isNotNull, sql } from 'drizzle-orm';
 import type { Db } from '../db/db.module.js';
 import { activityTypes, campaigns, emailTemplates, leadActivities } from '../db/schema/index.js';
@@ -26,9 +30,20 @@ async function mapNameClash<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
-/** A button keeps a type's id in its document: a template's or an e-mail's. */
+/**
+ * A button keeps a type's id in its document, a template's or an e-mail's. A document older than the
+ * types holds interest by its product (`recordedActivityOf`).
+ */
 const inDocument = (column: typeof emailTemplates.body | typeof campaigns.body, id: string) =>
-  sql`${column}::text like ${`%"activityTypeId": "${id}"%`}`;
+  id === ACTIVITY_TYPE_INTEREST_ID
+    ? sql`(${column}::text like ${`%"activityTypeId": "${id}"%`} or ${column}::text like '%"interestProductId": "%')`
+    : sql`${column}::text like ${`%"activityTypeId": "${id}"%`}`;
+
+/** The same for the row of a list: its documents, by a raw name of the column. */
+const holdsThisType = (body: string) =>
+  sql.raw(`(${body}::text like '%"activityTypeId": "' || "activity_types"."id" || '"%'
+    or ("activity_types"."id" = '${ACTIVITY_TYPE_INTEREST_ID}'
+      and ${body}::text like '%"interestProductId": "%'))`);
 
 /** The types in their order, with their entries and whether a button still holds them. */
 export async function listActivityTypes(db: Db) {
@@ -41,26 +56,33 @@ export async function listActivityTypes(db: Db) {
       active: activityTypes.active,
       entries: sql<number>`(select count(*)::int from lead_activities la
         where la.type_id = "activity_types"."id" and la.deleted_at is null)`,
-      inButtons: sql<boolean>`exists (select 1 from email_templates t
-          where t.body::text like '%"activityTypeId": "' || "activity_types"."id" || '"%')
-        or exists (select 1 from campaigns c
-          where c.body::text like '%"activityTypeId": "' || "activity_types"."id" || '"%')`,
+      inTemplates: sql<number>`(select count(*)::int from email_templates t
+        where ${holdsThisType('t.body')})`,
+      inDrafts: sql<number>`(select count(*)::int from campaigns c
+        where c.status = 'draft' and ${holdsThisType('c.body')})`,
+      inSent: sql<number>`(select count(*)::int from campaigns c
+        where c.status <> 'draft' and ${holdsThisType('c.body')})`,
     })
     .from(activityTypes)
     .orderBy(asc(activityTypes.position), sql`${activityTypes.name} collate "sk-x-icu"`);
-  return rows.map((row) => ({ ...row, system: SYSTEM_ACTIVITY_TYPE_IDS.includes(row.id) }));
+  return rows.map((row) => ({
+    ...row,
+    inButtons: row.inTemplates + row.inDrafts + row.inSent > 0,
+    system: SYSTEM_ACTIVITY_TYPE_IDS.includes(row.id),
+  }));
 }
 
 /** A new type, last in the order. */
 export async function createActivityType(
   db: Db,
-  values: { name: string; confirmLabel: string; asksProduct: boolean; active: boolean },
+  values: { name: string; confirmLabel: string | null; asksProduct: boolean; active: boolean },
 ) {
   return mapNameClash(async () => {
     const [created] = await db
       .insert(activityTypes)
       .values({
         ...values,
+        asksProduct: values.confirmLabel !== null && values.asksProduct,
         position: sql`(select coalesce(max(${activityTypes.position}), 0) + 1 from ${activityTypes})`,
       })
       .returning({ id: activityTypes.id });
@@ -68,7 +90,10 @@ export async function createActivityType(
   });
 }
 
-/** A podnet has no button, so it keeps its empty label and asks for no product. */
+/**
+ * A podnet has no button, so it keeps its empty label. A type without a button asks for no product,
+ * and a type some button holds stays one: that button must keep working.
+ */
 export async function updateActivityType(
   db: Db,
   id: string,
@@ -77,10 +102,25 @@ export async function updateActivityType(
   return mapNameClash(async () => {
     const [before] = await db.select().from(activityTypes).where(eq(activityTypes.id, id));
     if (!before) throw new ActivityTypeError('NOT_FOUND');
-    const next =
-      id === ACTIVITY_TYPE_FEEDBACK_ID
-        ? { ...values, confirmLabel: null, asksProduct: false }
-        : { ...values, confirmLabel: values.confirmLabel ?? before.confirmLabel };
+    const confirmLabel = id === ACTIVITY_TYPE_FEEDBACK_ID ? null : values.confirmLabel;
+    if (confirmLabel === null && before.confirmLabel !== null) {
+      const [held] = await db
+        .select({ id: emailTemplates.id })
+        .from(emailTemplates)
+        .where(inDocument(emailTemplates.body, id))
+        .limit(1);
+      const [sent] = await db
+        .select({ id: campaigns.id })
+        .from(campaigns)
+        .where(and(isNotNull(campaigns.body), inDocument(campaigns.body, id)))
+        .limit(1);
+      if (held || sent) throw new ActivityTypeError('IN_USE');
+    }
+    const next = {
+      ...values,
+      confirmLabel,
+      asksProduct: confirmLabel !== null && values.asksProduct,
+    };
     await db
       .update(activityTypes)
       .set({ ...next, updatedAt: new Date() })

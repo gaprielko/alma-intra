@@ -32,7 +32,7 @@ New table `activity_types`:
 | --- | --- |
 | `id` | a uuid; the seeded „Záujem o produkt“ has a fixed one |
 | `name` | „Záujem o produkt“; unique among the live types |
-| `confirm_label` | the public page's button: „Áno, mám vážny záujem“; NULL on a type no button records, „Podnet“ |
+| `confirm_label` | the public page's button: „Áno, mám vážny záujem“; NULL on a type no button records: „Podnet“, or one with the switch „Tlačidlo v e-maile“ off. Only a type with a label is offered in the button dialog, and a type some button holds keeps its label |
 | `asks_product` | the button picks a product, and the activity holds it |
 | `active` | offered in the button dialog |
 | `position`, `created_at`, `updated_at` | as other code lists |
@@ -63,7 +63,10 @@ and means the seeded type, so e-mails already sent keep working.
 - **[T-4] Removing a type.** Asked by the user: a row shows edit and delete at its right on hover, as
   elsewhere in the app, and delete only when the type is used nowhere. Recommended: used means an
   entry, or a button in a template or an e-mail. A used type can only be switched off: it is then not
-  offered for new buttons, but buttons already sent keep recording and its entries stay.
+  offered for new buttons, but buttons already sent keep recording and its entries stay. Asked by the
+  user on 1 Nov 2026: only „Podnet“ is the system's; „Záujem o produkt“ goes like any other once nothing
+  uses it, a button in a sent e-mail included, as its link must keep working. A type that cannot go shows
+  the delete icon disabled, and the icon says why and how many hold it.
 - **[T-5] Notification.** Recommended: the bell tells the sender about every type, on the first
   confirmation only. It says „Nová aktivita“ and the organization, without the type's name, which the
   notification does not hold.

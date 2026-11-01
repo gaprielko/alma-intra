@@ -1,13 +1,13 @@
 import { z } from 'zod';
 import { idSchema } from './common.js';
 
-/** The seeded types (docs/activity-types.md): fixed ids, because the app relies on both. */
+/**
+ * The seeded types (docs/activity-types.md), with fixed ids. Only a podnet is the system's, what
+ * comes from the apps needs it; interest is an ordinary type, gone when nothing uses it.
+ */
 export const ACTIVITY_TYPE_INTEREST_ID = '00000000-0000-4000-8000-0000000000b1';
 export const ACTIVITY_TYPE_FEEDBACK_ID = '00000000-0000-4000-8000-0000000000b2';
-export const SYSTEM_ACTIVITY_TYPE_IDS: readonly string[] = [
-  ACTIVITY_TYPE_INTEREST_ID,
-  ACTIVITY_TYPE_FEEDBACK_ID,
-];
+export const SYSTEM_ACTIVITY_TYPE_IDS: readonly string[] = [ACTIVITY_TYPE_FEEDBACK_ID];
 
 /** The product ADOS: a podnet from Alma ADOS is about it (docs/activities-from-apps.md). */
 export const ADOS_PRODUCT_ID = '00000000-0000-4000-8000-0000000000a1';
@@ -42,18 +42,14 @@ export const leadActivityAssignSchema = z
 
 const activityTypeFields = {
   name: z.string().trim().min(1, 'required').max(80),
-  confirmLabel: z.string().trim().min(1, 'required').max(80),
+  /** The text of the confirm button; a type with one can be used by a button in an e-mail. */
+  confirmLabel: z.string().trim().min(1, 'required').max(80).nullable(),
   asksProduct: z.boolean(),
   active: z.boolean(),
 };
 
 export const activityTypeCreateSchema = z.object(activityTypeFields);
-/** A type of the system without a button (a podnet) has no confirm label to change. */
-export const activityTypeUpdateSchema = z.object({
-  id: idSchema,
-  ...activityTypeFields,
-  confirmLabel: activityTypeFields.confirmLabel.nullable(),
-});
+export const activityTypeUpdateSchema = z.object({ id: idSchema, ...activityTypeFields });
 export type ActivityTypeUpdateInput = z.input<typeof activityTypeUpdateSchema>;
 
 /** The public page behind the e-mail's button: the token from the link's fragment. */
