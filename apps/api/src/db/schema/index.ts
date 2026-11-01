@@ -5,6 +5,7 @@ export * from './mail-outbox.js';
 export * from './audit-events.js';
 export * from './customers.js';
 export * from './files.js';
+export * from './file-shares.js';
 export * from './activities.js';
 export * from './email.js';
 export * from './campaigns.js';
