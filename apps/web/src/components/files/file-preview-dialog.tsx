@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
-import { formatSize, previewKind } from '@/lib/files';
-import { fileDocument, markdownDocument } from '@/lib/safe-html';
-import { trpcClient } from '@/lib/trpc';
+import { FILES_REFRESH_MS, formatSize, previewKind } from '@/lib/files';
+import { fileDocument, followFragmentLinks, markdownDocument } from '@/lib/safe-html';
+import { trpc, trpcClient } from '@/lib/trpc';
 import { downloadFile } from '@/lib/uploads';
 
 const t = sk.files;
@@ -29,7 +29,8 @@ export interface PreviewedFile {
  * be shown of it. HTML and Markdown run in a frame without scripts (they are whoever wrote them, and
  * must not act as the app); their pictures show, also from the internet. A PDF becomes a
  * blob typed as a PDF, whatever the bytes are, so it can only open in the browser's PDF viewer: a
- * sandboxed frame would stop that viewer. A type that cannot be shown says so.
+ * sandboxed frame would stop that viewer. A type that cannot be shown says so. While it is open a
+ * newer version only announces itself: what is being read does not change under the reader.
  */
 export function FilePreviewDialog({
   file,
@@ -42,26 +43,44 @@ export function FilePreviewDialog({
 }) {
   const toast = useToast();
   const kind = previewKind(file.name);
+  const latest = useQuery({
+    ...trpc.file.get.queryOptions({ id: file.id }),
+    refetchInterval: FILES_REFRESH_MS,
+  });
+  const [loads, setLoads] = useState(0);
+  const [postponed, setPostponed] = useState<string | null>(null);
   // Every fetch leaves a trace in the audit trail: once per opening, not on each return to the tab.
   const content = useQuery({
-    queryKey: ['file-preview', file.id, file.version],
+    queryKey: ['file-preview', file.id, loads],
     enabled: kind !== null,
     staleTime: Infinity,
     gcTime: 0,
     retry: false,
     queryFn: async () => {
+      const { currentVersionId: versionId } = await trpcClient.file.get.query({ id: file.id });
       const { url } = await trpcClient.file.download.mutate({ id: file.id, inline: true });
-      if (kind === 'image') return { image: url };
+      if (kind === 'image') return { versionId, image: url };
       const response = await fetch(url);
       if (!response.ok) throw new Error(`GET ${response.status}`);
-      if (kind === 'html') return { html: fileDocument(await response.text()) };
+      if (kind === 'html') return { versionId, html: fileDocument(await response.text()) };
       if (kind === 'markdown') {
         const { marked } = await import('marked');
-        return { html: markdownDocument(await marked.parse(await response.text())) };
+        return { versionId, html: markdownDocument(await marked.parse(await response.text())) };
       }
-      return { pdf: new Blob([await response.arrayBuffer()], { type: 'application/pdf' }) };
+      return {
+        versionId,
+        pdf: new Blob([await response.arrayBuffer()], { type: 'application/pdf' }),
+      };
     },
   });
+  const current = latest.data?.versions.find((v) => v.id === latest.data.currentVersionId);
+  const shown = latest.data?.versions.find((v) => v.id === content.data?.versionId);
+  const newest = current?.number ?? file.version;
+  const newer =
+    content.data !== undefined &&
+    current !== undefined &&
+    current.id !== content.data.versionId &&
+    current.id !== postponed;
   const pdf = content.data?.pdf;
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -77,7 +96,7 @@ export function FilePreviewDialog({
     );
   const versions = (
     <Button variant="secondary" aria-label={t.detailOf(file.name)} onClick={onVersions}>
-      {t.versions(file.version)}
+      {t.versions(newest)}
     </Button>
   );
   const download = (
@@ -105,7 +124,7 @@ export function FilePreviewDialog({
           <div className="min-w-0 flex-[1_1_15rem]">
             <DialogTitle className="text-base break-words">{file.name}</DialogTitle>
             <DialogDescription>
-              {file.folderPath ?? file.folderName} · {formatSize(file.size)}
+              {file.folderPath ?? file.folderName} · {formatSize(shown?.size ?? file.size)}
             </DialogDescription>
           </div>
           {kind ? (
@@ -115,6 +134,18 @@ export function FilePreviewDialog({
             </>
           ) : null}
         </header>
+        {newer ? (
+          <div
+            role="status"
+            className="flex flex-wrap items-center gap-3 border-b border-border-subtle px-5 py-2.5 text-sm"
+          >
+            <p className="min-w-0 flex-[1_1_15rem]">{d.newVersion(newest)}</p>
+            <Button variant="secondary" onClick={() => setPostponed(current?.id ?? null)}>
+              {d.later}
+            </Button>
+            <Button onClick={() => setLoads((n) => n + 1)}>{d.load}</Button>
+          </div>
+        ) : null}
         {kind === null ? (
           <div className="px-6 py-10 text-center">
             <p className="text-[15px]">{d.none}</p>
@@ -143,6 +174,10 @@ export function FilePreviewDialog({
                 // without scripts nothing can use it.
                 sandbox="allow-same-origin"
                 srcDoc={content.data.html}
+                onLoad={(event) => {
+                  const inside = event.currentTarget.contentDocument;
+                  if (inside) followFragmentLinks(inside);
+                }}
                 className="block h-full w-full border-0 bg-white"
               />
             ) : null}

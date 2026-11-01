@@ -21,7 +21,7 @@ import {
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
-import { canPreview, formatSize } from '@/lib/files';
+import { canPreview, FILES_REFRESH_MS, formatSize } from '@/lib/files';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { loadFailed } from '@/lib/query-view';
 import { useCan } from '@/lib/session';
@@ -35,7 +35,10 @@ type Detail = RouterOutputs['file']['get'];
 
 /** A file's side sheet: where it is, who made it, its versions and its history. */
 export function FileSheet({ fileId, onClose }: { fileId: string; onClose: () => void }) {
-  const file = useQuery(trpc.file.get.queryOptions({ id: fileId }));
+  const file = useQuery({
+    ...trpc.file.get.queryOptions({ id: fileId }),
+    refetchInterval: FILES_REFRESH_MS,
+  });
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="w-[min(37.5rem,100vw)] gap-0 p-0" aria-describedby={undefined}>
@@ -442,7 +445,10 @@ function Usage({ rows }: { rows: RouterOutputs['activity']['fileUsage'] }) {
 }
 
 function History({ fileId }: { fileId: string }) {
-  const history = useQuery(trpc.file.history.queryOptions({ id: fileId }));
+  const history = useQuery({
+    ...trpc.file.history.queryOptions({ id: fileId }),
+    refetchInterval: FILES_REFRESH_MS,
+  });
   if (history.isPending) return <CardSkeleton lines={4} className="mt-3 border-0 shadow-none" />;
   if (loadFailed(history)) {
     return (
