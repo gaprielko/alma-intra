@@ -53,7 +53,7 @@ import { StatusBanner } from '@/components/ui/status-banner';
 import { CELL_LINK, RowActions, TableCell, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/errors';
-import { formatSize, previewKind } from '@/lib/files';
+import { FILES_REFRESH_MS, formatSize, previewKind } from '@/lib/files';
 import { formatDate, formatRecent } from '@/lib/format';
 import { loadFailed } from '@/lib/query-view';
 import { useCan } from '@/lib/session';
@@ -629,6 +629,7 @@ function ContentsSection({
   const contents = useQuery({
     ...trpc.file.contents.queryOptions(input),
     placeholderData: keepPreviousData,
+    refetchInterval: FILES_REFRESH_MS,
   });
   const authors = useQuery(trpc.file.authors.queryOptions());
 

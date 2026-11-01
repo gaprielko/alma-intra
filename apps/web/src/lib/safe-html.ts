@@ -33,3 +33,23 @@ blockquote{border-left:3px solid #dfe8e6;margin-left:0;padding-left:14px;color:#
 
 /** A Markdown file already converted to HTML: anything raw in it stays in the same scriptless frame. */
 export const markdownDocument = (html: string) => shell(filePolicy, MARKDOWN_STYLE, html);
+
+/**
+ * Links within a document in the frame. The frame's document is `about:srcdoc`, so a `#chapter` link
+ * resolves against the app's address and would load the app into the frame. The document has no
+ * scripts of its own, so the page follows these links for it and opens the collapsed parts around
+ * the target. Links elsewhere are left alone.
+ */
+export function followFragmentLinks(frame: Document) {
+  frame.addEventListener('click', (event) => {
+    const link = (event.target as Element).closest('a[href^="#"]');
+    if (!link) return;
+    event.preventDefault();
+    const target = frame.getElementById((link.getAttribute('href') ?? '').slice(1));
+    if (!target) return;
+    for (let up = target.parentElement; up; up = up.parentElement) {
+      if (up.localName === 'details') up.setAttribute('open', '');
+    }
+    target.scrollIntoView();
+  });
+}

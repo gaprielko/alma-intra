@@ -1,5 +1,8 @@
 import { FILE_TYPES, type FileGroup, fileExtension, maxBytesOf } from '@intra/shared/schemas';
 
+/** How often an open list, sheet or preview asks for a newer version: there is no push to the page. */
+export const FILES_REFRESH_MS = 15_000;
+
 /** `48 kB`, `1,2 MB`: Slovak decimals, kB under a megabyte. */
 export function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;

@@ -11,6 +11,7 @@ import { Card, CardHeader } from '@/components/ui/card';
 import { formatDate } from '@/lib/format';
 import { loadFailed } from '@/lib/query-view';
 import { useCan } from '@/lib/session';
+import { FILES_REFRESH_MS } from '@/lib/files';
 import { trpc } from '@/lib/trpc';
 import { uploadFiles } from '@/lib/uploads';
 
@@ -20,7 +21,10 @@ const t = sk.files.customerCard;
 export function CustomerFilesCard({ customerId }: { customerId: string }) {
   const canWrite = useCan('file.write');
   const picker = useRef<HTMLInputElement>(null);
-  const files = useQuery(trpc.file.customerFiles.queryOptions({ customerId }));
+  const files = useQuery({
+    ...trpc.file.customerFiles.queryOptions({ customerId }),
+    refetchInterval: FILES_REFRESH_MS,
+  });
   const status = useQuery(trpc.file.status.queryOptions());
   const rootId = files.data?.rootId;
 

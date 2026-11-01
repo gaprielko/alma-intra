@@ -421,6 +421,8 @@ its files; they never store bytes themselves.
   frame without scripts or anything from the internet, **[D-43]**); DOCX / XLSX / PPTX and other
   files say they have no preview and offer the download (no PDF renditions, **[D-30]**). „Verzie“
   alone opens the file's detail.
+  Links within a document work and open its collapsed parts. While a preview is open, a newer version
+  only offers itself („Načítať“, „Neskôr“); lists, the detail and the preview ask for news every 15 s.
 - Rename, move, new version, version history, download, trash, restore.
 - „Priložiť k e-mailu“ and „Priložiť k aktivite“ from a file's menu; in the e-mail wizard and the
   activity form a **file picker** that opens the customer's folder first, with a switch to the

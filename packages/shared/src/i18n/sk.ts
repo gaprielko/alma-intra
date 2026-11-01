@@ -1740,6 +1740,9 @@ export const sk = {
       none: 'Náhľad tohto typu súboru zatiaľ nie je k dispozícii.',
       htmlNote: 'Skripty sa nespúšťajú. Z internetu sa načítavajú len obrázky.',
       download: 'Stiahnuť',
+      newVersion: (n: number) => `Je k dispozícii nová verzia ${n}. Chcete ju načítať?`,
+      load: 'Načítať',
+      later: 'Neskôr',
     },
     drop: {
       title: (name: string, target: string) => `${name} do priečinka ${target}`,
