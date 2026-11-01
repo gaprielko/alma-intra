@@ -29,6 +29,10 @@ customer. The user wants products as software a customer buys, each with its own
   period, state.
 - **Položka** (code: `product_item`, the catalog): a named thing a price list counts or adds:
   „Admin prístup“, „Sestra“, „Superadmin“, „Implementácia“. Shared by all products [R-2].
+- **Rola** (`product_item` of kind `role`): a catalog item that is an access of a user. It names the
+  applications it reaches, **Mobil**, **Web** and **Backend**, at least one, possibly all [R-20, R-21].
+- **Ďalšia položka** (`product_item` of kind `other`): every other catalog item, such as
+  „Implementácia“. It reaches no application [R-20].
 - **Položka produktu** (code: `product_price_item`): an item in one product's price list, with that
   product's numbers: how many are in the base price, the price of each further one, the maximum,
   whether it repeats every period or is paid once [R-3].
@@ -49,6 +53,9 @@ products                    (today's code list `products`, extended) [R-1]
 
 product_items               the shared catalog of item names [R-2]
   id, name (unique), unit   „Admin prístup“ / unit „prístup“; „Sestra“ / „sestra“
+  kind                      'role' | 'other'; set when created, never changed [R-20]
+  apps                      text[] of 'mobile', 'web', 'backend': at least one for a role, none for
+                            another item (a check in the database) [R-21]
   description, created_*, deleted_at
 
 product_price_items         one product's price list [R-3]
@@ -58,7 +65,7 @@ product_price_items         one product's price list [R-3]
                             added beyond `included`
   max                       the most a customer may have (NULL = no limit)
   billing                   'recurring' (every period of the product) | 'once'
-  by_workload               counted from workloads at the customer (recurring items only)
+  by_workload               counted from workloads at the customer (recurring roles only) [R-23]
   position                  order in the price list
 ```
 
@@ -87,7 +94,8 @@ A sidebar item **„Produkty“** right under „Organizácie“ [R-5], with two
 | Tab | What |
 | --- | ---- |
 | **Produkty** | the products with their base price and what it includes |
-| **Položky** | the shared catalog of item names |
+| **Role** | the shared catalog of roles, with their applications |
+| **Ďalšie položky** | the shared catalog of the other items |
 
 „Produkty“ leaves Nastavenia › Číselníky; the code list's products become products (section 8).
 
@@ -130,6 +138,12 @@ Board `ProdDetail`, at `/products/<id>`. One page that is edited in place (no se
   | Implementácia | jednorazovo | 0 | 450 € | 1 | |
 
   „Pridať položku“ opens the item picker (section 7).
+
+  The Cenník has two parts, apart to the eye [R-22], each with a heading, a table and a button of
+  its own: **Role** („Pridať rolu“; each row shows its applications under the name) and, under a
+  dividing band, **Ďalšie položky** („Pridať položku“). Rows are ordered within their part. A role
+  always comes before another item, wherever the price list is shown (the calculator, a product at
+  a customer). Board `ProdRoleDetail`.
 - **Výpočet ceny** (right): counts per item, each line explained („Sestra: 10, z toho 4 v cene,
   6 × 8 € = 48 €“), and the totals in a small table: monthly, yearly (12 months; for a yearly product
   the month is a twelfth) and one-off, each without and with VAT. It is a calculator for offers; it
@@ -159,11 +173,25 @@ Dialog „Pridať položku“ (board `ProdItemDialog`) on a product's price list
   from then on;
 - an item already in this product's price list is shown but cannot be added twice.
 
-## 8. Položky (catalog tab)
+The dialog offers one kind only, the one of the part it was opened from: „Pridať rolu“ lists roles
+with their applications and creates a „Nová rola“ (board `ProdRolePicker`), „Pridať položku“ lists
+the other items.
 
-Board `ProdItems`. A table: name, unit, description, the products that use it (chips). Actions:
-„Nová položka“, rename (the new name shows in every product), delete (only while no product uses
-it).
+## 8. Role and Ďalšie položky (catalog tabs)
+
+Boards `ProdRoles` and `ProdOtherItems`. A table each: name, unit, description, the products that
+use it (chips); Role also has a column **Aplikácie**. Actions: „Nová rola“ or „Nová položka“, rename
+(the new name shows in every product), delete (only while no product uses it). The role's form
+(board `ProdRoleDialog`) has a checkbox for each application; it cannot be saved with none.
+
+The applications belong to the role in the catalog and hold in every product. A role that reaches
+something else in another product is another role [R-21].
+
+Core will hold products and roles (the company architecture, „Alma - Solutions Architecture.html“); the applications move there with the
+roles, and until then nothing but these screens reads them.
+
+**Existing items** when this is deployed: an item whose every price list row is paid once becomes
+another item, any other a role with the application Web, to be corrected by hand.
 
 ---
 
@@ -192,7 +220,7 @@ organization_product_workloads   for an item counted by workloads: the people an
   at the number in the package (`included`) and **cannot go below it**; each piece above it is a
   surcharge, shown per piece (as the product's price list sets it, not changeable here) and in
   total („+2 × 9,84 € = +19,68 €“). It cannot exceed the maximum; one-off items count once.
-- **Workloads** [R-14]: for any item switched to „podľa úväzkov“ on the product (Sestra, or others),
+- **Workloads** [R-14]: for any role switched to „podľa úväzkov“ on the product (Sestra, or others),
   the count is not set by hand: the button „Úväzky“ opens a modal of its own for that item, so many
   such items stay readable. The customer's workloads are listed („2 × 100 %, 3 × 33 %, 1 × 15 %“); each is
   rounded **up** to the product's step (with 50 %: 33 % and 15 % count as 50 %, 51 % as 100 %); the
@@ -251,7 +279,7 @@ organization_product_workloads   for an item counted by workloads: the people an
 | R-3 | Per product and item: included count, price of each further one, maximum, recurring or once. | agreed |
 | R-4 | Price = base + further items × their price, in EUR; a product has a period, monthly or yearly. | agreed |
 | R-9 | Prices are shown and entered with and without VAT; the other is computed and rounded to cents; the VAT rate is a setting; a rate change keeps the prices without VAT. | agreed |
-| R-5 | „Produkty“ is a sidebar item under „Organizácie“, with tabs Produkty and Položky. | agreed |
+| R-5 | „Produkty“ is a sidebar item under „Organizácie“, with tabs Produkty, Role and Ďalšie položky (R-20). | agreed |
 | R-6 | The product's detail has a price calculator that stores nothing. | agreed |
 | R-7 | A held product follows the current price list (a change reaches its customers, in their history); a discount in % follows it too; a fixed price stays. | agreed |
 | R-10 | A product is held by an organization or a prevádzka, with counts per item and dates; ended, not deleted. | agreed |
@@ -264,6 +292,10 @@ organization_product_workloads   for an item counted by workloads: the people an
 | R-16 | A price is entered with VAT, the price without VAT is worked out (and the other way); without VAT is shown first. | agreed |
 | R-17 | „Ceny produktov“ (with / without VAT) is set on the organization and holds for its prevádzky; a private person's prices are always with VAT. | agreed |
 | R-18 | The organization's form lists and assigns its products through the same dialog; a new organization gets them after it is saved. | agreed |
+| R-20 | The catalog has two kinds: roles and further items, each on a tab of its own; the kind does not change. | agreed |
+| R-21 | A role reaches one or more of Mobil, Web and Backend; at least one. Set on the role in the catalog, valid in every product. | agreed |
+| R-22 | A product's Cenník shows roles and further items as two parts apart to the eye, ordered within each. | agreed |
+| R-23 | Only a role can be counted from workloads. | agreed |
 | R-19 | A time-limited discount can have several steps, each its percent for so many months, one after another; then the list price. A permanent discount has one percent. | agreed |
 
 ## 12. Stages (after approval)
